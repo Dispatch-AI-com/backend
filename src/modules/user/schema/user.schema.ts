@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { UserStatus } from '../enum/userStatus.enum'
 
 @Schema({ timestamps: true })
 export class User extends Document {
@@ -27,9 +28,12 @@ export class User extends Document {
   @Prop({ default: true })
   receivedAdverts: boolean;
 
-  @Prop({ default: 1 })
-  status: number;
-  // 1: active, 2: banned for 7 days, 3: banned for 30 days, 4: banned for 90 days, 5: banned for 180 days, 6: banned for 365 days, 7: banned permanently
+  @Prop({
+    type: Number,
+    enum: UserStatus,
+    default: UserStatus.Active,
+  })
+  status: UserStatus;
 
   @Prop()
   statusReason: string;
