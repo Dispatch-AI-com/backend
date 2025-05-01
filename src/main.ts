@@ -1,3 +1,4 @@
+//src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '@/modules/app.module';
 import { SwaggerModule } from '@nestjs/swagger';
@@ -11,7 +12,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableCors({
-    origin: '*',
+    origin: process.env.CORS_ORIGIN || '*',
   });
 
   const config = getSwaggerConfig();
