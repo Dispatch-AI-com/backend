@@ -29,7 +29,7 @@ export class User extends Document {
   receivedAdverts: boolean;
 
   @Prop({
-    type: Number,
+    type: String,
     enum: UserStatus,
     default: UserStatus.Active,
   })
@@ -40,9 +40,6 @@ export class User extends Document {
 
   @Prop({ default: 'user' })
   role: string;
-
-
-
 }
 
 export type UserDocument = User & Document;
