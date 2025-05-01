@@ -46,17 +46,13 @@ export class CompanyService {
 
     async findOne(id: string): Promise<Company> {
         try {
-            if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-                throw new BadRequestException('Invalid company ID format');
-            }
-
             const company = await this.companyModel.findById(id).populate('user').exec();
             if (!company) {
                 throw new NotFoundException(`Company with ID ${id} not found`);
             }
             return company;
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+            if (error instanceof NotFoundException) {
                 throw error;
             }
             throw new BadRequestException('Failed to fetch company: ' + error.message);
@@ -84,10 +80,6 @@ export class CompanyService {
 
     async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
         try {
-            if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-                throw new BadRequestException('Invalid company ID format');
-            }
-
             // If email is being updated, check for duplicates
             if (updateCompanyDto.email) {
                 const existingCompany = await this.companyModel.findOne({
@@ -113,7 +105,7 @@ export class CompanyService {
             }
             return updatedCompany;
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException || error instanceof ConflictException) {
+            if (error instanceof NotFoundException || error instanceof ConflictException) {
                 throw error;
             }
             throw new BadRequestException('Failed to update company: ' + error.message);
@@ -122,16 +114,12 @@ export class CompanyService {
 
     async remove(id: string): Promise<void> {
         try {
-            if (!id.match(/^[0-9a-fA-F]{24}$/)) {
-                throw new BadRequestException('Invalid company ID format');
-            }
-
             const result = await this.companyModel.deleteOne({ _id: id }).exec();
             if (result.deletedCount === 0) {
                 throw new NotFoundException(`Company with ID ${id} not found`);
             }
         } catch (error) {
-            if (error instanceof NotFoundException || error instanceof BadRequestException) {
+            if (error instanceof NotFoundException) {
                 throw error;
             }
             throw new BadRequestException('Failed to delete company: ' + error.message);
