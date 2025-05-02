@@ -1,7 +1,7 @@
 name: 🚀 Deploy Backend to EC2 (UAT)
 
 on:
-  pull_request_target:     # ← 改成 pull_request_target
+  pull_request_target: main
     types: [opened, synchronize, reopened]
 
 permissions:
