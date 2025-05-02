@@ -11,22 +11,13 @@ jobs:
       - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      - name: 🔐 Write SSH key to disk
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
-      - name: 🧱 Add EC2 host fingerprint
-        run: ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: 📤 Upload artifacts via SCP
+      - name: 📤 Upload build artifacts via SCP
         uses: appleboy/scp-action@master
         with:
           host:      ${{ secrets.EC2_HOST }}
           username:  ubuntu
-          key_path:  ~/.ssh/id_rsa
-          source:    "dist/**,docker-compose.yml,docker-compose.uat.yml,Dockerfile.uat"  
+          key:       ${{ secrets.EC2_SSH_KEY }}
+          source:    "dist/**,docker-compose.yml,docker-compose.uat.yml,Dockerfile.uat"
           target:    "/home/ubuntu/deploy/dispatch-backend"
 
       - name: 🔁 Restart service on EC2
@@ -34,7 +25,7 @@ jobs:
         with:
           host:      ${{ secrets.EC2_HOST }}
           username:  ubuntu
-          key_path:  ~/.ssh/id_rsa
+          key:       ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
             docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
