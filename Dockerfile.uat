@@ -6,6 +6,7 @@
     # 拷贝依赖配置并安装全部依赖（包括 dev）
     COPY package*.json ./
     RUN npm install
+    RUN npm install -g @nestjs/cli
     
     # 拷贝源码并构建 dist/
     COPY . .
