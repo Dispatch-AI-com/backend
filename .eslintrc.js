@@ -1,4 +1,3 @@
-// eslint.config.js
 module.exports = {
     root: true,
     parser: '@typescript-eslint/parser',
@@ -7,14 +6,14 @@ module.exports = {
       tsconfigRootDir: __dirname,
       sourceType: 'module',
     },
-    plugins: ['@typescript-eslint', '@darraghor/nestjs-typed'],
+    plugins: ['@typescript-eslint', 'prettier', '@darraghor/nestjs-typed'],
     extends: [
       'eslint:recommended',
       'plugin:@typescript-eslint/recommended',
       'plugin:@typescript-eslint/strict-type-checked',
       'plugin:@typescript-eslint/stylistic-type-checked',
       'plugin:@darraghor/nestjs-typed/recommended',
-      'prettier',
+      'plugin:prettier/recommended',
     ],
     rules: {
       '@typescript-eslint/no-extraneous-class': 'off',

@@ -31,6 +31,9 @@ jobs:
       - name: 🏗️ Build project
         run: npm run build
 
+      - name: 🔍 TypeScript type check
+        run: npm run type-check
+
       - name: 🐳 Docker build (UAT)
         run: docker build -f Dockerfile.uat -t dispatchai-backend:ci .
 
@@ -46,3 +49,6 @@ jobs:
 
       - name: 🧹 Clean up
         run: docker rm -f dispatchai-test
+
+      - name: 📏 Format check (Prettier)
+        run: npx prettier --check "src/**/*.ts"

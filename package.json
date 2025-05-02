@@ -29,7 +29,8 @@
     "start": "node dist/main",
     "start:debug": "nest start --debug --watch",
     "lint": "eslint src/**/*.ts",
-    "format": "prettier --write src/**/*.ts"
+    "format": "prettier --write src/**/*.ts",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@darraghor/eslint-plugin-nestjs-typed": "^5.2.1",
@@ -43,6 +44,7 @@
     "@typescript-eslint/parser": "^8.31.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^10.1.2",
+    "eslint-plugin-prettier": "^5.2.6",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
