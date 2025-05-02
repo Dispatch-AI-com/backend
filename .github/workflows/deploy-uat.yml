@@ -8,10 +8,16 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 📦 Checkout code
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
+
+      - name: 🧱 Build & package
+        run: |
+          npm ci
+          npm run build
+          # （可选）打包成 tar，或者留作 Docker 上构建
+          # tar czf payload.tar.gz dist Dockerfile docker-compose.uat.yml
 
       - name: 🔐 Setup SSH key
         run: |
@@ -20,23 +26,27 @@ jobs:
           chmod 600 ~/.ssh/dispatchai_key
           ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: 📤 Upload backend project to EC2
+      - name: 📤 Upload build artifacts to EC2
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "."                          # 上传所有项目文件（受 .gitignore 限制）
+          # 指定我们刚才写入的 key 文件路径
+          key_path: ~/.ssh/dispatchai_key
+          # 只上传你需要的文件夹和配置
+          source: "dist/**,Dockerfile.uat.yml,docker-compose.uat.yml"
           target: "/home/ubuntu/deploy/dispatch-backend"
-          strip_components: 0
 
       - name: 🔁 Restart backend service on EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key_path: ~/.ssh/dispatchai_key
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
-            docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
-            docker-compose -f docker-compose.yml -f docker-compose.uat.yml up -d --build
+            docker-compose -f docker-compose.uat.yml down
+            docker-compose -f docker-compose.uat.yml up -d --build
+
+      - name: 🧹 Cleanup local SSH key
+        run: rm -f ~/.ssh/dispatchai_key ~/.ssh/known_hosts
