@@ -8,45 +8,33 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - name: 📥 Checkout code
+      - name: 📦 Checkout code
         uses: actions/checkout@v3
 
-      - name: 🧱 Build & package
-        run: |
-          npm ci
-          npm run build
-          # （可选）打包成 tar，或者留作 Docker 上构建
-          # tar czf payload.tar.gz dist Dockerfile docker-compose.uat.yml
-
-      - name: 🔐 Setup SSH key
+      - name: 🧱 Setup known_hosts
+        # 只需把远端主机指纹加到 known_hosts，避免第一次交互式确认
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/dispatchai_key
-          chmod 600 ~/.ssh/dispatchai_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
 
-      - name: 📤 Upload build artifacts to EC2
+      - name: 📤 Upload backend to EC2
         uses: appleboy/scp-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host:     ${{ secrets.EC2_HOST }}
           username: ubuntu
-          # 指定我们刚才写入的 key 文件路径
-          key_path: ~/.ssh/dispatchai_key
-          # 只上传你需要的文件夹和配置
-          source: "dist/**,Dockerfile.uat.yml,docker-compose.uat.yml"
-          target: "/home/ubuntu/deploy/dispatch-backend"
+          key:      ${{ secrets.EC2_SSH_KEY }}        # ← 直接把私钥内容当作 key 传给 action
+          source:   "dist/**,docker-compose.uat.yml"  # 仅上传 build 产物和 compose 文件
+          target:   "/home/ubuntu/deploy/dispatch-backend"
 
-      - name: 🔁 Restart backend service on EC2
+      - name: 🔁 Restart service on EC2
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host:     ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key_path: ~/.ssh/dispatchai_key
+          key:      ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
-            docker-compose -f docker-compose.uat.yml down
-            docker-compose -f docker-compose.uat.yml up -d --build
-
-      - name: 🧹 Cleanup local SSH key
-        run: rm -f ~/.ssh/dispatchai_key ~/.ssh/known_hosts
+            docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
+            docker-compose -f docker-compose.yml -f docker-compose.uat.yml up -d --build
