@@ -1,0 +1,30 @@
+# ---------- Stage 1: Build ----------
+    FROM node:20-alpine AS builder
+
+    WORKDIR /app
+    
+    # 拷贝依赖配置并安装全部依赖（包括 dev）
+    COPY package*.json ./
+    RUN npm install
+    
+    # 拷贝源码并构建 dist/
+    COPY . .
+    RUN npm run build
+    
+    # ---------- Stage 2: Runtime ----------
+    FROM node:20-alpine
+    
+    WORKDIR /app
+    
+    # 只复制构建产物和依赖配置
+    COPY --from=builder /app/dist ./dist
+    COPY --from=builder /app/package*.json ./
+    
+    # 安装仅生产依赖
+    RUN npm install --only=production
+    
+    EXPOSE 4000
+    
+    # 启动 NestJS 编译后应用
+    CMD ["node", "dist/main"]
+    

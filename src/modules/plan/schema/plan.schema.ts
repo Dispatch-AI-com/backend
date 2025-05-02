@@ -7,10 +7,10 @@ export type PlanDocument = HydratedDocument<Plan>;
 export class Plan {
 
   @Prop({ required: true, unique: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true, enum: ['FREE', 'BASIC', 'PRO'] })
-  tier: 'FREE' | 'BASIC' | 'PRO';
+  tier!: 'FREE' | 'BASIC' | 'PRO';
 
   @Prop({
     type: [
@@ -21,7 +21,7 @@ export class Plan {
     ],
     required: true
   })
-  pricing: {
+  pricing!: {
     rrule: string;
     price: number;
   }[];
@@ -33,13 +33,13 @@ export class Plan {
     },
     required: true
   })
-  features: {
+  features!: {
     callMinutes: string;
     support: string;
   };
 
   @Prop({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 }
 
 export const PlanSchema = SchemaFactory.createForClass(Plan);

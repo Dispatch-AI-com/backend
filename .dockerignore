@@ -1,0 +1,23 @@
+# 忽略环境配置
+.env
+.env.*
+
+# 忽略依赖和构建产物
+node_modules
+dist
+
+# 忽略版本控制目录
+.git
+.gitignore
+
+# 日志文件
+*.log
+logs/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# IDE/OS 生成的缓存文件
+.vscode
+.DS_Store
+*.swp

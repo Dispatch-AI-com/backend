@@ -5,41 +5,41 @@ import { UserStatus } from '../enum/userStatus.enum'
 @Schema({ timestamps: true })
 export class User extends Document {
   @Prop({ required: true })
-  firstName: string;
+  firstName!: string;
 
   @Prop({ required: true })
-  lastName: string;
+  lastName!: string;
 
   @Prop({ required: true, unique: true })
-  email: string;
+  email!: string;
 
   @Prop({ required: true, select: false })
-  password: string;
+  password!: string;
 
   @Prop({ required: true })
-  fullPhoneNumber: string;
+  fullPhoneNumber!: string;
 
   @Prop()
-  readonly createdAt: Date;
+  readonly createdAt!: Date;
 
   @Prop()
-  readonly updatedAt: Date;
+  readonly updatedAt!: Date;
 
   @Prop({ default: true })
-  receivedAdverts: boolean;
+  receivedAdverts!: boolean;
 
   @Prop({
     type: String,
     enum: UserStatus,
     default: UserStatus.Active,
   })
-  status: UserStatus;
+  status!: UserStatus;
 
   @Prop()
-  statusReason: string;
+  statusReason!: string;
 
   @Prop({ default: 'user' })
-  role: string;
+  role!: string;
 }
 
 export type UserDocument = User & Document;

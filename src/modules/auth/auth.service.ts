@@ -5,9 +5,10 @@ import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
 import { SALT_ROUNDS } from '@/modules/auth/auth.config';
-import { IResponseBase } from '@/common/interfaces/res.d';
-import { IUser } from '@/common/interfaces/users.d';
-
+import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
+import { UnauthorizedException, ConflictException } from '@nestjs/common';
+import { LoginDto } from '@/modules/auth/dto/login.dto';
+import { EUserRole } from '@/common/constants/user.constant';
 @Injectable()
 export class AuthService {
     constructor(
@@ -15,72 +16,57 @@ export class AuthService {
         private readonly jwtService: JwtService,
     ) { }
 
-    async validateUser(email: string, password: string): Promise<IResponseBase> {
+    async validateUser(email: string, password: string): Promise<User> {
         const user = await this.userModel.findOne({ email }).exec();
 
         if (!user) {
-            return {
-                status: 'error',
-                message: 'User not found',
-                data: 'Your email has not been registered',
-            };
+            throw new UnauthorizedException('User not found');
         }
-
         const isPasswordValid = await bcrypt.compare(password, user.password);
 
         if (!isPasswordValid) {
-            return {
-                status: 'error',
-                message: 'Invalid password',
-                data: 'Your password is incorrect',
-            };
-        }
-        const { password: _, ...result } = user.toObject();
-        return {
-            status: 'success',
-            message: 'Login successful',
-            data: result,
+            throw new UnauthorizedException('Invalid password');
         };
+        return user;
     }
 
-    async login(user: UserDocument): Promise<IResponseBase> {
-        const payload = { email: user.email, sub: user._id, role: user.role };
-
-        return {
-            status: 'success',
-            message: 'Login successful',
-            data: {
-                user,
-                access_token: this.jwtService.sign(payload),
-            },
-        };
-    }
-
-    async createUser(userData: IUser): Promise<IResponseBase> {
-        if (await this.checkUserExists(userData.email)) {
-            return {
-                status: 'error',
-                message: 'User already exists',
-                data: null,
-            };
-        }
+    async login(user: LoginDto): Promise<User> {
         
+        const foundUser = await this.userModel.findOne({ email: user.email });
+
+        if (!foundUser) {
+            throw new UnauthorizedException('User not found');
+        }
+        const isPasswordValid = await bcrypt.compare(user.password, foundUser.password);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid password');
+        }
+
+        return foundUser;
+    }
+
+    async createUser(userData: CreateUserDto): Promise<User> {
+        if (await this.checkUserExists(userData.email)) {
+          throw new ConflictException('User already exists');
+        }
+      
         const saltRounds = SALT_ROUNDS;
         const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
+      
+        const { name, email, role } = userData;
+      
         const secureUserData = {
-            ...userData,
-            password: hashedPassword
+          name,
+          email,
+          role: role ?? EUserRole.USER,
+          password: hashedPassword,
         };
-
+      
         const newUser = new this.userModel(secureUserData);
         await newUser.save();
-        return {
-            status: 'success',
-            message: 'User created successfully',
-            data: newUser,
-        };
-    }
+        return newUser;
+      }
+      
 
     async checkUserExists(email: string): Promise<boolean> {
         const user = await this.userModel.findOne({ email });

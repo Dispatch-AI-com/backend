@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schema/user.schema';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
-
+import { isValidObjectId } from 'mongoose';
 @Injectable()
 export class UserService {
     constructor(
@@ -16,31 +16,18 @@ export class UserService {
     }
 
     async findOne(id: string): Promise<User> {
-        try {
-            const user = await this.userModel.findById(id).exec();
-            if (!user) throw new NotFoundException(`User with id ${id} not found`);
-            return user;
-        } catch (err) {
-            if (err.name === 'CastError') {
-                throw new BadRequestException(`Invalid user id: ${id}`);
-            }
-            throw err;
-        }
-    }
-
-
-    async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-        const updated = await this.userModel
-            .findByIdAndUpdate(id, updateUserDto, { new: true, runValidators: true })
-            .exec();
-        if (!updated) throw new NotFoundException(`User with id ${id} not found`);
-        return updated;
+        if (!isValidObjectId(id)) {
+            throw new BadRequestException(`Invalid user id: ${id}`);
+          }
+        const user = await this.userModel.findById(id).exec();
+        if (!user) throw new NotFoundException(`User with id ${id} not found`);
+        return user;
     }
 
     async patch(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-        const patch = await this.update(id, updateUserDto as UpdateUserDto);
-        if (!patch) throw new NotFoundException(`User with id ${id} not found`);
-        return patch;
+        const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, { new: true, runValidators: true }).exec();
+        if (!user) throw new NotFoundException(`User with id ${id} not found`);
+        return user;
     }
 
     async delete(id: string): Promise<User> {

@@ -7,9 +7,10 @@ import {
   IsBoolean,
   IsArray,
   ValidateNested,
+  IsOptional,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class PricingDto {
   @ApiProperty({
@@ -17,14 +18,14 @@ export class PricingDto {
     example: 'FREQ=MONTHLY;INTERVAL=1',
   })
   @IsString()
-  rrule: string;
+  rule!: string;
 
   @ApiProperty({
     description: 'Price in AUD for the given billing period',
     example: 49,
   })
   @IsNumber({}, { message: 'price must be a valid number' })
-  price: number;
+  price!: number;
 }
 
 export class FeaturesDto {
@@ -33,14 +34,14 @@ export class FeaturesDto {
     example: 'Unlimited',
   })
   @IsString()
-  callMinutes: string;
+  callMinutes!: string;
 
   @ApiProperty({
     description: 'Support level included in this plan',
     example: 'Priority support',
   })
   @IsString()
-  support: string;
+  support!: string;
 }
 
 export class CreatePlanDto {
@@ -52,7 +53,7 @@ export class CreatePlanDto {
   @IsString()
   @IsNotEmpty({ message: 'name cannot be empty' })
   @MaxLength(20)
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Plan tier',
@@ -60,18 +61,20 @@ export class CreatePlanDto {
     enum: ['FREE', 'BASIC', 'PRO'],
   })
   @IsEnum(['FREE', 'BASIC', 'PRO'], { message: 'tier must be one of: FREE, BASIC, or PRO' })
-  tier: 'FREE' | 'BASIC' | 'PRO';
+  tier!: 'FREE' | 'BASIC' | 'PRO';
 
   @ApiProperty({
     description: 'Pricing options with flexible billing using rrule format',
     example: [
       { rrule: 'FREQ=MONTHLY;INTERVAL=1', price: 49 },
     ],
+    type: PricingDto,
+    isArray: true
   })
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => PricingDto)
-  pricing: PricingDto[];
+  pricing!: PricingDto[];
 
   @ApiProperty({
     description: 'Plan features',
@@ -83,12 +86,13 @@ export class CreatePlanDto {
   @IsNotEmpty({ message: 'features cannot be empty' })
   @ValidateNested()
   @Type(() => FeaturesDto)
-  features: FeaturesDto;
+  features!: FeaturesDto;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Is the plan active or not',
     example: true,
   })
   @IsBoolean()
+  @IsOptional()
   isActive?: boolean;
 }
