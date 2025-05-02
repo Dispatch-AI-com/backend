@@ -10,10 +10,10 @@ import { PlanModule } from './plan/plan.modules';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    DatabaseModule, 
-    HealthModule, 
+    DatabaseModule,
+    HealthModule,
     AuthModule,
-    PlanModule
+    PlanModule,
   ],
 })
 export class AppModule {}

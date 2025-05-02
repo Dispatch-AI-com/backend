@@ -28,10 +28,11 @@
     "build": "nest build",
     "start": "node dist/main",
     "start:debug": "nest start --debug --watch",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts"
   },
   "devDependencies": {
-    "@darraghor/eslint-plugin-nestjs-typed": "^6.4.12",
+    "@darraghor/eslint-plugin-nestjs-typed": "^5.2.1",
     "@nestjs/cli": "^11.0.7",
     "@nestjs/testing": "^11.0.11",
     "@types/bcrypt": "^5.0.2",
@@ -40,9 +41,10 @@
     "@types/passport-jwt": "^4.0.1",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^9.25.1",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^10.1.2",
+    "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.31.1"
+    "typescript": "^5.8.3"
   }
 }
