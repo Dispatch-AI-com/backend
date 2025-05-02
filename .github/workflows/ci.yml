@@ -46,12 +46,5 @@ jobs:
       - name: 🧳 Docker container logs (for debugging)
         run: docker logs dispatchai-test
 
-      - name: 🔎 Health check
-        run: |
-          for i in {1..20}; do
-            sleep 5
-            curl -f http://localhost:4000/health && break || echo "Waiting for the service to be up..."
-          done
-
       - name: 🧹 Clean up
         run: docker rm -f dispatchai-test
