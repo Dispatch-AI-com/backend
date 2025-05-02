@@ -13,22 +13,16 @@ jobs:
       - name: 📦 Checkout code
         uses: actions/checkout@v3
 
-      - name: 🧱 Setup known_hosts
-        # 只需把远端主机指纹加到 known_hosts，避免第一次交互式确认
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts
-
-      - name: 📤 Upload backend to EC2
+      - name: 📤 Upload build artifacts to EC2
         uses: appleboy/scp-action@master
         with:
           host:     ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key:      ${{ secrets.EC2_SSH_KEY }}        # ← 直接把私钥内容当作 key 传给 action
-          source:   "dist/**,docker-compose.uat.yml"  # 仅上传 build 产物和 compose 文件
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          source:   "dist/**,docker-compose.uat.yml"
           target:   "/home/ubuntu/deploy/dispatch-backend"
 
-      - name: 🔁 Restart service on EC2
+      - name: 🔁 Restart service on EC2 via Docker Compose
         uses: appleboy/ssh-action@master
         with:
           host:     ${{ secrets.EC2_HOST }}
