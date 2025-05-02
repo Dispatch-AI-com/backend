@@ -1,0 +1,18 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.uat
+    container_name: dispatchai-api
+    command: ["node", "dist/main"]
+    environment:
+      - NODE_ENV=uat
+      - MONGODB_URI=mongodb://mongodb:27017/dispatchai
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - JWT_EXPIRE_TIME=${JWT_EXPIRE_TIME}
+    volumes: [] 
+
+  mongodb:
+    image: mongo:latest
+    container_name: dispatchai-mongodb
