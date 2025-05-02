@@ -46,7 +46,6 @@ jobs:
       - name: 🧳 Docker container logs (for debugging)
         run: docker logs dispatchai-test
 
-      # Check if the container is up and health check is passed
       - name: 🔎 Health check
         run: |
           for i in {1..20}; do
