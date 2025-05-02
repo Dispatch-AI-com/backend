@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: 🔑 Debug SSH key
+        run: |
+          echo "SSH key length: $(echo -n "${{ secrets.EC2_SSH_KEY }}" | wc -c)"
+          
       - name: 📥 Checkout code
         uses: actions/checkout@v3
 
