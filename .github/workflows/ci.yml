@@ -1,50 +1,40 @@
-name: 🚀 PR Deploy Backend to EC2 (UAT)
+name: 🚀 Deploy Backend to EC2 (UAT)
 
 on:
-  pull_request:
+  push:
+    branches: [ main ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: 🧱 Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
+      - name: 🔐 写入 SSH 私钥
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-      - name: 📦 Install dependencies
-        run: npm install
+      - name: 🧱 添加 known_hosts
+        run: ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
 
-      - name: 🏗️ Build project
-        run: npm run build
-
-      - name: 🚢 Copy build artifacts to EC2
+      - name: 📤 上传构建产物到 EC2
         uses: appleboy/scp-action@master
         with:
           host:     ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key:      ${{ secrets.EC2_SSH_KEY }}
+          key_path: ~/.ssh/id_rsa
           source:   "dist/**,docker-compose.uat.yml"
           target:   "/home/ubuntu/deploy/dispatch-backend"
 
-      - name: 🔁 Restart service on EC2 via SSH
+      - name: 🔁 重启服务
         uses: appleboy/ssh-action@master
         with:
           host:     ${{ secrets.EC2_HOST }}
           username: ubuntu
-          key:      ${{ secrets.EC2_SSH_KEY }}
+          key_path: ~/.ssh/id_rsa
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
             docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
             docker-compose -f docker-compose.yml -f docker-compose.uat.yml up -d --build
-
-      - name: 📄 Verify deployment directory
-        # 最后一步：只切换目录并列出文件，确保一切就绪
-        run: |
-          cd /home/ubuntu/deploy/dispatch-backend
-          ls -al
-          echo "部署目录切换成功，当前目录是 $(pwd)"
