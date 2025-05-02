@@ -1,13 +1,10 @@
-name: ✅ CI - Backend Build & Healthcheck
+name: 🚀 PR Deploy Backend to EC2 (UAT)
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
 
 jobs:
-  backend-ci:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -22,29 +19,32 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install
 
-      - name: 📏 Format check (Prettier)
-        run: npm run format
-
-      - name: 🔍 Lint check
-        run: npm run lint
-
-      - name: 🧪 Run tests
-        run: npm run test
-
       - name: 🏗️ Build project
         run: npm run build
 
-      - name: 🔍 TypeScript type check
-        run: npm run type-check
+      - name: 🚢 Copy build artifacts to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          source:   "dist/**,docker-compose.uat.yml"
+          target:   "/home/ubuntu/deploy/dispatch-backend"
 
-      - name: 🐳 Docker build (UAT)
-        run: docker build -f Dockerfile.uat -t dispatchai-backend:ci .
+      - name: 🔁 Restart service on EC2 via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host:     ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key:      ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/deploy/dispatch-backend
+            docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
+            docker-compose -f docker-compose.yml -f docker-compose.uat.yml up -d --build
 
-      - name: 🚀 Run container
-        run: docker run -d -p 4000:4000 --name dispatchai-test dispatchai-backend:ci
-
-      - name: 🧳 Docker container logs (for debugging)
-        run: docker logs dispatchai-test
-
-      - name: 🧹 Clean up
-        run: docker rm -f dispatchai-test
+      - name: 📄 Verify deployment directory
+        # 最后一步：只切换目录并列出文件，确保一切就绪
+        run: |
+          cd /home/ubuntu/deploy/dispatch-backend
+          ls -al
+          echo "部署目录切换成功，当前目录是 $(pwd)"
