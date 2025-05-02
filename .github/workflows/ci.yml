@@ -43,8 +43,7 @@ jobs:
       - name: 🚀 Run container
         run: docker run -d -p 4000:4000 --name dispatchai-test dispatchai-backend:ci
 
-      # Docker container logs for debugging
-      - name: 🧳 Docker container logs
+      - name: 🧳 Docker container logs (for debugging)
         run: docker logs dispatchai-test
 
       # Check if the container is up and health check is passed
