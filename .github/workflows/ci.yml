@@ -1,7 +1,7 @@
 name: 🚀 Deploy Backend to EC2 (UAT)
 
 on:
-  push:
+  pull-request:
     branches: [ main ]
 
 jobs:
