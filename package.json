@@ -30,7 +30,8 @@
     "start:debug": "nest start --debug --watch",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "echo 'no test'"
   },
   "devDependencies": {
     "@darraghor/eslint-plugin-nestjs-typed": "^5.2.1",
