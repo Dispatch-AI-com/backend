@@ -3,12 +3,15 @@
 
     WORKDIR /app
     
-    # 拷贝依赖配置并安装全部依赖（包括 dev）
+    # 安装依赖
     COPY package*.json ./
     RUN npm install
     RUN npm install -g @nestjs/cli
     
-    # 拷贝源码并构建 dist/
+    # ❗️如果你已经全局安装 nest-cli，只需要用于本地开发，这一行可以删除：
+    # RUN npm install -g @nestjs/cli
+    
+    # 拷贝源码 & 构建
     COPY . .
     RUN npm run build
     
@@ -17,15 +20,15 @@
     
     WORKDIR /app
     
-    # 只复制构建产物和依赖配置
+    # 拷贝构建产物 & 生产依赖文件
     COPY --from=builder /app/dist ./dist
-    COPY --from=builder /app/package*.json ./
+    COPY --from=builder /app/package.json ./
+    COPY --from=builder /app/package-lock.json ./
     
     # 安装仅生产依赖
-    RUN npm install --only=production
+    RUN npm install --omit=dev
     
     EXPOSE 4000
     
-    # 启动 NestJS 编译后应用
     CMD ["node", "dist/main"]
     
