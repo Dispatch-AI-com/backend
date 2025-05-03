@@ -32,6 +32,15 @@ jobs:
           rm -rf node_modules
           npm install --omit=dev
 
+      - name: 🔍 Debug build outputs
+        run: |
+          echo "Current folder:"
+          pwd
+          echo "Contents:"
+          ls -al
+          echo "Dist contents:"
+          ls -al dist || echo "⚠️ dist/ not found"
+
       - name: 📤 Upload to EC2 (only dist & package files)
         uses: appleboy/scp-action@master
         with:
