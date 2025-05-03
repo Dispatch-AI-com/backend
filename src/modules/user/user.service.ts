@@ -1,9 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { User, UserDocument } from "./schema/user.schema";
-import { UpdateUserDto } from "./dto/UpdateUser.dto";
-import { isValidObjectId } from "mongoose";
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from './schema/user.schema';
+import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { isValidObjectId } from 'mongoose';
 @Injectable()
 export class UserService {
   constructor(

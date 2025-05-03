@@ -1,6 +1,6 @@
-import { Injectable } from "@nestjs/common";
-import { InjectConnection } from "@nestjs/mongoose";
-import { Connection, STATES as ConnectionStates } from "mongoose";
+import { Injectable } from '@nestjs/common';
+import { InjectConnection } from '@nestjs/mongoose';
+import { Connection, STATES as ConnectionStates } from 'mongoose';
 
 @Injectable()
 export class HealthService {
@@ -8,10 +8,10 @@ export class HealthService {
 
   check() {
     return {
-      status: "ok",
+      status: 'ok',
       timestamp: new Date(),
-      service: "dispatchAI API",
-      environment: process.env.NODE_ENV ?? "development",
+      service: 'dispatchAI API',
+      environment: process.env.NODE_ENV ?? 'development',
     };
   }
 
@@ -26,16 +26,16 @@ export class HealthService {
       const isConnected = this.mongoConnection.readyState === ConnectionStates.connected;
       await Promise.resolve();
       return {
-        status: isConnected ? "ok" : "error",
-        database: "MongoDB",
+        status: isConnected ? 'ok' : 'error',
+        database: 'MongoDB',
         connected: isConnected,
         timestamp: new Date(),
         error: undefined, // ✅ 明确包含 error 字段
       };
     } catch (error) {
       return {
-        status: "error",
-        database: "MongoDB",
+        status: 'error',
+        database: 'MongoDB',
         connected: false,
         timestamp: new Date(),
         error: error instanceof Error ? error.message : String(error),

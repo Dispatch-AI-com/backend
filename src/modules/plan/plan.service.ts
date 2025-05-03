@@ -1,9 +1,9 @@
-import { Injectable, ConflictException, NotFoundException } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
-import { Plan, PlanDocument } from "./schema/plan.schema";
-import { CreatePlanDto } from "./dto/create-plan.dto";
-import { UpdatePlanDto } from "./dto/update-plan.dto";
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Plan, PlanDocument } from './schema/plan.schema';
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { UpdatePlanDto } from './dto/update-plan.dto';
 @Injectable()
 export class PlanService {
   constructor(
@@ -14,7 +14,7 @@ export class PlanService {
   async createPlan(dto: CreatePlanDto): Promise<Plan> {
     const plan = await this.planModel.findOne({ name: dto.name }).exec();
     if (plan) {
-      throw new ConflictException("Plan name already exists");
+      throw new ConflictException('Plan name already exists');
     }
     return this.planModel.create(dto);
   }
@@ -26,7 +26,7 @@ export class PlanService {
   async getPlanById(id: string): Promise<Plan> {
     const plan = await this.planModel.findById(id).exec();
     if (!plan) {
-      throw new NotFoundException("Plan not found");
+      throw new NotFoundException('Plan not found');
     }
     return plan;
   }
@@ -41,7 +41,7 @@ export class PlanService {
       .exec();
 
     if (!updated) {
-      throw new NotFoundException("Plan not found");
+      throw new NotFoundException('Plan not found');
     }
 
     return updated;
@@ -56,7 +56,7 @@ export class PlanService {
       .exec();
 
     if (!updated) {
-      throw new NotFoundException("Plan not found");
+      throw new NotFoundException('Plan not found');
     }
 
     return updated;

@@ -1,6 +1,6 @@
-import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
-import { UserStatus } from "../enum/userStatus.enum";
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
+import { UserStatus } from '../enum/userStatus.enum';
 
 @Schema({ timestamps: true })
 export class User extends Document {
@@ -38,7 +38,7 @@ export class User extends Document {
   @Prop()
   statusReason!: string;
 
-  @Prop({ default: "user" })
+  @Prop({ default: 'user' })
   role!: string;
 }
 
