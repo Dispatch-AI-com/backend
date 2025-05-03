@@ -43,12 +43,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            dist
-            package.json
-            package-lock.json
-            docker-compose.uat.yml
-            Dockerfile.uat
+          source: "dist/**,package.json,package-lock.json,docker-compose.uat.yml,Dockerfile.uat"
           target: /home/ubuntu/deploy/dispatch-backend
           strip_components: 0
 
