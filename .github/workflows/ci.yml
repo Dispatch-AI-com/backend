@@ -3,21 +3,16 @@ name: 🚀 Deploy Backend to EC2 (UAT)
 on:
   push:
     branches:
-      - main
-      - test/ci-cd
-  pull_request:
-    branches:
-      - main
+      - test/ci-cd  # ✅ 只监听 test/ci-cd 分支
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code
+      - name: 📥 Checkout code from test/ci-cd
         uses: actions/checkout@v3
-        with:
-          ref: test/ci-cd
+        # ✅ 不要加 `ref`，因为 push 时自动就是当前分支（test/ci-cd）
 
       - name: 📤 Upload full source to EC2
         uses: appleboy/scp-action@master
