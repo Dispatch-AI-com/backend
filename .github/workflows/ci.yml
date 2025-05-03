@@ -48,7 +48,7 @@ jobs:
             package.json
             package-lock.json
             docker-compose.uat.yml
-            Dockerfile.runtime
+            Dockerfile.uat
           target: /home/ubuntu/deploy/dispatch-backend
           strip_components: 0
 
@@ -60,6 +60,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
-            docker build -f Dockerfile.runtime -t dispatch-backend_api .
+            docker build -f Dockerfile.uat -t dispatch-backend_api .
             docker-compose -f docker-compose.uat.yml down
             docker-compose -f docker-compose.uat.yml up -d
