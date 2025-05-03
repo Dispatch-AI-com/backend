@@ -29,4 +29,5 @@ jobs:
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
             docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
-            docker-compose -f docker-compose.yml -f docker-compose.uat.yml up -d --build
+            docker-compose -f docker-compose.uat.yml build
+            docker-compose -f docker-compose.uat.yml up -d
