@@ -29,7 +29,8 @@
     "start": "node dist/main",
     "start:debug": "nest start --debug --watch",
     "lint": "eslint src/**/*.ts",
-    "format": "prettier --write \"src/**/*.ts\"",
+    "format": "prettier --check \"src/**/*.ts\"",
+    "format:fix": "prettier --write \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
     "test": "echo 'no test'"
   },

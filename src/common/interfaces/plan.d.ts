@@ -1,7 +1,7 @@
-import { IResponseBase } from '@/common/interfaces/res.d';
+import { IResponseBase } from "@/common/interfaces/res.d";
 
 export interface IPriceOption {
-  billingPeriod: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  billingPeriod: "MONTHLY" | "QUARTERLY" | "YEARLY";
   monthlyPayment: number;
 }
 export interface IPlan {

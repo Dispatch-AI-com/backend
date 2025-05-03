@@ -1,5 +1,5 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
+import { HydratedDocument } from "mongoose";
 
 export type PlanDocument = HydratedDocument<Plan>;
 
@@ -8,8 +8,8 @@ export class Plan {
   @Prop({ required: true, unique: true })
   name!: string;
 
-  @Prop({ required: true, enum: ['FREE', 'BASIC', 'PRO'] })
-  tier!: 'FREE' | 'BASIC' | 'PRO';
+  @Prop({ required: true, enum: ["FREE", "BASIC", "PRO"] })
+  tier!: "FREE" | "BASIC" | "PRO";
 
   @Prop({
     type: [

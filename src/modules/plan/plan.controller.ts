@@ -1,22 +1,12 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Put,
-  Patch,
-  Param,
-  Body,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { PlanService } from './plan.service';
-import { CreatePlanDto } from './dto/create-plan.dto';
-import { UpdatePlanDto } from './dto/update-plan.dto';
-import { Plan } from './schema/plan.schema';
+import { Controller, Post, Get, Put, Patch, Param, Body, HttpCode, HttpStatus } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from "@nestjs/swagger";
+import { PlanService } from "./plan.service";
+import { CreatePlanDto } from "./dto/create-plan.dto";
+import { UpdatePlanDto } from "./dto/update-plan.dto";
+import { Plan } from "./schema/plan.schema";
 
-@ApiTags('plan')
-@Controller('plan')
+@ApiTags("plan")
+@Controller("plan")
 export class PlanController {
   constructor(private readonly planService: PlanService) {}
 
@@ -26,14 +16,14 @@ export class PlanController {
    */
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new plan' })
+  @ApiOperation({ summary: "Create a new plan" })
   @ApiBody({ type: CreatePlanDto })
-  @ApiResponse({ status: 201, description: 'Plan created successfully' })
+  @ApiResponse({ status: 201, description: "Plan created successfully" })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - invalid format or missing fields',
+    description: "Bad request - invalid format or missing fields",
   })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiResponse({ status: 500, description: "Internal server error" })
   async create(@Body() dto: CreatePlanDto): Promise<Plan> {
     return this.planService.createPlan(dto);
   }
@@ -43,13 +33,13 @@ export class PlanController {
    * GET /plan
    */
   @Get()
-  @ApiOperation({ summary: 'Get all active plans' })
+  @ApiOperation({ summary: "Get all active plans" })
   @ApiResponse({
     status: 200,
-    description: 'Successfully retrieved all active plans',
+    description: "Successfully retrieved all active plans",
     type: [CreatePlanDto],
   })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiResponse({ status: 500, description: "Internal server error" })
   async findAll(): Promise<Plan[]> {
     return this.planService.getAllActivePlans();
   }
@@ -58,12 +48,12 @@ export class PlanController {
    * Get plan by ID
    * GET /plan/:id
    */
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a plan by ID' })
-  @ApiResponse({ status: 200, description: 'Plan found', type: CreatePlanDto })
-  @ApiResponse({ status: 404, description: 'Plan not found' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
-  async findById(@Param('id') id: string): Promise<Plan> {
+  @Get(":id")
+  @ApiOperation({ summary: "Get a plan by ID" })
+  @ApiResponse({ status: 200, description: "Plan found", type: CreatePlanDto })
+  @ApiResponse({ status: 404, description: "Plan not found" })
+  @ApiResponse({ status: 500, description: "Internal server error" })
+  async findById(@Param("id") id: string): Promise<Plan> {
     return this.planService.getPlanById(id);
   }
 
@@ -71,20 +61,17 @@ export class PlanController {
    * Fully update a plan (PUT)
    * PUT /plan/:id
    */
-  @Put(':id')
-  @ApiOperation({ summary: 'Fully update a plan' })
+  @Put(":id")
+  @ApiOperation({ summary: "Fully update a plan" })
   @ApiResponse({
     status: 200,
-    description: 'Plan updated successfully',
+    description: "Plan updated successfully",
     type: UpdatePlanDto,
   })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid structure' })
-  @ApiResponse({ status: 404, description: 'Plan not found' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
-  async update(
-    @Param('id') id: string,
-    @Body() dto: UpdatePlanDto,
-  ): Promise<Plan> {
+  @ApiResponse({ status: 400, description: "Bad request - invalid structure" })
+  @ApiResponse({ status: 404, description: "Plan not found" })
+  @ApiResponse({ status: 500, description: "Internal server error" })
+  async update(@Param("id") id: string, @Body() dto: UpdatePlanDto): Promise<Plan> {
     return this.planService.updatePlan(id, dto);
   }
 
@@ -92,22 +79,22 @@ export class PlanController {
    * Partially update a plan (PATCH)
    * PATCH /plan/:id
    */
-  @Patch(':id')
-  @ApiOperation({ summary: 'Partially update a plan' })
+  @Patch(":id")
+  @ApiOperation({ summary: "Partially update a plan" })
   @ApiBody({
     type: UpdatePlanDto,
     examples: {
       toggleActive: {
-        summary: 'Disable a plan',
+        summary: "Disable a plan",
         value: {
           isActive: false,
         },
       },
       updateSupport: {
-        summary: 'Change support level',
+        summary: "Change support level",
         value: {
           features: {
-            support: 'Enterprise support',
+            support: "Enterprise support",
           },
         },
       },
@@ -115,16 +102,13 @@ export class PlanController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Plan partially updated',
+    description: "Plan partially updated",
     type: UpdatePlanDto,
   })
-  @ApiResponse({ status: 400, description: 'Invalid patch data' })
-  @ApiResponse({ status: 404, description: 'Plan not found' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
-  async patch(
-    @Param('id') id: string,
-    @Body() dto: UpdatePlanDto,
-  ): Promise<Plan> {
+  @ApiResponse({ status: 400, description: "Invalid patch data" })
+  @ApiResponse({ status: 404, description: "Plan not found" })
+  @ApiResponse({ status: 500, description: "Internal server error" })
+  async patch(@Param("id") id: string, @Body() dto: UpdatePlanDto): Promise<Plan> {
     return this.planService.patchPlan(id, dto);
   }
 }
