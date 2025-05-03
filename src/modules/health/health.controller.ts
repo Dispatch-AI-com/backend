@@ -36,7 +36,7 @@ export class HealthController {
   niubi() {
     return { message: 'niubi！' };
   }
-  
+
   @ApiOperation({
     summary: 'Hello Endpoint',
     description: 'Returns a greeting message',
@@ -46,5 +46,4 @@ export class HealthController {
   hello() {
     return { message: 'Hello, DispatchAI!the new one！' };
   }
-  
 }
