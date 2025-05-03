@@ -37,7 +37,7 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
     }
-    return foundUser;
+    return foundUser.toObject() as User;
   }
 
   async createUser(userData: CreateUserDto): Promise<User> {
