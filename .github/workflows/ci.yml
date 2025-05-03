@@ -1,28 +1,50 @@
-name: 🚀 Deploy Backend to EC2 (UAT)
+name: 🚀 Deploy Backend to EC2 (Build in CI)
 
 on:
   push:
     branches:
-      - test/ci-cd  # ✅ 只监听 test/ci-cd 分支
+      - test/ci-cd
+  pull_request:
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout code from test/ci-cd
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
-        # ✅ 不要加 `ref`，因为 push 时自动就是当前分支（test/ci-cd）
 
-      - name: 📤 Upload full source to EC2
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: 📦 Install deps & build
+        run: |
+          npm install
+          npm run build
+
+      - name: 🧹 Clean up for production
+        run: |
+          rm -rf node_modules
+          npm install --omit=dev
+
+      - name: 📤 Upload to EC2 (only dist & package files)
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "**"
-          target: "/home/ubuntu/deploy/dispatch-backend"
-          strip_components: 1
+          source: |
+            dist
+            package.json
+            package-lock.json
+            docker-compose.uat.yml
+            Dockerfile.runtime
+          target: /home/ubuntu/deploy/dispatch-backend
+          strip_components: 0
 
       - name: 🔁 Restart service on EC2
         uses: appleboy/ssh-action@master
@@ -32,6 +54,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
-            docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
-            docker-compose -f docker-compose.uat.yml build --no-cache
+            docker build -f Dockerfile.runtime -t dispatch-backend_api .
+            docker-compose -f docker-compose.uat.yml down
             docker-compose -f docker-compose.uat.yml up -d
