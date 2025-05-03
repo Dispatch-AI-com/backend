@@ -24,6 +24,7 @@ jobs:
       - name: 📦 Install deps & build
         run: |
           npm install
+          npm install -g @nestjs/cli
           npm run build
 
       - name: 🧹 Clean up for production
