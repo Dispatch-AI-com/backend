@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: test/ci-cd
 
       - name: 📤 Upload full source to EC2
         uses: appleboy/scp-action@master
