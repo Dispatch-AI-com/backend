@@ -44,6 +44,6 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Returns Hello message' })
   @Get('hello')
   hello() {
-    return { message: 'Hello, DispatchAI!the new one！' };
+    return { message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！' };
   }
 }
