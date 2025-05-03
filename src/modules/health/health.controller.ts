@@ -45,4 +45,15 @@ export class HealthController {
   niubi() {
     return { message: 'niubi！' };
   }
+  
+  @ApiOperation({
+    summary: 'Hello Endpoint',
+    description: 'Returns a greeting message',
+  })
+  @ApiResponse({ status: 200, description: 'Returns Hello message' })
+  @Get('hello')
+  hello() {
+    return { message: 'Hello, DispatchAI!' };
+  }
+  
 }
