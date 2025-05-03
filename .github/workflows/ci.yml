@@ -41,20 +41,16 @@ jobs:
           echo "Dist contents:"
           ls -al dist || echo "⚠️ dist/ not found"
 
-      - name: 📤 Upload to EC2 (only dist & package files)
+        - name: 📤 Upload to EC2 (only dist & package files)
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: |
-            dist
-            package.json
-            package-lock.json
-            docker-compose.uat.yml
-            Dockerfile.runtime
+          source: dist/**,package.json,package-lock.json,docker-compose.uat.yml,Dockerfile.runtime
           target: /home/ubuntu/deploy/dispatch-backend
           strip_components: 0
+
 
       - name: 🔁 Restart service on EC2
         uses: appleboy/ssh-action@master
