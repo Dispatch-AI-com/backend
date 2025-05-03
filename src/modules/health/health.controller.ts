@@ -27,4 +27,13 @@ export class HealthController {
   async checkDatabase() {
     return this.healthService.checkDatabase();
   }
+  @ApiOperation({
+    summary: 'Ping',
+    description: 'Ping the API',
+  })
+  @ApiResponse({ status: 200, description: 'API is healthy' })
+  @Get('ping')
+  ping() {
+    return { message: 'pong' };
+  }
 }

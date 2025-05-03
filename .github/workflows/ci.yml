@@ -38,13 +38,3 @@ jobs:
             docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
             docker-compose -f docker-compose.uat.yml build --no-cache
             docker-compose -f docker-compose.uat.yml up -d
-
-      - name: 🧾 Check files after deployment (optional debug)
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            echo "Listing deployed files:"
-            ls -al /home/ubuntu/deploy/dispatch-backend/src
