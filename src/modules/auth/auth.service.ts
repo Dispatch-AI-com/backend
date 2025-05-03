@@ -18,16 +18,14 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<User> {
     const user = await this.userModel.findOne({ email }).exec();
-
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
-
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
     }
-    return user;
+    return user.toObject() as User;
   }
 
   async login(loginDto: LoginDto): Promise<User> {
@@ -46,22 +44,18 @@ export class AuthService {
     if (await this.checkUserExists(userData.email)) {
       throw new ConflictException('User already exists');
     }
-
-    const saltRounds = SALT_ROUNDS;
-    const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
-
-    const { name, email, role } = userData;
-
+    const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
     const secureUserData = {
-      name,
-      email,
-      role: role ?? EUserRole.USER,
+      name: userData.name,
+      email: userData.email,
       password: hashedPassword,
+      role: userData.role ?? EUserRole.USER,
     };
 
     const newUser = new this.userModel(secureUserData);
     await newUser.save();
-    return newUser;
+
+    return newUser.toObject() as User;
   }
 
   async checkUserExists(email: string): Promise<boolean> {

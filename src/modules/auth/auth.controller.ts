@@ -38,7 +38,7 @@ export class AuthController {
   @Post('signup')
   async createUser(@Body() createUserDto: CreateUserDto): Promise<User> {
     const created = await this.authService.createUser(createUserDto);
-    return created.toObject() as User;
+    return created;
   }
 
   @ApiOperation({
