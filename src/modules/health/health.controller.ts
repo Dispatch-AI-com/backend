@@ -28,15 +28,6 @@ export class HealthController {
     return this.healthService.checkDatabase();
   }
   @ApiOperation({
-    summary: 'Ping',
-    description: 'Ping the API',
-  })
-  @ApiResponse({ status: 200, description: 'API is healthy' })
-  @Get('ping')
-  ping() {
-    return { message: 'pong' };
-  }
-  @ApiOperation({
     summary: 'niubi！',
     description: 'niubi！',
   })
@@ -53,7 +44,7 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Returns Hello message' })
   @Get('hello')
   hello() {
-    return { message: 'Hello, DispatchAI!' };
+    return { message: 'Hello, DispatchAI!the new one！' };
   }
   
 }
