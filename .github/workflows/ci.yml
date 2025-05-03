@@ -1,7 +1,8 @@
 name: 🚀 Deploy Backend to EC2 (UAT)
 
-on:
-  pull_request
+push:
+    branches:
+      - test/ci-cd
 
 jobs:
   deploy:
