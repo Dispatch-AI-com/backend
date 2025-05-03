@@ -12,4 +12,4 @@ import { UserService } from '@/modules/user/user.service';
   controllers: [UserController],
   providers: [UserService],
 })
-export class UserModule { }
+export class UserModule {}

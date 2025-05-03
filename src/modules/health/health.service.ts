@@ -25,8 +25,9 @@ export class HealthService {
     error?: string;
   }> {
     try {
-      const isConnected = this.mongoConnection.readyState === ConnectionStates.connected;
-      await Promise.resolve(); 
+      const isConnected =
+        this.mongoConnection.readyState === ConnectionStates.connected;
+      await Promise.resolve();
       return {
         status: isConnected ? 'ok' : 'error',
         database: 'MongoDB',
@@ -44,5 +45,4 @@ export class HealthService {
       };
     }
   }
-  
 }

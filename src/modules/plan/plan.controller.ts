@@ -20,7 +20,6 @@ import { Plan } from './schema/plan.schema';
 export class PlanController {
   constructor(private readonly planService: PlanService) {}
 
-  
   /**
    * Create a new plan
    * POST /plan
@@ -30,7 +29,10 @@ export class PlanController {
   @ApiOperation({ summary: 'Create a new plan' })
   @ApiBody({ type: CreatePlanDto })
   @ApiResponse({ status: 201, description: 'Plan created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid format or missing fields' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid format or missing fields',
+  })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async create(@Body() dto: CreatePlanDto): Promise<Plan> {
     return this.planService.createPlan(dto);
@@ -42,7 +44,11 @@ export class PlanController {
    */
   @Get()
   @ApiOperation({ summary: 'Get all active plans' })
-  @ApiResponse({ status: 200, description: 'Successfully retrieved all active plans', type: [CreatePlanDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'Successfully retrieved all active plans',
+    type: [CreatePlanDto],
+  })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async findAll(): Promise<Plan[]> {
     return this.planService.getAllActivePlans();
@@ -67,7 +73,11 @@ export class PlanController {
    */
   @Put(':id')
   @ApiOperation({ summary: 'Fully update a plan' })
-  @ApiResponse({ status: 200, description: 'Plan updated successfully', type: UpdatePlanDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Plan updated successfully',
+    type: UpdatePlanDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad request - invalid structure' })
   @ApiResponse({ status: 404, description: 'Plan not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
@@ -90,20 +100,24 @@ export class PlanController {
       toggleActive: {
         summary: 'Disable a plan',
         value: {
-          isActive: false
-        }
+          isActive: false,
+        },
       },
       updateSupport: {
         summary: 'Change support level',
         value: {
           features: {
-            support: 'Enterprise support'
-          }
-        }
-      }
-    }
+            support: 'Enterprise support',
+          },
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 200, description: 'Plan partially updated', type: UpdatePlanDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Plan partially updated',
+    type: UpdatePlanDto,
+  })
   @ApiResponse({ status: 400, description: 'Invalid patch data' })
   @ApiResponse({ status: 404, description: 'Plan not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })

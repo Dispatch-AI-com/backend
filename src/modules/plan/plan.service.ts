@@ -16,11 +16,11 @@ export class PlanService {
   ) {}
 
   async createPlan(dto: CreatePlanDto): Promise<Plan> {
-   const plan = await this.planModel.findOne({ name: dto.name }).exec();
-   if (plan) {
-    throw new ConflictException('Plan name already exists');
-   }
-   return this.planModel.create(dto);
+    const plan = await this.planModel.findOne({ name: dto.name }).exec();
+    if (plan) {
+      throw new ConflictException('Plan name already exists');
+    }
+    return this.planModel.create(dto);
   }
 
   async getAllActivePlans(): Promise<Plan[]> {
@@ -37,10 +37,12 @@ export class PlanService {
 
   //Full update a plan (used with PUT)
   async updatePlan(id: string, dto: UpdatePlanDto): Promise<Plan> {
-    const updated = await this.planModel.findByIdAndUpdate(id, dto, {
-      new: true,
-      runValidators: true,
-    }).exec();
+    const updated = await this.planModel
+      .findByIdAndUpdate(id, dto, {
+        new: true,
+        runValidators: true,
+      })
+      .exec();
 
     if (!updated) {
       throw new NotFoundException('Plan not found');
@@ -49,16 +51,21 @@ export class PlanService {
     return updated;
   }
 
-  async patchPlan(id: string, partialDto: Partial<UpdatePlanDto>): Promise<Plan> {
-    const updated = await this.planModel.findByIdAndUpdate(id, partialDto, {
-      new: true,
-      runValidators: true,
-    }).exec();
-  
+  async patchPlan(
+    id: string,
+    partialDto: Partial<UpdatePlanDto>,
+  ): Promise<Plan> {
+    const updated = await this.planModel
+      .findByIdAndUpdate(id, partialDto, {
+        new: true,
+        runValidators: true,
+      })
+      .exec();
+
     if (!updated) {
       throw new NotFoundException('Plan not found');
     }
-  
+
     return updated;
   }
 }

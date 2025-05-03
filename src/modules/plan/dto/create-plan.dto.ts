@@ -60,16 +60,16 @@ export class CreatePlanDto {
     example: 'FREE',
     enum: ['FREE', 'BASIC', 'PRO'],
   })
-  @IsEnum(['FREE', 'BASIC', 'PRO'], { message: 'tier must be one of: FREE, BASIC, or PRO' })
+  @IsEnum(['FREE', 'BASIC', 'PRO'], {
+    message: 'tier must be one of: FREE, BASIC, or PRO',
+  })
   tier!: 'FREE' | 'BASIC' | 'PRO';
 
   @ApiProperty({
     description: 'Pricing options with flexible billing using rrule format',
-    example: [
-      { rrule: 'FREQ=MONTHLY;INTERVAL=1', price: 49 },
-    ],
+    example: [{ rrule: 'FREQ=MONTHLY;INTERVAL=1', price: 49 }],
     type: PricingDto,
-    isArray: true
+    isArray: true,
   })
   @IsArray()
   @ValidateNested({ each: true })

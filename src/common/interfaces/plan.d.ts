@@ -16,4 +16,4 @@ export interface IPlan {
 
 export interface IPlanResponse extends IResponseBase {
   data: IPlan;
-} 
+}

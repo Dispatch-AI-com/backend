@@ -11,8 +11,8 @@ import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { EUserRole } from '@/common/constants/user.constant';
 @Injectable()
 export class AuthService {
-    constructor(
-        @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
         private readonly jwtService: JwtService,
     ) { }
 
