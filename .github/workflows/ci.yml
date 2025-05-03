@@ -3,10 +3,12 @@ name: 🚀 Deploy Backend to EC2 (UAT)
 on:
   push:
     branches:
+      - main
       - test/ci-cd
   pull_request:
     branches:
       - main
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -18,22 +20,31 @@ jobs:
       - name: 📤 Upload full source to EC2
         uses: appleboy/scp-action@master
         with:
-          host:      ${{ secrets.EC2_HOST }}
-          username:  ubuntu
-          key:       ${{ secrets.EC2_SSH_KEY }}
-          source:    "**"
-          target:    "/home/ubuntu/deploy/dispatch-backend"
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "**"
+          target: "/home/ubuntu/deploy/dispatch-backend"
           strip_components: 1
-
 
       - name: 🔁 Restart service on EC2
         uses: appleboy/ssh-action@master
         with:
-          host:      ${{ secrets.EC2_HOST }}
-          username:  ubuntu
-          key:       ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
             docker-compose -f docker-compose.yml -f docker-compose.uat.yml down
             docker-compose -f docker-compose.uat.yml build --no-cache
             docker-compose -f docker-compose.uat.yml up -d
+
+      - name: 🧾 Check files after deployment (optional debug)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "Listing deployed files:"
+            ls -al /home/ubuntu/deploy/dispatch-backend/src
