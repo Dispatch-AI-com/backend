@@ -5,7 +5,6 @@ export type PlanDocument = HydratedDocument<Plan>;
 
 @Schema()
 export class Plan {
-
   @Prop({ required: true, unique: true })
   name!: string;
 
@@ -15,11 +14,11 @@ export class Plan {
   @Prop({
     type: [
       {
-        rrule: { type: String, required: true },  // e.g. "FREQ=MONTHLY;INTERVAL=1"
+        rrule: { type: String, required: true }, // e.g. "FREQ=MONTHLY;INTERVAL=1"
         price: { type: Number, required: true },
-      }
+      },
     ],
-    required: true
+    required: true,
   })
   pricing!: {
     rrule: string;
@@ -31,7 +30,7 @@ export class Plan {
       callMinutes: { type: String, required: true },
       support: { type: String, required: true },
     },
-    required: true
+    required: true,
   })
   features!: {
     callMinutes: string;

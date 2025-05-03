@@ -4,9 +4,7 @@ import { Connection, STATES as ConnectionStates } from 'mongoose';
 
 @Injectable()
 export class HealthService {
-  constructor(
-    @InjectConnection() private readonly mongoConnection: Connection,
-  ) {}
+  constructor(@InjectConnection() private readonly mongoConnection: Connection) {}
 
   check() {
     return {
@@ -26,7 +24,7 @@ export class HealthService {
   }> {
     try {
       const isConnected = this.mongoConnection.readyState === ConnectionStates.connected;
-      await Promise.resolve(); 
+      await Promise.resolve();
       return {
         status: isConnected ? 'ok' : 'error',
         database: 'MongoDB',
@@ -44,5 +42,4 @@ export class HealthService {
       };
     }
   }
-  
 }

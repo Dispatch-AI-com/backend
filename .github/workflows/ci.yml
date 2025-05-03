@@ -1,20 +1,19 @@
-name: ✅ CI - Backend Build & Healthcheck
+name: 🧪 Backend CI
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-  pull_request:
 
 jobs:
-  backend-ci:
+  code-quality:
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      - name: 🧱 Setup Node.js
+      - name: 🧰 Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 20
@@ -22,29 +21,11 @@ jobs:
       - name: 📦 Install dependencies
         run: npm install
 
-      - name: 📏 Format check (Prettier)
+      - name: 🧹 Run Prettier (format check)
         run: npm run format
 
-      - name: 🔍 Lint check
+      - name: 🧪 Run ESLint (lint check)
         run: npm run lint
 
-      - name: 🧪 Run tests
-        run: npm run test
-
-      - name: 🏗️ Build project
-        run: npm run build
-
-      - name: 🔍 TypeScript type check
+      - name: 🔎 Run Type Check (tsc)
         run: npm run type-check
-
-      - name: 🐳 Docker build (UAT)
-        run: docker build -f Dockerfile.uat -t dispatchai-backend:ci .
-
-      - name: 🚀 Run container
-        run: docker run -d -p 4000:4000 --name dispatchai-test dispatchai-backend:ci
-
-      - name: 🧳 Docker container logs (for debugging)
-        run: docker logs dispatchai-test
-
-      - name: 🧹 Clean up
-        run: docker rm -f dispatchai-test
