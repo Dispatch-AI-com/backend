@@ -36,4 +36,13 @@ export class HealthController {
   ping() {
     return { message: 'pong' };
   }
+  @ApiOperation({
+    summary: 'niubi！',
+    description: 'niubi！',
+  })
+  @ApiResponse({ status: 200, description: 'niubi！' })
+  @Get('niubi')
+  niubi() {
+    return { message: 'niubi！' };
+  }
 }
