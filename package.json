@@ -29,7 +29,8 @@
     "start": "node dist/main",
     "start:debug": "nest start --debug --watch",
     "type-check": "tsc --noEmit",
-    "test": "echo 'no test'"
+    "test": "echo 'no test'",
+    "format": "prettier --write \"src/**/*.ts\""
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.7",
