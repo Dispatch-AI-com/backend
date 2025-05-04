@@ -6,7 +6,7 @@ import { Connection, STATES as ConnectionStates } from 'mongoose';
 export class HealthService {
   constructor(@InjectConnection() private readonly mongoConnection: Connection) {}
 
-  check() {
+  check(): { status: string; timestamp: Date; service: string; environment: string } {
     return {
       status: 'ok',
       timestamp: new Date(),
@@ -30,7 +30,7 @@ export class HealthService {
         database: 'MongoDB',
         connected: isConnected,
         timestamp: new Date(),
-        error: undefined, // ✅ 明确包含 error 字段
+        error: undefined,
       };
     } catch (error) {
       return {
