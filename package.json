@@ -35,6 +35,7 @@
     "lint:fix": "eslint --fix \"src/**/*.ts\""
   },
   "devDependencies": {
+    "@darraghor/eslint-plugin-nestjs-typed": "^6.4.12",
     "@eslint/js": "^9.26.0",
     "@nestjs/cli": "^11.0.7",
     "@nestjs/testing": "^11.0.11",
@@ -43,6 +44,7 @@
     "@types/node": "^22.13.8",
     "@types/passport-jwt": "^4.0.1",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
+    "@typescript-eslint/parser": "^8.31.1",
     "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.2",
     "eslint-plugin-prettier": "^5.3.1",
