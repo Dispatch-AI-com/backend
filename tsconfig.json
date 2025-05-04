@@ -1,22 +1,25 @@
 {
   "compilerOptions": {
-    "target": "ES2021",
+    "target": "ESNext",
     "module": "commonjs",
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "node",
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
-    },
-    "outDir": "./dist",
-    "sourceMap": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts"]
