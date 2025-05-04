@@ -1,0 +1,12 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY dist ./dist
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN npm install --omit=dev
+
+EXPOSE 4000
+CMD ["node", "dist/main"]

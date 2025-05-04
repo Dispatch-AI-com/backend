@@ -5,23 +5,22 @@ export type PlanDocument = HydratedDocument<Plan>;
 
 @Schema()
 export class Plan {
-
   @Prop({ required: true, unique: true })
-  name: string;
+  name!: string;
 
   @Prop({ required: true, enum: ['FREE', 'BASIC', 'PRO'] })
-  tier: 'FREE' | 'BASIC' | 'PRO';
+  tier!: 'FREE' | 'BASIC' | 'PRO';
 
   @Prop({
     type: [
       {
-        rrule: { type: String, required: true },  // e.g. "FREQ=MONTHLY;INTERVAL=1"
+        rrule: { type: String, required: true }, // e.g. "FREQ=MONTHLY;INTERVAL=1"
         price: { type: Number, required: true },
-      }
+      },
     ],
-    required: true
+    required: true,
   })
-  pricing: {
+  pricing!: {
     rrule: string;
     price: number;
   }[];
@@ -31,15 +30,15 @@ export class Plan {
       callMinutes: { type: String, required: true },
       support: { type: String, required: true },
     },
-    required: true
+    required: true,
   })
-  features: {
+  features!: {
     callMinutes: string;
     support: string;
   };
 
   @Prop({ default: true })
-  isActive: boolean;
+  isActive!: boolean;
 }
 
 export const PlanSchema = SchemaFactory.createForClass(Plan);
