@@ -30,7 +30,8 @@
     "start:debug": "nest start --debug --watch",
     "type-check": "tsc --noEmit",
     "test": "echo 'no test'",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "echo 'no lint'"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.7",
