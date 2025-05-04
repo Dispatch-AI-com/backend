@@ -22,7 +22,10 @@ export default defineConfig([
         project: [`${projectRoot}/tsconfig.json`],
         tsconfigRootDir: projectRoot,
       },
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
     rules: {
       ...(config.rules ?? {}),
@@ -44,6 +47,34 @@ export default defineConfig([
     files: ["src/**/*.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/explicit-function-return-type": "warn",
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+      "@typescript-eslint/consistent-type-definitions": ["error", "interface"],
+      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/explicit-module-boundary-types": "error",
+      "@typescript-eslint/prefer-readonly": "error",
+      "@typescript-eslint/no-require-imports": "error",
+      "@typescript-eslint/no-unnecessary-condition": "error",
+      "@typescript-eslint/no-unnecessary-qualifier": "error",
+      "@typescript-eslint/no-unnecessary-type-arguments": "error",
+      "@typescript-eslint/prefer-optional-chain": "error",
+      "@typescript-eslint/strict-boolean-expressions": "error",
+      "@typescript-eslint/consistent-type-assertions": "error",
+      "@typescript-eslint/member-ordering": "error",
+      "@typescript-eslint/naming-convention": "error",
+      "@typescript-eslint/return-await": "error",
+
+      //"@typescript-eslint/ban-types": "error",
+
+
+      
+      
+
+
+      "no-console": "error",
+      "no-undef": "error",
+      "no-empty-function": "error",
     },
   },
 ]);

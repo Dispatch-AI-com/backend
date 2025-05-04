@@ -49,7 +49,7 @@ export class AuthService {
       name: userData.name,
       email: userData.email,
       password: hashedPassword,
-      role: userData.role ?? EUserRole.USER,
+      role: userData.role ?? EUserRole.user,
     };
 
     const newUser = new this.userModel(secureUserData);

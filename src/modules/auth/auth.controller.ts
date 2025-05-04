@@ -61,6 +61,6 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Email or password is incorrect' })
   @Post('login')
   async login(@Body() loginDto: LoginDto): Promise<User> {
-    return await this.authService.validateUser(loginDto.email, loginDto.password);
+    return this.authService.validateUser(loginDto.email, loginDto.password);
   }
 }

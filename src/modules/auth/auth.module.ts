@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
-import { User, UserSchema } from '@/modules/user/schema/user.schema';
+import { User, userSchema } from '@/modules/user/schema/user.schema';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from '@/modules/auth/auth.controller';
@@ -22,7 +22,7 @@ import { JWT_EXPIRATION_TIME } from '@/modules/auth/auth.config';
         signOptions: { expiresIn: JWT_EXPIRATION_TIME },
       }),
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([{ name: User.name, schema: userSchema }]),
     DatabaseModule,
     UserModule,
   ],
