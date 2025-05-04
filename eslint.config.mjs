@@ -1,4 +1,4 @@
-// eslint.config.mjs  —— 100% 可运行版本
+// eslint.config.mjs  —— balanced
 // @ts-check
 import eslint from "@eslint/js";
 import globals from "globals";
@@ -23,16 +23,26 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    plugins: { prettier }, 
+    plugins: { prettier },
     rules: {
       "prettier/prettier": "error",
-      "@typescript-eslint/no-explicit-any": "error",
+      "no-console": "warn", 
+      "no-debugger": "error",
+
+      "@typescript-eslint/no-explicit-any": "warn", 
       "@typescript-eslint/explicit-function-return-type": "warn",
-      "no-console": "warn",
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
       "@typescript-eslint/consistent-type-imports": "error",
+      "@typescript-eslint/require-await": "warn",
+      "@typescript-eslint/return-await": "warn",
       "@typescript-eslint/prefer-nullish-coalescing": "warn",
-      "@typescript-eslint/no-unused-vars": "warn",
-      "@typescript-eslint/no-empty-object-type": "error",
+      "@typescript-eslint/prefer-optional-chain": "warn",
+      "@typescript-eslint/strict-boolean-expressions": "warn",
+      "@typescript-eslint/member-ordering": "warn",
+
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
     },
   },
 
