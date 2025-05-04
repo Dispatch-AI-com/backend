@@ -4,6 +4,7 @@ import tseslint from "typescript-eslint";
 import prettierPlugin from "eslint-plugin-prettier";
 import { defineConfig } from "eslint/config";
 import path from "node:path";
+import tseslintPlugin from "@typescript-eslint/eslint-plugin";
 
 const projectRoot = path.resolve();
 
@@ -12,9 +13,13 @@ export default defineConfig([
     ignores: ["eslint.config.mjs", "dist", "node_modules"],
   },
 
+  // TypeScript Recommended Rules with type-checking
   ...tseslint.configs.recommendedTypeChecked.map((config) => ({
     ...config,
     files: ["src/**/*.ts"],
+    plugins: {
+      "@typescript-eslint": tseslintPlugin,
+    },
     languageOptions: {
       ...config.languageOptions,
       parserOptions: {
@@ -34,6 +39,7 @@ export default defineConfig([
     },
   })),
 
+  // Prettier Integration
   {
     name: "prettier/rules",
     files: ["src/**/*.ts"],
@@ -43,6 +49,7 @@ export default defineConfig([
     },
   },
 
+  // Custom Strict Rules
   {
     files: ["src/**/*.ts"],
     rules: {
@@ -62,16 +69,29 @@ export default defineConfig([
       "@typescript-eslint/strict-boolean-expressions": "error",
       "@typescript-eslint/consistent-type-assertions": "error",
       "@typescript-eslint/member-ordering": "error",
-      "@typescript-eslint/naming-convention": "error",
       "@typescript-eslint/return-await": "error",
 
-      //"@typescript-eslint/ban-types": "error",
+      // ✅ Naming Convention
+      "@typescript-eslint/naming-convention": [
+        "error",
+        {
+          selector: "default",
+          format: ["camelCase"],
+        },
+        {
+          selector: "variable",
+          format: ["camelCase", "UPPER_CASE"],
+          leadingUnderscore: "allow",
+        },
+        {
+          selector: "typeLike",
+          format: ["PascalCase"],
+        },
+      ],
 
+      // ✅ Ban dangerous/ambiguous types
 
-      
-      
-
-
+      // General JS rules
       "no-console": "error",
       "no-undef": "error",
       "no-empty-function": "error",
