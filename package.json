@@ -31,17 +31,21 @@
     "type-check": "tsc --noEmit",
     "test": "echo 'no test'",
     "format": "prettier --write \"src/**/*.ts\"",
-    "lint": "echo 'no lint'"
+    "lint": "eslint src/**/*.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^9.26.0",
     "@nestjs/cli": "^11.0.7",
     "@nestjs/testing": "^11.0.11",
     "@types/bcrypt": "^5.0.2",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.8",
     "@types/passport-jwt": "^4.0.1",
+    "eslint": "^9.26.0",
+    "globals": "^16.0.0",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.1"
   }
 }
