@@ -28,9 +28,10 @@
     "build": "nest build",
     "start": "node dist/main",
     "start:debug": "nest start --debug --watch",
-    "lint": "eslint src/**/*.ts",
-    "format": "prettier --check \"src/**/*.ts\"",
-    "format:fix": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint \"src/**/*.ts\" --ext .ts",
+    "lint:fix": "eslint \"src/**/*.ts\" --ext .ts --fix",
+    "format": "prettier --check \"src/**/*.{ts,tsx}\"",
+    "format:fix": "prettier --write \"src/**/*.{ts,tsx}\"",
     "type-check": "tsc --noEmit",
     "test": "echo 'no test'"
   },

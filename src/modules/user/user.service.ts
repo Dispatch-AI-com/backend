@@ -12,7 +12,7 @@ export class UserService {
   ) {}
 
   async findAll(): Promise<User[]> {
-    const users = await this.userModel.find().exec();
+    const users: User[] = await this.userModel.find().exec();
     return users;
   }
 
@@ -20,13 +20,13 @@ export class UserService {
     if (!isValidObjectId(id)) {
       throw new BadRequestException(`Invalid user id: ${id}`);
     }
-    const user = await this.userModel.findById(id).exec();
+    const user: User | null = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException(`User with id ${id} not found`);
     return user;
   }
 
   async patch(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, {
+    const user: User | null = await this.userModel.findByIdAndUpdate(id, updateUserDto, {
       new: true,
       runValidators: true,
     });
@@ -35,7 +35,7 @@ export class UserService {
   }
 
   async delete(id: string): Promise<User> {
-    const deleted = await this.userModel.findByIdAndDelete(id).exec();
+    const deleted: User | null = await this.userModel.findByIdAndDelete(id).exec();
     if (!deleted) throw new NotFoundException(`User with id ${id} not found`);
     return deleted;
   }

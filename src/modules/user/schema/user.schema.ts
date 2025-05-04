@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 import { UserStatus } from '../enum/userStatus.enum';
 
 @Schema({ timestamps: true })
-export class User extends Document {
+export class User {
   @Prop({ required: true })
   firstName!: string;
 
@@ -18,12 +18,6 @@ export class User extends Document {
 
   @Prop({ required: true })
   fullPhoneNumber!: string;
-
-  @Prop()
-  readonly createdAt!: Date;
-
-  @Prop()
-  readonly updatedAt!: Date;
 
   @Prop({ default: true })
   receivedAdverts!: boolean;
@@ -43,4 +37,5 @@ export class User extends Document {
 }
 
 export type UserDocument = User & Document;
+
 export const UserSchema = SchemaFactory.createForClass(User);
