@@ -1,4 +1,4 @@
-export enum billingCycle {
-  MONTHLY = 'monthly',
-  ANNUALLY = 'annually',
+export enum BillingCycle {
+  monthly = 'monthly',
+  annually = 'annually',
 }

@@ -1,6 +1,6 @@
 export enum EUserRole {
-  ADMIN = 'admin',
-  USER = 'user',
+  admin = 'admin',
+  user = 'user',
 }
 
 export const SALT_ROUNDS = 10;
