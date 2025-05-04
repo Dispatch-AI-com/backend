@@ -1,10 +1,10 @@
 //src/modules/user/user.controller.ts
-import { Controller, Get, Patch, Param, Delete, HttpCode } from '@nestjs/common';
-import { UserService } from './user.service';
-import { User } from './schema/user.schema';
-import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { Controller, Delete, Get, HttpCode, Param, Patch } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { User } from './schema/user.schema';
+import { UserService } from './user.service';
 
 @ApiTags('Users')
 @Controller('users')

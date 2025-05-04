@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
-import { User, UserDocument } from '@/modules/user/schema/user.schema';
-import { SALT_ROUNDS } from '@/modules/auth/auth.config';
-import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
-import { UnauthorizedException, ConflictException } from '@nestjs/common';
-import { LoginDto } from '@/modules/auth/dto/login.dto';
+import { Model } from 'mongoose';
+
 import { EUserRole } from '@/common/constants/user.constant';
+import { SALT_ROUNDS } from '@/modules/auth/auth.config';
+import { LoginDto } from '@/modules/auth/dto/login.dto';
+import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
+import { User, UserDocument } from '@/modules/user/schema/user.schema';
 @Injectable()
 export class AuthService {
   constructor(
