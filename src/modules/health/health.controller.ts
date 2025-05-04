@@ -13,7 +13,7 @@ export class HealthController {
   })
   @ApiResponse({ status: 200, description: 'API is healthy' })
   @Get()
-  check() {
+  check(): { status: string; timestamp: Date; service: string; environment: string } {
     return this.healthService.check();
   }
 
@@ -24,7 +24,7 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Database connection is healthy' })
   @ApiResponse({ status: 503, description: 'Database connection failed' })
   @Get('db')
-  async checkDatabase() {
+  async checkDatabase(): Promise<{ status: string }> {
     return this.healthService.checkDatabase();
   }
   @ApiOperation({
@@ -33,7 +33,7 @@ export class HealthController {
   })
   @ApiResponse({ status: 200, description: 'niubi！' })
   @Get('niubi')
-  niubi() {
+  niubi(): { message: string } {
     return { message: 'niubi！' };
   }
 
@@ -43,7 +43,7 @@ export class HealthController {
   })
   @ApiResponse({ status: 200, description: 'Returns Hello message' })
   @Get('hello')
-  hello() {
+  hello(): { message: string } {
     return { message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！' };
   }
 }
