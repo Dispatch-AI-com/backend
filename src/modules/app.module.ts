@@ -1,10 +1,10 @@
-import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { DatabaseModule } from "@/modules/database/database.module";
-import { HealthModule } from "@/modules/health/health.module";
-import { AuthModule } from "@/modules/auth/auth.module";
-import { PlanModule } from "./plan/plan.modules";
-import { AvailModule } from "./availability/availability.module";
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AuthModule } from '@/modules/auth/auth.module';
+import { DatabaseModule } from '@/modules/database/database.module';
+import { HealthModule } from '@/modules/health/health.module';
+import { PlanModule } from '@/modules/plan/plan.module';
+import { AvailModule } from './availability/availability.module';
 
 @Module({
   imports: [

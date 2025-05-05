@@ -1,0 +1,7 @@
+src/
+*.ts
+node_modules/
+Dockerfile
+.dockerignore
+README.md
+test/

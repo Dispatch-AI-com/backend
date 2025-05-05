@@ -1,5 +1,3 @@
-import { IResponseBase } from '@/common/interfaces/res.d';
-
 export interface IPriceOption {
   billingPeriod: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
   monthlyPayment: number;
@@ -13,7 +11,3 @@ export interface IPlan {
   features?: string[];
   pricing: IPriceOption[];
 }
-
-export interface IPlanResponse extends IResponseBase {
-  data: IPlan;
-} 
