@@ -17,10 +17,10 @@ export class CallLog {
   @Prop({ required: true })
   status!: string;
 
-  @Prop({ required: true })
+  @Prop({ required: true, type: Date })
   startAt!: Date;
 
-  @Prop()
+  @Prop({ type: Date })
   endAt?: Date;
 
   @Prop()
