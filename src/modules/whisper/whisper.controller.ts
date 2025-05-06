@@ -17,15 +17,7 @@ export class WhisperController {
     if (!url) {
       throw new BadRequestException('Missing "url" query param');
     }
-
-    try {
-      const result = await this.whisperService.transcribeFromUrl(url);
-      return result;
-    } catch (error) {
-      if (error instanceof WhisperTranscriptionException) {
-        throw new BadRequestException(error.message);
-      }
-      throw error;
-    }
+    const result = await this.whisperService.transcribeFromUrl(url);
+    return result;
   }
 }
