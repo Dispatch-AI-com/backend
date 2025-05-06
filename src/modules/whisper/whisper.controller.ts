@@ -1,8 +1,7 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiOkResponse, ApiQuery, ApiTags } from '@nestjs/swagger';
 
 import { TranscriptionResult } from './dto/transcription-result.dto';
-import { WhisperTranscriptionException } from './exceptions/whisper-transcription.exception';
 import { WhisperService } from './whisper.service';
 
 @Controller('whisper')
@@ -13,6 +12,7 @@ export class WhisperController {
   @Get('transcribe')
   @ApiQuery({ name: 'url', required: true, description: 'Public audio file URL (wav/mp3)' })
   @ApiOkResponse({ description: 'Transcription result' })
+  @ApiBadRequestResponse({ description: 'Missing "url" query param or transcription failed' })
   async transcribe(@Query('url') url: string): Promise<TranscriptionResult> {
     if (!url) {
       throw new BadRequestException('Missing "url" query param');

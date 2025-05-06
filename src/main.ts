@@ -2,7 +2,7 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
-import { HttpExceptionFilter } from '@/common/filters/global-exception.filter';
+import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter';
 import { AppModule } from '@/modules/app.module';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -12,7 +12,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? '*',
   });
-  app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);

@@ -10,7 +10,7 @@ import { WhisperTranscriptionException } from './exceptions/whisper-transcriptio
 export class WhisperService {
   async transcribeFromUrl(url: string): Promise<TranscriptionResult> {
     try {
-      const response = await axios.get(url, { responseType: 'arraybuffer' });
+      const response = await axios.get(url, { responseType: 'arraybuffer', timeout: 10000 });
       const buffer = Buffer.from(response.data);
 
       const file = await toFile(buffer, 'audio.wav');
