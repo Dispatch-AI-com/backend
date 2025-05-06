@@ -8,7 +8,7 @@ export class PricingDto {
     example: 'FREQ=MONTHLY;INTERVAL=1',
   })
   @IsString()
-  rule!: string;
+  rrule!: string;
 
   @ApiProperty({
     description: 'Price in AUD for the given billing period',
