@@ -1,6 +1,7 @@
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
 import { Request, Response } from 'express';
 
+import { WhisperTranscriptionException } from '@/modules/whisper/exceptions/whisper-transcription.exception';
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
@@ -13,15 +14,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let status = 500;
     let message = 'Internal server error';
 
-    if (exception instanceof HttpException) {
-      status = exception.getStatus();
-      message = this.extractHttpMessage(exception);
-    } else if (exception instanceof Error) {
-      message = exception.message;
-    } else {
-      message = String(exception);
+    switch (true) {
+      case exception instanceof HttpException:
+        status = exception.getStatus();
+        message = this.extractHttpMessage(exception);
+        break;
+      case exception instanceof WhisperTranscriptionException:
+        status = 502;
+        message = exception.message;
+        break;
+      case exception instanceof Error:
+        message = exception.message;
+        break;
+      default:
+        message = String(exception);
+        break;
     }
-
     const responseBody = {
       statusCode: status,
       timestamp: new Date().toISOString(),
