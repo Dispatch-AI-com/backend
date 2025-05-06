@@ -4,9 +4,16 @@ import { Connection, STATES as ConnectionStates } from 'mongoose';
 
 @Injectable()
 export class HealthService {
-  constructor(@InjectConnection() private readonly mongoConnection: Connection) {}
+  constructor(
+    @InjectConnection() private readonly mongoConnection: Connection,
+  ) {}
 
-  check(): { status: string; timestamp: Date; service: string; environment: string } {
+  check(): {
+    status: string;
+    timestamp: Date;
+    service: string;
+    environment: string;
+  } {
     return {
       status: 'ok',
       timestamp: new Date(),
@@ -23,7 +30,8 @@ export class HealthService {
     error?: string;
   }> {
     try {
-      const isConnected = this.mongoConnection.readyState === ConnectionStates.connected;
+      const isConnected =
+        this.mongoConnection.readyState === ConnectionStates.connected;
       await Promise.resolve();
       return {
         status: isConnected ? 'ok' : 'error',
