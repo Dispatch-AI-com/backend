@@ -1,6 +1,16 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 
 export class PricingDto {
   @ApiProperty({
@@ -8,7 +18,7 @@ export class PricingDto {
     example: 'FREQ=MONTHLY;INTERVAL=1',
   })
   @IsString()
-  rule!: string;
+  rrule!: string;
 
   @ApiProperty({
     description: 'Price in AUD for the given billing period',
