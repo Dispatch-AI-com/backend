@@ -23,7 +23,8 @@
     "rrule": "^2.8.1",
     "rxjs": "^7.8.2",
     "swagger-jsdoc": "^6.2.8",
-    "winston": "^3.17.0"
+    "winston": "^3.17.0",
+    "winston-daily-rotate-file": "^5.0.0"
   },
   "scripts": {
     "start:dev": "nest start --watch",
