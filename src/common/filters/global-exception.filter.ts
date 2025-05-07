@@ -1,4 +1,9 @@
-import { ArgumentsHost, Catch, ExceptionFilter, HttpException } from '@nestjs/common';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { WhisperTranscriptionException } from '@/modules/whisper/exceptions/whisper-transcription.exception';
@@ -9,7 +14,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    const isDev = process.env.NODE_ENV === 'development' || process.env.SHOW_ERROR_MESSAGE === 'true';
+    const isDev =
+      process.env.NODE_ENV === 'development' ||
+      process.env.SHOW_ERROR_MESSAGE === 'true';
 
     let status = 500;
     let message = 'Internal server error';
