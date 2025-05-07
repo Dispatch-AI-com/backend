@@ -2,9 +2,9 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
+import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter';
 import { setupSwagger } from '@/config/swagger.config';
 import { AppModule } from '@/modules/app.module';
-
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
@@ -13,6 +13,7 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? '*',
   });
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   setupSwagger(app);
 
