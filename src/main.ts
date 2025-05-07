@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import morgan from 'morgan';
 
+import { setupSwagger } from '@/config/swagger.config';
 import { AppModule } from '@/modules/app.module';
 
 async function bootstrap(): Promise<void> {
@@ -15,6 +16,7 @@ async function bootstrap(): Promise<void> {
   });
 
   app.use(morgan('combined'));
+  setupSwagger(app);
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
