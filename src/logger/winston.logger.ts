@@ -8,9 +8,7 @@ export const winstonLogger = WinstonModule.createLogger({
       level: 'info',
       format: winston.format.combine(
         winston.format.timestamp(),
-        nestWinstonModuleUtilities.format.nestLike(
-          'DispatchAI',
-        ) as winston.Logform.Format,
+        nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
       ),
     }),
     new winston.transports.File({
