@@ -1,8 +1,19 @@
-import { Controller, Post, Get, Put, Patch, Param, Body, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { PlanService } from './plan.service';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Put,
+} from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
+import { PlanService } from './plan.service';
 import { Plan } from './schema/plan.schema';
 
 @ApiTags('plan')
@@ -71,7 +82,10 @@ export class PlanController {
   @ApiResponse({ status: 400, description: 'Bad request - invalid structure' })
   @ApiResponse({ status: 404, description: 'Plan not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-  async update(@Param('id') id: string, @Body() dto: UpdatePlanDto): Promise<Plan> {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePlanDto,
+  ): Promise<Plan> {
     return this.planService.updatePlan(id, dto);
   }
 
@@ -108,7 +122,10 @@ export class PlanController {
   @ApiResponse({ status: 400, description: 'Invalid patch data' })
   @ApiResponse({ status: 404, description: 'Plan not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-  async patch(@Param('id') id: string, @Body() dto: UpdatePlanDto): Promise<Plan> {
+  async patch(
+    @Param('id') id: string,
+    @Body() dto: UpdatePlanDto,
+  ): Promise<Plan> {
     return this.planService.patchPlan(id, dto);
   }
 }

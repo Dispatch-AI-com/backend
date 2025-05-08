@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
-import { User, UserDocument } from '@/modules/user/schema/user.schema';
-import { SALT_ROUNDS } from '@/modules/auth/auth.config';
-import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
-import { UnauthorizedException, ConflictException } from '@nestjs/common';
-import { LoginDto } from '@/modules/auth/dto/login.dto';
+import { Model } from 'mongoose';
+
 import { EUserRole } from '@/common/constants/user.constant';
+import { SALT_ROUNDS } from '@/modules/auth/auth.config';
+import { LoginDto } from '@/modules/auth/dto/login.dto';
+import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
+import { User, UserDocument } from '@/modules/user/schema/user.schema';
 @Injectable()
 export class AuthService {
   constructor(
@@ -33,7 +34,10 @@ export class AuthService {
     if (!foundUser) {
       throw new UnauthorizedException('User not found');
     }
-    const isPasswordValid = await bcrypt.compare(loginDto.password, foundUser.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      foundUser.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
     }
@@ -51,7 +55,7 @@ export class AuthService {
       name: userData.name,
       email: userData.email,
       password: hashedPassword,
-      role: userData.role ?? EUserRole.USER,
+      role: userData.role ?? EUserRole.user,
     };
 
     const newUser = new this.userModel(secureUserData);
