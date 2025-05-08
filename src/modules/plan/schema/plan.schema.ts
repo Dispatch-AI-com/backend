@@ -41,4 +41,4 @@ export class Plan {
   isActive!: boolean;
 }
 
-export const PlanSchema = SchemaFactory.createForClass(Plan);
+export const planSchema = SchemaFactory.createForClass(Plan);

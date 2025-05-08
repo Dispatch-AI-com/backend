@@ -7,7 +7,7 @@
     "@nestjs/mongoose": "^11.0.1",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.11",
-    "@nestjs/swagger": "^11.0.6",
+    "@nestjs/swagger": "^11.2.0",
     "bcryptjs": "^3.0.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
@@ -16,11 +16,11 @@
     "mongoose": "^8.11.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
+    "redoc": "^2.5.0",
     "reflect-metadata": "^0.2.2",
     "rrule": "^2.8.1",
     "rxjs": "^7.8.2",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0"
   },
   "scripts": {
@@ -28,14 +28,15 @@
     "build": "nest build",
     "start": "node dist/main",
     "start:debug": "nest start --debug --watch",
-    "lint": "eslint src/**/*.ts",
-    "format": "prettier --check \"src/**/*.ts\"",
-    "format:fix": "prettier --write \"src/**/*.ts\"",
     "type-check": "tsc --noEmit",
-    "test": "echo 'no test'"
+    "test": "echo 'no test'",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint --fix \"src/**/*.ts\""
   },
   "devDependencies": {
-    "@darraghor/eslint-plugin-nestjs-typed": "^5.2.1",
+    "@darraghor/eslint-plugin-nestjs-typed": "^6.4.12",
+    "@eslint/js": "^9.26.0",
     "@nestjs/cli": "^11.0.7",
     "@nestjs/testing": "^11.0.11",
     "@types/bcrypt": "^5.0.2",
@@ -44,11 +45,15 @@
     "@types/passport-jwt": "^4.0.1",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
-    "eslint": "^8.57.0",
+    "eslint": "^9.26.0",
     "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-prettier": "^5.2.6",
+    "eslint-plugin-jest": "^28.11.0",
+    "eslint-plugin-prettier": "^5.3.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.0.0",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.1"
   }
 }

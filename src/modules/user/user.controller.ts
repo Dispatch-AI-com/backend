@@ -1,10 +1,17 @@
 //src/modules/user/user.controller.ts
-import { Controller, Get, Patch, Param, Delete, HttpCode } from '@nestjs/common';
-import { UserService } from './user.service';
-import { User } from './schema/user.schema';
-import { UpdateUserDto } from './dto/UpdateUser.dto';
+import {
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+} from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ApiOperation, ApiTags, ApiResponse } from '@nestjs/swagger';
+import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { User } from './schema/user.schema';
+import { UserService } from './user.service';
 
 @ApiTags('Users')
 @Controller('users')
@@ -32,7 +39,10 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'User updated', type: User })
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async patch(@Param('id') id: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async patch(
+    @Param('id') id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<User> {
     return this.users.patch(id, updateUserDto);
   }
 
