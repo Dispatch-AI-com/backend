@@ -22,6 +22,7 @@ export const winstonLogger = WinstonModule.createLogger({
       maxFiles: '14d',
       format: winston.format.combine(
         winston.format.timestamp(),
+        winston.format.uncolorize(),
         nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
       ),
     }),
@@ -33,6 +34,7 @@ export const winstonLogger = WinstonModule.createLogger({
       maxFiles: '30d',
       format: winston.format.combine(
         winston.format.timestamp(),
+        winston.format.uncolorize(),
         nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
       ),
     }),
