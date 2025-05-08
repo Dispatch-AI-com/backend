@@ -32,7 +32,8 @@
     "test": "echo 'no test'",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
-    "lint:fix": "eslint --fix \"src/**/*.ts\""
+    "lint:fix": "eslint --fix \"src/**/*.ts\"",
+    "seed": "ts-node -r tsconfig-paths/register scripts/seed.ts"
   },
   "devDependencies": {
     "@darraghor/eslint-plugin-nestjs-typed": "^6.4.12",
@@ -41,7 +42,7 @@
     "@nestjs/testing": "^11.0.11",
     "@types/bcrypt": "^5.0.2",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.13.8",
+    "@types/node": "^22.15.16",
     "@types/passport-jwt": "^4.0.1",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
@@ -53,6 +54,7 @@
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.1"
   }
