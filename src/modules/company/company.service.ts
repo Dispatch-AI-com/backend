@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Company, CompanyDocument } from './schema/company.schema';
@@ -11,7 +11,6 @@ export class CompanyService {
 
   async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
     try {
-      // Check if company with same email already exists
       const existingCompany = await this.companyModel.findOne({ email: createCompanyDto.email }).exec();
       if (existingCompany) {
         throw new ConflictException(`Company with email ${createCompanyDto.email} already exists`);
@@ -59,7 +58,7 @@ export class CompanyService {
 
   async findByUserEmail(email: string): Promise<Company> {
     try {
-      if (!email) {
+      if (email.trim() === '') {
         throw new BadRequestException('Email is required');
       }
       const company = await this.companyModel.findOne({ email }).populate('user').exec();
@@ -77,7 +76,7 @@ export class CompanyService {
 
   async update(id: string, updateCompanyDto: UpdateCompanyDto): Promise<Company> {
     try {
-      if (updateCompanyDto.email) {
+      if (updateCompanyDto.email?.trim() !== '') {
         const existingCompany = await this.companyModel
           .findOne({
             email: updateCompanyDto.email,
@@ -85,7 +84,7 @@ export class CompanyService {
           })
           .exec();
 
-        if (existingCompany) {
+        if (existingCompany && updateCompanyDto.email) {
           throw new ConflictException(`Company with email ${updateCompanyDto.email} already exists`);
         }
       }
