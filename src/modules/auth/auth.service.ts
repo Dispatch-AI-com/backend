@@ -42,7 +42,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid password');
     }
     const user = foundUser.toObject() as User;
-    const token = this.jwtService.sign({ sub: user._id, email: user.email, role: user.role });
+    const token = this.jwtService.sign({
+      sub: user._id,
+      email: user.email,
+      role: user.role,
+    });
     return { user, token };
   }
 
