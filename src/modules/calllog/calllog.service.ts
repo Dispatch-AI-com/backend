@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { CallLog } from './schema/calllog.schema';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
+import { UpdateCallLogDto } from './dto/update-calllog.dto';
 
 @Injectable()
 export class CalllogService {
@@ -36,5 +37,21 @@ export class CalllogService {
       })
       .sort({ startAt: -1 })
       .exec();
+  }
+
+  async update(id: string, updateCallLogDto: UpdateCallLogDto): Promise<CallLog> {
+    const updatedCallLog = await this.callLogModel
+      .findByIdAndUpdate(
+        id,
+        { $set: updateCallLogDto },
+        { new: true, runValidators: true }
+      )
+      .exec();
+
+    if (!updatedCallLog) {
+      throw new NotFoundException(`Call log with ID ${id} not found`);
+    }
+
+    return updatedCallLog;
   }
 }

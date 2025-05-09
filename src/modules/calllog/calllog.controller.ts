@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, Patch } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
+import { UpdateCallLogDto } from './dto/update-calllog.dto';
 
 @ApiTags('calllog')
 @Controller('calllog')
@@ -39,5 +40,16 @@ export class CalllogController {
     @Query('endDate') endDate: Date,
   ) {
     return this.calllogService.findByStartAt(startDate, endDate);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a call log' })
+  @ApiResponse({ status: 200, description: 'Call log updated successfully' })
+  @ApiResponse({ status: 404, description: 'Call log not found' })
+  update(
+    @Param('id') id: string,
+    @Body() updateCallLogDto: UpdateCallLogDto,
+  ) {
+    return this.calllogService.update(id, updateCallLogDto);
   }
 }
