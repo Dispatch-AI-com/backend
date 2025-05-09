@@ -18,4 +18,23 @@ export class CalllogService {
   async findAll(): Promise<CallLog[]> {
     return this.callLogModel.find().sort({ startAt: -1 }).exec();
   }
+
+  async findByCompanyId(companyId: string): Promise<CallLog[]> {
+    return this.callLogModel
+      .find({ companyId })
+      .sort({ startAt: -1 })
+      .exec();
+  }
+
+  async findByStartAt(startDate: Date, endDate: Date): Promise<CallLog[]> {
+    return this.callLogModel
+      .find({
+        startAt: {
+          $gte: startDate,
+          $lte: endDate,
+        },
+      })
+      .sort({ startAt: -1 })
+      .exec();
+  }
 }
