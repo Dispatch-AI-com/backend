@@ -5,15 +5,16 @@ services:
       dockerfile: Dockerfile.uat
     container_name: dispatchai-api
     command: ["node", "dist/main"]
+    env_file:
+      - .env
     environment:
       - NODE_ENV=uat
       - MONGODB_URI=mongodb://mongodb:27017/dispatchai
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_ALGORITHM=${JWT_ALGORITHM}
-      - JWT_EXPIRE_TIME=${JWT_EXPIRE_TIME}
+      - SHOW_ERROR_MESSAGE=true
     ports:
       - "4000:4000"
-    volumes: [] 
+    volumes:
+      - /home/ubuntu/dispatch-ai/logs:/app/logs
 
   mongodb:
     image: mongo:latest
