@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
@@ -48,7 +52,10 @@ export class PlanService {
     return updated;
   }
 
-  async patchPlan(id: string, partialDto: Partial<UpdatePlanDto>): Promise<Plan> {
+  async patchPlan(
+    id: string,
+    partialDto: Partial<UpdatePlanDto>,
+  ): Promise<Plan> {
     const updated = await this.planModel
       .findByIdAndUpdate(id, partialDto, {
         new: true,

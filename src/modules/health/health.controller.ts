@@ -14,7 +14,12 @@ export class HealthController {
   })
   @ApiResponse({ status: 200, description: 'API is healthy' })
   @Get()
-  check(): { status: string; timestamp: Date; service: string; environment: string } {
+  check(): {
+    status: string;
+    timestamp: Date;
+    service: string;
+    environment: string;
+  } {
     return this.healthService.check();
   }
 
@@ -45,6 +50,8 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Returns Hello message' })
   @Get('hello')
   hello(): { message: string } {
-    return { message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！' };
+    return {
+      message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！',
+    };
   }
 }
