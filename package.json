@@ -35,7 +35,8 @@
     "test": "echo 'no test'",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint \"src/**/*.ts\"",
-    "lint:fix": "eslint --fix \"src/**/*.ts\""
+    "lint:fix": "eslint --fix \"src/**/*.ts\"",
+    "seed": "ts-node -r tsconfig-paths/register scripts/seed.ts"
   },
   "devDependencies": {
     "@darraghor/eslint-plugin-nestjs-typed": "^6.4.12",
@@ -58,6 +59,7 @@
     "globals": "^16.0.0",
     "prettier": "^3.5.3",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.1"
   }
