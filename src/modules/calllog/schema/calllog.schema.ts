@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { CallLogStatus, DEFAULT_CALLLOG_STATUS } from '@/common/constants/calllog.constant';
 
 export type CallLogDocument = HydratedDocument<CallLog>;
 
@@ -14,8 +15,13 @@ export class CallLog {
   @Prop({ required: true })
   callerNumber!: string;
 
-  @Prop({ required: true })
-  status!: string;
+  @Prop({
+    required: true,
+    type: String,
+    enum: CallLogStatus,
+    default: DEFAULT_CALLLOG_STATUS
+  })
+  status!: CallLogStatus;
 
   @Prop({ required: true, type: Date })
   startAt!: Date;
