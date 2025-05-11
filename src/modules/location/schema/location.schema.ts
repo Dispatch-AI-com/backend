@@ -8,10 +8,10 @@ export class Location {
   @Prop({ required: true })
   name!: string;
 
-  @Prop()
+  @Prop({ required: false })
   address1?: string;
 
-  @Prop()
+  @Prop({ required: false })
   address2?: string;
 
   @Prop({ required: true })
@@ -22,6 +22,9 @@ export class Location {
 
   @Prop({ required: true })
   country!: string;
+
+  @Prop({ type: [Number], required: false })
+  embedding?: number[];
 }
 
 export const LocationSchema = SchemaFactory.createForClass(Location);

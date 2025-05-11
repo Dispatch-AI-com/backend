@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MaxLength, IsArray, IsNumber } from 'class-validator';
 
 export class CreateLocationDto {
   @ApiProperty({
@@ -56,4 +56,14 @@ export class CreateLocationDto {
   @IsNotEmpty()
   @MaxLength(50)
   country!: string;
+
+  @ApiPropertyOptional({
+    description: 'Location embedding',
+    example: [0.1, 0.2, 0.3],
+    type: [Number],
+  })
+  @IsOptional()
+  @IsArray() 
+  @IsNumber({}, { each: true })
+  embedding?: number[];
 }
