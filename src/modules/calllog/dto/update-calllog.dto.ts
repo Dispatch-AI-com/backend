@@ -14,13 +14,11 @@ export class UpdateCallLogDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  @IsNotEmpty()
   serviceBookedId?: string;
 
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  @IsNotEmpty()
   callerNumber?: string;
 
   @ApiPropertyOptional({ enum: CallLogStatus })
