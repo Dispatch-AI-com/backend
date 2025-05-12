@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CallLog } from './schema/calllog.schema';
+
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
+import { CallLog } from './schema/calllog.schema';
 
 @Injectable()
 export class CalllogService {
@@ -21,10 +22,7 @@ export class CalllogService {
   }
 
   async findByCompanyId(companyId: string): Promise<CallLog[]> {
-    return this.callLogModel
-      .find({ companyId })
-      .sort({ startAt: -1 })
-      .exec();
+    return this.callLogModel.find({ companyId }).sort({ startAt: -1 }).exec();
   }
 
   async findByStartAt(startDate: Date, endDate: Date): Promise<CallLog[]> {
@@ -39,12 +37,15 @@ export class CalllogService {
       .exec();
   }
 
-  async update(id: string, updateCallLogDto: UpdateCallLogDto): Promise<CallLog> {
+  async update(
+    id: string,
+    updateCallLogDto: UpdateCallLogDto,
+  ): Promise<CallLog> {
     const updatedCallLog = await this.callLogModel
       .findByIdAndUpdate(
         id,
         { $set: updateCallLogDto },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       )
       .exec();
 

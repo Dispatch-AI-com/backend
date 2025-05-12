@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDate, IsOptional, IsString } from 'class-validator';
+
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 
 export class UpdateCallLogDto {
@@ -32,4 +33,4 @@ export class UpdateCallLogDto {
   @IsString()
   @IsOptional()
   recordingUrl?: string;
-} 
+}

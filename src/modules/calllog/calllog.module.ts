@@ -7,7 +7,7 @@ import { CallLog, CallLogSchema } from './schema/calllog.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: CallLog.name, schema: CallLogSchema }])
+    MongooseModule.forFeature([{ name: CallLog.name, schema: CallLogSchema }]),
   ],
   controllers: [CalllogController],
   providers: [CalllogService],

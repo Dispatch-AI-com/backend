@@ -1,37 +1,40 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
-import { CallLogStatus, DEFAULT_CALLLOG_STATUS } from '@/common/constants/calllog.constant';
+
+import {
+  CallLogStatus,
+  DEFAULT_CALLLOG_STATUS,
+} from '@/common/constants/calllog.constant';
 
 export class CreateCallLogDto {
-    @ApiProperty()
-    @IsString()
-    companyId!: string;
+  @ApiProperty()
+  @IsString()
+  companyId!: string;
 
-    @ApiProperty()
-    @IsString()
-    serviceBookedId!: string;
+  @ApiProperty()
+  @IsString()
+  serviceBookedId!: string;
 
-    @ApiProperty()
-    @IsString()
-    callerNumber!: string;
+  @ApiProperty()
+  @IsString()
+  callerNumber!: string;
 
-    @ApiPropertyOptional({ enum: CallLogStatus, default: DEFAULT_CALLLOG_STATUS })
-    @IsEnum(CallLogStatus)
-    @IsOptional()
-    status?: CallLogStatus = DEFAULT_CALLLOG_STATUS;
+  @ApiPropertyOptional({ enum: CallLogStatus, default: DEFAULT_CALLLOG_STATUS })
+  @IsEnum(CallLogStatus)
+  @IsOptional()
+  status?: CallLogStatus = DEFAULT_CALLLOG_STATUS;
 
-    @ApiProperty()
-    @IsDate()
-    startAt!: Date;
+  @ApiProperty()
+  @IsDate()
+  startAt!: Date;
 
-    @ApiPropertyOptional()
-    @IsDate()
-    @IsOptional()
-    endAt?: Date;
+  @ApiPropertyOptional()
+  @IsDate()
+  @IsOptional()
+  endAt?: Date;
 
-    @ApiPropertyOptional()
-    @IsString()
-    @IsOptional()
-    recordingUrl?: string;
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  recordingUrl?: string;
 }
-  

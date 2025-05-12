@@ -1,4 +1,4 @@
-import { CallLogStatus } from '../constants/calllog.constant';
+import type { CallLogStatus } from '../constants/calllog.constant';
 
 export interface ICallLog {
   companyId: string;

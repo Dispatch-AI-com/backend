@@ -1,5 +1,14 @@
-import { Controller, Get, Post, Body, Query, Param, Patch } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
@@ -25,7 +34,10 @@ export class CalllogController {
 
   @Get('company/:companyId')
   @ApiOperation({ summary: 'Get call logs by company ID' })
-  @ApiResponse({ status: 200, description: 'Return call logs for the specified company' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return call logs for the specified company',
+  })
   findByCompanyId(@Query('companyId') companyId: string) {
     return this.calllogService.findByCompanyId(companyId);
   }
@@ -34,7 +46,10 @@ export class CalllogController {
   @ApiOperation({ summary: 'Get call logs by date range' })
   @ApiQuery({ name: 'startDate', required: true, type: Date })
   @ApiQuery({ name: 'endDate', required: true, type: Date })
-  @ApiResponse({ status: 200, description: 'Return call logs within the specified date range' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return call logs within the specified date range',
+  })
   findByStartAt(
     @Query('startDate') startDate: Date,
     @Query('endDate') endDate: Date,
@@ -46,10 +61,7 @@ export class CalllogController {
   @ApiOperation({ summary: 'Update a call log' })
   @ApiResponse({ status: 200, description: 'Call log updated successfully' })
   @ApiResponse({ status: 404, description: 'Call log not found' })
-  update(
-    @Param('id') id: string,
-    @Body() updateCallLogDto: UpdateCallLogDto,
-  ) {
+  update(@Param('id') id: string, @Body() updateCallLogDto: UpdateCallLogDto) {
     return this.calllogService.update(id, updateCallLogDto);
   }
 }
