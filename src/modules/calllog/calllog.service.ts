@@ -22,11 +22,17 @@ export class CalllogService {
   }
 
   async findByCompanyId(companyId: string): Promise<CallLog[]> {
-    return this.callLogModel.find({ companyId }).sort({ startAt: -1 }).exec();
+    const callLogs = await this.callLogModel.find({ companyId }).sort({ startAt: -1 }).exec();
+    
+    if (!callLogs || callLogs.length === 0) {
+      throw new NotFoundException(`No call logs found for company ID: ${companyId}`);
+    }
+    
+    return callLogs;
   }
 
   async findByStartAt(startDate: Date, endDate: Date): Promise<CallLog[]> {
-    return this.callLogModel
+    const callLogs = await this.callLogModel
       .find({
         startAt: {
           $gte: startDate,
@@ -35,6 +41,14 @@ export class CalllogService {
       })
       .sort({ startAt: -1 })
       .exec();
+
+    if (!callLogs || callLogs.length === 0) {
+      throw new NotFoundException(
+        `No call logs found between ${startDate.toISOString()} and ${endDate.toISOString()}`,
+      );
+    }
+
+    return callLogs;
   }
 
   async update(
