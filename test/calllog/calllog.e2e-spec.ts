@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../src/modules/app.module';
+import { AppModule } from '../../src/modules/app.module';
 import mongoose from 'mongoose';
 
 interface CallLog {
@@ -19,13 +19,15 @@ describe('CallLogController (e2e)', () => {
   const testCompanyId = 'company-123';
 
   // Mock call log used for POST test
-  const mockCallLog = {
-    companyId: testCompanyId,
-    startAt: new Date('2025-05-08T10:00:00Z'),
-    endAt: new Date('2025-05-08T10:10:00Z'),
-    status: 'completed',
-    duration: 600,
-  };
+const mockCallLog = {
+  companyId: testCompanyId,
+  startAt: new Date('2025-05-08T10:00:00Z'),
+  endAt: new Date('2025-05-08T10:10:00Z'),
+  status: 'Active', 
+  duration: 600,
+  callerNumber: '+61400000000',
+  serviceBookedId: 'booking-123', 
+};
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -53,7 +55,7 @@ describe('CallLogController (e2e)', () => {
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('_id');
     expect(response.body.companyId).toBe(testCompanyId);
-    expect(response.body.status).toBe('completed');
+    expect(response.body.status).toBe('Active');
 
     createdCallLogId = response.body._id; // Store the ID for further tests
   });
@@ -93,9 +95,9 @@ describe('CallLogController (e2e)', () => {
    * Test: Retrieve call logs within a specific date range
    * Purpose: To verify that GET /calllog/range filters records by time
    */
-  it('GET /calllog/range → should return logs within a date range', async () => {
+  it('GET /calllog/date-range → should return logs within a date range', async () => {
     const response = await request(app.getHttpServer()).get(
-      `${baseUrl}/range?start=2025-05-01&end=2025-05-10`,
+      `${baseUrl}/date-range?start=2025-05-01&end=2025-05-10`,
     );
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
@@ -115,9 +117,9 @@ describe('CallLogController (e2e)', () => {
   it('PATCH /calllog/:id → should update a call log status', async () => {
     const response = await request(app.getHttpServer())
       .patch(`${baseUrl}/${createdCallLogId}`)
-      .send({ status: 'archived' });
+      .send({ status: 'Inactive' });
 
     expect(response.status).toBe(200);
-    expect(response.body.status).toBe('archived');
+    expect(response.body.status).toBe('Inactive');
   });
 });
