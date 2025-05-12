@@ -34,11 +34,8 @@ export class CalllogController {
 
   @Get('company/:companyId')
   @ApiOperation({ summary: 'Get call logs by company ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return call logs for the specified company',
-  })
-  findByCompanyId(@Query('companyId') companyId: string) {
+  @ApiResponse({ status: 200, description: 'Return call logs for the specified company' })
+  findByCompanyId(@Param('companyId') companyId: string) {
     return this.calllogService.findByCompanyId(companyId);
   }
 
