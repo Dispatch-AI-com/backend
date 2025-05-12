@@ -22,12 +22,17 @@ export class CalllogService {
   }
 
   async findByCompanyId(companyId: string): Promise<CallLog[]> {
-    const callLogs = await this.callLogModel.find({ companyId }).sort({ startAt: -1 }).exec();
-    
+    const callLogs = await this.callLogModel
+      .find({ companyId })
+      .sort({ startAt: -1 })
+      .exec();
+
     if (!callLogs || callLogs.length === 0) {
-      throw new NotFoundException(`No call logs found for company ID: ${companyId}`);
+      throw new NotFoundException(
+        `No call logs found for company ID: ${companyId}`,
+      );
     }
-    
+
     return callLogs;
   }
 

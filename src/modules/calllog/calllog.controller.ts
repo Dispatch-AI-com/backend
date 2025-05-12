@@ -40,9 +40,9 @@ export class CalllogController {
     status: 200,
     description: 'Return call logs for the specified company',
   })
-  @ApiResponse({ 
-    status: 404, 
-    description: 'No call logs found for the specified company ID' 
+  @ApiResponse({
+    status: 404,
+    description: 'No call logs found for the specified company ID',
   })
   findByCompanyId(@Param('companyId') companyId: string): Promise<ICallLog[]> {
     return this.calllogService.findByCompanyId(companyId);
@@ -56,9 +56,9 @@ export class CalllogController {
     status: 200,
     description: 'Return call logs within the specified date range',
   })
-  @ApiResponse({ 
-    status: 404, 
-    description: 'No call logs found within the specified date range' 
+  @ApiResponse({
+    status: 404,
+    description: 'No call logs found within the specified date range',
   })
   findByStartAt(
     @Query('startDate') startDate: Date,
