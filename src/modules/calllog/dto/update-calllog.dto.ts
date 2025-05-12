@@ -1,7 +1,8 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEnum,
-  IsISO8601,
+  IsDate,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -28,14 +29,16 @@ export class UpdateCallLogDto {
   status?: CallLogStatus;
 
   @ApiPropertyOptional()
-  @IsISO8601()
+  @IsDate()
   @IsOptional()
-  startAt?: string;
+  @Type(() => Date)
+  startAt?: Date;
 
   @ApiPropertyOptional()
-  @IsISO8601()
+  @IsDate()
   @IsOptional()
-  endAt?: string;
+  @Type(() => Date)
+  endAt?: Date;
 
   @ApiPropertyOptional()
   @IsString()
