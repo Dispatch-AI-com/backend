@@ -27,7 +27,7 @@ export class CalllogService {
       .sort({ startAt: -1 })
       .exec();
 
-    if (!callLogs || callLogs.length === 0) {
+    if (callLogs.length === 0) {
       throw new NotFoundException(
         `No call logs found for company ID: ${companyId}`,
       );
@@ -47,7 +47,7 @@ export class CalllogService {
       .sort({ startAt: -1 })
       .exec();
 
-    if (!callLogs || callLogs.length === 0) {
+    if (callLogs.length === 0) {
       throw new NotFoundException(
         `No call logs found between ${startDate.toISOString()} and ${endDate.toISOString()}`,
       );
