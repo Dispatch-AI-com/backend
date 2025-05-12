@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsISO8601, IsEnum, IsOptional, IsString, IsNotEmpty } from 'class-validator';
+import {
+  IsEnum,
+  IsISO8601,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 
 export class UpdateCallLogDto {

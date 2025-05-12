@@ -1,6 +1,10 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Error as MongooseError } from 'mongoose';
+import { Error as MongooseError, Model } from 'mongoose';
 
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
@@ -85,10 +89,7 @@ export class CalllogService {
       if (error instanceof MongooseError.ValidationError) {
         throw new BadRequestException(error.message);
       }
-      if (
-        error instanceof MongooseError.CastError &&
-        error.path === '_id'
-      ) {
+      if (error instanceof MongooseError.CastError && error.path === '_id') {
         throw new NotFoundException(`Call log with ID ${id} not found`);
       }
       throw error;
