@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
 
 import {
@@ -26,11 +27,13 @@ export class CreateCallLogDto {
 
   @ApiProperty()
   @IsDate()
+  @Type(() => Date)
   startAt!: Date;
 
   @ApiPropertyOptional()
   @IsDate()
   @IsOptional()
+  @Type(() => Date)
   endAt?: Date;
 
   @ApiPropertyOptional()

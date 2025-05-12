@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { ICallLog } from '@/common/interfaces/calllog';
+
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
@@ -21,14 +23,14 @@ export class CalllogController {
   @Post()
   @ApiOperation({ summary: 'Create a new call log' })
   @ApiResponse({ status: 201, description: 'Call log created successfully' })
-  create(@Body() createCallLogDto: CreateCallLogDto) {
+  create(@Body() createCallLogDto: CreateCallLogDto): Promise<ICallLog> {
     return this.calllogService.create(createCallLogDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all call logs' })
   @ApiResponse({ status: 200, description: 'Return all call logs' })
-  findAll() {
+  findAll(): Promise<ICallLog[]> {
     return this.calllogService.findAll();
   }
 
@@ -38,7 +40,7 @@ export class CalllogController {
     status: 200,
     description: 'Return call logs for the specified company',
   })
-  findByCompanyId(@Param('companyId') companyId: string) {
+  findByCompanyId(@Param('companyId') companyId: string): Promise<ICallLog[]> {
     return this.calllogService.findByCompanyId(companyId);
   }
 
@@ -53,7 +55,7 @@ export class CalllogController {
   findByStartAt(
     @Query('startDate') startDate: Date,
     @Query('endDate') endDate: Date,
-  ) {
+  ): Promise<ICallLog[]> {
     return this.calllogService.findByStartAt(startDate, endDate);
   }
 
@@ -61,7 +63,10 @@ export class CalllogController {
   @ApiOperation({ summary: 'Update a call log' })
   @ApiResponse({ status: 200, description: 'Call log updated successfully' })
   @ApiResponse({ status: 404, description: 'Call log not found' })
-  update(@Param('id') id: string, @Body() updateCallLogDto: UpdateCallLogDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateCallLogDto: UpdateCallLogDto,
+  ): Promise<ICallLog> {
     return this.calllogService.update(id, updateCallLogDto);
   }
 }
