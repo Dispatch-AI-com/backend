@@ -18,16 +18,27 @@ describe('CallLogController (e2e)', () => {
   const baseUrl = '/calllog';
   const testCompanyId = 'company-123';
 
-  // Mock call log used for POST test
-const mockCallLog = {
-  companyId: testCompanyId,
-  startAt: new Date('2025-05-08T10:00:00Z'),
-  endAt: new Date('2025-05-08T10:10:00Z'),
-  status: 'Active', 
-  duration: 600,
-  callerNumber: '+61400000000',
-  serviceBookedId: 'booking-123', 
-};
+  // Mock call logs used for tests
+  const mockCallLogs = [
+    {
+      companyId: testCompanyId,
+      startAt: new Date('2025-05-08T10:00:00Z'),
+      endAt: new Date('2025-05-08T10:10:00Z'),
+      status: 'Active',
+      duration: 600,
+      callerNumber: '+61400000000',
+      serviceBookedId: 'booking-123',
+    },
+    {
+      companyId: testCompanyId,
+      startAt: new Date('2025-05-09T11:00:00Z'),
+      endAt: new Date('2025-05-09T11:15:00Z'),
+      status: 'Active',
+      duration: 900,
+      callerNumber: '+61400000001',
+      serviceBookedId: 'booking-124',
+    }
+  ];
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -36,6 +47,13 @@ const mockCallLog = {
 
     app = moduleFixture.createNestApplication();
     await app.init();
+
+    // Create test data before running tests
+    for (const mockCallLog of mockCallLogs) {
+      await request(app.getHttpServer())
+        .post(baseUrl)
+        .send(mockCallLog);
+    }
   });
 
   afterAll(async () => {
@@ -50,7 +68,7 @@ const mockCallLog = {
   it('POST /calllog → should create a new call log', async () => {
     const response = await request(app.getHttpServer())
       .post(baseUrl)
-      .send(mockCallLog);
+      .send(mockCallLogs[0]);
 
     expect(response.status).toBe(201);
     expect(response.body).toHaveProperty('_id');
@@ -68,6 +86,7 @@ const mockCallLog = {
     const response = await request(app.getHttpServer()).get(baseUrl);
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
 
     if (response.body.length > 0) {
       expect(response.body[0]).toHaveProperty('companyId');
@@ -85,6 +104,7 @@ const mockCallLog = {
     );
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
 
     response.body.forEach((log: CallLog) => {
       expect(log.companyId).toBe(testCompanyId);
@@ -93,20 +113,23 @@ const mockCallLog = {
 
   /**
    * Test: Retrieve call logs within a specific date range
-   * Purpose: To verify that GET /calllog/range filters records by time
+   * Purpose: To verify that GET /calllog/date-range filters records by time
    */
   it('GET /calllog/date-range → should return logs within a date range', async () => {
+    const startDate = '2025-05-01';
+    const endDate = '2025-05-10';
     const response = await request(app.getHttpServer()).get(
-      `${baseUrl}/date-range?start=2025-05-01&end=2025-05-10`,
+      `${baseUrl}/date-range?startDate=${startDate}&endDate=${endDate}`,
     );
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
+    expect(response.body.length).toBeGreaterThan(0);
 
-    // Optional: Check if returned records fall in the expected range
+    // Check if returned records fall in the expected range
     response.body.forEach((log: CallLog) => {
       const startAt = new Date(log.startAt);
-      expect(startAt >= new Date('2025-05-01')).toBe(true);
-      expect(startAt <= new Date('2025-05-10')).toBe(true);
+      expect(startAt >= new Date(startDate)).toBe(true);
+      expect(startAt <= new Date(endDate)).toBe(true);
     });
   });
 
