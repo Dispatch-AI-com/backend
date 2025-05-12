@@ -41,6 +41,5 @@ export class UpdateCallLogDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  @IsNotEmpty()
   recordingUrl?: string;
 }
