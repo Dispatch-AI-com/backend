@@ -6,6 +6,7 @@ import {
   Patch,
   Post,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -50,8 +51,8 @@ export class CalllogController {
 
   @Get('date-range')
   @ApiOperation({ summary: 'Get call logs by date range' })
-  @ApiQuery({ name: 'startDate', required: true, type: Date })
-  @ApiQuery({ name: 'endDate', required: true, type: Date })
+  @ApiQuery({ name: 'startDate', required: true, type: String })
+  @ApiQuery({ name: 'endDate', required: true, type: String })
   @ApiResponse({
     status: 200,
     description: 'Return call logs within the specified date range',
@@ -61,10 +62,18 @@ export class CalllogController {
     description: 'No call logs found within the specified date range',
   })
   findByStartAt(
-    @Query('startDate') startDate: Date,
-    @Query('endDate') endDate: Date,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
   ): Promise<ICallLog[]> {
-    return this.calllogService.findByStartAt(startDate, endDate);
+    if (!startDate || !endDate) {
+      throw new BadRequestException('startDate and endDate are required');
+    }
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      throw new BadRequestException('Invalid date format');
+    }
+    return this.calllogService.findByStartAt(start, end);
   }
 
   @Patch(':id')
