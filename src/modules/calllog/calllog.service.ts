@@ -4,17 +4,17 @@ import { Model } from 'mongoose';
 
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
-import { CallLog } from './schema/calllog.schema';
+import { CallLog, CallLogDocument } from './schema/calllog.schema';
 
 @Injectable()
 export class CalllogService {
   constructor(
-    @InjectModel(CallLog.name) private readonly callLogModel: Model<CallLog>,
+    @InjectModel(CallLog.name)
+    private readonly callLogModel: Model<CallLogDocument>,
   ) {}
 
   async create(dto: CreateCallLogDto): Promise<CallLog> {
-    const created = new this.callLogModel(dto);
-    return created.save();
+    return this.callLogModel.create(dto);
   }
 
   async findAll(): Promise<CallLog[]> {
