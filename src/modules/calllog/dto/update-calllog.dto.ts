@@ -1,18 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
-
+import { IsISO8601, IsEnum, IsOptional, IsString, IsNotEmpty } from 'class-validator';
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 
 export class UpdateCallLogDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
   serviceBookedId?: string;
 
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
   callerNumber?: string;
 
   @ApiPropertyOptional({ enum: CallLogStatus })
@@ -21,19 +21,18 @@ export class UpdateCallLogDto {
   status?: CallLogStatus;
 
   @ApiPropertyOptional()
-  @IsDate()
+  @IsISO8601()
   @IsOptional()
-  @Type(() => Date)
-  startAt?: Date;
+  startAt?: string;
 
   @ApiPropertyOptional()
-  @IsDate()
+  @IsISO8601()
   @IsOptional()
-  @Type(() => Date)
-  endAt?: Date;
+  endAt?: string;
 
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
+  @IsNotEmpty()
   recordingUrl?: string;
 }

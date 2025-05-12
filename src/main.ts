@@ -11,7 +11,7 @@ async function bootstrap(): Promise<void> {
   app.useLogger(winstonLogger);
 
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? '*',
   });

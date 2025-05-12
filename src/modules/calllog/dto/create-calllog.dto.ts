@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsISO8601, IsEnum, IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
 import {
   CallLogStatus,
@@ -10,14 +9,17 @@ import {
 export class CreateCallLogDto {
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   companyId!: string;
 
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   serviceBookedId!: string;
 
   @ApiProperty()
   @IsString()
+  @IsNotEmpty()
   callerNumber!: string;
 
   @ApiPropertyOptional({ enum: CallLogStatus, default: DEFAULT_CALLLOG_STATUS })
@@ -26,15 +28,13 @@ export class CreateCallLogDto {
   status?: CallLogStatus = DEFAULT_CALLLOG_STATUS;
 
   @ApiProperty()
-  @IsDate()
-  @Type(() => Date)
-  startAt!: Date;
+  @IsISO8601()
+  startAt!: string;
 
   @ApiPropertyOptional()
-  @IsDate()
+  @IsISO8601()
   @IsOptional()
-  @Type(() => Date)
-  endAt?: Date;
+  endAt?: string;
 
   @ApiPropertyOptional()
   @IsString()
