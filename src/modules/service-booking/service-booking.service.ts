@@ -18,4 +18,12 @@ export class ServiceBookingService {
     const newBooking = new this.bookingModel(dto);
     return newBooking.save();
   }
+
+  async findAll(): Promise<ServiceBooking[]> {
+    return this.bookingModel.find().exec();
+  }
+  
+  async findById(id: string): Promise<ServiceBooking | null> {
+    return this.bookingModel.findById(id).exec();
+  }
 }

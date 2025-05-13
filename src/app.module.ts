@@ -5,8 +5,6 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { PlanModule } from '@/modules/plan/plan.module';
-import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
-import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 
 @Module({
   imports: [
@@ -17,8 +15,6 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
     HealthModule,
     AuthModule,
     PlanModule,
-    ServiceBookingModule,
-    ServiceFormFieldModule,
   ],
 })
 export class AppModule {}
