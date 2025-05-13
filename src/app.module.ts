@@ -8,14 +8,11 @@ import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
-<<<<<<< HEAD:src/modules/app.module.ts
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
 import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
 import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
-=======
->>>>>>> 6d50bc8 (Fix error):src/app.module.ts
 
 @Module({
   imports: [
@@ -26,7 +23,6 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
     HealthModule,
     AuthModule,
     PlanModule,
-<<<<<<< HEAD:src/modules/app.module.ts
     LocationModule,
     WhisperModule,
     CalllogModule,
@@ -35,8 +31,6 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
     AvailabilityModule,
     ServiceBookingModule,
     ServiceFormFieldModule,
-=======
->>>>>>> 6d50bc8 (Fix error):src/app.module.ts
   ],
 })
 export class AppModule {}
