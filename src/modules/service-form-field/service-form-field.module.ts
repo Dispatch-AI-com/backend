@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ServiceFormField, ServiceFormFieldSchema } from './schema/service-form-field.schema';
+import { ServiceFormFieldController } from './service-form-field.controller';
 
 @Module({
   imports: [
@@ -8,6 +9,6 @@ import { ServiceFormField, ServiceFormFieldSchema } from './schema/service-form-
       { name: ServiceFormField.name, schema: ServiceFormFieldSchema },
     ]),
   ],
-  exports: [MongooseModule], // 可导出给其他模块使用
+  controllers: [ServiceFormFieldController], 
 })
 export class ServiceFormFieldModule {}
