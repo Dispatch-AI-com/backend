@@ -4,8 +4,9 @@ import { Model } from 'mongoose';
 import {
   ServiceBooking,
   ServiceBookingDocument,
-} from './schema/service-booking.schema';
-import { CreateServiceBookingDto } from './dto/create-service-booking.dto';
+} from '@/modules/service-booking/schema/service-booking.schema';
+
+import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
 
 @Injectable()
 export class ServiceBookingService {

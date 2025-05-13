@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ServiceFormField, ServiceFormFieldSchema } from './schema/service-form-field.schema';
-import { ServiceFormFieldController } from './service-form-field.controller';
+import { ServiceFormField, ServiceFormFieldSchema } from '@/modules/service-form-field/schema/service-form-field.schema';
+import { ServiceFormFieldController } from '@/modules/service-form-field/service-form-field.controller';
 
 @Module({
   imports: [

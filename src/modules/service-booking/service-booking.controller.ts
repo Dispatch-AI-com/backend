@@ -6,8 +6,8 @@ import {
   Body,
   NotFoundException,
 } from '@nestjs/common';
-import { ServiceBookingService } from './service-booking.service';
-import { CreateServiceBookingDto } from './dto/create-service-booking.dto';
+import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
+import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
 
 @Controller('bookings')
 export class ServiceBookingController {
