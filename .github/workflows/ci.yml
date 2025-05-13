@@ -18,14 +18,14 @@ jobs:
         with:
           node-version: 20
 
+      - name: 📥 Install pnpm
+        run: npm install -g pnpm
+
       - name: 📦 Install dependencies
-        run: npm install
+        run: pnpm install
 
-      - name: 🧹 Run Prettier (format check)
-        run: npm run format
-
-      - name: 🧪 Run ESLint (lint check)
-        run: npm run lint
+      - name: 🧪 Run Prettier & ESLint (lint check)
+        run: pnpm run lint
 
       - name: 🔎 Run Type Check (tsc)
-        run: npm run type-check
+        run: pnpm run type-check
