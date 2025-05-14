@@ -18,21 +18,13 @@ jobs:
         with:
           node-version: 20
 
+      - name: 📥 Install pnpm
+        run: npm install -g pnpm
+
       - name: 📦 Install dependencies and build
         run: |
-          npm install
-          npm install -g @nestjs/cli
-          npm run build
-
-      - name: 🧹 Clean up and install production deps
-        run: |
-          rm -rf node_modules
-          npm install --omit=dev
-
-      - name: 🧾 Verify build output
-        run: |
-          echo "✅ Contents of dist/"
-          ls -al dist
+          pnpm install
+          pnpm build
 
       - name: 📤 Upload build artifacts to EC2
         uses: appleboy/scp-action@master

@@ -13,7 +13,8 @@ services:
       - MONGODB_URI=mongodb://mongodb:27017/dispatchai
     ports:
       - "4000:4000"
-    volumes: [] 
+    volumes:
+      - /home/ubuntu/dispatch-ai/logs:/app/logs
 
   mongodb:
     image: mongo:latest
