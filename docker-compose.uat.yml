@@ -5,12 +5,12 @@ services:
       dockerfile: Dockerfile.uat
     container_name: dispatchai-api
     command: ["node", "dist/main"]
-    env_file:
+    .env_file:
       - .env
     environment:
+      - SHOW_ERROR_MESSAGE=true
       - NODE_ENV=uat
       - MONGODB_URI=mongodb://mongodb:27017/dispatchai
-      - SHOW_ERROR_MESSAGE=true
     ports:
       - "4000:4000"
     volumes:
