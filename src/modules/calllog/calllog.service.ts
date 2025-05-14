@@ -9,6 +9,7 @@ import { Error as MongooseError, Model } from 'mongoose';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
+import { sanitizeCallLogUpdate } from './utils/sanitize-update';
 
 @Injectable()
 export class CalllogService {
@@ -72,10 +73,11 @@ export class CalllogService {
     updateCallLogDto: UpdateCallLogDto,
   ): Promise<CallLog> {
     try {
+      const sanitizedUpdate = sanitizeCallLogUpdate(updateCallLogDto);
       const updatedCallLog = await this.callLogModel
         .findByIdAndUpdate(
           id,
-          { $set: updateCallLogDto },
+          { $set: sanitizedUpdate },
           { new: true, runValidators: true },
         )
         .exec();
