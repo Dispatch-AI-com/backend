@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile.uat
     container_name: dispatchai-api
     command: ["node", "dist/main"]
-    .env_file:
+    env_file:
       - .env
     environment:
       - SHOW_ERROR_MESSAGE=true
