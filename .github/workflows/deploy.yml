@@ -26,16 +26,6 @@ jobs:
           pnpm install
           pnpm build
 
-      - name: 🧹 Clean up and install production deps
-        run: |
-          rm -rf node_modules
-          pnpm install --omit=dev
-
-      - name: 🧾 Verify build output
-        run: |
-          echo "✅ Contents of dist/"
-          ls -al dist
-
       - name: 📤 Upload build artifacts to EC2
         uses: appleboy/scp-action@master
         with:
