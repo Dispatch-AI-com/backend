@@ -44,7 +44,7 @@ export class CompanyService {
     try {
       const companies = await this.companyModel.find().populate('user').exec();
       if (companies.length === 0) {
-        throw new NotFoundException('No companies found');
+        return [];
       }
       return companies;
     } catch (error) {
