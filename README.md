@@ -36,7 +36,7 @@ dispatchai-backend/
 1. Install dependencies:
 
    ```bash
-   npm install
+   pnpm install
    ```
 
 2. Start a local MongoDB instance:
@@ -53,15 +53,15 @@ dispatchai-backend/
 
    ```bash
    # Development mode with hot-reload
-   npm run build
-   npm run start:dev
+   pnpm run build
+   pnpm run dev
 
    # Debug mode
-   npm run start:debug
+   pnpm run start:debug
 
    # Production build and run
-   npm run build
-   npm run start
+   pnpm run build
+   pnpm run start
    ```
 
 ### Docker Setup
@@ -192,13 +192,16 @@ To create a new feature module:
 
 ```bash
 # Run all tests
-npm test
+pnpm test
+
+# Run all e2e tests
+pnpm run test:e2e
 
 # Run tests with watch mode
-npm run test:watch
+pnpm run test:watch
 
 # Generate test coverage report
-npm run test:cov
+pnpm run test:cov
 ```
 
 ### API Tests
@@ -235,7 +238,7 @@ curl http://localhost:3000/health
 1. Use NestJS debug mode:
 
    ```bash
-   npm run start:debug
+   pnpm run start:debug
    ```
 
 2. Attach your IDE debugger to the process
