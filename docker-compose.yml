@@ -22,7 +22,6 @@ services:
     volumes:
       - ./:/app
       - /app/node_modules
-    command: pnpm exec ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/main.ts
 
   mongodb:
     image: mongo:latest
