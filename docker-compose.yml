@@ -1,10 +1,8 @@
-version: "3.8"
-
 services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile.uat  # ✅ 使用运行时 Dockerfile
+      dockerfile: Dockerfile
     container_name: dispatchai-api
     restart: always
     ports:
@@ -19,6 +17,9 @@ services:
       - SHOW_ERROR_MESSAGE=true
     networks:
       - dispatchai-network
+    volumes:
+      - ./:/app
+      - /app/node_modules
 
   mongodb:
     image: mongo:latest
