@@ -42,7 +42,6 @@ dispatchai-backend/
 2. Run the application:
 
    ```bash
-   # Build and run
    pnpm run build
    ```
 
@@ -54,13 +53,14 @@ dispatchai-backend/
    docker compose down
    ```
 
-2. Rebuild containers after code changes:
+2. Build container & Rebuild containers after code changes:
 
    ```bash
    docker compose up -d --build 
    ```
 
 3. View logs:
+
    ```bash
    docker compose logs -f api
    ```
@@ -73,7 +73,8 @@ dispatchai-backend/
    docker compose down
    ```
 
-2. Rebuild containers after code changes:
+2. Build container & Rebuild containers after code changes:
+
    ```bash
    docker compose -f docker-compose.uat.yml up -d --build
    ```
@@ -164,11 +165,14 @@ To create a new feature module:
 
 ## Testing
 
-### Unit Tests
-
 ```bash
 # Run all tests
 pnpm test
+```
+
+```bash
+# Run test file
+pnpm test path/to/your/test_file.ts
 ```
 
 ### Type Checking
@@ -221,4 +225,4 @@ curl http://localhost:4000/health
 
 ## Swagger
 
-Enter http://localhost:3000/api-docs to view the swagger documentation
+Enter http://localhost:4000/api-docs to view the swagger documentation
