@@ -8,7 +8,7 @@ COPY dist ./dist
 COPY package.json ./
 COPY pnpm-lock.yaml ./
 
-RUN pnpm install --prod
+RUN pnpm install
 
 EXPOSE 4000
 CMD ["node", "dist/main"]
