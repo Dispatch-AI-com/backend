@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   api:
     build:
@@ -19,6 +17,9 @@ services:
       - SHOW_ERROR_MESSAGE=true
     networks:
       - dispatchai-network
+    volumes:
+      - ./:/app
+      - /app/node_modules
 
   mongodb:
     image: mongo:latest
