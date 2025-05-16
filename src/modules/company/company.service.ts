@@ -43,10 +43,7 @@ export class CompanyService {
   async findAll(): Promise<Company[]> {
     try {
       const companies = await this.companyModel.find().populate('user').exec();
-      if (companies.length === 0) {
-        return [];
-      }
-      return companies;
+      return companies.length ? companies : [];
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
