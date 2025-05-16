@@ -85,7 +85,11 @@ export class CalllogService {
       if (error instanceof MongooseError.ValidationError) {
         throw new BadRequestException(error.message);
       }
-      if (error instanceof MongooseError.CastError && error.path && error.path === '_id') {
+      if (
+        error instanceof MongooseError.CastError &&
+        error.path &&
+        error.path === '_id'
+      ) {
         throw new NotFoundException(`Call log with ID ${id} not found`);
       }
       throw error;

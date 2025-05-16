@@ -1,6 +1,8 @@
-import { UpdateCallLogDto } from '../dto/update-calllog.dto';
+import type { UpdateCallLogDto } from '../dto/update-calllog.dto';
 
-export function sanitizeCallLogUpdate(updateDto: UpdateCallLogDto): Partial<UpdateCallLogDto> {
+export function sanitizeCallLogUpdate(
+  updateDto: UpdateCallLogDto,
+): Partial<UpdateCallLogDto> {
   const sanitizedUpdate: Partial<UpdateCallLogDto> = {};
 
   // Only include fields that are defined in the update DTO
@@ -24,4 +26,4 @@ export function sanitizeCallLogUpdate(updateDto: UpdateCallLogDto): Partial<Upda
   }
 
   return sanitizedUpdate;
-} 
+}

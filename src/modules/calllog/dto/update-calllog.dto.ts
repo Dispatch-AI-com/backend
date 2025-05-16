@@ -1,11 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import {
-  IsDate,
-  IsEnum,
-  IsOptional,
-  IsString,
-} from 'class-validator';
+import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
 
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 
