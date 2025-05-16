@@ -29,19 +29,25 @@ export class AuthService {
     return user.toObject() as User;
   }
 
-  async login(loginDto: LoginDto): Promise<User> {
+  async login(loginDto: LoginDto): Promise<{ user: User; token: string }> {
     const foundUser = await this.userModel.findOne({ email: loginDto.email });
     if (!foundUser) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Username or Password Not Match');
     }
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       foundUser.password,
     );
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid password');
+      throw new UnauthorizedException('Username or Password Not Match');
     }
-    return foundUser.toObject() as User;
+    const user = foundUser.toObject() as User;
+    const token = this.jwtService.sign({
+      sub: user._id,
+      email: user.email,
+      role: user.role,
+    });
+    return { user, token };
   }
 
   async createUser(userData: CreateUserDto): Promise<User> {
