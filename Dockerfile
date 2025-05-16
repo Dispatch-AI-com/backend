@@ -1,7 +1,6 @@
 # Dockerfile.dev
 FROM node:20-alpine
 
-# 全局装 pnpm
 RUN npm install -g pnpm
 
 WORKDIR /app
