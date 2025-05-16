@@ -1,24 +1,25 @@
-version: "3.8"
-
 services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile.uat  # ✅ 使用运行时 Dockerfile
+      dockerfile: Dockerfile
     container_name: dispatchai-api
     restart: always
     ports:
       - "4000:4000"
     depends_on:
       - mongodb
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - MONGODB_URI=mongodb://mongodb:27017/dispatchai
-      - JWT_SECRET=${JWT_SECRET}
-      - JWT_ALGORITHM=${JWT_ALGORITHM}
-      - JWT_EXPIRE_TIME=${JWT_EXPIRE_TIME}
+      - SHOW_ERROR_MESSAGE=true
     networks:
       - dispatchai-network
+    volumes:
+      - ./:/app
+      - /app/node_modules
 
   mongodb:
     image: mongo:latest
