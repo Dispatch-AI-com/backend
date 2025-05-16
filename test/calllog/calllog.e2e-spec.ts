@@ -161,6 +161,17 @@ describe('CallLogController (e2e)', () => {
       });
     });
 
+    it('should return empty array when no logs found in date range', async () => {
+      const startDate = '2024-01-01';
+      const endDate = '2024-01-31';
+      const response = await request(app.getHttpServer())
+        .get(`${baseUrl}/date-range?startDate=${startDate}&endDate=${endDate}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBe(0);
+    });
+
     it('should handle invalid date parameters', async () => {
       const response = await request(app.getHttpServer())
         .get(`${baseUrl}/date-range?startDate=invalid&endDate=invalid`);

@@ -59,12 +59,6 @@ export class CalllogService {
       .sort({ startAt: -1 })
       .exec();
 
-    if (callLogs.length === 0) {
-      throw new NotFoundException(
-        `No call logs found between ${startDate.toISOString()} and ${endDate.toISOString()}`,
-      );
-    }
-
     return callLogs;
   }
 
