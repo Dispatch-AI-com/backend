@@ -85,7 +85,7 @@ dispatchai-backend/
 
 
   ```bash
-  curl http://localhost:4000/health
+  curl http://localhost:4000/api/health
   ```
 
   Expected response:
@@ -101,7 +101,7 @@ dispatchai-backend/
 
 - `GET /health/db` - Database connection check
   ```bash
-  curl http://localhost:4000/health/db
+  curl http://localhost:4000/api/health/db
   ```
   Expected response:
   ```json
@@ -194,7 +194,7 @@ You can use tools like Postman, cURL, or REST client extensions to test the API 
 Example with cURL:
 
 ```bash
-curl http://localhost:4000/health
+curl http://localhost:4000/api/health
 ```
 
 ## Troubleshooting
@@ -225,4 +225,4 @@ curl http://localhost:4000/health
 
 ## Swagger
 
-Enter http://localhost:4000/api-docs to view the swagger documentation
+Enter http://localhost:4000/api/docs to view the swagger documentation
