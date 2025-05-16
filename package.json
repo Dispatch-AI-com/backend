@@ -35,8 +35,7 @@
     "build": "nest build",
     "start": "node dist/main",
     "type-check": "tsc --noEmit",
-    "test": "jest",
-    "test:e2e": "jest --config jest-e2e.json",
+    "test": "jest --config jest.config.json",
     "lint": "prettier --write \"src/**/*.ts\" && eslint --fix \"src/**/*.ts\""
   },
   "devDependencies": {
