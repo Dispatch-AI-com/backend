@@ -4,7 +4,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile.uat  # ✅ 使用运行时 Dockerfile
+      dockerfile: Dockerfile
     container_name: dispatchai-api
     restart: always
     ports:

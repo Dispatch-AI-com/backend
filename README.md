@@ -39,50 +39,30 @@ dispatchai-backend/
    pnpm install
    ```
 
-2. Start a local MongoDB instance:
+2. Run the application:
 
    ```bash
-   # Option 1: Using Docker
-   docker run -p 27017:27017 mongo:latest
-
-   # Option 2: Local MongoDB installation
-   # Start your local MongoDB service
-   ```
-
-3. Run the application:
-
-   ```bash
-   # Development mode with hot-reload
-   pnpm run dev
-
-   # Production build and run
+   # Build and run
    pnpm run build
-   pnpm run start
    ```
 
 ### Docker Setup
 
-1. Build and start the containers:
+1. Stop containers:
 
    ```bash
-   docker-compose up -d
+   docker compose down
    ```
 
-2. Stop containers:
+2. Rebuild containers after code changes:
 
    ```bash
-   docker-compose down
+   docker compose up -d --build 
    ```
 
-3. Rebuild containers after code changes:
-
+3. View logs:
    ```bash
-   docker-compose up --build -d
-   ```
-
-4. View logs:
-   ```bash
-   docker-compose logs -f api
+   docker compose logs -f api
    ```
 
 ## API Endpoints
@@ -92,7 +72,7 @@ dispatchai-backend/
 - `GET /health` - Basic health check
 
   ```bash
-  curl http://localhost:3000/health
+  curl http://localhost:4000/health
   ```
 
   Expected response:
@@ -108,7 +88,7 @@ dispatchai-backend/
 
 - `GET /health/db` - Database connection check
   ```bash
-  curl http://localhost:3000/health/db
+  curl http://localhost:4000/health/db
   ```
   Expected response:
   ```json
@@ -121,18 +101,6 @@ dispatchai-backend/
   ```
 
 ## Configuration
-
-### Environment Variables
-
-Create a `.env` file in the root directory with the following variables:
-
-```
-NODE_ENV=development
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/dispatchai
-```
-
-When using Docker Compose, these environment variables are defined in the docker-compose.yml file.
 
 ### Path Aliases
 
@@ -210,7 +178,7 @@ You can use tools like Postman, cURL, or REST client extensions to test the API 
 Example with cURL:
 
 ```bash
-curl http://localhost:3000/health
+curl http://localhost:4000/health
 ```
 
 ## Troubleshooting
@@ -229,8 +197,8 @@ curl http://localhost:3000/health
    - Make sure the module is imported in app.module.ts
 
 3. **Docker issues**:
-   - If changes aren't reflecting, rebuild with `docker-compose up --build -d`
-   - Check logs with `docker-compose logs -f api`
+   - If changes aren't reflecting, rebuild with `docker compose up --build -d`
+   - Check logs with `docker compose logs -f api`
 
 ## Next Steps
 
