@@ -11,10 +11,11 @@ describe('CalllogService (unit)', () => {
   let service: CalllogService;
   let model: any;
 
-  // Create specific test data with known companyIds
-  const mockCallLog1 = createMockCallLogDto({ companyId: 'company-1' });
-  const mockCallLog2 = createMockCallLogDto({ companyId: 'company-2' });
-  const mockCallLogs = [mockCallLog1, mockCallLog2];
+  // Create specific test data with known companyIds and startAt dates
+  const mockCallLog1 = createMockCallLogDto({ companyId: 'company-1', startAt: new Date('2025-01-02T10:00:00Z') });
+  const mockCallLog2 = createMockCallLogDto({ companyId: 'company-2', startAt: new Date('2025-01-05T10:00:00Z') });
+  const mockCallLog3 = createMockCallLogDto({ companyId: 'company-3', startAt: new Date('2025-01-08T10:00:00Z') });
+  const mockCallLogs = [mockCallLog1, mockCallLog2, mockCallLog3];
 
   beforeEach(async () => {
     const mockModel = {
@@ -126,11 +127,23 @@ describe('CalllogService (unit)', () => {
 
   describe('findByStartAt', () => {
     it('should return call logs by date range', async () => {
-      model.find.mockReturnValue(model);
+      // mock find 方法根据日期区间过滤
+      model.find.mockImplementation((query: any) => {
+        // 只根据 startAt 区间过滤
+        const from = query.startAt?.$gte;
+        const to = query.startAt?.$lte;
+        const filtered = mockCallLogs.filter(log =>
+          (!from || log.startAt >= from) && (!to || log.startAt <= to)
+        );
+        model.exec.mockResolvedValue(filtered);
+        return model;
+      });
       model.sort.mockReturnValue(model);
-      model.exec.mockResolvedValue(mockCallLogs);
-      const result = await service.findByStartAt(new Date(), new Date());
-      expect(result).toEqual(mockCallLogs);
+      // 2025-01-03 ~ 2025-01-07 只会包含 mockCallLog2
+      const from = new Date('2025-01-03T00:00:00Z');
+      const to = new Date('2025-01-07T23:59:59Z');
+      const result = await service.findByStartAt(from, to);
+      expect(result).toEqual([mockCallLog2]);
     });
   });
 
