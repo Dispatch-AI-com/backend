@@ -53,11 +53,7 @@ dispatchai-backend/
 
    ```bash
    # Development mode with hot-reload
-   pnpm run build
    pnpm run dev
-
-   # Debug mode
-   pnpm run start:debug
 
    # Production build and run
    pnpm run build
@@ -193,15 +189,18 @@ To create a new feature module:
 ```bash
 # Run all tests
 pnpm test
+```
 
-# Run all e2e tests
-pnpm run test:e2e
+### Type Checking
 
-# Run tests with watch mode
-pnpm run test:watch
+```bash
+pnpm run type-check
+```
 
-# Generate test coverage report
-pnpm run test:cov
+### Linting
+
+```bash
+pnpm run lint
 ```
 
 ### API Tests
@@ -232,16 +231,6 @@ curl http://localhost:3000/health
 3. **Docker issues**:
    - If changes aren't reflecting, rebuild with `docker-compose up --build -d`
    - Check logs with `docker-compose logs -f api`
-
-### Debugging
-
-1. Use NestJS debug mode:
-
-   ```bash
-   pnpm run start:debug
-   ```
-
-2. Attach your IDE debugger to the process
 
 ## Next Steps
 
