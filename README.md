@@ -46,7 +46,7 @@ dispatchai-backend/
    pnpm run build
    ```
 
-### Docker Setup
+### Docker Setup (DEV)
 
 1. Stop containers:
 
@@ -65,11 +65,23 @@ dispatchai-backend/
    docker compose logs -f api
    ```
 
-## API Endpoints
+### Docker Setup (UAT)
+
+1. Stop containers:
+
+   ```bash
+   docker compose down
+   ```
+
+2. Rebuild containers after code changes:
+   ```bash
+   docker compose -f docker-compose.uat.yml up -d --build
+   ```
 
 ### Health Checks
 
 - `GET /health` - Basic health check
+
 
   ```bash
   curl http://localhost:4000/health
