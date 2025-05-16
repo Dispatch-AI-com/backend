@@ -15,11 +15,14 @@ services:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongodb:27017/dispatchai
       - SHOW_ERROR_MESSAGE=true
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
     networks:
       - dispatchai-network
     volumes:
       - ./:/app
       - /app/node_modules
+    command: pnpm exec ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/main.ts
 
   mongodb:
     image: mongo:latest
