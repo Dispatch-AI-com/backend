@@ -124,10 +124,15 @@ export class CompanyService {
         }
       }
 
+      const updateQuery = Object.entries(updateCompanyDto).reduce(
+        (acc, [key, value]) => ({ ...acc, [key]: { $eq: value } }),
+        {},
+      );
+
       const updatedCompany = await this.companyModel
         .findByIdAndUpdate(
           new Types.ObjectId(id),
-          { $set: updateCompanyDto },
+          { $set: updateQuery },
           {
             new: true,
             runValidators: true,
