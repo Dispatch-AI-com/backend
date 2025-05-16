@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
@@ -20,7 +20,7 @@ export class CompanyService {
   async create(createCompanyDto: CreateCompanyDto): Promise<Company> {
     try {
       const existingCompany = await this.companyModel
-        .findOne({ email: createCompanyDto.email })
+        .findOne({ email: { $eq: createCompanyDto.email } })
         .exec();
       if (existingCompany) {
         throw new ConflictException(
@@ -105,11 +105,15 @@ export class CompanyService {
     updateCompanyDto: UpdateCompanyDto,
   ): Promise<Company> {
     try {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('Invalid company ID format');
+      }
+
       if (updateCompanyDto.email?.trim() !== '') {
         const existingCompany = await this.companyModel
           .findOne({
-            email: updateCompanyDto.email,
-            _id: { $ne: id },
+            email: { $eq: updateCompanyDto.email },
+            _id: { $ne: new Types.ObjectId(id) },
           })
           .exec();
 
@@ -119,13 +123,19 @@ export class CompanyService {
           );
         }
       }
+
       const updatedCompany = await this.companyModel
-        .findByIdAndUpdate(id, updateCompanyDto, {
-          new: true,
-          runValidators: true,
-        })
+        .findByIdAndUpdate(
+          new Types.ObjectId(id),
+          { $set: updateCompanyDto },
+          {
+            new: true,
+            runValidators: true,
+          },
+        )
         .populate('user')
         .exec();
+
       if (!updatedCompany) {
         throw new NotFoundException(`Company with ID ${id} not found`);
       }
@@ -133,7 +143,8 @@ export class CompanyService {
     } catch (error) {
       if (
         error instanceof NotFoundException ||
-        error instanceof ConflictException
+        error instanceof ConflictException ||
+        error instanceof BadRequestException
       ) {
         throw error;
       }
