@@ -5,6 +5,7 @@ import { AppModule } from '../../src/modules/app.module';
 import mongoose from 'mongoose';
 import { ICallLog } from '../../src/common/interfaces/calllog';
 import { CallLogStatus } from '../../src/common/constants/calllog.constant';
+import { createMockCallLogDto } from './mock-calllog';
 
 describe('CallLogController (e2e)', () => {
   let app: INestApplication;
@@ -13,23 +14,13 @@ describe('CallLogController (e2e)', () => {
   const testCompanyId = 'company-123';
 
   // Test data setup
-  const createTestCallLog = (overrides = {}) => ({
-    companyId: testCompanyId,
-    startAt: new Date('2025-05-08T10:00:00Z'),
-    endAt: new Date('2025-05-08T10:10:00Z'),
-    status: CallLogStatus.Active,
-    duration: 600,
-    callerNumber: '+61400000000',
-    serviceBookedId: 'booking-123',
-    ...overrides,
-  });
+  const createTestCallLog = (overrides = {}) => createMockCallLogDto(overrides);
 
   const mockCallLogs = [
     createTestCallLog(),
     createTestCallLog({
       startAt: new Date('2025-05-09T11:00:00Z'),
       endAt: new Date('2025-05-09T11:15:00Z'),
-      duration: 900,
       callerNumber: '+61400000001',
       serviceBookedId: 'booking-124',
     }),
