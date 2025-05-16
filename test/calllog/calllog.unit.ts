@@ -127,9 +127,7 @@ describe('CalllogService (unit)', () => {
 
   describe('findByStartAt', () => {
     it('should return call logs by date range', async () => {
-      // mock find 方法根据日期区间过滤
       model.find.mockImplementation((query: any) => {
-        // 只根据 startAt 区间过滤
         const from = query.startAt?.$gte;
         const to = query.startAt?.$lte;
         const filtered = mockCallLogs.filter(log =>
@@ -139,7 +137,7 @@ describe('CalllogService (unit)', () => {
         return model;
       });
       model.sort.mockReturnValue(model);
-      // 2025-01-03 ~ 2025-01-07 只会包含 mockCallLog2
+      // 2025-01-03 ~ 2025-01-07 only contains mockCallLog2
       const from = new Date('2025-01-03T00:00:00Z');
       const to = new Date('2025-01-07T23:59:59Z');
       const result = await service.findByStartAt(from, to);
