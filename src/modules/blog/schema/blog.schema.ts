@@ -15,7 +15,7 @@ export class Blog {
   content!: string;
 
   @Prop({ required: true })
-  tag!: string;
+  tag!: string[];
 
   @Prop({ required: true, type: Date })
   date!: Date;
