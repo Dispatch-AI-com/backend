@@ -63,10 +63,6 @@ export class BlogService implements OnModuleInit {
       .limit(limit)
       .exec();
 
-    if (blogs.length === 0) {
-      throw new NotFoundException(`No blogs found matching: ${keyword}`);
-    }
-
     return blogs;
   }
 
@@ -88,9 +84,6 @@ export class BlogService implements OnModuleInit {
       .limit(limit)
       .exec();
 
-    if (blogs.length === 0) {
-      throw new NotFoundException(`No blogs found with tag: ${tag}`);
-    }
     return blogs;
   }
 
