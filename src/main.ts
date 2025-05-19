@@ -7,6 +7,7 @@ import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter'
 import { setupSwagger } from '@/config/swagger.config';
 import { winstonLogger } from '@/logger/winston.logger';
 import { AppModule } from '@/modules/app.module';
+
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.useLogger(winstonLogger);
@@ -30,5 +31,7 @@ async function bootstrap(): Promise<void> {
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
+  winstonLogger.log('info', `🚀 App running at ${new Date().toISOString()}`);
 }
+
 void bootstrap();

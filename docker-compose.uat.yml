@@ -11,6 +11,7 @@ services:
       - SHOW_ERROR_MESSAGE=true
       - NODE_ENV=uat
       - MONGODB_URI=mongodb://mongodb:27017/dispatchai
+      - LOG_TO_FILE=true
     ports:
       - "4000:4000"
     volumes:
