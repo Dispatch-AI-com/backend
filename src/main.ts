@@ -35,7 +35,6 @@ async function bootstrap(): Promise<void> {
     timeZone: 'Australia/Adelaide',
   });
   winstonLogger.log('info', `App running at ${adelaideTime}`);
-  winstonLogger.error('error', `Test error log`);
 }
 
 void bootstrap();
