@@ -10,7 +10,8 @@ const transports: TransportStream[] = [
     level: 'info',
     format: winston.format.combine(
       winston.format.timestamp(),
-      nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
+      winston.format.uncolorize(),
+      nestWinstonModuleUtilities.format.nestLike('DispatchAI', { colors: false }),
     ),
   }),
 ];
@@ -28,7 +29,7 @@ if (process.env.LOG_TO_FILE === 'true') {
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.uncolorize(),
-        nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
+        nestWinstonModuleUtilities.format.nestLike('DispatchAI', { colors: false }),
       ),
     }),
     new winston.transports.DailyRotateFile({
@@ -41,7 +42,7 @@ if (process.env.LOG_TO_FILE === 'true') {
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.uncolorize(),
-        nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
+        nestWinstonModuleUtilities.format.nestLike('DispatchAI', { colors: false }),
       ),
     }),
   );
