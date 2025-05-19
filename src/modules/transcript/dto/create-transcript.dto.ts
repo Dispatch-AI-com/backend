@@ -1,4 +1,4 @@
-import { IsMongoId, IsString, IsNotEmpty } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsString } from 'class-validator';
 import { Types } from 'mongoose';
 
 export class CreateTranscriptDto {

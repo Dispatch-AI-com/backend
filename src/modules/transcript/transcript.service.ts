@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Transcript } from './schema/transcript.schema';
+
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
+import { Transcript } from './schema/transcript.schema';
 
 @Injectable()
 export class TranscriptService {
@@ -20,12 +21,17 @@ export class TranscriptService {
   }
 
   async update(id: string, dto: UpdateTranscriptDto): Promise<Transcript> {
-    const updated = await this.transcriptModel.findByIdAndUpdate(id, dto, { new: true });
+    const updated = await this.transcriptModel.findByIdAndUpdate(id, dto, {
+      new: true,
+    });
     if (!updated) throw new NotFoundException('Transcript not found');
     return updated;
   }
 
-  async sanitizedUpdate(id: string, dto: UpdateTranscriptDto): Promise<Transcript> {
+  async sanitizedUpdate(
+    id: string,
+    dto: UpdateTranscriptDto,
+  ): Promise<Transcript> {
     const existing = await this.transcriptModel.findById(id);
     if (!existing) throw new NotFoundException('Transcript not found');
 
@@ -37,7 +43,7 @@ export class TranscriptService {
     const updated = await this.transcriptModel.findByIdAndUpdate(
       id,
       sanitizedData,
-      { new: true }
+      { new: true },
     );
     if (!updated) throw new NotFoundException('Transcript not found');
     return updated;
@@ -48,5 +54,4 @@ export class TranscriptService {
     if (!deleted) throw new NotFoundException('Transcript not found');
     return deleted;
   }
-
 }
