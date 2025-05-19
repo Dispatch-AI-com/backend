@@ -19,6 +19,7 @@ if (process.env.LOG_TO_FILE === 'true') {
   transports.push(
     new winston.transports.DailyRotateFile({
       filename: 'logs/combined-%DATE%.log',
+      auditFile: 'logs/.combined-audit.json',
       level: 'info',
       datePattern: 'YYYY-MM-DD',
       zippedArchive: false,
@@ -33,6 +34,7 @@ if (process.env.LOG_TO_FILE === 'true') {
     new winston.transports.DailyRotateFile({
       level: 'error',
       filename: 'logs/error-%DATE%.log',
+      auditFile: 'logs/.error-audit.json',
       datePattern: 'YYYY-MM-DD',
       zippedArchive: false,
       maxFiles: '30d',
