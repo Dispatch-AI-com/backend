@@ -19,8 +19,8 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
     AuthModule,
     PlanModule,
     CalllogModule,
-    ServiceBookingModule, 
-    ServiceFormFieldModule,  
+    ServiceBookingModule,
+    ServiceFormFieldModule,
   ],
 })
 export class AppModule {}

@@ -1,13 +1,14 @@
 //src/main.ts
+import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import morgan from 'morgan';
 
+import { AppModule } from '@/app.module';
 import { setupSwagger } from '@/config/swagger.config';
 import { winstonLogger } from '@/logger/winston.logger';
-import { AppModule } from '@/modules/app.module';
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app: INestApplication = await NestFactory.create(AppModule);
   app.useLogger(winstonLogger);
 
   app.setGlobalPrefix('api');
