@@ -7,31 +7,41 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
+import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
 
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { TranscriptService } from './transcript.service';
+import { Transcript } from './schema/transcript.schema';
 
+@ApiTags('Transcripts')
 @Controller('transcripts')
 export class TranscriptController {
   constructor(private readonly transcriptService: TranscriptService) {}
 
   @Post()
-  create(@Body() dto: CreateTranscriptDto) {
+  @ApiOkResponse({ type: Transcript })
+  create(@Body() dto: CreateTranscriptDto): Promise<Transcript> {
     return this.transcriptService.create(dto);
   }
 
   @Get('calllog/:calllogid')
-  findByCalllog(@Param('calllogid') calllogid: string) {
+  @ApiOkResponse({ type: [Transcript] })
+  findByCalllog(@Param('calllogid') calllogid: string): Promise<Transcript[]> {
     return this.transcriptService.findByCalllogId(calllogid);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTranscriptDto) {
+  @ApiOkResponse({ type: Transcript })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateTranscriptDto,
+  ): Promise<Transcript> {
     return this.transcriptService.update(id, dto);
   }
 
   @Delete(':id')
-  delete(@Param('id') id: string) {
+  @ApiOkResponse({ type: Transcript })
+  delete(@Param('id') id: string): Promise<Transcript> {
     return this.transcriptService.delete(id);
   }
 }
