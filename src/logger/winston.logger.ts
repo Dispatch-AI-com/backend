@@ -4,15 +4,18 @@ import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 
-export const winstonLogger = WinstonModule.createLogger({
-  transports: [
-    new winston.transports.Console({
-      level: 'info',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
-      ),
-    }),
+const transports: winston.transport[] = [
+  new winston.transports.Console({
+    level: 'info',
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
+    ),
+  }),
+];
+
+if (process.env.LOG_TO_FILE === 'true') {
+  transports.push(
     new winston.transports.DailyRotateFile({
       filename: 'logs/combined-%DATE%.log',
       level: 'info',
@@ -38,5 +41,9 @@ export const winstonLogger = WinstonModule.createLogger({
         nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
       ),
     }),
-  ],
+  );
+}
+
+export const winstonLogger = WinstonModule.createLogger({
+  transports,
 });
