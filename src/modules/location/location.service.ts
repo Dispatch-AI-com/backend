@@ -35,8 +35,9 @@ export class LocationService {
     updateLocationDto: UpdateLocationDto,
   ): Promise<Location> {
     const updatedLocation = await this.locationModel
-      .findByIdAndUpdate(id, updateLocationDto, { new: true })
+      .findByIdAndUpdate(id, { $set: updateLocationDto }, { new: true })
       .exec();
+
     if (!updatedLocation) {
       throw new NotFoundException(`Location not found`);
     }
