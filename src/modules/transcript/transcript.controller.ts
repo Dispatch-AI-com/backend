@@ -7,11 +7,11 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiTags, ApiOkResponse } from '@nestjs/swagger';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
-import { TranscriptService } from './transcript.service';
 import { Transcript } from './schema/transcript.schema';
+import { TranscriptService } from './transcript.service';
 
 @ApiTags('Transcripts')
 @Controller('transcripts')
