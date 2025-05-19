@@ -7,6 +7,7 @@ import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { PlanModule } from '@/modules/plan/plan.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
+import { TranscriptModule } from '@/modules/transcript/transcript.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
     PlanModule,
     WhisperModule,
     CalllogModule,
+    TranscriptModule,
   ],
 })
 export class AppModule {}
