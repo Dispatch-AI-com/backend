@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
+import { sanitizedUpdate } from './utils/sanitized-update';
 
 @Injectable()
 export class TranscriptService {
@@ -32,24 +33,7 @@ export class TranscriptService {
     id: string,
     dto: UpdateTranscriptDto,
   ): Promise<Transcript> {
-    const existing = await this.transcriptModel.findById(id);
-    if (!existing) throw new NotFoundException('Transcript not found');
-
-    // Only update summary field, preserve calllogid
-    const sanitizedData = {
-      summary:
-        dto.summary != null && dto.summary !== ''
-          ? dto.summary
-          : existing.summary,
-    };
-
-    const updated = await this.transcriptModel.findByIdAndUpdate(
-      id,
-      sanitizedData,
-      { new: true },
-    );
-    if (!updated) throw new NotFoundException('Transcript not found');
-    return updated;
+    return sanitizedUpdate(this.transcriptModel, id, dto);
   }
 
   async delete(id: string): Promise<Transcript> {
