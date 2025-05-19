@@ -18,21 +18,13 @@ jobs:
         with:
           node-version: 20
 
+      - name: 📥 Install pnpm
+        run: npm install -g pnpm
+
       - name: 📦 Install dependencies and build
         run: |
-          npm install
-          npm install -g @nestjs/cli
-          npm run build
-
-      - name: 🧹 Clean up and install production deps
-        run: |
-          rm -rf node_modules
-          npm install --omit=dev
-
-      - name: 🧾 Verify build output
-        run: |
-          echo "✅ Contents of dist/"
-          ls -al dist
+          pnpm install
+          pnpm build
 
       - name: 📤 Upload build artifacts to EC2
         uses: appleboy/scp-action@master
@@ -40,7 +32,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "dist/**,package.json,package-lock.json,docker-compose.uat.yml,Dockerfile.uat"
+          source: "dist/**,package.json,pnpm-lock.yaml,docker-compose.uat.yml,Dockerfile.uat"
           target: /home/ubuntu/deploy/dispatch-backend
           strip_components: 0
 
