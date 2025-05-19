@@ -4,7 +4,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import morgan from 'morgan';
 
-import { AppModule } from '@/app.module';
+import { AppModule } from '@/modules/app.module';
 import { setupSwagger } from '@/config/swagger.config';
 import { winstonLogger } from '@/logger/winston.logger';
 async function bootstrap(): Promise<void> {
