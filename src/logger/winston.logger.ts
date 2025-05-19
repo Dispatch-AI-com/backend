@@ -6,7 +6,8 @@ import * as winston from 'winston';
 import type TransportStream from 'winston-transport';
 
 const adelaideTimestamp = winston.format.timestamp({
-  format: () => new Date().toLocaleString('en-AU', { timeZone: 'Australia/Adelaide' })
+  format: () =>
+    new Date().toLocaleString('en-AU', { timeZone: 'Australia/Adelaide' }),
 });
 
 const transports: TransportStream[] = [
@@ -15,7 +16,9 @@ const transports: TransportStream[] = [
     format: winston.format.combine(
       adelaideTimestamp,
       winston.format.uncolorize(),
-      nestWinstonModuleUtilities.format.nestLike('DispatchAI', { colors: false }),
+      nestWinstonModuleUtilities.format.nestLike('DispatchAI', {
+        colors: false,
+      }),
     ),
   }),
 ];
@@ -33,7 +36,9 @@ if (process.env.LOG_TO_FILE === 'true') {
       format: winston.format.combine(
         adelaideTimestamp,
         winston.format.uncolorize(),
-        nestWinstonModuleUtilities.format.nestLike('DispatchAI', { colors: false }),
+        nestWinstonModuleUtilities.format.nestLike('DispatchAI', {
+          colors: false,
+        }),
       ),
     }),
     new winston.transports.DailyRotateFile({
@@ -46,7 +51,9 @@ if (process.env.LOG_TO_FILE === 'true') {
       format: winston.format.combine(
         adelaideTimestamp,
         winston.format.uncolorize(),
-        nestWinstonModuleUtilities.format.nestLike('DispatchAI', { colors: false }),
+        nestWinstonModuleUtilities.format.nestLike('DispatchAI', {
+          colors: false,
+        }),
       ),
     }),
   );
