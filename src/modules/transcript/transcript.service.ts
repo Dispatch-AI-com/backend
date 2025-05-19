@@ -37,7 +37,10 @@ export class TranscriptService {
 
     // Only update summary field, preserve calllogid
     const sanitizedData = {
-      summary: dto.summary || existing.summary,
+      summary:
+        dto.summary != null && dto.summary !== ''
+          ? dto.summary
+          : existing.summary,
     };
 
     const updated = await this.transcriptModel.findByIdAndUpdate(
