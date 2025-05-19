@@ -15,6 +15,7 @@ services:
       - NODE_ENV=development
       - MONGODB_URI=mongodb://mongodb:27017/dispatchai
       - SHOW_ERROR_MESSAGE=true
+      - LOG_TO_FILE=false
     networks:
       - dispatchai-network
     volumes:
