@@ -9,7 +9,7 @@ import {
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
-import { ServiceBooking } from '@/modules/service-booking/entities/service-booking.entity';
+import { ServiceBooking } from '@/modules/service-booking/schema/service-booking.schema';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
 
 @ApiTags('service-bookings')
