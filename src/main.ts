@@ -32,7 +32,7 @@ async function bootstrap(): Promise<void> {
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
   const adelaideTime = adelaideTimestamp;
-  winstonLogger.log('info', `🚀 App running at ${adelaideTime}`);
+  winstonLogger.info(`App running at ${adelaideTime}`);
 }
 
 void bootstrap();
