@@ -21,4 +21,5 @@ export class ServiceFormField {
   options!: string[];
 }
 
-export const ServiceFormFieldSchema = SchemaFactory.createForClass(ServiceFormField);
+export const ServiceFormFieldSchema =
+  SchemaFactory.createForClass(ServiceFormField);

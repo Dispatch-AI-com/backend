@@ -1,14 +1,14 @@
+import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsEnum,
-  IsDateString,
-  ValidateNested,
   ArrayMinSize,
   IsArray,
+  IsDateString,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 export class ClientDto {
   @IsString()
@@ -34,6 +34,12 @@ export class FormValueDto {
   answer!: string;
 }
 
+export enum ServiceBookingStatus {
+  Pending = 'pending',
+  Confirmed = 'confirmed',
+  Done = 'done',
+}
+
 export class CreateServiceBookingDto {
   @IsString()
   @IsNotEmpty()
@@ -54,11 +60,13 @@ export class CreateServiceBookingDto {
   serviceFormValues!: FormValueDto[];
 
   @IsDateString()
+  @Type(() => Date)
   bookingTime!: Date;
 
-  @IsEnum(['pending', 'confirmed', 'done'])
+  @Type(() => String)
+  @IsEnum(ServiceBookingStatus)
   @IsOptional()
-  status?: string;
+  status?: ServiceBookingStatus;
 
   @IsString()
   @IsOptional()

@@ -47,4 +47,5 @@ export class ServiceBooking {
   bookingTime!: Date;
 }
 
-export const ServiceBookingSchema = SchemaFactory.createForClass(ServiceBooking);
+export const ServiceBookingSchema =
+  SchemaFactory.createForClass(ServiceBooking);

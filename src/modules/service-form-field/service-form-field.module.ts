@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { ServiceFormField, ServiceFormFieldSchema } from '@/modules/service-form-field/schema/service-form-field.schema';
+
+import {
+  ServiceFormField,
+  ServiceFormFieldSchema,
+} from '@/modules/service-form-field/schema/service-form-field.schema';
 import { ServiceFormFieldController } from '@/modules/service-form-field/service-form-field.controller';
 
 @Module({
@@ -9,6 +13,6 @@ import { ServiceFormFieldController } from '@/modules/service-form-field/service
       { name: ServiceFormField.name, schema: ServiceFormFieldSchema },
     ]),
   ],
-  controllers: [ServiceFormFieldController], 
+  controllers: [ServiceFormFieldController],
 })
 export class ServiceFormFieldModule {}

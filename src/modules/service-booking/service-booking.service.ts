@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
+import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
 import {
   ServiceBooking,
   ServiceBookingDocument,
 } from '@/modules/service-booking/schema/service-booking.schema';
-
-import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
 
 @Injectable()
 export class ServiceBookingService {
@@ -23,7 +23,7 @@ export class ServiceBookingService {
   async findAll(): Promise<ServiceBooking[]> {
     return this.bookingModel.find().exec();
   }
-  
+
   async findById(id: string): Promise<ServiceBooking | null> {
     return this.bookingModel.findById(id).exec();
   }
