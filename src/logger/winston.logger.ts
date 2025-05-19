@@ -3,8 +3,9 @@ import 'winston-daily-rotate-file';
 import { utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
+import type TransportStream from 'winston-transport';
 
-const transports: winston.transport[] = [
+const transports: TransportStream[] = [
   new winston.transports.Console({
     level: 'info',
     format: winston.format.combine(
