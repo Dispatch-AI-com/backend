@@ -31,8 +31,10 @@ async function bootstrap(): Promise<void> {
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
-  winstonLogger.log('info', `🚀 App running at ${new Date().toISOString()}`);
-  winstonLogger.error(`Test Error`);
+  const adelaideTime = new Date().toLocaleString('en-AU', {
+    timeZone: 'Australia/Adelaide',
+  });
+  winstonLogger.log('info', `App running at ${adelaideTime}`);
 }
 
 void bootstrap();

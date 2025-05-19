@@ -5,12 +5,20 @@ import { WinstonModule } from 'nest-winston';
 import * as winston from 'winston';
 import type TransportStream from 'winston-transport';
 
+const adelaideTimestamp = winston.format.timestamp({
+  format: () =>
+    new Date().toLocaleString('en-AU', { timeZone: 'Australia/Adelaide' }),
+});
+
 const transports: TransportStream[] = [
   new winston.transports.Console({
     level: 'info',
     format: winston.format.combine(
-      winston.format.timestamp(),
-      nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
+      adelaideTimestamp,
+      winston.format.uncolorize(),
+      nestWinstonModuleUtilities.format.nestLike('DispatchAI', {
+        colors: false,
+      }),
     ),
   }),
 ];
@@ -26,9 +34,11 @@ if (process.env.LOG_TO_FILE === 'true') {
       maxSize: '20m',
       maxFiles: '14d',
       format: winston.format.combine(
-        winston.format.timestamp(),
+        adelaideTimestamp,
         winston.format.uncolorize(),
-        nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
+        nestWinstonModuleUtilities.format.nestLike('DispatchAI', {
+          colors: false,
+        }),
       ),
     }),
     new winston.transports.DailyRotateFile({
@@ -39,9 +49,11 @@ if (process.env.LOG_TO_FILE === 'true') {
       zippedArchive: false,
       maxFiles: '30d',
       format: winston.format.combine(
-        winston.format.timestamp(),
+        adelaideTimestamp,
         winston.format.uncolorize(),
-        nestWinstonModuleUtilities.format.nestLike('DispatchAI'),
+        nestWinstonModuleUtilities.format.nestLike('DispatchAI', {
+          colors: false,
+        }),
       ),
     }),
   );
