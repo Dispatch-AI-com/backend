@@ -25,6 +25,24 @@ export class TranscriptService {
     return updated;
   }
 
+  async sanitizedUpdate(id: string, dto: UpdateTranscriptDto): Promise<Transcript> {
+    const existing = await this.transcriptModel.findById(id);
+    if (!existing) throw new NotFoundException('Transcript not found');
+
+    // Only update summary field, preserve calllogid
+    const sanitizedData = {
+      summary: dto.summary || existing.summary,
+    };
+
+    const updated = await this.transcriptModel.findByIdAndUpdate(
+      id,
+      sanitizedData,
+      { new: true }
+    );
+    if (!updated) throw new NotFoundException('Transcript not found');
+    return updated;
+  }
+
   async delete(id: string): Promise<Transcript> {
     const deleted = await this.transcriptModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Transcript not found');
