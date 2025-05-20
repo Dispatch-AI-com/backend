@@ -5,6 +5,7 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { CalllogModule } from '@/modules/calllog/calllog.module';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
+import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
@@ -18,6 +19,7 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
     HealthModule,
     AuthModule,
     PlanModule,
+    LocationModule,
     WhisperModule,
     CalllogModule,
     TranscriptModule,

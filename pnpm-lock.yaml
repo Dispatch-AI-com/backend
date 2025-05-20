@@ -98,6 +98,9 @@ importers:
       winston-daily-rotate-file:
         specifier: ^5.0.0
         version: 5.0.0(winston@3.17.0)
+      winston-transport:
+        specifier: ^4.9.0
+        version: 4.9.0
     devDependencies:
       '@darraghor/eslint-plugin-nestjs-typed':
         specifier: ^6.4.12

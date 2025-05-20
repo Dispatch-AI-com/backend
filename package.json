@@ -29,15 +29,15 @@
     "streamifier": "^0.1.1",
     "swagger-jsdoc": "^6.2.8",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "winston-transport": "^4.9.0"
   },
   "scripts": {
     "dev": "nest start --watch",
     "build": "nest build",
     "start": "node dist/main",
     "type-check": "tsc --noEmit",
-    "test": "jest",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test": "jest --config jest.config.json",
     "lint": "prettier --write \"src/**/*.ts\" && eslint --fix \"src/**/*.ts\""
   },
   "devDependencies": {
