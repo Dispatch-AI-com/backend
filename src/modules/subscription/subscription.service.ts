@@ -4,6 +4,7 @@ import { Model } from 'mongoose';
 import { Subscription, SubscriptionDocument } from './schema/subscription.schema';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { Plan, PlanDocument } from '../plan/schema/plan.schema';
+import { StripeService } from '../stripe/stripe.service';
 import { RRule } from 'rrule';
 
 @Injectable()
@@ -11,44 +12,33 @@ export class SubscriptionService {
   constructor(
     @InjectModel(Subscription.name) private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(Plan.name) private readonly planModel: Model<PlanDocument>,
+    private readonly stripeService: StripeService,
   ) {}
 
-  async createSubscriptionWithoutStripe(dto: CreateSubscriptionDto) {
+  async createSubscription(dto: CreateSubscriptionDto) {
     const plan = await this.planModel.findById(dto.planId);
     if (!plan) throw new NotFoundException('Plan not found');
 
-    if (!plan.pricing || plan.pricing.length !== 1) {
-      throw new BadRequestException('Plan must have exactly one pricing rule.');
-    }
-
     const pricing = plan.pricing[0];
-
-    const now = new Date();
-
-    let rule: RRule;
-    try {
-      rule = RRule.fromString(pricing.rrule);
-    } catch (e) {
-      throw new BadRequestException('Invalid rrule format in plan.');
+    if (!pricing || !pricing.stripePriceId) {
+      throw new BadRequestException('Missing Stripe price ID in plan pricing.');
     }
 
-    const nextOccurrence = rule.after(now);
-    if (!nextOccurrence) {
-      throw new BadRequestException('Unable to compute billing cycle end date from rrule.');
-    }
-
-    const subscription = await this.subscriptionModel.create({
+    const session = await this.stripeService.createCheckoutSession({
+      priceId: pricing.stripePriceId,
       companyId: dto.companyId,
-      planId: plan._id,
-      startAt: now,
-      endAt: nextOccurrence,
-      status: 'active',
+      planId: dto.planId,
+    });
+
+    await this.subscriptionModel.create({
+      companyId: dto.companyId,
+      planId: dto.planId,
+      status: 'pending',
     });
 
     return {
-      message: 'Subscription created successfully',
-      subscriptionId: subscription._id,
-      validUntil: nextOccurrence,
+      message: 'Stripe checkout session created',
+      checkoutUrl: session.url,
     };
   }
 
@@ -69,17 +59,46 @@ export class SubscriptionService {
     };
   }
 
-  async getActiveSubscription(companyId: string) {
-    const sub = await this.subscriptionModel.findOne({ companyId }).populate('planId');
+  async activateSubscription(companyId: string, planId: string) {
+    const subscription = await this.subscriptionModel.findOne({
+      companyId,
+      planId,
+      status: 'pending',
+    });
 
-    if (!sub) return null;
-
-    const now = new Date();
-    if (sub.status === 'active' && sub.endAt < now) {
-      sub.status = 'expired';
-      await sub.save();
+    if (!subscription) {
+      throw new NotFoundException('Pending subscription not found');
     }
 
-    return sub;
+    const plan = await this.planModel.findById(planId);
+    if (!plan || !plan.pricing || plan.pricing.length !== 1) {
+      throw new BadRequestException('Plan is invalid or misconfigured');
+    }
+
+    const pricing = plan.pricing[0];
+    let rule: RRule;
+    try {
+      rule = RRule.fromString(pricing.rrule);
+    } catch {
+      throw new BadRequestException('Invalid rrule in plan');
+    }
+
+    const now = new Date();
+    const endAt = rule.after(now);
+    if (!endAt) {
+      throw new BadRequestException('Could not compute end date from rrule');
+    }
+
+    subscription.status = 'active';
+    subscription.startAt = now;
+    subscription.endAt = endAt;
+
+    await subscription.save();
+
+    return {
+      message: 'Subscription activated',
+      subscriptionId: subscription._id,
+      validUntil: endAt,
+    };
   }
 }

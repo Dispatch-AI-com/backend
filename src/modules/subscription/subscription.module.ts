@@ -4,6 +4,7 @@ import { SubscriptionService } from './subscription.service';
 import { SubscriptionController } from './subscription.controller';
 import { Subscription, SubscriptionSchema } from './schema/subscription.schema';
 import { Plan, planSchema } from '../plan/schema/plan.schema';
+import { StripeModule } from '../stripe/stripe.module'; 
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { Plan, planSchema } from '../plan/schema/plan.schema';
       { name: Subscription.name, schema: SubscriptionSchema },
       { name: Plan.name, schema: planSchema },
     ]),
+    StripeModule,
   ],
   controllers: [SubscriptionController],
   providers: [SubscriptionService],
