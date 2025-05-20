@@ -16,6 +16,7 @@ export class Plan {
       {
         rrule: { type: String, required: true }, // e.g. "FREQ=MONTHLY;INTERVAL=1"
         price: { type: Number, required: true },
+        stripePriceId: { type: String, required: true }, 
       },
     ],
     required: true,
@@ -23,6 +24,7 @@ export class Plan {
   pricing!: {
     rrule: string;
     price: number;
+    stripePriceId: string;
   }[];
 
   @Prop({

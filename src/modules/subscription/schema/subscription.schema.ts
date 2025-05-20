@@ -11,14 +11,20 @@ export class Subscription {
   @Prop({ type: Types.ObjectId, ref: 'Plan', required: true })
   planId!: Types.ObjectId;
 
-  @Prop({ required: true })
-  startAt!: Date;
+  @Prop({ required: false }) 
+  startAt?: Date;
 
-  @Prop({ required: true })
-  endAt!: Date;
+  @Prop({ required: false }) 
+  endAt?: Date;
 
-  @Prop({ required: true, enum: ['active', 'cancelled', 'expired'], default: 'active' })
-  status!: 'active'| 'cancelled'| 'expired';
+  @Prop({ required: true, enum: ['active', 'cancelled', 'expired', 'pending']})
+  status!: 'active' | 'cancelled' | 'expired' | 'pending';
+
+  @Prop({ default: Date.now })
+  createdAt!: Date;
+
+  @Prop({ default: Date.now })
+  updatedAt!: Date;
 }
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);

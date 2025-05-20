@@ -18,6 +18,9 @@ import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
 
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
+import { StripeModule } from '@/modules/stripe/stripe.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -37,6 +40,8 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
     ServiceFormFieldModule,
     ServiceModule,
     ServiceLocationMappingModule,
+    SubscriptionModule,
+    StripeModule,
   ],
 })
 export class AppModule {}
