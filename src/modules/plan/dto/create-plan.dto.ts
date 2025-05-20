@@ -26,6 +26,9 @@ export class PricingDto {
   })
   @IsNumber({}, { message: 'price must be a valid number' })
   price!: number;
+
+  @IsString()
+  stripePriceId!: string; 
 }
 
 export class FeaturesDto {

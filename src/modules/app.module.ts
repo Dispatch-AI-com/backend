@@ -13,6 +13,8 @@ import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chu
 import { WhisperModule } from '@/modules/whisper/whisper.module';
 import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
 import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
+import { StripeModule } from '@/modules/stripe/stripe.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
     AvailabilityModule,
     ServiceBookingModule,
     ServiceFormFieldModule,
+    SubscriptionModule,
+    StripeModule,
   ],
 })
 export class AppModule {}
