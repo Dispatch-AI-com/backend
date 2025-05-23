@@ -69,10 +69,4 @@ export class TranscriptChunkService {
     await this.chunkModel.deleteMany({ transcriptId });
   }
 
-  async sanitizedUpdate(
-    id: string,
-    dto: UpdateTranscriptChunkDto,
-  ): Promise<TranscriptChunkDocument> {
-    return sanitizedUpdate(this.chunkModel, id, dto);
-  }
 }
