@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
+import { CalllogService } from '../calllog/calllog.service';
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
@@ -11,9 +12,20 @@ export class TranscriptService {
   constructor(
     @InjectModel(Transcript.name)
     private readonly transcriptModel: Model<Transcript>,
+    private readonly calllogService: CalllogService,
   ) {}
 
   async create(dto: CreateTranscriptDto): Promise<Transcript> {
+    // Verify that the referenced CallLog exists
+    try {
+      await this.calllogService.update(dto.calllogid.toString(), {});
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new NotFoundException(`CallLog with ID ${dto.calllogid} not found`);
+      }
+      throw error;
+    }
+    
     return this.transcriptModel.create(dto);
   }
 
