@@ -22,9 +22,12 @@ export class TranscriptChunkService {
   ) {}
 
   async create(dto: CreateTranscriptChunkDto): Promise<TranscriptChunk> {
-    // 检查时间段重叠
     // Validate dto fields
-    if (typeof dto.transcriptId !== 'string' || typeof dto.startAt !== 'number' || typeof dto.endAt !== 'number') {
+    if (
+      typeof dto.transcriptId !== 'string' ||
+      !(dto.startAt instanceof Date || typeof dto.startAt === 'string' || typeof dto.startAt === 'number') ||
+      !(dto.endAt instanceof Date || typeof dto.endAt === 'string' || typeof dto.endAt === 'number')
+    ) {
       throw new BadRequestException('Invalid input data');
     }
 
