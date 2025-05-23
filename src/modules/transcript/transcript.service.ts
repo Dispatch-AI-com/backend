@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { CallLog } from '../calllog/schema/calllog.schema';
 import { TranscriptChunk } from '../transcript_chunk/schema/transcript_chunk.schema';
@@ -20,6 +20,9 @@ export class TranscriptService {
   ) {}
 
   async create(dto: CreateTranscriptDto): Promise<Transcript> {
+    if (!Types.ObjectId.isValid(dto.calllogid)) {
+      throw new BadRequestException('Invalid calllogid');
+    }
     const calllog = await this.callLogModel.findById(dto.calllogid);
     if (!calllog) {
       throw new NotFoundException(
@@ -34,6 +37,9 @@ export class TranscriptService {
   }
 
   async update(id: string, dto: UpdateTranscriptDto): Promise<Transcript> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid transcript id');
+    }
     const updated = await this.transcriptModel.findByIdAndUpdate(id, dto, {
       new: true,
     });
