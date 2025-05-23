@@ -15,8 +15,8 @@ export async function sanitizedUpdate(
   // Only update summary field, preserve calllogid
   const sanitizedData = {
     summary:
-      dto.summary != null && dto.summary !== ''
-        ? dto.summary
+      typeof dto.summary === 'string' && dto.summary.trim() !== ''
+        ? dto.summary.trim()
         : existing.summary,
   };
 
