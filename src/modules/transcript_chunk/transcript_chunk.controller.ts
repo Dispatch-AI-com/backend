@@ -32,25 +32,29 @@ export class TranscriptChunkController {
     return this.chunkService.create(dto);
   }
 
-  @Get(':transcriptId')
+  @Get(':id/chunks')
   @ApiOkResponse({ type: [TranscriptChunk] })
   findAll(
-    @Param('transcriptId') transcriptId: string,
+    @Param('id') transcriptId: string,
   ): Promise<TranscriptChunk[]> {
     return this.chunkService.findAll(transcriptId);
   }
 
-  @Get('chunk/:id')
+  @Get(':transcriptId/chunks/:id')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
-  findOne(@Param('id') id: string): Promise<TranscriptChunk> {
+  findOne(
+    @Param('transcriptId') transcriptId: string,
+    @Param('id') id: string,
+  ): Promise<TranscriptChunk> {
     return this.chunkService.findOne(id);
   }
 
-  @Patch('chunk/:id')
+  @Patch(':transcriptId/chunks/:id')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
   update(
+    @Param('transcriptId') transcriptId: string,
     @Param('id') id: string,
     @Body() dto: UpdateTranscriptChunkDto,
   ): Promise<TranscriptChunk> {
