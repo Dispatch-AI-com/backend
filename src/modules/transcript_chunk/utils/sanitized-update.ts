@@ -1,5 +1,5 @@
-import { NotFoundException } from '@nestjs/common';
-import type { Model } from 'mongoose';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { Types, Model } from 'mongoose';
 
 import type { UpdateTranscriptChunkDto } from '../dto/update-transcript-chunk.dto';
 import type { TranscriptChunkDocument } from '../schema/transcript_chunk.schema';
@@ -9,10 +9,15 @@ export async function sanitizedUpdate(
   id: string,
   dto: UpdateTranscriptChunkDto,
 ): Promise<TranscriptChunkDocument> {
+  // Validate id
+  if (!Types.ObjectId.isValid(id)) {
+    throw new BadRequestException('Invalid chunk id');
+  }
+
   const existing = await chunkModel.findById(id);
   if (!existing) throw new NotFoundException('Transcript chunk not found');
 
-  // 只允许更新 text、speakerType、startAt、endAt
+  // Only allow updating specific fields
   const sanitizedData: Partial<UpdateTranscriptChunkDto> = {};
   if (dto.text !== undefined) sanitizedData.text = dto.text;
   if (dto.speakerType !== undefined)
