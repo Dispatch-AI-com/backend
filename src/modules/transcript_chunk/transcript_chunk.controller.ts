@@ -57,6 +57,16 @@ export class TranscriptChunkController {
     return this.chunkService.update(id, dto);
   }
 
+  @Patch('chunk/:id/sanitized')
+  @ApiOkResponse({ type: TranscriptChunk })
+  @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
+  sanitizedUpdate(
+    @Param('id') id: string,
+    @Body() dto: UpdateTranscriptChunkDto,
+  ): Promise<TranscriptChunk> {
+    return this.chunkService.sanitizedUpdate(id, dto);
+  }
+
   @Delete('chunk/:id')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })

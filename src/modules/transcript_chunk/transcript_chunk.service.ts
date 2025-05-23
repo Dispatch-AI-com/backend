@@ -12,6 +12,7 @@ import {
   TranscriptChunk,
   TranscriptChunkDocument,
 } from './schema/transcript_chunk.schema';
+import { sanitizedUpdate } from './utils/sanitized-update';
 
 @Injectable()
 export class TranscriptChunkService {
@@ -50,11 +51,7 @@ export class TranscriptChunkService {
     id: string,
     dto: UpdateTranscriptChunkDto,
   ): Promise<TranscriptChunk> {
-    const updated = await this.chunkModel.findByIdAndUpdate(id, dto, {
-      new: true,
-    });
-    if (!updated) throw new NotFoundException('Transcript chunk not found');
-    return updated;
+    return sanitizedUpdate(this.chunkModel, id, dto);
   }
 
   async delete(id: string): Promise<TranscriptChunk> {
@@ -65,5 +62,12 @@ export class TranscriptChunkService {
 
   async deleteByTranscriptId(transcriptId: string): Promise<void> {
     await this.chunkModel.deleteMany({ transcriptId });
+  }
+
+  async sanitizedUpdate(
+    id: string,
+    dto: UpdateTranscriptChunkDto,
+  ): Promise<TranscriptChunkDocument> {
+    return sanitizedUpdate(this.chunkModel, id, dto);
   }
 }
