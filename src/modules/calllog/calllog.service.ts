@@ -4,21 +4,21 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Error as MongooseError, Model, Types } from 'mongoose';
+import { Error as MongooseError, Model } from 'mongoose';
 
+import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
 import { sanitizeCallLogUpdate } from './utils/sanitize-update';
-import { TranscriptService } from '../transcript/transcript.service';
-import { Transcript } from '../transcript/schema/transcript.schema';
 
 @Injectable()
 export class CalllogService {
   constructor(
     @InjectModel(CallLog.name)
     private readonly callLogModel: Model<CallLogDocument>,
-    private readonly transcriptService: TranscriptService,
+    @InjectModel(Transcript.name)
+    private readonly transcriptModel: Model<Transcript>,
   ) {}
 
   async create(dto: CreateCallLogDto): Promise<CallLog> {
@@ -101,19 +101,13 @@ export class CalllogService {
 
   async delete(id: string): Promise<CallLog> {
     try {
-      // First find the call log to ensure it exists
       const callLog = await this.callLogModel.findById(id);
       if (!callLog) {
         throw new NotFoundException(`Call log with ID ${id} not found`);
       }
 
-      // Delete all related transcripts
-      const transcripts = await this.transcriptService.findByCalllogId(id) as (Transcript & { _id: Types.ObjectId })[];
-      for (const transcript of transcripts) {
-        await this.transcriptService.delete(transcript._id.toString());
-      }
+      await this.transcriptModel.deleteMany({ calllogid: id });
 
-      // Delete the call log
       const deleted = await this.callLogModel.findByIdAndDelete(id);
       if (!deleted) {
         throw new NotFoundException(`Call log with ID ${id} not found`);

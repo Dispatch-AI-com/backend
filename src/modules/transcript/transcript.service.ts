@@ -2,11 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
-import { CalllogService } from '../calllog/calllog.service';
+import { CallLog } from '../calllog/schema/calllog.schema';
+import { TranscriptChunk } from '../transcript_chunk/schema/transcript_chunk.schema';
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
-import { TranscriptChunk } from '../transcript_chunk/schema/transcript_chunk.schema';
 
 @Injectable()
 export class TranscriptService {
@@ -15,20 +15,17 @@ export class TranscriptService {
     private readonly transcriptModel: Model<Transcript>,
     @InjectModel(TranscriptChunk.name)
     private readonly transcriptChunkModel: Model<TranscriptChunk>,
-    private readonly calllogService: CalllogService,
+    @InjectModel(CallLog.name)
+    private readonly callLogModel: Model<CallLog>,
   ) {}
 
   async create(dto: CreateTranscriptDto): Promise<Transcript> {
-    // Verify that the referenced CallLog exists
-    try {
-      await this.calllogService.update(dto.calllogid.toString(), {});
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new NotFoundException(`CallLog with ID ${dto.calllogid} not found`);
-      }
-      throw error;
+    const calllog = await this.callLogModel.findById(dto.calllogid);
+    if (!calllog) {
+      throw new NotFoundException(
+        `CallLog with ID ${dto.calllogid.toString()} not found`,
+      );
     }
-    
     return this.transcriptModel.create(dto);
   }
 

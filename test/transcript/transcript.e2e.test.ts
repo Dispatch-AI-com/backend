@@ -53,7 +53,9 @@ describe('Transcript (e2e)', () => {
       .get(`/transcripts/calllog/${calllogId}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
     expect(res.body[0]._id).toBe(transcriptId);
+    expect(res.body[0].calllogid).toBe(calllogId);
   });
 
   it('should update the Transcript', async () => {
@@ -62,6 +64,7 @@ describe('Transcript (e2e)', () => {
       .send({ summary: 'Updated summary' });
     expect(res.status).toBe(200);
     expect(res.body.summary).toBe('Updated summary');
+    expect(res.body._id).toBe(transcriptId);
   });
 
   it('should delete the Transcript', async () => {
@@ -71,10 +74,11 @@ describe('Transcript (e2e)', () => {
     expect(res.body._id).toBe(transcriptId);
   });
 
-  it('should delete the CallLog', async () => {
+  it('should return empty array after deleting the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .delete(`/calllog/${calllogId}`);
+      .get(`/transcripts/calllog/${calllogId}`);
     expect(res.status).toBe(200);
-    expect(res.body._id).toBe(calllogId);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBe(0);
   });
 });

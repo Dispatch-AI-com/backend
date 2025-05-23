@@ -1,9 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { TranscriptChunk, TranscriptChunkDocument } from './schema/transcript_chunk.schema';
+import { Model } from 'mongoose';
+
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
+import {
+  TranscriptChunk,
+  TranscriptChunkDocument,
+} from './schema/transcript_chunk.schema';
 
 @Injectable()
 export class TranscriptChunkService {
@@ -19,8 +27,8 @@ export class TranscriptChunkService {
       $or: [
         { startAt: { $lt: dto.endAt, $gte: dto.startAt } },
         { endAt: { $gt: dto.startAt, $lte: dto.endAt } },
-        { startAt: { $lte: dto.startAt }, endAt: { $gte: dto.endAt } }
-      ]
+        { startAt: { $lte: dto.startAt }, endAt: { $gte: dto.endAt } },
+      ],
     });
     if (overlap) {
       throw new BadRequestException('Time range overlaps with another chunk.');
@@ -38,8 +46,13 @@ export class TranscriptChunkService {
     return chunk;
   }
 
-  async update(id: string, dto: UpdateTranscriptChunkDto): Promise<TranscriptChunk> {
-    const updated = await this.chunkModel.findByIdAndUpdate(id, dto, { new: true });
+  async update(
+    id: string,
+    dto: UpdateTranscriptChunkDto,
+  ): Promise<TranscriptChunk> {
+    const updated = await this.chunkModel.findByIdAndUpdate(id, dto, {
+      new: true,
+    });
     if (!updated) throw new NotFoundException('Transcript chunk not found');
     return updated;
   }

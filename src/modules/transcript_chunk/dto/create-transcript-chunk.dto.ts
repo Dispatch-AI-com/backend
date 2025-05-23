@@ -1,5 +1,11 @@
-import { IsMongoId, IsNotEmpty, IsString, IsEnum, IsDate } from 'class-validator';
 import { Type } from 'class-transformer';
+import {
+  IsDate,
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsString,
+} from 'class-validator';
 
 export class CreateTranscriptChunkDto {
   @IsMongoId()
