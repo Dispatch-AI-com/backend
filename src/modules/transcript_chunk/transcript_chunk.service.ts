@@ -23,8 +23,13 @@ export class TranscriptChunkService {
 
   async create(dto: CreateTranscriptChunkDto): Promise<TranscriptChunk> {
     // 检查时间段重叠
+    // Validate dto fields
+    if (typeof dto.transcriptId !== 'string' || typeof dto.startAt !== 'number' || typeof dto.endAt !== 'number') {
+      throw new BadRequestException('Invalid input data');
+    }
+
     const overlap = await this.chunkModel.findOne({
-      transcriptId: dto.transcriptId,
+      transcriptId: { $eq: dto.transcriptId },
       $or: [
         { startAt: { $lt: dto.endAt, $gte: dto.startAt } },
         { endAt: { $gt: dto.startAt, $lte: dto.endAt } },
