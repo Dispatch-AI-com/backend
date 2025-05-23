@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { CalllogController } from './calllog.controller';
@@ -9,7 +9,7 @@ import { TranscriptModule } from '../transcript/transcript.module';
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: CallLog.name, schema: CallLogSchema }]),
-    TranscriptModule,
+    forwardRef(() => TranscriptModule),
   ],
   controllers: [CalllogController],
   providers: [CalllogService],
