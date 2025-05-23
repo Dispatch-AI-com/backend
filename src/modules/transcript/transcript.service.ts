@@ -40,15 +40,6 @@ export class TranscriptService {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid transcript id');
     }
-    const updated = await sanitizedUpdate(this.transcriptModel, id, dto);
-    if (!updated) throw new NotFoundException('Transcript not found');
-    return updated;
-  }
-
-  async sanitizedUpdate(
-    id: string,
-    dto: UpdateTranscriptDto,
-  ): Promise<Transcript> {
     return sanitizedUpdate(this.transcriptModel, id, dto);
   }
 
