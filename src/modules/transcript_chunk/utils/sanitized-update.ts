@@ -19,11 +19,10 @@ export async function sanitizedUpdate(
 
   // Only allow updating specific fields
   const sanitizedData: Partial<UpdateTranscriptChunkDto> = {};
-  if (dto.text !== undefined) sanitizedData.text = dto.text;
-  if (dto.speakerType !== undefined)
-    sanitizedData.speakerType = dto.speakerType;
-  if (dto.startAt !== undefined) sanitizedData.startAt = dto.startAt;
-  if (dto.endAt !== undefined) sanitizedData.endAt = dto.endAt;
+  if (typeof dto.text === 'string') sanitizedData.text = dto.text;
+  if (dto.speakerType === 'AI' || dto.speakerType === 'User') sanitizedData.speakerType = dto.speakerType;
+  if (dto.startAt instanceof Date || typeof dto.startAt === 'string' || typeof dto.startAt === 'number') sanitizedData.startAt = new Date(dto.startAt);
+  if (dto.endAt instanceof Date || typeof dto.endAt === 'string' || typeof dto.endAt === 'number') sanitizedData.endAt = new Date(dto.endAt);
 
   const updated = await chunkModel.findByIdAndUpdate(id, sanitizedData, {
     new: true,
