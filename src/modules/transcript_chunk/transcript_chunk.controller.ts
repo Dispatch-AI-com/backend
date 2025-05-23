@@ -68,7 +68,7 @@ export class TranscriptChunkController {
     @Param('id') id: string,
     @Body() dto: UpdateTranscriptChunkDto,
   ): Promise<TranscriptChunk> {
-    return this.chunkService.sanitizedUpdate(id, dto);
+    return this.chunkService.update(id, dto);
   }
 
   @Delete('chunk/:id')
