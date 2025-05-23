@@ -6,12 +6,15 @@ import { CalllogService } from '../calllog/calllog.service';
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
+import { TranscriptChunk } from '../transcript_chunk/schema/transcript_chunk.schema';
 
 @Injectable()
 export class TranscriptService {
   constructor(
     @InjectModel(Transcript.name)
     private readonly transcriptModel: Model<Transcript>,
+    @InjectModel(TranscriptChunk.name)
+    private readonly transcriptChunkModel: Model<TranscriptChunk>,
     private readonly calllogService: CalllogService,
   ) {}
 
@@ -51,6 +54,7 @@ export class TranscriptService {
   async delete(id: string): Promise<Transcript> {
     const deleted = await this.transcriptModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Transcript not found');
+    await this.transcriptChunkModel.deleteMany({ transcriptId: id });
     return deleted;
   }
 }
