@@ -1,7 +1,6 @@
 // src/setup-swagger.ts
 import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import type { Response } from 'express';
 
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
@@ -34,7 +33,7 @@ export function setupSwagger(app: INestApplication): void {
     </html>
   `;
 
-  app.getHttpAdapter().get('/api/redoc', (req, res: Response) => {
+  app.getHttpAdapter().get('/api/redoc', (req, res) => {
     res.type('html').send(redocHtml);
   });
 }

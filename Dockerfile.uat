@@ -1,12 +1,14 @@
 FROM node:20-alpine
 
+RUN npm install -g pnpm
+
 WORKDIR /app
 
 COPY dist ./dist
 COPY package.json ./
-COPY package-lock.json ./
+COPY pnpm-lock.yaml ./
 
-RUN npm install --omit=dev
+RUN pnpm install
 
 EXPOSE 4000
 CMD ["node", "dist/main"]

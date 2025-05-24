@@ -2,11 +2,12 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from '@/modules/auth/auth.module';
+import { CalllogModule } from '@/modules/calllog/calllog.module';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
+import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
-import { SubscriptionModule } from '@/modules/subscription/subscription.module';
-import { StripeModule } from '@/modules/stripe/stripe.module';
+import { WhisperModule } from '@/modules/whisper/whisper.module';
 
 @Module({
   imports: [
@@ -17,8 +18,9 @@ import { StripeModule } from '@/modules/stripe/stripe.module';
     HealthModule,
     AuthModule,
     PlanModule,
-    SubscriptionModule,
-    StripeModule,
+    LocationModule,
+    WhisperModule,
+    CalllogModule,
   ],
 })
 export class AppModule {}
