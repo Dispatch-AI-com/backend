@@ -1,20 +1,35 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Error as MongooseError, Model } from 'mongoose';
 
+import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
+import { sanitizeCallLogUpdate } from './utils/sanitize-update';
 
 @Injectable()
 export class CalllogService {
   constructor(
     @InjectModel(CallLog.name)
     private readonly callLogModel: Model<CallLogDocument>,
+    @InjectModel(Transcript.name)
+    private readonly transcriptModel: Model<Transcript>,
   ) {}
 
   async create(dto: CreateCallLogDto): Promise<CallLog> {
-    return this.callLogModel.create(dto);
+    try {
+      return await this.callLogModel.create(dto);
+    } catch (error) {
+      if (error instanceof MongooseError.ValidationError) {
+        throw new BadRequestException(error.message);
+      }
+      throw error;
+    }
   }
 
   async findAll(): Promise<CallLog[]> {
@@ -47,12 +62,6 @@ export class CalllogService {
       .sort({ startAt: -1 })
       .exec();
 
-    if (callLogs.length === 0) {
-      throw new NotFoundException(
-        `No call logs found between ${startDate.toISOString()} and ${endDate.toISOString()}`,
-      );
-    }
-
     return callLogs;
   }
 
@@ -60,18 +69,55 @@ export class CalllogService {
     id: string,
     updateCallLogDto: UpdateCallLogDto,
   ): Promise<CallLog> {
-    const updatedCallLog = await this.callLogModel
-      .findByIdAndUpdate(
-        id,
-        { $set: updateCallLogDto },
-        { new: true, runValidators: true },
-      )
-      .exec();
+    try {
+      const sanitizedUpdate = sanitizeCallLogUpdate(updateCallLogDto);
+      const updatedCallLog = await this.callLogModel
+        .findByIdAndUpdate(
+          id,
+          { $set: sanitizedUpdate },
+          { new: true, runValidators: true },
+        )
+        .exec();
 
-    if (!updatedCallLog) {
-      throw new NotFoundException(`Call log with ID ${id} not found`);
+      if (!updatedCallLog) {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+
+      return updatedCallLog;
+    } catch (error) {
+      if (error instanceof MongooseError.ValidationError) {
+        throw new BadRequestException(error.message);
+      }
+      if (
+        error instanceof MongooseError.CastError &&
+        error.path &&
+        error.path === '_id'
+      ) {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+      throw error;
     }
+  }
 
-    return updatedCallLog;
+  async delete(id: string): Promise<CallLog> {
+    try {
+      const callLog = await this.callLogModel.findById(id);
+      if (!callLog) {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+
+      await this.transcriptModel.deleteMany({ calllogid: id });
+
+      const deleted = await this.callLogModel.findByIdAndDelete(id);
+      if (!deleted) {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+      return deleted;
+    } catch (error) {
+      if (error instanceof MongooseError.CastError && error.path === '_id') {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+      throw error;
+    }
   }
 }
