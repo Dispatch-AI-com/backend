@@ -6,6 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Error as MongooseError, Model } from 'mongoose';
 
+import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
@@ -16,6 +17,8 @@ export class CalllogService {
   constructor(
     @InjectModel(CallLog.name)
     private readonly callLogModel: Model<CallLogDocument>,
+    @InjectModel(Transcript.name)
+    private readonly transcriptModel: Model<Transcript>,
   ) {}
 
   async create(dto: CreateCallLogDto): Promise<CallLog> {
@@ -90,6 +93,28 @@ export class CalllogService {
         error.path &&
         error.path === '_id'
       ) {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+      throw error;
+    }
+  }
+
+  async delete(id: string): Promise<CallLog> {
+    try {
+      const callLog = await this.callLogModel.findById(id);
+      if (!callLog) {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+
+      await this.transcriptModel.deleteMany({ calllogid: id });
+
+      const deleted = await this.callLogModel.findByIdAndDelete(id);
+      if (!deleted) {
+        throw new NotFoundException(`Call log with ID ${id} not found`);
+      }
+      return deleted;
+    } catch (error) {
+      if (error instanceof MongooseError.CastError && error.path === '_id') {
         throw new NotFoundException(`Call log with ID ${id} not found`);
       }
       throw error;

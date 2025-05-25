@@ -6,6 +6,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { createMockCallLogDto } from './mock-calllog';
 import { CallLogStatus } from '../../src/common/constants/calllog.constant';
 import { Error as MongooseError } from 'mongoose';
+import { TranscriptService } from '../../src/modules/transcript/transcript.service';
 
 describe('CalllogService (unit)', () => {
   let service: CalllogService;
@@ -32,6 +33,13 @@ describe('CalllogService (unit)', () => {
         {
           provide: getModelToken(CallLog.name),
           useValue: mockModel,
+        },
+        {
+          provide: TranscriptService,
+          useValue: {
+            findByCalllogId: jest.fn(),
+            delete: jest.fn(),
+          },
         },
       ],
     }).compile();
