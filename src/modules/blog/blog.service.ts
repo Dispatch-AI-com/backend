@@ -53,7 +53,10 @@ export class BlogService implements OnModuleInit {
     limit: number,
     page: number,
   ): Promise<Blog[]> {
-    const regex = new RegExp(keyword, 'i');
+    const regex = new RegExp(
+      keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+      'i',
+    );
     const blogs = await this.blogModel
       .find({
         $or: [{ title: regex }, { summary: regex }],
