@@ -15,7 +15,7 @@ interface PaginatedResponse<T> {
 @ApiTags('Blogs')
 @Controller('blogs')
 export class BlogController {
-  constructor(private readonly blogService: BlogService) {}
+  constructor(private readonly blogService: BlogService) { }
 
   @Get()
   @ApiOkResponse({ description: 'Get all blogs', type: [Blog] })
@@ -64,6 +64,6 @@ export class BlogController {
   @ApiOkResponse({ description: 'Search by id.', type: Blog })
   @ApiParam({ name: 'id', required: true })
   async findById(@Param('id') id: string): Promise<Blog> {
-    return this.blogService.findById(id);
+    return this.blogService.getBlogDetail(id); //details
   }
 }

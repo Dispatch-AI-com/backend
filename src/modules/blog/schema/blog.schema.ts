@@ -22,6 +22,9 @@ export class Blog {
 
   @Prop({ required: true })
   author!: string;
+
+  @Prop()
+  videoUrl?: string;
 }
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);

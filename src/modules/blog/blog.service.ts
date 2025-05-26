@@ -4,12 +4,14 @@ import { Model } from 'mongoose';
 
 import { Blog, BlogDocument } from './schema/blog.schema';
 
+import { getYouTubeEmbedUrl } from './utils/blog-detail.helper';
+
 @Injectable()
 export class BlogService implements OnModuleInit {
   constructor(
     @InjectModel(Blog.name)
     private readonly blogModel: Model<BlogDocument>,
-  ) {}
+  ) { }
 
   async onModuleInit(): Promise<void> {
     const count = await this.blogModel.countDocuments();
@@ -35,6 +37,7 @@ export class BlogService implements OnModuleInit {
         author: 'Jone',
         date: '2025/03/28',
         tag: ['Small And Medium Businesses', 'Small Businesses'],
+        videoUrl: 'https://youtu.be/JGxkFwvbwT0?si=KixY4pWX0lreijjN',
       });
     }
   }
@@ -104,4 +107,12 @@ export class BlogService implements OnModuleInit {
   async countByTag(tag: string): Promise<number> {
     return this.blogModel.countDocuments({ tag }).exec();
   }
-}
+
+  async getBlogDetail(id: string): Promise<any> {
+    const blog = await this.findById(id);
+    return {
+      ...JSON.parse(JSON.stringify(blog)),
+      videoEmbedUrl: getYouTubeEmbedUrl(blog.videoUrl),
+    };
+  }
+}  
