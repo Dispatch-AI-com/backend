@@ -122,32 +122,31 @@ export class BlogService implements OnModuleInit {
   async countByTag(tag: string): Promise<number> {
     return this.blogModel.countDocuments({ tag }).exec();
   }
-  //any risk
+
   async getBlogDetail(id: string): Promise<BlogDetail> {
     const blog = await this.blogModel.findById(id).lean().exec();
-
     if (!blog) {
       throw new NotFoundException(`Blog with ID ${id} not found`);
     }
 
-    const { createdAt, updatedAt } = blog;
+    const { _id, title, summary, content, tag, date, author, videoUrl, createdAt, updatedAt } = blog;
+
     if (createdAt == null || updatedAt == null) {
       throw new NotFoundException(`Timestamps missing for blog ${id}`);
     }
 
     return {
-      _id: blog._id.toString(),
-      title: blog.title,
-      summary: blog.summary,
-      content: blog.content,
-      tag: blog.tag,
-      date: blog.date,
-      author: blog.author,
-      videoUrl: blog.videoUrl,
-      createdAt: blog.createdAt!,
-      updatedAt: blog.updatedAt!,
-      videoEmbedUrl: getYouTubeEmbedUrl(blog.videoUrl),
+      _id: _id.toString(),
+      title,
+      summary,
+      content,
+      tag,
+      date,
+      author,
+      videoUrl,
+      createdAt,
+      updatedAt,
+      videoEmbedUrl: getYouTubeEmbedUrl(videoUrl),
     };
   }
-
-}  
+}
