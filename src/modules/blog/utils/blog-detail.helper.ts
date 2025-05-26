@@ -1,3 +1,7 @@
+export function escapeForRegex(input: string): string {
+    return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 export function getYouTubeEmbedUrl(videoUrl?: string): string | null {
     if (videoUrl === undefined || videoUrl.trim() === '') {
         return null;

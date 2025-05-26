@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 
 import { Blog, BlogDocument } from './schema/blog.schema';
 
-import { getYouTubeEmbedUrl } from './utils/blog-detail.helper';
+import { escapeForRegex, getYouTubeEmbedUrl } from './utils/blog-detail.helper';
 
 export interface BlogDetail {
   _id: string;
@@ -19,6 +19,8 @@ export interface BlogDetail {
   updatedAt: Date;
   videoEmbedUrl: string | null;
 }
+
+
 
 
 @Injectable()
@@ -111,7 +113,8 @@ export class BlogService implements OnModuleInit {
   }
 
   async countSearchByKeyword(keyword: string): Promise<number> {
-    const regex = new RegExp(keyword, 'i');
+    const safe = escapeForRegex(keyword);
+    const regex = new RegExp(safe, 'i');
     return this.blogModel
       .countDocuments({
         $or: [{ title: regex }, { summary: regex }],
