@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Types } from 'mongoose';
+
 import { Blog, BlogDocument } from './schema/blog.schema';
 
 import { getYouTubeEmbedUrl } from './utils/blog-detail.helper';
@@ -130,8 +130,13 @@ export class BlogService implements OnModuleInit {
       throw new NotFoundException(`Blog with ID ${id} not found`);
     }
 
+    const { createdAt, updatedAt } = blog;
+    if (createdAt == null || updatedAt == null) {
+      throw new NotFoundException(`Timestamps missing for blog ${id}`);
+    }
+
     return {
-      _id: (blog._id as Types.ObjectId).toHexString(),
+      _id: blog._id.toString(),
       title: blog.title,
       summary: blog.summary,
       content: blog.content,
