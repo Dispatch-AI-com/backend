@@ -6,6 +6,13 @@ import { Blog, BlogDocument } from './schema/blog.schema';
 
 import { getYouTubeEmbedUrl } from './utils/blog-detail.helper';
 
+interface BlogDetail extends Omit<Blog, never> {
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+  videoEmbedUrl: string | null;
+}
+
 @Injectable()
 export class BlogService implements OnModuleInit {
   constructor(
@@ -107,8 +114,8 @@ export class BlogService implements OnModuleInit {
   async countByTag(tag: string): Promise<number> {
     return this.blogModel.countDocuments({ tag }).exec();
   }
-
-  async getBlogDetail(id: string): Promise<any> {
+  //any risk
+  async getBlogDetail(id: string): Promise<BlogDetail> {
     const blog = await this.findById(id);
     return {
       ...JSON.parse(JSON.stringify(blog)),
