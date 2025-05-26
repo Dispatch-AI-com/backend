@@ -1,17 +1,25 @@
 import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-
+import { Types } from 'mongoose';
 import { Blog, BlogDocument } from './schema/blog.schema';
 
 import { getYouTubeEmbedUrl } from './utils/blog-detail.helper';
 
-interface BlogDetail extends Omit<Blog, never> {
+export interface BlogDetail {
   _id: string;
-  createdAt: string;
-  updatedAt: string;
+  title: string;
+  summary: string;
+  content: string;
+  tag: string[];
+  date: Date;
+  author: string;
+  videoUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
   videoEmbedUrl: string | null;
 }
+
 
 @Injectable()
 export class BlogService implements OnModuleInit {
@@ -77,7 +85,7 @@ export class BlogService implements OnModuleInit {
     return blogs;
   }
 
-  async findById(id: string): Promise<Blog> {
+  async findById(id: string): Promise<BlogDocument> {
     const blog = await this.blogModel.findById(id).exec();
 
     if (!blog) {
@@ -116,10 +124,25 @@ export class BlogService implements OnModuleInit {
   }
   //any risk
   async getBlogDetail(id: string): Promise<BlogDetail> {
-    const blog = await this.findById(id);
+    const blog = await this.blogModel.findById(id).lean().exec();
+
+    if (!blog) {
+      throw new NotFoundException(`Blog with ID ${id} not found`);
+    }
+
     return {
-      ...JSON.parse(JSON.stringify(blog)),
+      _id: (blog._id as Types.ObjectId).toHexString(),
+      title: blog.title,
+      summary: blog.summary,
+      content: blog.content,
+      tag: blog.tag,
+      date: blog.date,
+      author: blog.author,
+      videoUrl: blog.videoUrl,
+      createdAt: blog.createdAt!,
+      updatedAt: blog.updatedAt!,
       videoEmbedUrl: getYouTubeEmbedUrl(blog.videoUrl),
     };
   }
+
 }  

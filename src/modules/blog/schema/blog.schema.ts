@@ -24,6 +24,12 @@ export class Blog {
   author!: string;
 
   @Prop()
+  createdAt?: Date;
+
+  @Prop()
+  updatedAt?: Date;
+
+  @Prop()
   videoUrl?: string;
 }
 

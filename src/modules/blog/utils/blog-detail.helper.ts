@@ -1,5 +1,5 @@
 export function getYouTubeEmbedUrl(videoUrl?: string): string | null {
-    if (!videoUrl?.trim()) return null;
+    if (videoUrl === null || videoUrl === undefined || videoUrl.trim() === '') return null;
 
     const youtubeRegex =
         /(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/;
