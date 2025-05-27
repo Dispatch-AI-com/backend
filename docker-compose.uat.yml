@@ -6,17 +6,12 @@ services:
     container_name: dispatchai-api
     command: ["node", "dist/main"]
     env_file:
-      - .env
+      - .env.uat
     environment:
       - SHOW_ERROR_MESSAGE=true
       - NODE_ENV=uat
-      - MONGODB_URI=mongodb://mongodb:27017/dispatchai
       - LOG_TO_FILE=true
     ports:
       - "4000:4000"
     volumes:
       - /home/ubuntu/dispatch-ai/logs:/app/logs
-
-  mongodb:
-    image: mongo:latest
-    container_name: dispatchai-mongodb
