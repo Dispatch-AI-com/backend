@@ -10,6 +10,7 @@ import {
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
 import { ITranscript } from '@/common/interfaces/transcript';
+
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { TranscriptService } from './transcript.service';

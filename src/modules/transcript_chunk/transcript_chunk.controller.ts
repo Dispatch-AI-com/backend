@@ -16,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 
 import { ITranscriptChunk } from '@/common/interfaces/transcript_chuck';
+
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
 import { TranscriptChunk } from './schema/transcript_chunk.schema';
@@ -35,9 +36,7 @@ export class TranscriptChunkController {
 
   @Get(':id/chunks')
   @ApiOkResponse({ type: [TranscriptChunk] })
-  findAll(
-    @Param('id') transcriptId: string,
-  ): Promise<ITranscriptChunk[]> {
+  findAll(@Param('id') transcriptId: string): Promise<ITranscriptChunk[]> {
     return this.chunkService.findAll(transcriptId);
   }
 
