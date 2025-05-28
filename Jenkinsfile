@@ -14,7 +14,7 @@ pipeline {
             steps {
                 script {    
                     cleanWs()
-                    sh 'git clone https://github.com/Dispatch-AI-com/backend.git.'
+                    sh 'git clone https://github.com/Dispatch-AI-com/backend.git .'
                 }     
             }
         }
@@ -22,7 +22,7 @@ pipeline {
         stage('Get ECR Login') {
             steps {
                 script {
-                    env.ECR_REGISTRY = ECR_REGISTRY
+                    // env.ECR_REGISTRY = ECR_REGISTRY
 
                     sh "aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
                 }
