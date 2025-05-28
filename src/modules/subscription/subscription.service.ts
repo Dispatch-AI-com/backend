@@ -42,24 +42,64 @@ export class SubscriptionService {
     };
   }
 
+  // async cancelSubscription(id: string) {
+  //   const subscription = await this.subscriptionModel.findById(id);
+  //   if (!subscription) throw new NotFoundException('Subscription not found');
+
+  //   if (subscription.status !== 'active') {
+  //     throw new BadRequestException('Only active subscriptions can be cancelled');
+  //   }
+
+  //   subscription.status = 'cancelled';
+  //   await subscription.save();
+
+  //   return {
+  //     message: 'Subscription cancelled successfully',
+  //     id: subscription._id,
+  //   };
+  // }
+
   async cancelSubscription(id: string) {
-    const subscription = await this.subscriptionModel.findById(id);
+    const subscription = await this.subscriptionModel.findById(id).populate('planId');
     if (!subscription) throw new NotFoundException('Subscription not found');
 
-    if (subscription.status !== 'active') {
-      throw new BadRequestException('Only active subscriptions can be cancelled');
+    const now = new Date();
+    const end = subscription.endAt;
+
+    if (now >= end) {
+      subscription.status = 'expired';
+      await subscription.save();
+      return { message: 'Subscription already expired.' };
+    }
+
+    const plan = subscription.planId as any;
+    const pricing = plan.pricing[0];
+    const price = pricing.price;
+    const rrule = RRule.fromString(pricing.rrule);
+    const duration = rrule.after(subscription.startAt, true)!.getTime() - subscription.startAt.getTime();
+    const used = now.getTime() - subscription.startAt.getTime();
+    const unusedRatio = Math.max(0, 1 - used / duration);
+    const refundAmount = Math.floor(price * unusedRatio * 100); // cents
+
+    // Refund logic
+    if (subscription.paymentIntentId) {
+      await this.stripeService.refundPayment(subscription.paymentIntentId, refundAmount);
     }
 
     subscription.status = 'cancelled';
+    subscription.endAt = now;
     await subscription.save();
 
     return {
-      message: 'Subscription cancelled successfully',
-      id: subscription._id,
+      message: 'Subscription cancelled and refund issued',
+      refundAmount: refundAmount / 100,
+      unusedPercentage: (unusedRatio * 100).toFixed(2) + '%',
     };
   }
 
-  async activateSubscription(companyId: string, planId: string) {
+  
+
+  async activateSubscription(companyId: string, planId: string, paymentIntentId: string) {
     const subscription = await this.subscriptionModel.findOne({
       companyId,
       planId,
@@ -92,6 +132,7 @@ export class SubscriptionService {
     subscription.status = 'active';
     subscription.startAt = now;
     subscription.endAt = endAt;
+    subscription.paymentIntentId = paymentIntentId;
 
     await subscription.save();
 

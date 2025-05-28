@@ -36,14 +36,32 @@ export class StripeWebhookController {
 
     console.log('✅ Stripe Event:', event.type);
 
+    // if (event.type === 'checkout.session.completed') {
+    //   const session = event.data.object as Stripe.Checkout.Session;
+    //   const { companyId, planId } = session.metadata || {};
+    //   const paymentIntentId = session.id as string;
+
+    //   if (companyId && planId && paymentIntentId) {
+    //     await this.subscriptionService.activateSubscription(companyId, planId, paymentIntentId);
+    //   } else {
+    //     console.warn('⚠️ Webhook session.metadata need companyId or planId or paymentIntentId');
+    //   }
+    // }
+
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object as Stripe.Checkout.Session;
       const { companyId, planId } = session.metadata || {};
 
-      if (companyId && planId) {
-        await this.subscriptionService.activateSubscription(companyId, planId);
-      } else {
-        console.warn('⚠️ Webhook session.metadata need companyId or planId');
+      try {
+        const paymentIntentId = await this.stripeService.getPaymentIntentFromSession(session);
+
+        if (companyId && planId && paymentIntentId) {
+          await this.subscriptionService.activateSubscription(companyId, planId, paymentIntentId);
+        } else {
+          console.warn('⚠️ Missing metadata or paymentIntentId');
+        }
+      } catch (error: any) {
+        console.error('❌ Error handling checkout.session.completed:', error.message);
       }
     }
 

@@ -11,11 +11,14 @@ export class Subscription {
   @Prop({ type: Types.ObjectId, ref: 'Plan', required: true })
   planId!: Types.ObjectId;
 
-  @Prop({ required: false }) 
-  startAt?: Date;
+  @Prop({ required: false })
+  paymentIntentId?: string;
 
   @Prop({ required: false }) 
-  endAt?: Date;
+  startAt!: Date;
+
+  @Prop({ required: false }) 
+  endAt!: Date;
 
   @Prop({ required: true, enum: ['active', 'cancelled', 'expired', 'pending']})
   status!: 'active' | 'cancelled' | 'expired' | 'pending';
