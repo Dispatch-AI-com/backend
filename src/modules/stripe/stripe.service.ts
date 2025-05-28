@@ -27,6 +27,39 @@ export class StripeService {
     return session;
   }
 
+  async getPaymentIntentFromSession(session: Stripe.Checkout.Session): Promise<string> {
+    const subscriptionId = session.subscription as string;
+    if (!subscriptionId) {
+      throw new Error('No subscription ID found in session');
+    }
+
+    // 获取 Subscription
+    const subscription = await this.stripe.subscriptions.retrieve(subscriptionId) as any;
+
+    const invoiceId = subscription.latest_invoice as string;
+    if (!invoiceId) {
+      throw new Error('No latest invoice found in subscription');
+    }
+
+    // ⚠️ 使用 `as any` 绕过类型限制
+    const invoice = await this.stripe.invoices.retrieve(invoiceId) as any;
+
+    const paymentIntentId = invoice.payment_intent;
+    if (!paymentIntentId) {
+      throw new Error('No payment_intent found in invoice');
+    }
+
+    return paymentIntentId;
+  }
+
+  
+  async refundPayment(paymentIntentId: string, amount: number) {
+    return this.stripe.refunds.create({
+      payment_intent: paymentIntentId,
+      amount,
+    });
+  }
+
   constructWebhookEvent(body: Buffer, signature: string) {
     return this.stripe.webhooks.constructEvent(
       body,
