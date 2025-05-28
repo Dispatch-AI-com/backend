@@ -57,6 +57,15 @@ describe('TranscriptChunk (e2e)', () => {
     chunkId = res.body._id;
   });
 
+  it('should get all chunks (global)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/transcript-chunk');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body.some((c: any) => c._id === chunkId)).toBe(true);
+  });
+
   it('should not allow overlapping time ranges', async () => {
     const res = await request(app.getHttpServer())
       .post('/transcript-chunk')
