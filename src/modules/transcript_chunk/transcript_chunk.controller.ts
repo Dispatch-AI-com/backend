@@ -34,6 +34,12 @@ export class TranscriptChunkController {
     return this.chunkService.create(dto);
   }
 
+  @Get()
+  @ApiOkResponse({ type: [TranscriptChunk] })
+  findAllChunks(): Promise<ITranscriptChunk[]> {
+    return this.chunkService.findAllChunks();
+  }
+
   @Get(':transcriptId/chunk')
   @ApiOkResponse({ type: [TranscriptChunk] })
   findAll(@Param('transcriptId') transcriptId: string): Promise<ITranscriptChunk[]> {

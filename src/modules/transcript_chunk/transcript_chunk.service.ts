@@ -13,6 +13,7 @@ import {
   TranscriptChunkDocument,
 } from './schema/transcript_chunk.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
+import { ITranscriptChunk } from '@/common/interfaces/transcript_chuck';
 
 @Injectable()
 export class TranscriptChunkService {
@@ -21,7 +22,7 @@ export class TranscriptChunkService {
     private readonly chunkModel: Model<TranscriptChunkDocument>,
   ) {}
 
-  async create(dto: CreateTranscriptChunkDto): Promise<TranscriptChunk> {
+  async create(dto: CreateTranscriptChunkDto): Promise<ITranscriptChunk> {
     // Validate dto fields
     if (
       typeof dto.transcriptId !== 'string' ||
@@ -53,11 +54,15 @@ export class TranscriptChunkService {
     return this.chunkModel.create(dto);
   }
 
-  async findAll(transcriptId: string): Promise<TranscriptChunk[]> {
+  async findAll(transcriptId: string): Promise<ITranscriptChunk[]> {
     return this.chunkModel.find({ transcriptId }).sort({ startAt: 1 }).exec();
   }
 
-  async findOne(id: string): Promise<TranscriptChunk> {
+  async findAllChunks(): Promise<ITranscriptChunk[]> {
+    return this.chunkModel.find().exec();
+  }
+
+  async findOne(id: string): Promise<ITranscriptChunk> {
     const chunk = await this.chunkModel.findById(id);
     if (!chunk) throw new NotFoundException('Transcript chunk not found');
     return chunk;
@@ -66,11 +71,11 @@ export class TranscriptChunkService {
   async update(
     id: string,
     dto: UpdateTranscriptChunkDto,
-  ): Promise<TranscriptChunk> {
+  ): Promise<ITranscriptChunk> {
     return sanitizedUpdate(this.chunkModel, id, dto);
   }
 
-  async delete(id: string): Promise<TranscriptChunk> {
+  async delete(id: string): Promise<ITranscriptChunk> {
     const deleted = await this.chunkModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Transcript chunk not found');
     return deleted;
