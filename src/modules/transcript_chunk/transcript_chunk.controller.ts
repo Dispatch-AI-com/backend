@@ -15,6 +15,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { ITranscriptChunk } from '@/common/interfaces/transcript_chuck';
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
 import { TranscriptChunk } from './schema/transcript_chunk.schema';
@@ -28,7 +29,7 @@ export class TranscriptChunkController {
   @Post()
   @ApiCreatedResponse({ type: TranscriptChunk })
   @ApiBadRequestResponse({ description: 'Invalid input or time overlap' })
-  create(@Body() dto: CreateTranscriptChunkDto): Promise<TranscriptChunk> {
+  create(@Body() dto: CreateTranscriptChunkDto): Promise<ITranscriptChunk> {
     return this.chunkService.create(dto);
   }
 
@@ -36,7 +37,7 @@ export class TranscriptChunkController {
   @ApiOkResponse({ type: [TranscriptChunk] })
   findAll(
     @Param('id') transcriptId: string,
-  ): Promise<TranscriptChunk[]> {
+  ): Promise<ITranscriptChunk[]> {
     return this.chunkService.findAll(transcriptId);
   }
 
@@ -46,7 +47,7 @@ export class TranscriptChunkController {
   findOne(
     @Param('transcriptId') transcriptId: string,
     @Param('id') id: string,
-  ): Promise<TranscriptChunk> {
+  ): Promise<ITranscriptChunk> {
     return this.chunkService.findOne(id);
   }
 
@@ -57,7 +58,7 @@ export class TranscriptChunkController {
     @Param('transcriptId') transcriptId: string,
     @Param('id') id: string,
     @Body() dto: UpdateTranscriptChunkDto,
-  ): Promise<TranscriptChunk> {
+  ): Promise<ITranscriptChunk> {
     return this.chunkService.update(id, dto);
   }
 
@@ -67,14 +68,14 @@ export class TranscriptChunkController {
   sanitizedUpdate(
     @Param('id') id: string,
     @Body() dto: UpdateTranscriptChunkDto,
-  ): Promise<TranscriptChunk> {
+  ): Promise<ITranscriptChunk> {
     return this.chunkService.update(id, dto);
   }
 
   @Delete('chunk/:id')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
-  delete(@Param('id') id: string): Promise<TranscriptChunk> {
+  delete(@Param('id') id: string): Promise<ITranscriptChunk> {
     return this.chunkService.delete(id);
   }
 }
