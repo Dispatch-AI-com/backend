@@ -8,6 +8,8 @@ import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
+import { StripeModule } from '@/modules/stripe/stripe.module';
 
 @Module({
   imports: [
@@ -21,6 +23,8 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
     LocationModule,
     WhisperModule,
     CalllogModule,
+    SubscriptionModule,
+    StripeModule,
   ],
 })
 export class AppModule {}
