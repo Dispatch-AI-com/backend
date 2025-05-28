@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -36,38 +37,31 @@ export class TranscriptChunkController {
 
   @Get()
   @ApiOkResponse({ type: [TranscriptChunk] })
-  findAllChunks(): Promise<ITranscriptChunk[]> {
+  findAll(@Query('transcriptId') transcriptId?: string): Promise<ITranscriptChunk[]> {
+    if (transcriptId) {
+      return this.chunkService.findAll(transcriptId);
+    }
     return this.chunkService.findAllChunks();
   }
 
-  @Get(':transcriptId/chunk')
-  @ApiOkResponse({ type: [TranscriptChunk] })
-  findAll(@Param('transcriptId') transcriptId: string): Promise<ITranscriptChunk[]> {
-    return this.chunkService.findAll(transcriptId);
-  }
-
-  @Get(':transcriptId/chunk/:id')
+  @Get(':id')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
-  findOne(
-    @Param('transcriptId') transcriptId: string,
-    @Param('id') id: string,
-  ): Promise<ITranscriptChunk> {
+  findOne(@Param('id') id: string): Promise<ITranscriptChunk> {
     return this.chunkService.findOne(id);
   }
 
-  @Patch(':transcriptId/chunk/:id')
+  @Patch(':id')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
   update(
-    @Param('transcriptId') transcriptId: string,
     @Param('id') id: string,
     @Body() dto: UpdateTranscriptChunkDto,
   ): Promise<ITranscriptChunk> {
     return this.chunkService.update(id, dto);
   }
 
-  @Patch('chunk/:id/sanitized')
+  @Patch(':id/sanitized')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
   sanitizedUpdate(
@@ -77,7 +71,7 @@ export class TranscriptChunkController {
     return this.chunkService.update(id, dto);
   }
 
-  @Delete('chunk/:id')
+  @Delete(':id')
   @ApiOkResponse({ type: TranscriptChunk })
   @ApiNotFoundResponse({ description: 'Transcript chunk not found' })
   delete(@Param('id') id: string): Promise<ITranscriptChunk> {

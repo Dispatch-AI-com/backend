@@ -82,7 +82,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should get all chunks for a transcript', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript-chunk/${transcriptId}/chunk`);
+      .get(`/transcript-chunk?transcriptId=${transcriptId}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(1);
@@ -91,7 +91,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should update a chunk', async () => {
     const res = await request(app.getHttpServer())
-      .patch(`/transcript-chunk/${transcriptId}/chunk/${chunkId}`)
+      .patch(`/transcript-chunk/${chunkId}`)
       .send({ text: 'Updated text' });
     expect(res.status).toBe(200);
     expect(res.body.text).toBe('Updated text');
@@ -99,21 +99,21 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should get a single chunk', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript-chunk/${transcriptId}/chunk/${chunkId}`);
+      .get(`/transcript-chunk/${chunkId}`);
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(chunkId);
   });
 
   it('should delete a chunk', async () => {
     const res = await request(app.getHttpServer())
-      .delete(`/transcript-chunk/chunk/${chunkId}`);
+      .delete(`/transcript-chunk/${chunkId}`);
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(chunkId);
   });
 
   it('should return empty array after deleting the chunk', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript-chunk/${transcriptId}/chunk`);
+      .get(`/transcript-chunk?transcriptId=${transcriptId}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(0);
