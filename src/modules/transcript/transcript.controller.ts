@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
@@ -28,14 +29,17 @@ export class TranscriptController {
 
   @Get()
   @ApiOkResponse({ type: [Transcript] })
-  findAll(): Promise<ITranscript[]> {
+  findAll(@Query('calllogid') calllogid?: string): Promise<ITranscript[]> {
+    if (calllogid) {
+      return this.transcriptService.findByCalllogId(calllogid);
+    }
     return this.transcriptService.findAll();
   }
 
-  @Get('calllog/:calllogid')
-  @ApiOkResponse({ type: [Transcript] })
-  findByCalllog(@Param('calllogid') calllogid: string): Promise<ITranscript[]> {
-    return this.transcriptService.findByCalllogId(calllogid);
+  @Get(':id')
+  @ApiOkResponse({ type: Transcript })
+  findOne(@Param('id') id: string): Promise<ITranscript> {
+    return this.transcriptService.findOne(id);
   }
 
   @Patch(':id')

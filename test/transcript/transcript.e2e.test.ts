@@ -61,12 +61,20 @@ describe('Transcript (e2e)', () => {
 
   it('should get the created Transcript by calllogId', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript/calllog/${calllogId}`);
+      .get(`/transcript?calllogid=${calllogId}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
     expect(res.body[0]._id).toBe(transcriptId);
     expect(res.body[0].calllogid).toBe(calllogId);
+  });
+
+  it('should get a single Transcript by id', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/transcript/${transcriptId}`);
+    expect(res.status).toBe(200);
+    expect(res.body._id).toBe(transcriptId);
+    expect(res.body.calllogid).toBe(calllogId);
   });
 
   it('should update the Transcript', async () => {
@@ -87,7 +95,7 @@ describe('Transcript (e2e)', () => {
 
   it('should return empty array after deleting the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript/calllog/${calllogId}`);
+      .get(`/transcript?calllogid=${calllogId}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(0);

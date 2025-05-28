@@ -44,6 +44,15 @@ export class TranscriptService {
     return this.transcriptModel.find({ calllogid }).exec();
   }
 
+  async findOne(id: string): Promise<Transcript> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid transcript id');
+    }
+    const transcript = await this.transcriptModel.findById(id);
+    if (!transcript) throw new NotFoundException('Transcript not found');
+    return transcript;
+  }
+
   async update(id: string, dto: UpdateTranscriptDto): Promise<Transcript> {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid transcript id');
