@@ -30,7 +30,7 @@ describe('TranscriptChunk (e2e)', () => {
     calllogId = calllogRes.body._id;
 
     const transcriptRes = await request(app.getHttpServer())
-      .post('/transcripts')
+      .post('/transcript')
       .send({
         calllogid: calllogId,
         summary: 'Test summary',
@@ -44,7 +44,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should create a TranscriptChunk', async () => {
     const res = await request(app.getHttpServer())
-      .post('/transcript-chunks')
+      .post('/transcript-chunk')
       .send({
         transcriptId,
         speakerType: 'AI',
@@ -59,7 +59,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should not allow overlapping time ranges', async () => {
     const res = await request(app.getHttpServer())
-      .post('/transcript-chunks')
+      .post('/transcript-chunk')
       .send({
         transcriptId,
         speakerType: 'User',
@@ -73,7 +73,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should get all chunks for a transcript', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript-chunks/${transcriptId}/chunks`);
+      .get(`/transcript-chunk/${transcriptId}/chunk`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(1);
@@ -82,7 +82,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should update a chunk', async () => {
     const res = await request(app.getHttpServer())
-      .patch(`/transcript-chunks/${transcriptId}/chunks/${chunkId}`)
+      .patch(`/transcript-chunk/${transcriptId}/chunk/${chunkId}`)
       .send({ text: 'Updated text' });
     expect(res.status).toBe(200);
     expect(res.body.text).toBe('Updated text');
@@ -90,21 +90,21 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should get a single chunk', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript-chunks/${transcriptId}/chunks/${chunkId}`);
+      .get(`/transcript-chunk/${transcriptId}/chunk/${chunkId}`);
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(chunkId);
   });
 
   it('should delete a chunk', async () => {
     const res = await request(app.getHttpServer())
-      .delete(`/transcript-chunks/chunk/${chunkId}`);
+      .delete(`/transcript-chunk/chunk/${chunkId}`);
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(chunkId);
   });
 
   it('should return empty array after deleting the chunk', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcript-chunks/${transcriptId}/chunks`);
+      .get(`/transcript-chunk/${transcriptId}/chunk`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(0);
