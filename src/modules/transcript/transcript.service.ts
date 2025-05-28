@@ -36,6 +36,10 @@ export class TranscriptService {
     return this.transcriptModel.create(dto);
   }
 
+  async findAll(): Promise<Transcript[]> {
+    return this.transcriptModel.find().exec();
+  }
+
   async findByCalllogId(calllogid: string): Promise<Transcript[]> {
     return this.transcriptModel.find({ calllogid }).exec();
   }

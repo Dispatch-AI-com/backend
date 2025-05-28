@@ -38,7 +38,7 @@ describe('Transcript (e2e)', () => {
 
   it('should create a Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .post('/transcripts')
+      .post('/transcript')
       .send({
         calllogid: calllogId,
         summary: 'Test summary',
@@ -48,9 +48,20 @@ describe('Transcript (e2e)', () => {
     transcriptId = res.body._id;
   });
 
+  it('should get all Transcripts', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/transcript');
+    expect(res.status).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body[0]._id).toBeDefined();
+    expect(res.body[0].calllogid).toBeDefined();
+    expect(res.body[0].summary).toBeDefined();
+  });
+
   it('should get the created Transcript by calllogId', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcripts/calllog/${calllogId}`);
+      .get(`/transcript/calllog/${calllogId}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
@@ -60,7 +71,7 @@ describe('Transcript (e2e)', () => {
 
   it('should update the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .patch(`/transcripts/${transcriptId}`)
+      .patch(`/transcript/${transcriptId}`)
       .send({ summary: 'Updated summary' });
     expect(res.status).toBe(200);
     expect(res.body.summary).toBe('Updated summary');
@@ -69,14 +80,14 @@ describe('Transcript (e2e)', () => {
 
   it('should delete the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .delete(`/transcripts/${transcriptId}`);
+      .delete(`/transcript/${transcriptId}`);
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(transcriptId);
   });
 
   it('should return empty array after deleting the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcripts/calllog/${calllogId}`);
+      .get(`/transcript/calllog/${calllogId}`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(0);

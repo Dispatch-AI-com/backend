@@ -15,8 +15,8 @@ import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { TranscriptService } from './transcript.service';
 
-@ApiTags('Transcripts')
-@Controller('transcripts')
+@ApiTags('Transcript')
+@Controller('transcript')
 export class TranscriptController {
   constructor(private readonly transcriptService: TranscriptService) {}
 
@@ -24,6 +24,12 @@ export class TranscriptController {
   @ApiOkResponse({ type: Transcript })
   create(@Body() dto: CreateTranscriptDto): Promise<ITranscript> {
     return this.transcriptService.create(dto);
+  }
+
+  @Get()
+  @ApiOkResponse({ type: [Transcript] })
+  findAll(): Promise<ITranscript[]> {
+    return this.transcriptService.findAll();
   }
 
   @Get('calllog/:calllogid')
