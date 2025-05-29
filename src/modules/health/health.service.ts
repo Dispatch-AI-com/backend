@@ -61,12 +61,47 @@ export class HealthService {
   }> {
     const performanceStart = performance.now();
     const response = await ai('/');
-    console.log(response);
     return {
       status: 'ok',
       message: response.data.message,
       timestamp: new Date(),
       duration: performance.now() - performanceStart,
     };
+  }
+
+  async testAIChat(message: string): Promise<{
+    status: string;
+    response?: string;
+    timestamp: Date;
+    duration?: number;
+    error?: string;
+  }> {
+    const performanceStart = performance.now();
+    try {
+      const response = await ai('/ai/chat', {
+        method: 'POST',
+        data: {
+          message,
+        },
+      });
+      return {
+        status: 'ok',
+        response: response.data.response,
+        timestamp: new Date(),
+        duration: performance.now() - performanceStart,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        status: 'error',
+        error:
+          error instanceof Error
+            ? error.message
+            : typeof error === 'object' && error !== null
+              ? JSON.stringify(error)
+              : String(error),
+        timestamp: new Date(),
+      };
+    }
   }
 }

@@ -7,9 +7,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/")
-async def ai_chat(request: Request):
-    msg = (await request.body()).decode()
-    reply = await chain.arun(user_input=msg)
-    return {"text": reply}
+@router.post("/chat")
+async def chat(request: Request):
+    body = await request.json()
+    user_input = body.get("message")
 
+    if not user_input:
+        return {"error": "Missing 'message' in request body"}
+
+    response = await chain.ainvoke({"user_input": user_input}) 
+    return {"response": response}

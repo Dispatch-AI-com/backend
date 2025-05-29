@@ -2,6 +2,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import items
+from .routers import ai
 
 app = FastAPI()
 
@@ -15,3 +16,4 @@ app.add_middleware(
 
 
 app.include_router(items.router)
+app.include_router(ai.router)
