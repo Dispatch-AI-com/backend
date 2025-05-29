@@ -14,6 +14,8 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
 import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
 import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 
+import { BlogModule } from './blog/blog.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -26,6 +28,7 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
     LocationModule,
     WhisperModule,
     CalllogModule,
+    BlogModule,
     TranscriptModule,
     TranscriptChunkModule,
     AvailabilityModule,
