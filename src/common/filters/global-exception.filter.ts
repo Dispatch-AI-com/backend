@@ -3,17 +3,12 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
-  HttpStatus,
-  Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
 import { WhisperTranscriptionException } from '@/modules/whisper/exceptions/whisper-transcription.exception';
-
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger(GlobalExceptionFilter.name);
-
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -23,7 +18,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       process.env.NODE_ENV === 'development' ||
       process.env.SHOW_ERROR_MESSAGE === 'true';
 
-    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let status = 500;
     let message = 'Internal server error';
 
     switch (true) {
@@ -42,18 +37,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = String(exception);
         break;
     }
-
     const responseBody = {
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       ...(isDev && { message }),
     };
-
-    this.logger.error(
-      `Status: ${String(status)} - ${message}`,
-      exception instanceof Error ? exception.stack : undefined,
-    );
 
     response.status(status).json(responseBody);
   }
