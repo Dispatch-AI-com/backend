@@ -8,6 +8,7 @@ import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
+import { ServiceModule } from '@/modules/service/service.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
@@ -31,6 +32,7 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
     AvailabilityModule,
     ServiceBookingModule,
     ServiceFormFieldModule,
+    ServiceModule,
   ],
 })
 export class AppModule {}
