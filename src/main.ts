@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
@@ -7,8 +9,8 @@ import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter'
 import { setupSwagger } from '@/config/swagger.config';
 import { winstonLogger } from '@/logger/winston.logger';
 import { AppModule } from '@/modules/app.module';
-
 async function bootstrap(): Promise<void> {
+  console.log(`mongodb://${process.env.MONGODB_URI ?? 'no uri'}`);
   const app: INestApplication = await NestFactory.create(AppModule);
   app.useLogger(winstonLogger);
 
