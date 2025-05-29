@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, STATES as ConnectionStates } from 'mongoose';
 
+import ai from '@/lib/axios';
+
 @Injectable()
 export class HealthService {
   constructor(
@@ -49,5 +51,22 @@ export class HealthService {
         error: error instanceof Error ? error.message : String(error),
       };
     }
+  }
+
+  async testAIConnection(): Promise<{
+    status: string;
+    message: string;
+    timestamp: Date;
+    duration?: number;
+  }> {
+    const performanceStart = performance.now();
+    const response = await ai('/');
+    console.log(response);
+    return {
+      status: 'ok',
+      message: response.data.message,
+      timestamp: new Date(),
+      duration: performance.now() - performanceStart,
+    };
   }
 }

@@ -54,4 +54,19 @@ export class HealthController {
       message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！',
     };
   }
+
+  @ApiOperation({
+    summary: 'Test AI connection Endpoint',
+    description: 'Returns a test message from AI server',
+  })
+  @ApiResponse({ status: 200, description: 'Returns Test message' })
+  @Get('test')
+  test(): Promise<{
+    status: string;
+    message: string;
+    timestamp: Date;
+    duration?: number;
+  }> {
+    return this.healthService.testAIConnection();
+  }
 }
