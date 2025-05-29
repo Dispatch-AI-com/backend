@@ -11,6 +11,8 @@ import { PlanModule } from '@/modules/plan/plan.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
+import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
+import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
     TranscriptModule,
     TranscriptChunkModule,
     AvailabilityModule,
+    ServiceBookingModule,
+    ServiceFormFieldModule,
   ],
 })
 export class AppModule {}
