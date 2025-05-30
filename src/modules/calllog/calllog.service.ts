@@ -86,7 +86,10 @@ export class CalllogService {
     const query: CallLogQuery = { companyId };
 
     if (status !== undefined) {
-      query.status = status;
+      if (!Object.values(CallLogStatus).includes(status)) {
+        throw new BadRequestException(`Invalid status value: ${status}`);
+      }
+      query.status = { $eq: status };
     }
 
     if (search !== undefined && search !== '') {
