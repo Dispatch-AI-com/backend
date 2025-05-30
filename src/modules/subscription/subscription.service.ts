@@ -42,23 +42,6 @@ export class SubscriptionService {
     };
   }
 
-  // async cancelSubscription(id: string) {
-  //   const subscription = await this.subscriptionModel.findById(id);
-  //   if (!subscription) throw new NotFoundException('Subscription not found');
-
-  //   if (subscription.status !== 'active') {
-  //     throw new BadRequestException('Only active subscriptions can be cancelled');
-  //   }
-
-  //   subscription.status = 'cancelled';
-  //   await subscription.save();
-
-  //   return {
-  //     message: 'Subscription cancelled successfully',
-  //     id: subscription._id,
-  //   };
-  // }
-
   async cancelSubscription(id: string) {
     const subscription = await this.subscriptionModel.findById(id).populate('planId');
     if (!subscription) throw new NotFoundException('Subscription not found');
