@@ -20,7 +20,7 @@ import {
 
 interface TranscriptChunkFilter {
   transcriptId: Types.ObjectId;
-  speakerType?: string;
+  speakerType?: { $eq: 'AI' | 'User' };
   startAt?: { $gte: number };
   endAt?: { $lte: number };
 }
