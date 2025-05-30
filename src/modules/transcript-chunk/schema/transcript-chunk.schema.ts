@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+
 import { SpeakerType } from '../../../common/constants/transcript-chunk.constant';
 
 export type TranscriptChunkDocument = TranscriptChunk & Document;
@@ -22,6 +23,7 @@ export class TranscriptChunk extends Document {
   endAt!: number;
 }
 
-export const TranscriptChunkSchema = SchemaFactory.createForClass(TranscriptChunk);
+export const TranscriptChunkSchema =
+  SchemaFactory.createForClass(TranscriptChunk);
 
 TranscriptChunkSchema.index({ transcriptId: 1, startAt: 1 });

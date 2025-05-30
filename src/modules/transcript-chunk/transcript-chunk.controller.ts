@@ -27,15 +27,17 @@ import { Types } from 'mongoose';
 import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
 
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
+import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
 import { TranscriptChunk } from './schema/transcript-chunk.schema';
 import { TranscriptChunkService } from './transcript-chunk.service';
-import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
 
 @ApiTags('transcript-chunks')
 @Controller('transcripts/:transcriptId/chunks')
 export class TranscriptChunkController {
-  constructor(private readonly transcriptChunkService: TranscriptChunkService) {}
+  constructor(
+    private readonly transcriptChunkService: TranscriptChunkService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create multiple transcript chunks' })

@@ -9,10 +9,11 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { TranscriptService } from './transcript.service';
-import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { ITranscript } from '../../common/interfaces/transcript';
+import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
+import { TranscriptService } from './transcript.service';
 
 @ApiTags('transcripts')
 @Controller('companies/:companyId/calllogs/:calllogId/transcript')
@@ -27,7 +28,10 @@ export class TranscriptController {
     description: 'The transcript has been successfully created.',
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad request.' })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'CallLog not found.' })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'CallLog not found.',
+  })
   async create(
     @Param('calllogId') calllogId: string,
     @Body() createTranscriptDto: CreateTranscriptDto,
@@ -42,7 +46,9 @@ export class TranscriptController {
   @ApiOperation({ summary: 'Get transcript by calllog ID' })
   @ApiResponse({ status: 200, description: 'Return transcript' })
   @ApiResponse({ status: 404, description: 'Transcript not found' })
-  async findByCallLogId(@Param('calllogId') calllogId: string): Promise<ITranscript> {
+  async findByCallLogId(
+    @Param('calllogId') calllogId: string,
+  ): Promise<ITranscript> {
     return await this.transcriptService.findByCallLogId(calllogId);
   }
 
@@ -55,7 +61,10 @@ export class TranscriptController {
     @Body() updateTranscriptDto: UpdateTranscriptDto,
   ): Promise<ITranscript> {
     const transcript = await this.transcriptService.findByCallLogId(calllogId);
-    return this.transcriptService.update(transcript._id.toString(), updateTranscriptDto);
+    return this.transcriptService.update(
+      transcript._id.toString(),
+      updateTranscriptDto,
+    );
   }
 
   @Delete()

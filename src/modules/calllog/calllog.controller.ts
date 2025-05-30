@@ -12,11 +12,19 @@ import {
   Res,
   StreamableFile,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Response } from 'express';
 
-import { ICallLog } from '@/common/interfaces/calllog';
 import { CallLogStatus } from '@/common/constants/calllog.constant';
+import { ICallLog } from '@/common/interfaces/calllog';
 
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
@@ -47,7 +55,10 @@ export class CalllogController {
     @Query('sort') sort?: 'newest' | 'oldest',
     @Query('page') page?: number,
     @Query('limit') limit?: number,
-  ): Promise<{ data: ICallLog[]; pagination: { page: number; limit: number; total: number } }> {
+  ): Promise<{
+    data: ICallLog[];
+    pagination: { page: number; limit: number; total: number };
+  }> {
     return this.calllogService.findAll({
       companyId,
       status,
@@ -84,8 +95,8 @@ export class CalllogController {
   }
 
   @Get('metrics/today')
-  @ApiOperation({ summary: 'Get today\'s call metrics' })
-  @ApiResponse({ status: 200, description: 'Return today\'s call metrics' })
+  @ApiOperation({ summary: "Get today's call metrics" })
+  @ApiResponse({ status: 200, description: "Return today's call metrics" })
   async getTodayMetrics(@Param('companyId') companyId: string) {
     return this.calllogService.getTodayMetrics(companyId);
   }
@@ -115,7 +126,8 @@ export class CalllogController {
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a calllog and all its associated data' })
   @ApiOkResponse({
-    description: 'The calllog and all its associated data have been successfully deleted.',
+    description:
+      'The calllog and all its associated data have been successfully deleted.',
     type: CallLog,
   })
   @ApiNotFoundResponse({ description: 'Calllog not found' })

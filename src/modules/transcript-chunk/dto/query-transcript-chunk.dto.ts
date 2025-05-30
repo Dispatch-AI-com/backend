@@ -1,10 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsEnum, IsNumber, IsOptional, Min } from 'class-validator';
+
 import { SPEAKER_TYPE } from '../../../common/constants/transcript-chunk.constant';
 
 export class QueryTranscriptChunkDto {
-  @ApiProperty({ enum: SPEAKER_TYPE, required: false, description: 'Filter by speaker type' })
+  @ApiProperty({
+    enum: SPEAKER_TYPE,
+    required: false,
+    description: 'Filter by speaker type',
+  })
   @IsOptional()
   @IsEnum(SPEAKER_TYPE)
   speakerType?: 'AI' | 'User';
@@ -36,4 +41,4 @@ export class QueryTranscriptChunkDto {
   @Min(1)
   @Type(() => Number)
   limit?: number = 10;
-} 
+}

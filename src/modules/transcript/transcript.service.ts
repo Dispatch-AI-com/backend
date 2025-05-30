@@ -6,12 +6,12 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
+import { ITranscript } from '../../common/interfaces/transcript';
 import { CallLog } from '../calllog/schema/calllog.schema';
 import { TranscriptChunk } from '../transcript-chunk/schema/transcript-chunk.schema';
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
-import { ITranscript } from '../../common/interfaces/transcript';
 
 @Injectable()
 export class TranscriptService {
@@ -24,16 +24,17 @@ export class TranscriptService {
     private readonly callLogModel: Model<CallLog>,
   ) {}
 
-  async create(dto: { calllogId: string; summary: string }): Promise<ITranscript> {
+  async create(dto: {
+    calllogId: string;
+    summary: string;
+  }): Promise<ITranscript> {
     const { calllogId, summary } = dto;
     if (!Types.ObjectId.isValid(calllogId)) {
       throw new BadRequestException('Invalid calllogid');
     }
     const calllog = await this.callLogModel.findById(calllogId);
     if (!calllog) {
-      throw new NotFoundException(
-        `CallLog with ID ${calllogId} not found`,
-      );
+      throw new NotFoundException(`CallLog with ID ${calllogId} not found`);
     }
     const transcript = await this.transcriptModel.create({
       calllogId: new Types.ObjectId(calllogId),
@@ -86,7 +87,9 @@ export class TranscriptService {
     });
 
     if (!transcript) {
-      throw new NotFoundException(`Transcript not found for calllogId: ${calllogId}`);
+      throw new NotFoundException(
+        `Transcript not found for calllogId: ${calllogId}`,
+      );
     }
 
     return this.convertToITranscript(transcript);
@@ -97,13 +100,19 @@ export class TranscriptService {
       throw new BadRequestException('Invalid calllog ID');
     }
 
-    const transcript = await this.transcriptModel.findOne({ calllogId: new Types.ObjectId(calllogId) });
+    const transcript = await this.transcriptModel.findOne({
+      calllogId: new Types.ObjectId(calllogId),
+    });
     if (!transcript) {
-      throw new NotFoundException(`Transcript not found for calllogId: ${calllogId}`);
+      throw new NotFoundException(
+        `Transcript not found for calllogId: ${calllogId}`,
+      );
     }
 
     // Delete all chunks for this transcript
-    await this.transcriptChunkModel.deleteMany({ transcriptId: transcript._id });
+    await this.transcriptChunkModel.deleteMany({
+      transcriptId: transcript._id,
+    });
 
     // Delete the transcript
     await this.transcriptModel.deleteOne({ _id: transcript._id });

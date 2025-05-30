@@ -8,11 +8,11 @@ import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
+import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
+import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
-import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
-import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 
 @Module({
   imports: [

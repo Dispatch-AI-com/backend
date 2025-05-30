@@ -6,16 +6,17 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
+import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
+
+import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
+import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
 import {
   TranscriptChunk,
   TranscriptChunkDocument,
 } from './schema/transcript-chunk.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
-import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
-import { Transcript } from '../transcript/schema/transcript.schema';
-import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
 
 @Injectable()
 export class TranscriptChunkService {
@@ -26,14 +27,19 @@ export class TranscriptChunkService {
     private readonly transcriptModel: Model<Transcript>,
   ) {}
 
-  async create(transcriptId: string, dto: CreateTranscriptChunkDto): Promise<ITranscriptChunk> {
+  async create(
+    transcriptId: string,
+    dto: CreateTranscriptChunkDto,
+  ): Promise<ITranscriptChunk> {
     if (!Types.ObjectId.isValid(transcriptId)) {
       throw new BadRequestException('Invalid transcript ID');
     }
 
     const transcript = await this.transcriptModel.findById(transcriptId);
     if (!transcript) {
-      throw new NotFoundException(`Transcript with ID ${transcriptId} not found`);
+      throw new NotFoundException(
+        `Transcript with ID ${transcriptId} not found`,
+      );
     }
 
     const overlap = await this.transcriptChunkModel.findOne({
@@ -65,7 +71,9 @@ export class TranscriptChunkService {
 
     const transcript = await this.transcriptModel.findById(transcriptId);
     if (!transcript) {
-      throw new NotFoundException(`Transcript with ID ${transcriptId} not found`);
+      throw new NotFoundException(
+        `Transcript with ID ${transcriptId} not found`,
+      );
     }
 
     const { speakerType, startAt, endAt, page = 1, limit = 10 } = query;
@@ -101,13 +109,18 @@ export class TranscriptChunkService {
     transcriptId: string,
     chunkId: string,
   ): Promise<ITranscriptChunk> {
-    if (!Types.ObjectId.isValid(transcriptId) || !Types.ObjectId.isValid(chunkId)) {
+    if (
+      !Types.ObjectId.isValid(transcriptId) ||
+      !Types.ObjectId.isValid(chunkId)
+    ) {
       throw new BadRequestException('Invalid ID');
     }
 
     const transcript = await this.transcriptModel.findById(transcriptId);
     if (!transcript) {
-      throw new NotFoundException(`Transcript with ID ${transcriptId} not found`);
+      throw new NotFoundException(
+        `Transcript with ID ${transcriptId} not found`,
+      );
     }
 
     const chunk = await this.transcriptChunkModel.findOne({
@@ -150,7 +163,9 @@ export class TranscriptChunkService {
 
     const transcript = await this.transcriptModel.findById(transcriptId);
     if (!transcript) {
-      throw new NotFoundException(`Transcript with ID ${transcriptId} not found`);
+      throw new NotFoundException(
+        `Transcript with ID ${transcriptId} not found`,
+      );
     }
 
     // Overlap check for each chunk
@@ -164,7 +179,9 @@ export class TranscriptChunkService {
         ],
       });
       if (overlap) {
-        throw new BadRequestException('Time range overlaps with another chunk.');
+        throw new BadRequestException(
+          'Time range overlaps with another chunk.',
+        );
       }
     }
 

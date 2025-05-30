@@ -4,21 +4,30 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Error as MongooseError, Model, Types } from 'mongoose';
 import { createReadStream } from 'fs';
 import { stat } from 'fs/promises';
+import { Error as MongooseError, Model, Types } from 'mongoose';
 import { join } from 'path';
 
-import { ICallLog, ICallLogResponse, ICallLogMetrics } from '@/common/interfaces/calllog';
-import { CallLogStatus, DEFAULT_PAGE, DEFAULT_LIMIT, CALLLOG_SORT_OPTIONS } from '@/common/constants/calllog.constant';
+import {
+  CALLLOG_SORT_OPTIONS,
+  CallLogStatus,
+  DEFAULT_LIMIT,
+  DEFAULT_PAGE,
+} from '@/common/constants/calllog.constant';
+import {
+  ICallLog,
+  ICallLogMetrics,
+  ICallLogResponse,
+} from '@/common/interfaces/calllog';
 
 import { Transcript } from '../transcript/schema/transcript.schema';
+import { TranscriptService } from '../transcript/transcript.service';
+import { TranscriptChunkService } from '../transcript-chunk/transcript-chunk.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
 import { sanitizeCallLogUpdate } from './utils/sanitize-update';
-import { TranscriptService } from '../transcript/transcript.service';
-import { TranscriptChunkService } from '../transcript-chunk/transcript-chunk.service';
 
 interface FindAllOptions {
   companyId: string;
@@ -26,7 +35,7 @@ interface FindAllOptions {
   search?: string;
   startAtFrom?: string;
   startAtTo?: string;
-  sort?: typeof CALLLOG_SORT_OPTIONS[keyof typeof CALLLOG_SORT_OPTIONS];
+  sort?: (typeof CALLLOG_SORT_OPTIONS)[keyof typeof CALLLOG_SORT_OPTIONS];
   page?: number;
   limit?: number;
 }
@@ -142,7 +151,7 @@ export class CalllogService {
 
   async getAudio(companyId: string, calllogId: string): Promise<string> {
     const callLog = await this.findOne(companyId, calllogId);
-    
+
     if (!callLog.audioId) {
       throw new NotFoundException('No audio available for this call');
     }
@@ -223,7 +232,9 @@ export class CalllogService {
         const transcript = await this.transcriptService.findByCallLogId(id);
         if (transcript) {
           // Delete chunks first
-          await this.transcriptChunkService.deleteByTranscriptId(transcript._id.toString());
+          await this.transcriptChunkService.deleteByTranscriptId(
+            transcript._id.toString(),
+          );
           // Then delete transcript
           await this.transcriptService.deleteByCallLogId(id);
         }
@@ -242,7 +253,10 @@ export class CalllogService {
 
       return deleted;
     } catch (error) {
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       throw new NotFoundException(`Calllog with ID ${id} not found`);
