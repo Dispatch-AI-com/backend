@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Error as MongooseError, Model } from 'mongoose';
+import { Error as MongooseError, Model, Types } from 'mongoose';
 import { createReadStream } from 'fs';
 import { stat } from 'fs/promises';
 import { join } from 'path';
@@ -17,6 +17,8 @@ import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
 import { sanitizeCallLogUpdate } from './utils/sanitize-update';
+import { TranscriptService } from '../transcript/transcript.service';
+import { TranscriptChunkService } from '../transcript-chunk/transcript-chunk.service';
 
 interface FindAllOptions {
   companyId: string;
@@ -36,6 +38,8 @@ export class CalllogService {
     private readonly callLogModel: Model<CallLogDocument>,
     @InjectModel(Transcript.name)
     private readonly transcriptModel: Model<Transcript>,
+    private readonly transcriptService: TranscriptService,
+    private readonly transcriptChunkService: TranscriptChunkService,
   ) {}
 
   private convertToICallLog(doc: CallLogDocument): ICallLog {
@@ -203,25 +207,45 @@ export class CalllogService {
     }
   }
 
-  async delete(id: string): Promise<ICallLog> {
+  async delete(id: string): Promise<CallLogDocument> {
     try {
-      const callLog = await this.callLogModel.findById(id);
-      if (!callLog) {
-        throw new NotFoundException(`Call log with ID ${id} not found`);
+      if (!Types.ObjectId.isValid(id)) {
+        throw new BadRequestException('Invalid calllog ID');
       }
 
-      await this.transcriptModel.deleteMany({ calllogid: id });
+      const calllog = await this.callLogModel.findById(id);
+      if (!calllog) {
+        throw new NotFoundException(`Calllog with ID ${id} not found`);
+      }
 
+      // Delete transcript and its chunks if they exist
+      try {
+        const transcript = await this.transcriptService.findByCallLogId(id);
+        if (transcript) {
+          // Delete chunks first
+          await this.transcriptChunkService.deleteByTranscriptId(transcript._id.toString());
+          // Then delete transcript
+          await this.transcriptService.deleteByCallLogId(id);
+        }
+      } catch (error) {
+        // If transcript doesn't exist, that's fine
+        if (!(error instanceof NotFoundException)) {
+          throw error;
+        }
+      }
+
+      // Finally delete the calllog
       const deleted = await this.callLogModel.findByIdAndDelete(id);
       if (!deleted) {
-        throw new NotFoundException(`Call log with ID ${id} not found`);
+        throw new NotFoundException(`Calllog with ID ${id} not found`);
       }
-      return this.convertToICallLog(deleted);
+
+      return deleted;
     } catch (error) {
-      if (error instanceof MongooseError.CastError && error.path === '_id') {
-        throw new NotFoundException(`Call log with ID ${id} not found`);
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
       }
-      throw error;
+      throw new NotFoundException(`Calllog with ID ${id} not found`);
     }
   }
 }

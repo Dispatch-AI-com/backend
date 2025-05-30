@@ -92,6 +92,23 @@ export class TranscriptService {
     return this.convertToITranscript(transcript);
   }
 
+  async deleteByCallLogId(calllogId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(calllogId)) {
+      throw new BadRequestException('Invalid calllog ID');
+    }
+
+    const transcript = await this.transcriptModel.findOne({ calllogId: new Types.ObjectId(calllogId) });
+    if (!transcript) {
+      throw new NotFoundException(`Transcript not found for calllogId: ${calllogId}`);
+    }
+
+    // Delete all chunks for this transcript
+    await this.transcriptChunkModel.deleteMany({ transcriptId: transcript._id });
+
+    // Delete the transcript
+    await this.transcriptModel.deleteOne({ _id: transcript._id });
+  }
+
   private convertToITranscript(doc: Transcript): ITranscript {
     const obj = doc.toObject();
     return {

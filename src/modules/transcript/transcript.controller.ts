@@ -5,7 +5,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -29,7 +28,7 @@ export class TranscriptController {
   })
   @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Bad request.' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'CallLog not found.' })
-  async createTranscript(
+  async create(
     @Param('calllogId') calllogId: string,
     @Body() createTranscriptDto: CreateTranscriptDto,
   ): Promise<ITranscript> {
@@ -41,30 +40,17 @@ export class TranscriptController {
 
   @Get()
   @ApiOperation({ summary: 'Get transcript by calllog ID' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Return the transcript.',
-  })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Transcript not found.' })
-  async getTranscript(@Param('calllogId') calllogId: string): Promise<ITranscript> {
-    try {
-      return await this.transcriptService.findByCallLogId(calllogId);
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw error;
-    }
+  @ApiResponse({ status: 200, description: 'Return transcript' })
+  @ApiResponse({ status: 404, description: 'Transcript not found' })
+  async findByCallLogId(@Param('calllogId') calllogId: string): Promise<ITranscript> {
+    return await this.transcriptService.findByCallLogId(calllogId);
   }
 
   @Patch()
-  @ApiOperation({ summary: 'Update a transcript' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'The transcript has been successfully updated.',
-  })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Transcript not found.' })
-  async updateTranscript(
+  @ApiOperation({ summary: 'Update transcript' })
+  @ApiResponse({ status: 200, description: 'Return updated transcript' })
+  @ApiResponse({ status: 404, description: 'Transcript not found' })
+  async update(
     @Param('calllogId') calllogId: string,
     @Body() updateTranscriptDto: UpdateTranscriptDto,
   ): Promise<ITranscript> {
@@ -73,13 +59,10 @@ export class TranscriptController {
   }
 
   @Delete()
-  @ApiOperation({ summary: 'Delete a transcript' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'The transcript has been successfully deleted.',
-  })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'Transcript not found.' })
-  async deleteTranscript(@Param('calllogId') calllogId: string): Promise<ITranscript> {
+  @ApiOperation({ summary: 'Delete transcript' })
+  @ApiResponse({ status: 200, description: 'Return deleted transcript' })
+  @ApiResponse({ status: 404, description: 'Transcript not found' })
+  async delete(@Param('calllogId') calllogId: string): Promise<ITranscript> {
     const transcript = await this.transcriptService.findByCallLogId(calllogId);
     return this.transcriptService.delete(transcript._id.toString());
   }

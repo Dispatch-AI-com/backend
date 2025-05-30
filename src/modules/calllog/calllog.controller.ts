@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   Param,
@@ -11,7 +12,7 @@ import {
   Res,
   StreamableFile,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags, ApiOkResponse, ApiNotFoundResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { ICallLog } from '@/common/interfaces/calllog';
@@ -20,6 +21,7 @@ import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
+import { CallLog, CallLogDocument } from './schema/calllog.schema';
 
 @ApiTags('calllog')
 @Controller('companies/:companyId/calllogs')
@@ -108,5 +110,17 @@ export class CalllogController {
     @Body() updateCallLogDto: UpdateCallLogDto,
   ): Promise<ICallLog> {
     return this.calllogService.update(companyId, calllogId, updateCallLogDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a calllog and all its associated data' })
+  @ApiOkResponse({
+    description: 'The calllog and all its associated data have been successfully deleted.',
+    type: CallLog,
+  })
+  @ApiNotFoundResponse({ description: 'Calllog not found' })
+  @ApiBadRequestResponse({ description: 'Invalid calllog ID' })
+  delete(@Param('id') id: string): Promise<CallLogDocument> {
+    return this.calllogService.delete(id);
   }
 }

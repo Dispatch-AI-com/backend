@@ -245,4 +245,95 @@ describe('CallLogController (e2e)', () => {
       expect(response.body).toEqual({ audioId });
     });
   });
+
+  describe('DELETE /companies/:companyId/calllogs/:id', () => {
+    it('should delete calllog and cascade delete transcript and chunks', async () => {
+      // Create a calllog
+      const testCallLog = createTestCallLog();
+      const createResponse = await request(app.getHttpServer())
+        .post(baseUrl)
+        .send(testCallLog);
+      
+      const calllogId = createResponse.body._id;
+
+      // Create a transcript for this calllog
+      const transcriptResponse = await request(app.getHttpServer())
+        .post(`${baseUrl}/${calllogId}/transcript`)
+        .send({
+          summary: 'Test transcript'
+        });
+
+      const transcriptId = transcriptResponse.body._id;
+
+      // Create chunks for this transcript
+      const chunkResponse = await request(app.getHttpServer())
+        .post(`${baseUrl}/${calllogId}/transcript/chunks`)
+        .send({
+          speakerType: 'agent',
+          text: 'Test chunk',
+          startAt: 0,
+          endAt: 1000
+        });
+
+
+      // Delete the calllog
+      const deleteResponse = await request(app.getHttpServer())
+        .delete(`${baseUrl}/${calllogId}`);
+
+      expect(deleteResponse.status).toBe(200);
+      expect(deleteResponse.body._id).toBe(calllogId);
+
+      // Verify calllog is deleted
+      const getCalllogResponse = await request(app.getHttpServer())
+        .get(`${baseUrl}/${calllogId}`);
+      expect(getCalllogResponse.status).toBe(404);
+
+      // Verify transcript is deleted
+      const getTranscriptResponse = await request(app.getHttpServer())
+        .get(`${baseUrl}/${calllogId}/transcript`);
+      expect(getTranscriptResponse.status).toBe(404);
+
+      // Verify chunks are deleted
+      const getChunksResponse = await request(app.getHttpServer())
+        .get(`${baseUrl}/${calllogId}/transcript/chunks`);
+      expect(getChunksResponse.status).toBe(404);
+    });
+
+    it('should delete calllog even when transcript does not exist', async () => {
+      // Create a calllog without transcript
+      const testCallLog = createTestCallLog();
+      const createResponse = await request(app.getHttpServer())
+        .post(baseUrl)
+        .send(testCallLog);
+      
+      const calllogId = createResponse.body._id;
+
+      // Delete the calllog
+      const deleteResponse = await request(app.getHttpServer())
+        .delete(`${baseUrl}/${calllogId}`);
+
+      expect(deleteResponse.status).toBe(200);
+      expect(deleteResponse.body._id).toBe(calllogId);
+
+      // Verify calllog is deleted
+      const getCalllogResponse = await request(app.getHttpServer())
+        .get(`${baseUrl}/${calllogId}`);
+      expect(getCalllogResponse.status).toBe(404);
+    });
+
+    it('should return 404 for non-existent calllog', async () => {
+      const nonExistentId = new mongoose.Types.ObjectId().toString();
+      const response = await request(app.getHttpServer())
+        .delete(`${baseUrl}/${nonExistentId}`);
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should return 400 for invalid calllog ID', async () => {
+      const response = await request(app.getHttpServer())
+        .delete(`${baseUrl}/invalid-id`);
+
+      expect(response.status).toBe(400);
+    });
+  });
 });

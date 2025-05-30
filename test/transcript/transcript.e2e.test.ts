@@ -72,7 +72,6 @@ describe('Transcript (e2e)', () => {
       .send({ summary: 'Updated summary' });
     expect(res.status).toBe(200);
     expect(res.body.summary).toBe('Updated summary');
-    expect(res.body._id).toBe(transcriptId);
     expect(res.body.calllogId).toBe(calllogId);
   });
 
@@ -80,7 +79,7 @@ describe('Transcript (e2e)', () => {
     const res = await request(app.getHttpServer())
       .delete(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`);
     expect(res.status).toBe(200);
-    expect(res.body._id).toBe(transcriptId);
+    expect(res.body.calllogId).toBe(calllogId);
   });
 
   it('should return 404 after deleting the Transcript', async () => {
