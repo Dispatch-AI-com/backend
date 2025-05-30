@@ -90,13 +90,19 @@ export class TranscriptChunkService {
     const filter: TranscriptChunkFilter = {
       transcriptId: new Types.ObjectId(transcriptId),
     };
-    if (speakerType) {
-      filter.speakerType = speakerType;
+
+    // Validate and sanitize speakerType
+    if (speakerType && ['AI', 'User'].includes(speakerType)) {
+      filter.speakerType = { $eq: speakerType };
     }
-    if (startAt !== undefined) {
+
+    // Validate and sanitize startAt
+    if (startAt !== undefined && typeof startAt === 'number') {
       filter.startAt = { $gte: startAt };
     }
-    if (endAt !== undefined) {
+
+    // Validate and sanitize endAt
+    if (endAt !== undefined && typeof endAt === 'number') {
       filter.endAt = { $lte: endAt };
     }
 
