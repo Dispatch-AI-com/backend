@@ -13,7 +13,10 @@ import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
 import { TranscriptChunk } from './schema/transcript-chunk.schema';
-import { sanitizedUpdate } from './utils/sanitized-update';
+import {
+  sanitizedUpdate,
+  sanitizeTranscriptChunkUpdate,
+} from './utils/sanitized-update';
 
 interface TranscriptChunkFilter {
   transcriptId: Types.ObjectId;
@@ -146,7 +149,12 @@ export class TranscriptChunkService {
     id: string,
     dto: UpdateTranscriptChunkDto,
   ): Promise<ITranscriptChunk> {
-    const updated = await sanitizedUpdate(this.transcriptChunkModel, id, dto);
+    const doc = await this.transcriptChunkModel.findById(id);
+    if (!doc) {
+      throw new NotFoundException(`Chunk with ID ${id} not found`);
+    }
+    const sanitized = sanitizeTranscriptChunkUpdate(dto);
+    const updated = await sanitizedUpdate(doc, sanitized);
     return this.convertToITranscriptChunk(updated);
   }
 

@@ -39,7 +39,7 @@ interface FindAllOptions {
 
 interface CallLogQuery {
   companyId: string;
-  status?: CallLogStatus;
+  status?: { $eq: CallLogStatus };
   startAt?: {
     $gte?: Date;
     $lte?: Date;

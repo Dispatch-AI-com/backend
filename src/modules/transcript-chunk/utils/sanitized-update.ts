@@ -1,54 +1,56 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
-import type { Model } from 'mongoose';
 import { Types } from 'mongoose';
+
+import type { ISanitizedUpdate } from '@/common/interfaces/transcript-chunk';
 
 import type { UpdateTranscriptChunkDto } from '../dto/update-transcript-chunk.dto';
 import type { TranscriptChunkDocument } from '../schema/transcript-chunk.schema';
 
-export async function sanitizedUpdate<T extends TranscriptChunkDocument>(
-  model: Model<T>,
-  id: string,
+export function sanitizeTranscriptChunkUpdate(
   dto: UpdateTranscriptChunkDto,
-): Promise<T> {
-  // Validate id
-  if (!Types.ObjectId.isValid(id)) {
-    throw new BadRequestException('Invalid chunk id');
-  }
-
-  const existing = await model.findById(id);
-  if (!existing) throw new NotFoundException('Transcript chunk not found');
-
-  const sanitizedData: Partial<UpdateTranscriptChunkDto> = {};
+  transcriptId?: string,
+): ISanitizedUpdate {
+  const update: ISanitizedUpdate = {};
 
   if (dto.speakerType !== undefined) {
-    sanitizedData.speakerType = { $eq: dto.speakerType };
+    const validTypes = ['AI', 'User'] as const;
+    if (!validTypes.includes(dto.speakerType)) {
+      throw new Error(`Invalid speaker type: ${dto.speakerType}`);
+    }
+    update.speakerType = dto.speakerType;
   }
 
   if (dto.text !== undefined) {
-    sanitizedData.text = { $eq: dto.text };
+    update.text = dto.text;
   }
 
   if (dto.startAt !== undefined) {
-    if (typeof dto.startAt !== 'number') {
-      throw new BadRequestException('startAt must be a number');
+    if (typeof dto.startAt !== 'number' || dto.startAt < 0) {
+      throw new Error('Start time must be a non-negative number');
     }
-    sanitizedData.startAt = { $eq: dto.startAt };
+    update.startAt = dto.startAt;
   }
 
   if (dto.endAt !== undefined) {
-    if (typeof dto.endAt !== 'number') {
-      throw new BadRequestException('endAt must be a number');
+    if (typeof dto.endAt !== 'number' || dto.endAt < 0) {
+      throw new Error('End time must be a non-negative number');
     }
-    sanitizedData.endAt = { $eq: dto.endAt };
+    update.endAt = dto.endAt;
   }
 
-  const updated = await model.findByIdAndUpdate(id, sanitizedData, {
-    new: true,
-  });
-
-  if (!updated) {
-    throw new BadRequestException('Document not found');
+  if (transcriptId !== undefined && transcriptId !== '') {
+    if (!Types.ObjectId.isValid(transcriptId)) {
+      throw new Error('Invalid transcript ID');
+    }
+    update.transcriptId = new Types.ObjectId(transcriptId);
   }
 
-  return updated;
+  return update;
+}
+
+export async function sanitizedUpdate<T extends TranscriptChunkDocument>(
+  doc: T,
+  update: Partial<T>,
+): Promise<T> {
+  Object.assign(doc, update);
+  return doc.save();
 }
