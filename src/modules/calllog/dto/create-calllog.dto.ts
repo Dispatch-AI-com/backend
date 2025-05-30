@@ -48,5 +48,5 @@ export class CreateCallLogDto {
   @ApiPropertyOptional()
   @IsString()
   @IsOptional()
-  recordingUrl?: string;
+  audioId?: string;
 }

@@ -5,12 +5,29 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Error as MongooseError, Model } from 'mongoose';
+import { createReadStream } from 'fs';
+import { stat } from 'fs/promises';
+import { join } from 'path';
+
+import { ICallLog, ICallLogResponse, ICallLogMetrics } from '@/common/interfaces/calllog';
+import { CallLogStatus, DEFAULT_PAGE, DEFAULT_LIMIT, CALLLOG_SORT_OPTIONS } from '@/common/constants/calllog.constant';
 
 import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
 import { sanitizeCallLogUpdate } from './utils/sanitize-update';
+
+interface FindAllOptions {
+  companyId: string;
+  status?: CallLogStatus;
+  search?: string;
+  startAtFrom?: string;
+  startAtTo?: string;
+  sort?: typeof CALLLOG_SORT_OPTIONS[keyof typeof CALLLOG_SORT_OPTIONS];
+  page?: number;
+  limit?: number;
+}
 
 @Injectable()
 export class CalllogService {
@@ -21,9 +38,18 @@ export class CalllogService {
     private readonly transcriptModel: Model<Transcript>,
   ) {}
 
-  async create(dto: CreateCallLogDto): Promise<CallLog> {
+  private convertToICallLog(doc: CallLogDocument): ICallLog {
+    const obj = doc.toObject();
+    return {
+      ...obj,
+      _id: obj._id.toString(),
+    };
+  }
+
+  async create(dto: CreateCallLogDto): Promise<ICallLog> {
     try {
-      return await this.callLogModel.create(dto);
+      const doc = await this.callLogModel.create(dto);
+      return this.convertToICallLog(doc);
     } catch (error) {
       if (error instanceof MongooseError.ValidationError) {
         throw new BadRequestException(error.message);
@@ -32,58 +58,136 @@ export class CalllogService {
     }
   }
 
-  async findAll(): Promise<CallLog[]> {
-    return this.callLogModel.find().sort({ startAt: -1 }).exec();
-  }
+  async findAll({
+    companyId,
+    status,
+    search,
+    startAtFrom,
+    startAtTo,
+    sort = CALLLOG_SORT_OPTIONS.NEWEST,
+    page = DEFAULT_PAGE,
+    limit = DEFAULT_LIMIT,
+  }: FindAllOptions): Promise<ICallLogResponse> {
+    const query: any = { companyId };
 
-  async findByCompanyId(companyId: string): Promise<CallLog[]> {
-    const callLogs = await this.callLogModel
-      .find({ companyId })
-      .sort({ startAt: -1 })
-      .exec();
-
-    if (callLogs.length === 0) {
-      throw new NotFoundException(
-        `No call logs found for company ID: ${companyId}`,
-      );
+    if (status) {
+      query.status = status;
     }
 
-    return callLogs;
+    if (search) {
+      // Remove any non-alphanumeric characters from search term
+      const cleanSearch = search.replace(/[^a-zA-Z0-9]/g, '');
+      query.$or = [
+        { callerNumber: { $regex: cleanSearch, $options: 'i' } },
+        { serviceBookedId: { $regex: cleanSearch, $options: 'i' } },
+      ];
+    }
+
+    if (startAtFrom || startAtTo) {
+      query.startAt = {};
+      if (startAtFrom) {
+        query.startAt.$gte = new Date(startAtFrom);
+      }
+      if (startAtTo) {
+        query.startAt.$lte = new Date(startAtTo);
+      }
+    }
+
+    const sortOrder = sort === CALLLOG_SORT_OPTIONS.NEWEST ? -1 : 1;
+    const skip = (page - 1) * limit;
+
+    const [callLogs, total] = await Promise.all([
+      this.callLogModel
+        .find(query)
+        .sort({ startAt: sortOrder })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.callLogModel.countDocuments(query),
+    ]);
+
+    return {
+      data: callLogs.map(doc => this.convertToICallLog(doc)),
+      pagination: {
+        page,
+        limit,
+        total,
+      },
+    };
   }
 
-  async findByStartAt(startDate: Date, endDate: Date): Promise<CallLog[]> {
-    const callLogs = await this.callLogModel
-      .find({
-        startAt: {
-          $gte: startDate,
-          $lte: endDate,
-        },
-      })
-      .sort({ startAt: -1 })
-      .exec();
+  async findOne(companyId: string, calllogId: string): Promise<ICallLog> {
+    try {
+      const callLog = await this.callLogModel.findOne({
+        _id: calllogId,
+        companyId,
+      });
 
-    return callLogs;
+      if (!callLog) {
+        throw new NotFoundException(`Call log with ID ${calllogId} not found`);
+      }
+
+      return this.convertToICallLog(callLog);
+    } catch (error) {
+      if (error instanceof MongooseError.CastError && error.path === '_id') {
+        throw new NotFoundException(`Call log with ID ${calllogId} not found`);
+      }
+      throw error;
+    }
+  }
+
+  async getAudio(companyId: string, calllogId: string): Promise<string> {
+    const callLog = await this.findOne(companyId, calllogId);
+    
+    if (!callLog.audioId) {
+      throw new NotFoundException('No audio available for this call');
+    }
+
+    return callLog.audioId;
+  }
+
+  async getTodayMetrics(companyId: string): Promise<ICallLogMetrics> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const [totalCalls, liveCalls] = await Promise.all([
+      this.callLogModel.countDocuments({
+        companyId,
+        startAt: { $gte: today },
+      }),
+      this.callLogModel.countDocuments({
+        companyId,
+        startAt: { $gte: today },
+        status: CallLogStatus.InProgress,
+      }),
+    ]);
+
+    return {
+      totalCalls,
+      liveCalls,
+    };
   }
 
   async update(
-    id: string,
+    companyId: string,
+    calllogId: string,
     updateCallLogDto: UpdateCallLogDto,
-  ): Promise<CallLog> {
+  ): Promise<ICallLog> {
     try {
       const sanitizedUpdate = sanitizeCallLogUpdate(updateCallLogDto);
       const updatedCallLog = await this.callLogModel
-        .findByIdAndUpdate(
-          id,
+        .findOneAndUpdate(
+          { _id: calllogId, companyId },
           { $set: sanitizedUpdate },
           { new: true, runValidators: true },
         )
         .exec();
 
       if (!updatedCallLog) {
-        throw new NotFoundException(`Call log with ID ${id} not found`);
+        throw new NotFoundException(`Call log with ID ${calllogId} not found`);
       }
 
-      return updatedCallLog;
+      return this.convertToICallLog(updatedCallLog);
     } catch (error) {
       if (error instanceof MongooseError.ValidationError) {
         throw new BadRequestException(error.message);
@@ -93,13 +197,13 @@ export class CalllogService {
         error.path &&
         error.path === '_id'
       ) {
-        throw new NotFoundException(`Call log with ID ${id} not found`);
+        throw new NotFoundException(`Call log with ID ${calllogId} not found`);
       }
       throw error;
     }
   }
 
-  async delete(id: string): Promise<CallLog> {
+  async delete(id: string): Promise<ICallLog> {
     try {
       const callLog = await this.callLogModel.findById(id);
       if (!callLog) {
@@ -112,7 +216,7 @@ export class CalllogService {
       if (!deleted) {
         throw new NotFoundException(`Call log with ID ${id} not found`);
       }
-      return deleted;
+      return this.convertToICallLog(deleted);
     } catch (error) {
       if (error instanceof MongooseError.CastError && error.path === '_id') {
         throw new NotFoundException(`Call log with ID ${id} not found`);
