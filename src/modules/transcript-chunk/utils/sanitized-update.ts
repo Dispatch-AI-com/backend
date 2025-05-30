@@ -21,25 +21,25 @@ export async function sanitizedUpdate<T extends TranscriptChunkDocument>(
   const sanitizedData: Partial<UpdateTranscriptChunkDto> = {};
 
   if (dto.speakerType !== undefined) {
-    sanitizedData.speakerType = dto.speakerType;
+    sanitizedData.speakerType = { $eq: dto.speakerType };
   }
 
   if (dto.text !== undefined) {
-    sanitizedData.text = dto.text;
+    sanitizedData.text = { $eq: dto.text };
   }
 
   if (dto.startAt !== undefined) {
     if (typeof dto.startAt !== 'number') {
       throw new BadRequestException('startAt must be a number');
     }
-    sanitizedData.startAt = dto.startAt;
+    sanitizedData.startAt = { $eq: dto.startAt };
   }
 
   if (dto.endAt !== undefined) {
     if (typeof dto.endAt !== 'number') {
       throw new BadRequestException('endAt must be a number');
     }
-    sanitizedData.endAt = dto.endAt;
+    sanitizedData.endAt = { $eq: dto.endAt };
   }
 
   const updated = await model.findByIdAndUpdate(id, sanitizedData, {
