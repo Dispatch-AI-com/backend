@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
+import { ITranscript } from '../../common/interfaces/transcript';
 import { CallLog } from '../calllog/schema/calllog.schema';
-import { TranscriptChunk } from '../transcript_chunk/schema/transcript_chunk.schema';
-import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
+import { TranscriptChunk } from '../transcript-chunk/schema/transcript-chunk.schema';
+import { UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
 
@@ -19,34 +24,108 @@ export class TranscriptService {
     private readonly callLogModel: Model<CallLog>,
   ) {}
 
-  async create(dto: CreateTranscriptDto): Promise<Transcript> {
-    if (!Types.ObjectId.isValid(dto.calllogid)) {
+  async create(dto: {
+    calllogId: string;
+    summary: string;
+  }): Promise<ITranscript> {
+    const { calllogId, summary } = dto;
+    if (!Types.ObjectId.isValid(calllogId)) {
       throw new BadRequestException('Invalid calllogid');
     }
-    const calllog = await this.callLogModel.findById(dto.calllogid);
+    const calllog = await this.callLogModel.findById(calllogId);
     if (!calllog) {
-      throw new NotFoundException(
-        `CallLog with ID ${dto.calllogid.toString()} not found`,
-      );
+      throw new NotFoundException(`CallLog with ID ${calllogId} not found`);
     }
-    return this.transcriptModel.create(dto);
+    const transcript = await this.transcriptModel.create({
+      calllogId: new Types.ObjectId(calllogId),
+      summary,
+    });
+    return this.convertToITranscript(transcript);
   }
 
-  async findByCalllogId(calllogid: string): Promise<Transcript[]> {
-    return this.transcriptModel.find({ calllogid }).exec();
+  async findAll(): Promise<ITranscript[]> {
+    const transcripts = await this.transcriptModel.find().exec();
+    return transcripts.map(t => this.convertToITranscript(t));
   }
 
-  async update(id: string, dto: UpdateTranscriptDto): Promise<Transcript> {
+  async findByCalllogId(calllogid: string): Promise<ITranscript[]> {
+    const transcripts = await this.transcriptModel.find({ calllogid }).exec();
+    return transcripts.map(t => this.convertToITranscript(t));
+  }
+
+  async findOne(id: string): Promise<ITranscript> {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid transcript id');
     }
-    return sanitizedUpdate(this.transcriptModel, id, dto);
+    const transcript = await this.transcriptModel.findById(id);
+    if (!transcript) throw new NotFoundException('Transcript not found');
+    return this.convertToITranscript(transcript);
   }
 
-  async delete(id: string): Promise<Transcript> {
+  async update(id: string, dto: UpdateTranscriptDto): Promise<ITranscript> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid transcript id');
+    }
+    const transcript = await sanitizedUpdate(this.transcriptModel, id, dto);
+    return this.convertToITranscript(transcript);
+  }
+
+  async delete(id: string): Promise<ITranscript> {
     const deleted = await this.transcriptModel.findByIdAndDelete(id);
     if (!deleted) throw new NotFoundException('Transcript not found');
     await this.transcriptChunkModel.deleteMany({ transcriptId: id });
-    return deleted;
+    return this.convertToITranscript(deleted);
+  }
+
+  async findByCallLogId(calllogId: string): Promise<ITranscript> {
+    if (!Types.ObjectId.isValid(calllogId)) {
+      throw new BadRequestException('Invalid calllogId');
+    }
+
+    const transcript = await this.transcriptModel.findOne({
+      calllogId: new Types.ObjectId(calllogId),
+    });
+
+    if (!transcript) {
+      throw new NotFoundException(
+        `Transcript not found for calllogId: ${calllogId}`,
+      );
+    }
+
+    return this.convertToITranscript(transcript);
+  }
+
+  async deleteByCallLogId(calllogId: string): Promise<void> {
+    if (!Types.ObjectId.isValid(calllogId)) {
+      throw new BadRequestException('Invalid calllog ID');
+    }
+
+    const transcript = await this.transcriptModel.findOne({
+      calllogId: new Types.ObjectId(calllogId),
+    });
+    if (!transcript) {
+      throw new NotFoundException(
+        `Transcript not found for calllogId: ${calllogId}`,
+      );
+    }
+
+    // Delete all chunks for this transcript
+    await this.transcriptChunkModel.deleteMany({
+      transcriptId: transcript._id,
+    });
+
+    // Delete the transcript
+    await this.transcriptModel.deleteOne({ _id: transcript._id });
+  }
+
+  private convertToITranscript(doc: Transcript): ITranscript {
+    const obj = doc.toObject();
+    return {
+      _id: obj._id,
+      calllogId: obj.calllogId,
+      summary: obj.summary,
+      createdAt: obj.createdAt,
+      updatedAt: obj.updatedAt,
+    };
   }
 }

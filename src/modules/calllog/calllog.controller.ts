@@ -1,89 +1,137 @@
 import {
-  BadRequestException,
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
   Post,
   Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
+import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { ICallLog } from '@/common/interfaces/calllog';
 
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
+import { CallLog, CallLogDocument } from './schema/calllog.schema';
 
 @ApiTags('calllog')
-@Controller('calllog')
+@Controller('companies/:companyId/calllogs')
 export class CalllogController {
   constructor(private readonly calllogService: CalllogService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Get all call logs for a company' })
+  @ApiQuery({ name: 'status', required: false, enum: CallLogStatus })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'startAtFrom', required: false, type: String })
+  @ApiQuery({ name: 'startAtTo', required: false, type: String })
+  @ApiQuery({ name: 'sort', required: false, enum: ['newest', 'oldest'] })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: 200, description: 'Return paginated call logs' })
+  async findAll(
+    @Param('companyId') companyId: string,
+    @Query('status') status?: CallLogStatus,
+    @Query('search') search?: string,
+    @Query('startAtFrom') startAtFrom?: string,
+    @Query('startAtTo') startAtTo?: string,
+    @Query('sort') sort?: 'newest' | 'oldest',
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
+  ): Promise<{
+    data: ICallLog[];
+    pagination: { page: number; limit: number; total: number };
+  }> {
+    return this.calllogService.findAll({
+      companyId,
+      status,
+      search,
+      startAtFrom,
+      startAtTo,
+      sort,
+      page,
+      limit,
+    });
+  }
+
+  @Get(':calllogId')
+  @ApiOperation({ summary: 'Get call log details' })
+  @ApiResponse({ status: 200, description: 'Return call log details' })
+  @ApiResponse({ status: 404, description: 'Call log not found' })
+  async findOne(
+    @Param('companyId') companyId: string,
+    @Param('calllogId') calllogId: string,
+  ): Promise<ICallLog> {
+    return this.calllogService.findOne(companyId, calllogId);
+  }
+
+  @Get(':calllogId/audio')
+  @ApiOperation({ summary: 'Get call audio ID' })
+  @ApiResponse({ status: 200, description: 'Return audio ID' })
+  @ApiResponse({ status: 404, description: 'Audio not found' })
+  async getAudio(
+    @Param('companyId') companyId: string,
+    @Param('calllogId') calllogId: string,
+  ): Promise<{ audioId: string }> {
+    const audioId = await this.calllogService.getAudio(companyId, calllogId);
+    return { audioId };
+  }
+
+  @Get('metrics/today')
+  @ApiOperation({ summary: "Get today's call metrics" })
+  @ApiResponse({ status: 200, description: "Return today's call metrics" })
+  async getTodayMetrics(@Param('companyId') companyId: string): Promise<{
+    totalCalls: number;
+    liveCalls: number;
+  }> {
+    return this.calllogService.getTodayMetrics(companyId);
+  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new call log' })
   @ApiResponse({ status: 201, description: 'Call log created successfully' })
-  create(@Body() createCallLogDto: CreateCallLogDto): Promise<ICallLog> {
-    return this.calllogService.create(createCallLogDto);
+  async create(
+    @Param('companyId') companyId: string,
+    @Body() createCallLogDto: CreateCallLogDto,
+  ): Promise<ICallLog> {
+    const dto = Object.assign({}, createCallLogDto, { companyId });
+    return this.calllogService.create(dto);
   }
 
-  @Get()
-  @ApiOperation({ summary: 'Get all call logs' })
-  @ApiResponse({ status: 200, description: 'Return all call logs' })
-  findAll(): Promise<ICallLog[]> {
-    return this.calllogService.findAll();
-  }
-
-  @Get('company/:companyId')
-  @ApiOperation({ summary: 'Get call logs by company ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return call logs for the specified company',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'No call logs found for the specified company ID',
-  })
-  findByCompanyId(@Param('companyId') companyId: string): Promise<ICallLog[]> {
-    return this.calllogService.findByCompanyId(companyId);
-  }
-
-  @Get('date-range')
-  @ApiOperation({ summary: 'Get call logs by date range' })
-  @ApiQuery({ name: 'startDate', required: true, type: String })
-  @ApiQuery({ name: 'endDate', required: true, type: String })
-  @ApiResponse({
-    status: 200,
-    description: 'Return call logs within the specified date range',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'No call logs found within the specified date range',
-  })
-  findByStartAt(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string,
-  ): Promise<ICallLog[]> {
-    if (!startDate || !endDate) {
-      throw new BadRequestException('startDate and endDate are required');
-    }
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      throw new BadRequestException('Invalid date format');
-    }
-    return this.calllogService.findByStartAt(start, end);
-  }
-
-  @Patch(':id')
+  @Patch(':calllogId')
   @ApiOperation({ summary: 'Update a call log' })
   @ApiResponse({ status: 200, description: 'Call log updated successfully' })
   @ApiResponse({ status: 404, description: 'Call log not found' })
-  update(
-    @Param('id') id: string,
+  async update(
+    @Param('companyId') companyId: string,
+    @Param('calllogId') calllogId: string,
     @Body() updateCallLogDto: UpdateCallLogDto,
   ): Promise<ICallLog> {
-    return this.calllogService.update(id, updateCallLogDto);
+    return this.calllogService.update(companyId, calllogId, updateCallLogDto);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a calllog and all its associated data' })
+  @ApiOkResponse({
+    description:
+      'The calllog and all its associated data have been successfully deleted.',
+    type: CallLog,
+  })
+  @ApiNotFoundResponse({ description: 'Calllog not found' })
+  @ApiBadRequestResponse({ description: 'Invalid calllog ID' })
+  async delete(@Param('id') id: string): Promise<CallLogDocument> {
+    return this.calllogService.delete(id);
   }
 }

@@ -34,7 +34,7 @@ export class CallLog {
   endAt?: Date;
 
   @Prop()
-  recordingUrl?: string;
+  audioId?: string;
 }
 
 export const CallLogSchema = SchemaFactory.createForClass(CallLog);

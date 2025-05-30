@@ -7,6 +7,7 @@ describe('Transcript (e2e)', () => {
   let app: INestApplication;
   let calllogId: string;
   let transcriptId: string;
+  const testCompanyId = 'test-company';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -24,9 +25,9 @@ describe('Transcript (e2e)', () => {
 
   it('should create a CallLog', async () => {
     const res = await request(app.getHttpServer())
-      .post('/calllog')
+      .post(`/companies/${testCompanyId}/calllogs`)
       .send({
-        companyId: 'test-company',
+        companyId: testCompanyId,
         serviceBookedId: 'test-service',
         callerNumber: '1234567890',
         startAt: new Date(),
@@ -38,47 +39,52 @@ describe('Transcript (e2e)', () => {
 
   it('should create a Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .post('/transcripts')
+      .post(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`)
       .send({
-        calllogid: calllogId,
         summary: 'Test summary',
       });
     expect(res.status).toBe(201);
     expect(res.body._id).toBeDefined();
+    expect(res.body.calllogId).toBe(calllogId);
+    expect(res.body.summary).toBe('Test summary');
     transcriptId = res.body._id;
   });
 
-  it('should get the created Transcript by calllogId', async () => {
+  it('should get Transcript by calllogId', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcripts/calllog/${calllogId}`);
+      .get(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`);
     expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBeGreaterThan(0);
-    expect(res.body[0]._id).toBe(transcriptId);
-    expect(res.body[0].calllogid).toBe(calllogId);
+    expect(res.body._id).toBe(transcriptId);
+    expect(res.body.calllogId).toBe(calllogId);
+    expect(res.body.summary).toBe('Test summary');
+  });
+
+  it('should return 404 for non-existent Transcript', async () => {
+    const nonExistentId = '507f1f77bcf86cd799439011'; // Valid ObjectId format but non-existent
+    const res = await request(app.getHttpServer())
+      .get(`/companies/${testCompanyId}/calllogs/${nonExistentId}/transcript`);
+    expect(res.status).toBe(404);
   });
 
   it('should update the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .patch(`/transcripts/${transcriptId}`)
+      .patch(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`)
       .send({ summary: 'Updated summary' });
     expect(res.status).toBe(200);
     expect(res.body.summary).toBe('Updated summary');
-    expect(res.body._id).toBe(transcriptId);
+    expect(res.body.calllogId).toBe(calllogId);
   });
 
   it('should delete the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .delete(`/transcripts/${transcriptId}`);
+      .delete(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`);
     expect(res.status).toBe(200);
-    expect(res.body._id).toBe(transcriptId);
+    expect(res.body.calllogId).toBe(calllogId);
   });
 
-  it('should return empty array after deleting the Transcript', async () => {
+  it('should return 404 after deleting the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcripts/calllog/${calllogId}`);
-    expect(res.status).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBe(0);
+      .get(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`);
+    expect(res.status).toBe(404);
   });
 });

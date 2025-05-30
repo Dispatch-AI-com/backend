@@ -42,7 +42,7 @@ dispatchai-backend/
 2. Run the application:
 
    ```bash
-   pnpm run build
+   pnpm build
    ```
 
 ### Docker Setup (DEV)
