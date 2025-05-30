@@ -1,10 +1,8 @@
-import type { Types } from 'mongoose';
-
 import type { SpeakerType } from '../constants/transcript-chunk.constant';
 
 export interface ITranscriptChunk {
-  _id: Types.ObjectId;
-  transcriptId: Types.ObjectId;
+  _id: string;
+  transcriptId: string;
   speakerType: SpeakerType;
   text: string;
   startAt: number;

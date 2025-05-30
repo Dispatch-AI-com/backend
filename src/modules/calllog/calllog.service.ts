@@ -4,10 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { createReadStream } from 'fs';
-import { stat } from 'fs/promises';
 import { Error as MongooseError, Model, Types } from 'mongoose';
-import { join } from 'path';
 
 import {
   CALLLOG_SORT_OPTIONS,
@@ -40,6 +37,19 @@ interface FindAllOptions {
   limit?: number;
 }
 
+interface CallLogQuery {
+  companyId: string;
+  status?: CallLogStatus;
+  startAt?: {
+    $gte?: Date;
+    $lte?: Date;
+  };
+  $or?: {
+    callerNumber?: { $regex: string; $options: string };
+    serviceBookedId?: { $regex: string; $options: string };
+  }[];
+}
+
 @Injectable()
 export class CalllogService {
   constructor(
@@ -50,14 +60,6 @@ export class CalllogService {
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
   ) {}
-
-  private convertToICallLog(doc: CallLogDocument): ICallLog {
-    const obj = doc.toObject();
-    return {
-      ...obj,
-      _id: obj._id.toString(),
-    };
-  }
 
   async create(dto: CreateCallLogDto): Promise<ICallLog> {
     try {
@@ -81,13 +83,13 @@ export class CalllogService {
     page = DEFAULT_PAGE,
     limit = DEFAULT_LIMIT,
   }: FindAllOptions): Promise<ICallLogResponse> {
-    const query: any = { companyId };
+    const query: CallLogQuery = { companyId };
 
-    if (status) {
+    if (status !== undefined) {
       query.status = status;
     }
 
-    if (search) {
+    if (search !== undefined && search !== '') {
       // Remove any non-alphanumeric characters from search term
       const cleanSearch = search.replace(/[^a-zA-Z0-9]/g, '');
       query.$or = [
@@ -96,12 +98,12 @@ export class CalllogService {
       ];
     }
 
-    if (startAtFrom || startAtTo) {
+    if (startAtFrom !== undefined || startAtTo !== undefined) {
       query.startAt = {};
-      if (startAtFrom) {
+      if (startAtFrom !== undefined && startAtFrom !== '') {
         query.startAt.$gte = new Date(startAtFrom);
       }
-      if (startAtTo) {
+      if (startAtTo !== undefined && startAtTo !== '') {
         query.startAt.$lte = new Date(startAtTo);
       }
     }
@@ -152,7 +154,7 @@ export class CalllogService {
   async getAudio(companyId: string, calllogId: string): Promise<string> {
     const callLog = await this.findOne(companyId, calllogId);
 
-    if (!callLog.audioId) {
+    if (callLog.audioId === undefined || callLog.audioId === '') {
       throw new NotFoundException('No audio available for this call');
     }
 
@@ -230,14 +232,12 @@ export class CalllogService {
       // Delete transcript and its chunks if they exist
       try {
         const transcript = await this.transcriptService.findByCallLogId(id);
-        if (transcript) {
-          // Delete chunks first
-          await this.transcriptChunkService.deleteByTranscriptId(
-            transcript._id.toString(),
-          );
-          // Then delete transcript
-          await this.transcriptService.deleteByCallLogId(id);
-        }
+        // Delete chunks first
+        await this.transcriptChunkService.deleteByTranscriptId(
+          transcript._id.toString(),
+        );
+        // Then delete transcript
+        await this.transcriptService.deleteByCallLogId(id);
       } catch (error) {
         // If transcript doesn't exist, that's fine
         if (!(error instanceof NotFoundException)) {
@@ -261,5 +261,12 @@ export class CalllogService {
       }
       throw new NotFoundException(`Calllog with ID ${id} not found`);
     }
+  }
+
+  private convertToICallLog(doc: CallLogDocument): ICallLog {
+    const obj = doc.toObject();
+    return Object.assign({}, obj, {
+      _id: obj._id.toString(),
+    });
   }
 }

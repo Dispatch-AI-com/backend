@@ -36,10 +36,9 @@ export class TranscriptController {
     @Param('calllogId') calllogId: string,
     @Body() createTranscriptDto: CreateTranscriptDto,
   ): Promise<ITranscript> {
-    return this.transcriptService.create({
-      calllogId,
-      ...createTranscriptDto,
-    });
+    return this.transcriptService.create(
+      Object.assign({}, createTranscriptDto, { calllogId }),
+    );
   }
 
   @Get()

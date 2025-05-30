@@ -12,11 +12,15 @@ import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
-import {
-  TranscriptChunk,
-  TranscriptChunkDocument,
-} from './schema/transcript-chunk.schema';
+import { TranscriptChunk } from './schema/transcript-chunk.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
+
+interface TranscriptChunkFilter {
+  transcriptId: Types.ObjectId;
+  speakerType?: string;
+  startAt?: { $gte: number };
+  endAt?: { $lte: number };
+}
 
 @Injectable()
 export class TranscriptChunkService {
@@ -54,10 +58,11 @@ export class TranscriptChunkService {
       throw new BadRequestException('Time range overlaps with another chunk.');
     }
 
-    const chunk = await this.transcriptChunkModel.create({
-      transcriptId: new Types.ObjectId(transcriptId),
-      ...dto,
-    });
+    const chunk = await this.transcriptChunkModel.create(
+      Object.assign({}, dto, {
+        transcriptId: new Types.ObjectId(transcriptId),
+      }),
+    );
     return this.convertToITranscriptChunk(chunk);
   }
 
@@ -79,7 +84,9 @@ export class TranscriptChunkService {
     const { speakerType, startAt, endAt, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
-    const filter: any = { transcriptId: new Types.ObjectId(transcriptId) };
+    const filter: TranscriptChunkFilter = {
+      transcriptId: new Types.ObjectId(transcriptId),
+    };
     if (speakerType) {
       filter.speakerType = speakerType;
     }
@@ -201,8 +208,8 @@ export class TranscriptChunkService {
   private convertToITranscriptChunk(doc: TranscriptChunk): ITranscriptChunk {
     const obj = doc.toObject();
     return {
-      _id: obj._id,
-      transcriptId: obj.transcriptId,
+      _id: obj._id.toString(),
+      transcriptId: obj.transcriptId.toString(),
       speakerType: obj.speakerType,
       text: obj.text,
       startAt: obj.startAt,

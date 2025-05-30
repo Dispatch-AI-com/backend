@@ -1,12 +1,8 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -18,11 +14,9 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
-  ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Types } from 'mongoose';
 
 import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
 

@@ -1,16 +1,12 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   Patch,
   Post,
   Query,
-  Res,
-  StreamableFile,
 } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
@@ -21,7 +17,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { Response } from 'express';
 
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { ICallLog } from '@/common/interfaces/calllog';
@@ -97,25 +92,29 @@ export class CalllogController {
   @Get('metrics/today')
   @ApiOperation({ summary: "Get today's call metrics" })
   @ApiResponse({ status: 200, description: "Return today's call metrics" })
-  async getTodayMetrics(@Param('companyId') companyId: string) {
+  async getTodayMetrics(@Param('companyId') companyId: string): Promise<{
+    totalCalls: number;
+    liveCalls: number;
+  }> {
     return this.calllogService.getTodayMetrics(companyId);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new call log' })
   @ApiResponse({ status: 201, description: 'Call log created successfully' })
-  create(
+  async create(
     @Param('companyId') companyId: string,
     @Body() createCallLogDto: CreateCallLogDto,
   ): Promise<ICallLog> {
-    return this.calllogService.create({ ...createCallLogDto, companyId });
+    const dto = Object.assign({}, createCallLogDto, { companyId });
+    return this.calllogService.create(dto);
   }
 
   @Patch(':calllogId')
   @ApiOperation({ summary: 'Update a call log' })
   @ApiResponse({ status: 200, description: 'Call log updated successfully' })
   @ApiResponse({ status: 404, description: 'Call log not found' })
-  update(
+  async update(
     @Param('companyId') companyId: string,
     @Param('calllogId') calllogId: string,
     @Body() updateCallLogDto: UpdateCallLogDto,
@@ -132,7 +131,7 @@ export class CalllogController {
   })
   @ApiNotFoundResponse({ description: 'Calllog not found' })
   @ApiBadRequestResponse({ description: 'Invalid calllog ID' })
-  delete(@Param('id') id: string): Promise<CallLogDocument> {
+  async delete(@Param('id') id: string): Promise<CallLogDocument> {
     return this.calllogService.delete(id);
   }
 }

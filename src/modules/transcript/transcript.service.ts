@@ -9,7 +9,7 @@ import { Model, Types } from 'mongoose';
 import { ITranscript } from '../../common/interfaces/transcript';
 import { CallLog } from '../calllog/schema/calllog.schema';
 import { TranscriptChunk } from '../transcript-chunk/schema/transcript-chunk.schema';
-import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
+import { UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';
 
