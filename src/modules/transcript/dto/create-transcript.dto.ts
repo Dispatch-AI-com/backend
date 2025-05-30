@@ -1,13 +1,11 @@
-import { Type } from 'class-transformer';
-import { IsMongoId, IsNotEmpty, IsString } from 'class-validator';
-import { Types } from 'mongoose';
+import { IsString, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTranscriptDto {
-  @IsMongoId()
-  @IsNotEmpty()
-  @Type(() => String)
-  calllogid!: Types.ObjectId;
-
+  @ApiProperty({
+    description: 'Summary of the call transcript',
+    example: 'Lee requests emergency repair after hailstorm...',
+  })
   @IsString()
   @IsNotEmpty()
   summary!: string;

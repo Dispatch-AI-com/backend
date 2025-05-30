@@ -1,7 +1,8 @@
 import type { Types } from 'mongoose';
 
 export interface ITranscript {
-  calllogid: Types.ObjectId;
+  _id: Types.ObjectId;
+  calllogId: Types.ObjectId;
   summary: string;
   createdAt?: Date;
   updatedAt?: Date;
