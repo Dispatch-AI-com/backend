@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
 import { CallLog } from '../calllog/schema/calllog.schema';
-import { TranscriptChunk } from '../transcript_chunk/schema/transcript_chunk.schema';
+import { TranscriptChunk } from '../transcript-chunk/schema/transcript-chunk.schema';
 import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { Transcript } from './schema/transcript.schema';
 import { sanitizedUpdate } from './utils/sanitized-update';

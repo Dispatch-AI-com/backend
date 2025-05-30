@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { TranscriptController } from './transcript.controller';
 import { TranscriptService } from './transcript.service';
 import { Transcript, TranscriptSchema } from './schema/transcript.schema';
-import { TranscriptChunk, TranscriptChunkSchema } from '../transcript_chunk/schema/transcript_chunk.schema';
+import { TranscriptChunk, TranscriptChunkSchema } from '../transcript-chunk/schema/transcript-chunk.schema';
 import { CallLog, CallLogSchema } from '../calllog/schema/calllog.schema';
 
 @Module({
