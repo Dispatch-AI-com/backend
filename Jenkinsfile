@@ -1,6 +1,7 @@
 pipeline {
-    agent any
-
+	agent {
+		kubernetes {}
+	}
     environment {
         AWS_REGION = 'ap-southeast-2'
         ECR_REPO = 'dispatchai-backend'
