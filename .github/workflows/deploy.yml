@@ -3,7 +3,6 @@ name: 🚀 Deploy Backend to EC2
 on:
   push:
     branches:
-      - main
 jobs:
   deploy:
     runs-on: ubuntu-latest
