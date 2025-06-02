@@ -39,17 +39,10 @@ export class ServiceService {
       throw new BadRequestException('Invalid service ID format');
     }
 
-    const payload: Partial<Service> = {};
-    if (dto.name !== undefined) payload.name = dto.name;
-    if (dto.description !== undefined) payload.description = dto.description;
-    if (dto.price !== undefined) payload.price = dto.price;
-    if (dto.notifications !== undefined) payload.notifications = dto.notifications;
-    if (dto.isAvailable !== undefined) payload.isAvailable = dto.isAvailable;
-
     const updated = await this.serviceModel
       .findByIdAndUpdate(
         new Types.ObjectId(id),
-        { $set: payload },
+        { $set: dto },
         {
           new: true,
           runValidators: true,
