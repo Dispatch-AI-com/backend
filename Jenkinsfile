@@ -10,32 +10,33 @@ pipeline {
         ECR_REGISTRY = "893774231297.dkr.ecr.${AWS_REGION}.amazonaws.com"
     }
 
-    stage('Install Tools if Missing') {
-        steps {
-            sh '''
-                echo "Checking if aws CLI is installed..."
-                if ! command -v aws >/dev/null 2>&1; then
-                echo "🛠 Installing aws CLI..."
-                apt-get update && apt-get install -y curl unzip python3 python3-pip
-                pip3 install awscli
-                else
-                echo "aws CLI is already installed."
-                fi
 
-                echo "🔍 Checking if docker is installed..."
-                if ! command -v docker >/dev/null 2>&1; then
-                echo "🛠 Installing docker..."
-                apt-get update && apt-get install -y docker.io
-                else
-                echo "docker is already installed."
-                fi
-
-                echo "CLI Tools Installation Complete."
-            '''
-        }
-    }
 
     stages {
+        stage('Install Tools if Missing') {
+            steps {
+                sh '''
+                    echo "Checking if aws CLI is installed..."
+                    if ! command -v aws >/dev/null 2>&1; then
+                    echo "Installing aws CLI..."
+                    apt-get update && apt-get install -y curl unzip python3 python3-pip
+                    pip3 install awscli
+                    else
+                    echo "aws CLI is already installed."
+                    fi
+
+                    echo "Checking if docker is installed..."
+                    if ! command -v docker >/dev/null 2>&1; then
+                    echo "Installing docker..."
+                    apt-get update && apt-get install -y docker.io
+                    else
+                    echo "docker is already installed."
+                    fi
+
+                    echo "CLI Tools Installation Complete."
+                '''
+            }
+        }
         stage('Checkout') {
             steps {
                 script {    
