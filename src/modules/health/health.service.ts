@@ -81,7 +81,7 @@ export class HealthService {
       const response = await ai('/ai/chat', {
         method: 'POST',
         data: {
-          message,
+          message: message || '你好，你是谁',
         },
       });
       return {
@@ -91,7 +91,6 @@ export class HealthService {
         duration: performance.now() - performanceStart,
       };
     } catch (error) {
-      console.log(error);
       return {
         status: 'error',
         error:
