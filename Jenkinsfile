@@ -46,6 +46,25 @@ pipeline {
                 }
             }
         }
+
+        stage('Clean up Image') {
+            steps {
+                script {
+                    sh """
+                    echo "🧹 Cleaning up local Docker images..."
+
+                    docker rmi ${IMAGE_NAME} || echo "⚠️ Local image not found: ${IMAGE_NAME}"
+                    docker rmi ${ECR_REGISTRY}/${IMAGE_NAME} || echo "⚠️ Local image not found: ${ECR_REGISTRY}/${IMAGE_NAME}"
+                    """
+                }
+            }
+        }
+        
+        // stage('Clean all up') {
+        //     steps {
+        //         sh "docker system prune -af"
+        //     }
+        // }
     }
 
     post {
