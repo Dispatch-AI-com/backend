@@ -41,11 +41,14 @@ jobs:
           pip install --upgrade uv
       
       - name: 📦 uv sync (dev groups)
+        working-directory: ./ai  
         run: |
           uv sync --all-extras --dev
 
       - name: 🔍 Python Lint (Ruff)
-        run: make lint          # ruff check ...
+        working-directory: ./ai
+        run: make lint
 
       - name: 🎨 Python Format Check
+        working-directory: ./ai
         run: make format
