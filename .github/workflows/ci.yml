@@ -29,3 +29,23 @@ jobs:
 
       - name: 🔎 Run Type Check (tsc)
         run: pnpm run type-check
+
+      - name: 🐍 Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: 🛠️ Install uv
+        run: |
+          pip install --upgrade uv
+      
+      - name: 📦 uv sync (dev groups)
+        run: |
+          uv sync --all-extras --dev
+
+      - name: 🔍 Python Lint (Ruff)
+        run: make lint          # ruff check ...
+
+      - name: 🎨 Python Format Check
+        run: make format
