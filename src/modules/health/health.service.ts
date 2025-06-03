@@ -150,7 +150,6 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async sendHeartbeat(): Promise<void> {
-    console.log('sendHeartbeat');
     try {
       const start = performance.now();
       const response = await ai('/health/ping', { method: 'GET' });
@@ -158,9 +157,7 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
       this.logger.verbose(
         `✅ AI 心跳成功（/health/ping），返回: ${JSON.stringify(response.data)}, 耗时: ${String(duration)}ms`,
       );
-      console.log('sendHeartbeat success');
     } catch (err) {
-      console.log(err);
       const msg =
         err instanceof Error
           ? err.message
