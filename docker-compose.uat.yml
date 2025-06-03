@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile.uat
     container_name: dispatchai-api
-    command: ["node", "dist/main"]
     env_file:
       - .env.uat
     environment:
