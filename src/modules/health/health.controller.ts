@@ -44,33 +44,6 @@ export class HealthController {
   }
 
   @ApiOperation({
-    summary: 'Hello Endpoint',
-    description: 'Returns a greeting message',
-  })
-  @ApiResponse({ status: 200, description: 'Returns Hello message' })
-  @Get('hello')
-  hello(): { message: string } {
-    return {
-      message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！',
-    };
-  }
-
-  @ApiOperation({
-    summary: 'Test AI connection Endpoint',
-    description: 'Returns a test message from AI server',
-  })
-  @ApiResponse({ status: 200, description: 'Returns Test message' })
-  @Get('test')
-  test(): Promise<{
-    status: string;
-    message: string;
-    timestamp: Date;
-    duration?: number;
-  }> {
-    return this.healthService.testAIConnection();
-  }
-
-  @ApiOperation({
     summary: 'Test AI chat Endpoint',
     description: 'Returns a test message from AI server',
   })
@@ -84,5 +57,21 @@ export class HealthController {
     error?: string;
   }> {
     return this.healthService.testAIChat(message);
+  }
+
+  @ApiOperation({
+    summary: 'Test AI ping',
+    description: 'Returns a test message from AI server',
+  })
+  @ApiResponse({ status: 200, description: 'Returns Test message' })
+  @Get('pingAI')
+  ping(): Promise<{
+    status: string;
+    message?: string;
+    timestamp: Date;
+    duration?: number;
+    error?: string;
+  }> {
+    return this.healthService.pingAI();
   }
 }
