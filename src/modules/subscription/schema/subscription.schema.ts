@@ -12,7 +12,7 @@ export class Subscription {
   planId!: Types.ObjectId;
 
   @Prop({ required: false })
-  paymentIntentId?: string;
+  subscriptionId?: string;
 
   @Prop({ required: false }) 
   startAt!: Date;
@@ -20,8 +20,8 @@ export class Subscription {
   @Prop({ required: false }) 
   endAt!: Date;
 
-  @Prop({ required: true, enum: ['active', 'cancelled', 'expired', 'pending']})
-  status!: 'active' | 'cancelled' | 'expired' | 'pending';
+  @Prop({ required: true, enum: ['active', 'pending']})
+  status!: 'active' | 'pending';
 
   @Prop({ default: Date.now })
   createdAt!: Date;

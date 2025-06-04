@@ -7,6 +7,10 @@ export class StripeService {
     apiVersion: '2025-04-30.basil',
   });
 
+  get client(): Stripe {
+    return this.stripe;
+  }
+
   async createCheckoutSession(input: {
     priceId: string;
     companyId: string;
@@ -16,18 +20,21 @@ export class StripeService {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: input.priceId, quantity: 1 }],
-      success_url: `${process.env.APP_URL}/pricing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL}/pricing/cancel`,
-      metadata: {
-        companyId: input.companyId,
-        planId: input.planId,
-      },
+      success_url: `${process.env.APP_URL}/pricing`,
+      cancel_url: `${process.env.APP_URL}/pricing`,
       subscription_data: {
         metadata: { companyId: input.companyId, planId: input.planId },
       },
     });
 
     return session;
+  }
+
+  async updateSubscriptionPrice(subscriptionId: string, subscriptionItemId: string, newPriceId: string) {
+    return await this.stripe.subscriptions.update(subscriptionId, {
+      items: [{ id: subscriptionItemId, price: newPriceId }],
+      proration_behavior: 'none',
+    });
   }
 
   async retrieveSubscription(subscriptionId: string) {

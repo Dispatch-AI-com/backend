@@ -29,13 +29,11 @@ export class SubscriptionController {
     return this.subscriptionService.createSubscription(dto);
   }
 
-  @Patch(':id/cancel')
-  @ApiOperation({ summary: 'Cancel an active subscription' })
-  @ApiResponse({ status: 200, description: 'Subscription cancelled successfully' })
-  @ApiResponse({ status: 400, description: 'Only active subscriptions can be cancelled' })
-  @ApiResponse({ status: 404, description: 'Subscription not found' })
-  async cancel(@Param('id') id: string) {
-    return this.subscriptionService.cancelSubscription(id);
-  }
 
+  @Post('change')
+  async changePlan(
+    @Body() dto: { companyId: string; planId: string }
+  ) {
+    return await this.subscriptionService.changePlan(dto.companyId, dto.planId);
+  }
 }

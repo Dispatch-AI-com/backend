@@ -37,83 +37,73 @@ export class StripeWebhookController {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    this.logger.log(`✅ Stripe Event: ${event.type}`);
+    this.logger.log(`✅ Stripe Event Received: ${event.type}`);
 
-    // 只处理 invoice.payment_succeeded
-    if (event.type === 'invoice.payment_succeeded') {
-      const invoice = event.data.object as Stripe.Invoice;
+    res.status(200).send('received');
 
-      await this.paymentService.createPaymentRecord({
-        subscriptionId: invoice.subscription as string,
-        invoiceId: invoice.id,
-        customerId: invoice.customer as string,
-        chargeId: invoice.charge as string,
-        amountPaid: invoice.amount_paid,
-      });
+    try {
+      await this.processStripeEvent(event);
+    } catch (err) {
+      this.logger.error(`❌ Failed to process event: ${event.id}`, err);
+    }
+  }
 
-      this.logger.log(`Payment record saved for invoice: ${invoice.id}`);
+  private async processStripeEvent(event: Stripe.Event) {
+    switch (event.type) {
+      case 'checkout.session.completed':
+        await this.handleCheckoutSessionCompleted(event);
+        break;
+
+      case 'customer.subscription.updated':
+        await this.handleSubscriptionUpdated(event);
+        break;
+
+      default:
+        this.logger.log(`Unhandled event type: ${event.type}`);
+    }
+  }
+
+  private async handleCheckoutSessionCompleted(event: Stripe.Event) {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const subscriptionId = session.subscription as string;
+
+    const subscription = await this.stripeService.retrieveSubscription(subscriptionId);
+    if (!subscription) {
+      this.logger.warn(`Subscription not found for ID: ${subscriptionId}`);
+      return;
+    }
+
+    const companyId = subscription.metadata?.companyId as string;
+    const planId = subscription.metadata?.planId as string;
+
+    if (!companyId || !planId) {
+      this.logger.error('Missing metadata: companyId or planId');
+      return;
+    }
+
+    try {
+      await this.subscriptionService.activateSubscription(companyId, planId, subscriptionId);
+      this.logger.log(`✅ Subscription ${subscriptionId} activated for company ${companyId}`);
+    } catch (error) {
+      this.logger.error(`❌ Failed to activate subscription`, error);
+    }
+  }
+
+  private async handleSubscriptionUpdated(event: Stripe.Event) {
+    const stripeSub = event.data.object as Stripe.Subscription;
+
+    if (stripeSub.items.data.length !== 1) {
+      this.logger.warn(`Unexpected multiple subscription items for ${stripeSub.id}`);
+      return;
+    }
+
+    const newPriceId = stripeSub.items.data[0].price.id;
+    this.logger.log(`✅ newPriceId: ${newPriceId} for subscription ${stripeSub.id}`);
+    try {
+      await this.subscriptionService.updatePlanByWebhook(stripeSub.id, newPriceId);
+      this.logger.log(`✅ Subscription ${stripeSub.id} plan updated`);
+    } catch (err) {
+      this.logger.error(`❌ Failed to update plan for subscription ${stripeSub.id}`, err);
     }
   }
 }
-
-//     switch (event.type) {
-//       /**
-//        * Step 1: Session completed (订阅已成功创建，但不一定付款成功)
-//        */
-//       case 'checkout.session.completed': {
-//         const session = event.data.object as Stripe.Checkout.Session;
-//         const { companyId, planId } = session.metadata || {};
-//         const subscriptionId = session.subscription as string;
-
-//         // 先记录订阅初始化 (你在 createSubscription() 里已经做了)
-//         this.logger.log(
-//           `✅ checkout.session.completed received for companyId=${companyId}, planId=${planId}`
-//         );
-
-//         // ⚠️ 注意：你这一步暂时不用做 DB 操作，真正 activation 在 payment_intent.succeeded 完成
-//         break;
-//       }
-
-//       /**
-//        * Step 2: payment_intent.succeeded (实际扣款成功)
-//        */
-//       case 'payment_intent.succeeded': {
-//         const paymentIntent = event.data.object as Stripe.PaymentIntent;
-//         const paymentIntentId = paymentIntent.id;
-//         const invoiceId = paymentIntent.invoice as string;
-
-//         // 从 invoice 里拿到 metadata（防止错过信息）
-//         const invoice = await this.stripeService.retrieveInvoice(invoiceId);
-//         const { companyId, planId } = invoice.metadata || {};
-
-//         if (!companyId || !planId) {
-//           this.logger.error('❌ Missing metadata in invoice');
-//           return res.status(400).send('Missing metadata');
-//         }
-
-//         try {
-//           await this.subscriptionService.activateSubscription(
-//             companyId,
-//             planId,
-//             paymentIntentId,
-//           );
-//           this.logger.log(
-//             `✅ Subscription activated for companyId=${companyId}, planId=${planId}`
-//           );
-//         } catch (error: any) {
-//           this.logger.error(
-//             '❌ Error activating subscription:',
-//             error.message,
-//           );
-//         }
-
-//         break;
-//       }
-
-//       default:
-//         this.logger.warn(`Unhandled event type ${event.type}`);
-//     }
-
-//     return res.send('ok');
-//   }
-// }
