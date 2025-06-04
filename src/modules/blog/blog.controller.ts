@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { ParseIntPipe } from '@nestjs/common';
+import { DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { HttpCode, HttpStatus, Post } from '@nestjs/common';
 
 import { BlogService } from './blog.service';
 import { Blog } from './schema/blog.schema';
@@ -65,5 +66,15 @@ export class BlogController {
   @ApiParam({ name: 'id', required: true })
   async findById(@Param('id') id: string): Promise<Blog> {
     return this.blogService.getBlogDetail(id); //details
+  }
+
+  @Post('seed')
+  @HttpCode(HttpStatus.CREATED)
+  async seedData() {
+    const result = await this.blogService.seedInitialBlogs();
+    return {
+      message: 'Seed data inserted successfully',
+      insertedCount: result.insertedCount,
+    };
   }
 }
