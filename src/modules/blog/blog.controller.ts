@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { ApiOkResponse, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { ApiCreatedResponse } from '@nestjs/swagger';
 
 import { BlogService } from './blog.service';
 import { Blog } from './schema/blog.schema';
@@ -21,8 +22,8 @@ export class BlogController {
   @Get()
   @ApiOkResponse({ description: 'Get all blogs', type: [Blog] })
   async findAll(
-    @Query('limit', ParseIntPipe) limit = 10,
-    @Query('page', ParseIntPipe) page = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
   ): Promise<PaginatedResponse<Blog>> {
     const [data, total] = await Promise.all([
       this.blogService.findAll(limit, page),
@@ -70,7 +71,11 @@ export class BlogController {
 
   @Post('seed')
   @HttpCode(HttpStatus.CREATED)
-  async seedData() {
+  @ApiCreatedResponse({
+    description: 'Seed data inserted successfully',
+    type: Object
+  })
+  async seedData(): Promise<{ message: string; insertedCount: number }> {
     const result = await this.blogService.seedInitialBlogs();
     return {
       message: 'Seed data inserted successfully',
