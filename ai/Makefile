@@ -2,11 +2,11 @@
 
 CODE = .
 
-lint:        ## 只报告问题
+lint:
 	uv run ruff check $(CODE)
 
-lint-fix:    ## 自动修复
+lint-fix:
 	uv run ruff check --fix $(CODE)
 
-format:      ## 统一格式
+format:
 	uv run ruff format $(CODE)
