@@ -5,10 +5,10 @@ import { UserStatus } from '../enum/userStatus.enum';
 
 @Schema({ timestamps: true })
 export class User extends Document {
-  @Prop({ required: true })
+  @Prop()
   firstName!: string;
 
-  @Prop({ required: true })
+  @Prop()
   lastName!: string;
 
   @Prop({ required: true, unique: true })
@@ -17,7 +17,7 @@ export class User extends Document {
   @Prop({ required: true, select: false })
   password!: string;
 
-  @Prop({ required: true })
+  @Prop()
   fullPhoneNumber!: string;
 
   @Prop()
