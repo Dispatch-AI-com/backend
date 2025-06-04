@@ -25,13 +25,13 @@ pipeline {
                     echo "aws CLI is already installed."
                     fi
 
-                    echo "Checking if docker is installed..."
-                    if ! command -v docker >/dev/null 2>&1; then
-                    echo "Installing docker..."
-                    apt-get update && apt-get install -y docker.io
-                    else
-                    echo "docker is already installed."
-                    fi
+                    // echo "Checking if docker is installed..."
+                    // if ! command -v docker >/dev/null 2>&1; then
+                    // echo "Installing docker..."
+                    // apt-get update && apt-get install -y docker.io
+                    // else
+                    // echo "docker is already installed."
+                    // fi
 
                     echo "CLI Tools Installation Complete."
                 '''
@@ -77,9 +77,9 @@ pipeline {
             steps {
                 script {
                     sh """
-                    echo "🧹 Cleaning up local Docker images..."
+                    echo "Cleaning up local Docker images..."
 
-                    docker rmi ${IMAGE_NAME} || echo "⚠️ Local image not found: ${IMAGE_NAME}"
+                    docker rmi ${IMAGE_NAME} || echo "Local image not found: ${IMAGE_NAME}"
                     docker rmi ${ECR_REGISTRY}/${IMAGE_NAME} || echo "⚠️ Local image not found: ${ECR_REGISTRY}/${IMAGE_NAME}"
                     """
                 }
