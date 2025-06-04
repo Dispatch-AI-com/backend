@@ -13,30 +13,66 @@ pipeline {
 
 
     stages {
-        stage('Install Tools if Missing') {
+        stage('Install CLI Tools') {
             steps {
                 sh '''
-                    echo "Checking if aws CLI is installed..."
-                    if ! command -v aws >/dev/null 2>&1; then
-                    echo "Installing aws CLI..."
-                    apt-get update && apt-get install -y curl unzip python3 python3-pip
-                    pip3 install awscli
+                    set -e
+
+                    echo "🔍 Checking and installing required CLI tools..."
+
+                    # curl
+                    if ! command -v curl >/dev/null 2>&1; then
+                    echo "⚙️ Installing curl..."
+                    apt-get update && apt-get install -y curl
                     else
-                    echo "aws CLI is already installed."
+                    echo "✅ curl already installed."
                     fi
 
-                    // echo "Checking if docker is installed..."
-                    // if ! command -v docker >/dev/null 2>&1; then
-                    // echo "Installing docker..."
-                    // apt-get update && apt-get install -y docker.io
-                    // else
-                    // echo "docker is already installed."
-                    // fi
+                    # unzip
+                    if ! command -v unzip >/dev/null 2>&1; then
+                    echo "⚙️ Installing unzip..."
+                    apt-get update && apt-get install -y unzip
+                    else
+                    echo "✅ unzip already installed."
+                    fi
 
-                    echo "CLI Tools Installation Complete."
+                    # python3
+                    if ! command -v python3 >/dev/null 2>&1; then
+                    echo "⚙️ Installing python3..."
+                    apt-get update && apt-get install -y python3
+                    else
+                    echo "✅ python3 already installed."
+                    fi
+
+                    # pip3
+                    if ! command -v pip3 >/dev/null 2>&1; then
+                    echo "⚙️ Installing pip3..."
+                    apt-get update && apt-get install -y python3-pip
+                    else
+                    echo "✅ pip3 already installed."
+                    fi
+
+                    # git
+                    if ! command -v git >/dev/null 2>&1; then
+                    echo "⚙️ Installing git..."
+                    apt-get update && apt-get install -y git
+                    else
+                    echo "✅ git already installed."
+                    fi
+
+                    # awscli
+                    if ! command -v aws >/dev/null 2>&1; then
+                    echo "⚙️ Installing AWS CLI via pip..."
+                    pip3 install awscli
+                    else
+                    echo "✅ AWS CLI already installed."
+                    fi
+
+                    echo "✅ CLI Tools check complete."
                 '''
             }
         }
+
         stage('Checkout') {
             steps {
                 script {    
