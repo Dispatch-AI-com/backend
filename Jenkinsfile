@@ -23,7 +23,7 @@ pipeline {
                     # curl
                     if ! command -v curl >/dev/null 2>&1; then
                     echo "⚙️ Installing curl..."
-                    apt-get update && apt-get install -y curl
+                    sudo apt-get update && apt-get install -y curl
                     else
                     echo "✅ curl already installed."
                     fi
@@ -31,7 +31,7 @@ pipeline {
                     # unzip
                     if ! command -v unzip >/dev/null 2>&1; then
                     echo "⚙️ Installing unzip..."
-                    apt-get update && apt-get install -y unzip
+                    sudo apt-get update && apt-get install -y unzip
                     else
                     echo "✅ unzip already installed."
                     fi
@@ -39,7 +39,7 @@ pipeline {
                     # python3
                     if ! command -v python3 >/dev/null 2>&1; then
                     echo "⚙️ Installing python3..."
-                    apt-get update && apt-get install -y python3
+                    sudo apt-get update && apt-get install -y python3
                     else
                     echo "✅ python3 already installed."
                     fi
@@ -47,7 +47,7 @@ pipeline {
                     # pip3
                     if ! command -v pip3 >/dev/null 2>&1; then
                     echo "⚙️ Installing pip3..."
-                    apt-get update && apt-get install -y python3-pip
+                    sudo apt-get update && apt-get install -y python3-pip
                     else
                     echo "✅ pip3 already installed."
                     fi
@@ -55,7 +55,7 @@ pipeline {
                     # git
                     if ! command -v git >/dev/null 2>&1; then
                     echo "⚙️ Installing git..."
-                    apt-get update && apt-get install -y git
+                    sudo apt-get update && apt-get install -y git
                     else
                     echo "✅ git already installed."
                     fi
@@ -63,7 +63,7 @@ pipeline {
                     # awscli
                     if ! command -v aws >/dev/null 2>&1; then
                     echo "⚙️ Installing AWS CLI via pip..."
-                    pip3 install awscli
+                    sudo pip3 install awscli
                     else
                     echo "✅ AWS CLI already installed."
                     fi
