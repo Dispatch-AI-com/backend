@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { Subscription, SubscriptionDocument } from './schema/subscription.schema';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { Plan, PlanDocument } from '../plan/schema/plan.schema';
@@ -42,50 +42,50 @@ export class SubscriptionService {
     };
   }
 
-  async cancelSubscription(id: string) {
-    const subscription = await this.subscriptionModel.findById(id).populate('planId');
-    if (!subscription) throw new NotFoundException('Subscription not found');
+  async changePlan(companyId: string, newPlanId: string) {
+    const subscription = await this.subscriptionModel.findOne({ companyId, status: 'active' });
+    if (!subscription) throw new NotFoundException('Active subscription not found');
 
-    const now = new Date();
-    const end = subscription.endAt;
+    const plan = await this.planModel.findById(newPlanId);
+    if (!plan) throw new NotFoundException('Plan not found');
 
-    if (now >= end) {
-      subscription.status = 'expired';
-      await subscription.save();
-      return { message: 'Subscription already expired.' };
-    }
+    const stripeSub = await this.stripeService.client.subscriptions.retrieve(subscription.subscriptionId!);
+    const subscriptionItemId = stripeSub.items.data[0].id;
 
-    const plan = subscription.planId as any;
-    const pricing = plan.pricing[0];
-    const price = pricing.price;
-    const rrule = RRule.fromString(pricing.rrule);
-    const duration = rrule.after(subscription.startAt, true)!.getTime() - subscription.startAt.getTime();
-    const used = now.getTime() - subscription.startAt.getTime();
-    const unusedRatio = Math.max(0, 1 - used / duration);
-    const refundAmount = Math.floor(price * unusedRatio * 100); // cents
-
-    // Refund logic
-    if (subscription.paymentIntentId) {
-      await this.stripeService.refundPayment(subscription.paymentIntentId, refundAmount);
-    }
-
-    subscription.status = 'cancelled';
-    subscription.endAt = now;
-    await subscription.save();
-
-    return {
-      message: 'Subscription cancelled and refund issued',
-      refundAmount: refundAmount / 100,
-      unusedPercentage: (unusedRatio * 100).toFixed(2) + '%',
-    };
+    await this.stripeService.client.subscriptions.update(subscription.subscriptionId!, {
+      items: [{ id: subscriptionItemId, price: plan.pricing[0].stripePriceId }],
+      proration_behavior: 'create_prorations',
+      payment_behavior: 'pending_if_incomplete',
+    });
   }
 
-  
+  async updatePlanByWebhook(stripeSubscriptionId: string, newPriceId: string) {
+    const plan = await this.planModel.findOne({ 'pricing.stripePriceId': newPriceId });
 
-  async activateSubscription(companyId: string, planId: string, paymentIntentId: string) {
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    const subscription = await this.subscriptionModel.findOne({ subscriptionId: stripeSubscriptionId });
+
+    if (!subscription) {
+      throw new NotFoundException('Subscription not found');
+    }
+
+    if (subscription.planId === plan.id) {
+      return;
+    }
+
+    await this.subscriptionModel.updateOne(
+      { subscriptionId: stripeSubscriptionId },
+      { planId: plan.id }
+    );
+  }
+
+  async activateSubscription(companyId: string, planId: string, subscriptionId: string) {
     const subscription = await this.subscriptionModel.findOne({
-      companyId,
-      planId,
+      companyId: companyId,
+      planId: planId,
       status: 'pending',
     });
 
@@ -115,14 +115,12 @@ export class SubscriptionService {
     subscription.status = 'active';
     subscription.startAt = now;
     subscription.endAt = endAt;
-    subscription.paymentIntentId = paymentIntentId;
+    subscription.subscriptionId = subscriptionId;
 
     await subscription.save();
 
     return {
       message: 'Subscription activated',
-      subscriptionId: subscription._id,
-      validUntil: endAt,
     };
   }
 }
