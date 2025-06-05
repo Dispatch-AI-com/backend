@@ -25,7 +25,7 @@ export const initialBlogs: Partial<BlogDocument>[] = [
         date: new Date('2025-03-28'),
         tag: ['Small And Medium Businesses', 'Small Businesses'],
         videoUrl: 'https://youtu.be/JGxkFwvbwT0?si=KixY4pWX0lreijjN',
-        imageUrl: '/detail-blog/sample.jpg',
+        imageUrl: '/detail-blog/sample.png',
         avatarUrl: '/detail-blog/avatars/logo-dark.svg',
     },
     {
@@ -37,7 +37,7 @@ export const initialBlogs: Partial<BlogDocument>[] = [
         date: new Date('2025-04-15'),
         tag: ['Small And Medium Businesses', 'Small Businesses'],
         videoUrl: 'https://youtu.be/JGxkFwvbwT0?si=KixY4pWX0lreijjN',
-        imageUrl: '/detail-blog/sample.jpg',
+        imageUrl: '/detail-blog/sample.png',
         avatarUrl: '/detail-blog/avatars/logo-dark.svg',
     },
     {
@@ -49,7 +49,7 @@ export const initialBlogs: Partial<BlogDocument>[] = [
         date: new Date('2025-04-15'),
         tag: ['Small Businesses'],
         videoUrl: 'https://youtu.be/JGxkFwvbwT0?si=KixY4pWX0lreijjN',
-        imageUrl: '/detail-blog/sample.jpg',
+        imageUrl: '/detail-blog/sample.png',
         avatarUrl: '/detail-blog/avatars/logo-dark.svg',
     },
 ];

@@ -17,6 +17,8 @@ export interface BlogDetail {
   date: Date;
   author: string;
   videoUrl?: string;
+  imageUrl?: string;
+  avatarUrl?: string;
   createdAt: Date;
   updatedAt: Date;
   videoEmbedUrl: string | null;
@@ -31,6 +33,10 @@ export class BlogService {
     @InjectModel(Blog.name)
     private readonly blogModel: Model<BlogDocument>,
   ) { }
+
+  async onModuleInit(): Promise<void> {
+    await this.seedInitialBlogs();
+  }
 
   // insert initial blogs into the database
   async seedInitialBlogs(): Promise<{ insertedCount: number }> {
@@ -112,7 +118,7 @@ export class BlogService {
       throw new NotFoundException(`Blog with ID ${id} not found`);
     }
 
-    const { _id, title, summary, content, tag, date, author, videoUrl, createdAt, updatedAt } = blog;
+    const { _id, title, summary, content, tag, date, author, videoUrl, imageUrl, avatarUrl, createdAt, updatedAt } = blog;
 
     if (createdAt == null || updatedAt == null) {
       throw new NotFoundException(`Timestamps missing for blog ${id}`);
@@ -127,6 +133,8 @@ export class BlogService {
       date,
       author,
       videoUrl,
+      imageUrl,
+      avatarUrl,
       createdAt,
       updatedAt,
       videoEmbedUrl: getYouTubeEmbedUrl(videoUrl),
