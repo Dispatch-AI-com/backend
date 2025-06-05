@@ -40,4 +40,16 @@ export const initialBlogs: Partial<BlogDocument>[] = [
         imageUrl: '/detail-blog/sample.jpg',
         avatarUrl: '/detail-blog/avatars/logo-dark.svg',
     },
+    {
+        title: 'third blog',
+        summary: 'third blog summary',
+        content: `<h2>the third blog</h2>
+              <p>💡 the third blog</p>`,
+        author: 'Alice',
+        date: new Date('2025-04-15'),
+        tag: ['Small Businesses'],
+        videoUrl: 'https://youtu.be/JGxkFwvbwT0?si=KixY4pWX0lreijjN',
+        imageUrl: '/detail-blog/sample.jpg',
+        avatarUrl: '/detail-blog/avatars/logo-dark.svg',
+    },
 ];
