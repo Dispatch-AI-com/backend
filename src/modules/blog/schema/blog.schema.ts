@@ -31,6 +31,12 @@ export class Blog {
 
   @Prop()
   videoUrl?: string;
+
+  @Prop()
+  imageUrl?: string;
+
+  @Prop()
+  avatarUrl?: string;
 }
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);
