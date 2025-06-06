@@ -39,7 +39,7 @@ describe('Transcript (e2e)', () => {
 
   it('should create a Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .post(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`)
+      .post(`/calllogs/${calllogId}/transcript`)
       .send({
         summary: 'Test summary',
       });
@@ -52,7 +52,7 @@ describe('Transcript (e2e)', () => {
 
   it('should get Transcript by calllogId', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`);
+      .get(`/calllogs/${calllogId}/transcript`);
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(transcriptId);
     expect(res.body.calllogId).toBe(calllogId);
@@ -62,13 +62,13 @@ describe('Transcript (e2e)', () => {
   it('should return 404 for non-existent Transcript', async () => {
     const nonExistentId = '507f1f77bcf86cd799439011'; // Valid ObjectId format but non-existent
     const res = await request(app.getHttpServer())
-      .get(`/companies/${testCompanyId}/calllogs/${nonExistentId}/transcript`);
+      .get(`/calllogs/${nonExistentId}/transcript`);
     expect(res.status).toBe(404);
   });
 
   it('should update the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .patch(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`)
+      .patch(`/calllogs/${calllogId}/transcript`)
       .send({ summary: 'Updated summary' });
     expect(res.status).toBe(200);
     expect(res.body.summary).toBe('Updated summary');
@@ -77,14 +77,14 @@ describe('Transcript (e2e)', () => {
 
   it('should delete the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .delete(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`);
+      .delete(`/calllogs/${calllogId}/transcript`);
     expect(res.status).toBe(200);
     expect(res.body.calllogId).toBe(calllogId);
   });
 
   it('should return 404 after deleting the Transcript', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`);
+      .get(`/calllogs/${calllogId}/transcript`);
     expect(res.status).toBe(404);
   });
 });

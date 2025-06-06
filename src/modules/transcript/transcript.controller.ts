@@ -16,7 +16,7 @@ import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
 import { TranscriptService } from './transcript.service';
 
 @ApiTags('transcripts')
-@Controller('companies/:companyId/calllogs/:calllogId/transcript')
+@Controller('calllogs/:calllogId/transcript')
 export class TranscriptController {
   constructor(private readonly transcriptService: TranscriptService) {}
 
