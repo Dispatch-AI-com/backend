@@ -5,8 +5,8 @@ export type SubscriptionDocument = Subscription & Document;
 
 @Schema({ timestamps: true }) 
 export class Subscription {
-  @Prop({ required: true })
-  companyId!: string;  // TODO: Change to ObjectId 
+  @Prop({ type: Types.ObjectId, ref: 'Company', required: true })
+  companyId!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Plan', required: true })
   planId!: Types.ObjectId;
@@ -20,10 +20,10 @@ export class Subscription {
   @Prop({ required: false }) 
   endAt!: Date;
 
-  @Prop({ required: true, enum: ['active', 'pending']})
-  status!: 'active' | 'pending';
+  @Prop({ required: true, enum: ['active', 'failed']})
+  status!: 'active' | 'failed';
 
-  @Prop({ default: Date.now })
+  @Prop({ required: false })
   createdAt!: Date;
 
   @Prop({ default: Date.now })

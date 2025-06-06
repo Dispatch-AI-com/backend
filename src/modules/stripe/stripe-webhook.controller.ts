@@ -58,6 +58,10 @@ export class StripeWebhookController {
         await this.handleSubscriptionUpdated(event);
         break;
 
+      case 'invoice.payment_failed':
+        await this.handlePaymentFailed(event);
+        break;
+
       default:
         this.logger.log(`Unhandled event type: ${event.type}`);
     }
@@ -106,4 +110,27 @@ export class StripeWebhookController {
       this.logger.error(`❌ Failed to update plan for subscription ${stripeSub.id}`, err);
     }
   }
+
+  async handlePaymentFailed(event: Stripe.Event) {
+  const invoice = event.data.object as Stripe.Invoice;
+
+  const subscriptionId = invoice?.parent?.subscription_details?.subscription as string;
+
+  if (!subscriptionId) {
+    this.logger.error('No subscriptionId found in payment_failed webhook');
+    return;
+  }
+
+  this.logger.warn(`❌ Payment failed for subscription: ${subscriptionId}`);
+
+  try {
+    await this.subscriptionService.updateStatusByWebhook(subscriptionId, 'failed');
+    this.logger.log(`✅ Subscription ${subscriptionId} status updated to failed`);
+  } catch (err) {
+    this.logger.error(`❌ Failed to update subscription status for ${subscriptionId}`, err);
+  }
+}
+
+
+
 }

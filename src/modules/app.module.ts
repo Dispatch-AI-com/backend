@@ -15,6 +15,7 @@ import { ServiceBookingModule } from '@/modules/service-booking/service-booking.
 import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { StripeModule } from '@/modules/stripe/stripe.module';
+import { CompanyModule } from './company/company.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { StripeModule } from '@/modules/stripe/stripe.module';
     ServiceFormFieldModule,
     SubscriptionModule,
     StripeModule,
+    CompanyModule
   ],
 })
 export class AppModule {}
