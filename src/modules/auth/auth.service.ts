@@ -18,7 +18,10 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
-    const user = await this.userModel.findOne({ email }).exec();
+    const user = await this.userModel
+      .findOne({ email })
+      .select('+password')
+      .exec();
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
@@ -30,7 +33,9 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto): Promise<{ user: User; token: string }> {
-    const foundUser = await this.userModel.findOne({ email: loginDto.email });
+    const foundUser = await this.userModel
+      .findOne({ email: loginDto.email })
+      .select('+password');
     if (!foundUser) {
       throw new UnauthorizedException('Username or Password Not Match');
     }
