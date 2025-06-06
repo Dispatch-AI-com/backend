@@ -30,13 +30,6 @@ export class StripeService {
     return session;
   }
 
-  async updateSubscriptionPrice(subscriptionId: string, subscriptionItemId: string, newPriceId: string) {
-    return await this.stripe.subscriptions.update(subscriptionId, {
-      items: [{ id: subscriptionItemId, price: newPriceId }],
-      proration_behavior: 'none',
-    });
-  }
-
   async retrieveSubscription(subscriptionId: string) {
     return await this.stripe.subscriptions.retrieve(subscriptionId);
   }

@@ -20,6 +20,7 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
 
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { StripeModule } from '@/modules/stripe/stripe.module';
+import { CompanyModule } from './company/company.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { StripeModule } from '@/modules/stripe/stripe.module';
     ServiceLocationMappingModule,
     SubscriptionModule,
     StripeModule,
+    CompanyModule
   ],
 })
 export class AppModule {}
