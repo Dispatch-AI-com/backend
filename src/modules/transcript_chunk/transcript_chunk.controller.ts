@@ -34,9 +34,7 @@ export class TranscriptChunkController {
 
   @Get(':id/chunks')
   @ApiOkResponse({ type: [TranscriptChunk] })
-  findAll(
-    @Param('id') transcriptId: string,
-  ): Promise<TranscriptChunk[]> {
+  findAll(@Param('id') transcriptId: string): Promise<TranscriptChunk[]> {
     return this.chunkService.findAll(transcriptId);
   }
 
