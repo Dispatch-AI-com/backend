@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -32,7 +31,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "dist/**,package.json,pnpm-lock.yaml,docker-compose.uat.yml,Dockerfile.uat"
+          source: "dist/**,package.json,pnpm-lock.yaml,docker-compose.uat.yml,Dockerfile.uat,ai/**"
           target: /home/ubuntu/deploy/dispatch-backend
           strip_components: 0
 
@@ -45,5 +44,6 @@ jobs:
           script: |
             cd /home/ubuntu/deploy/dispatch-backend
             docker build -f Dockerfile.uat -t dispatch-backend_api .
+            docker build -f ai/Dockerfile.uat -t dispatch-backend_ai ai
             docker-compose -f docker-compose.uat.yml down
             docker-compose -f docker-compose.uat.yml up -d
