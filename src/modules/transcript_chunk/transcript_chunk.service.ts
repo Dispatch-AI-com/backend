@@ -25,8 +25,16 @@ export class TranscriptChunkService {
     // Validate dto fields
     if (
       typeof dto.transcriptId !== 'string' ||
-      !(dto.startAt instanceof Date || typeof dto.startAt === 'string' || typeof dto.startAt === 'number') ||
-      !(dto.endAt instanceof Date || typeof dto.endAt === 'string' || typeof dto.endAt === 'number')
+      !(
+        dto.startAt instanceof Date ||
+        typeof dto.startAt === 'string' ||
+        typeof dto.startAt === 'number'
+      ) ||
+      !(
+        dto.endAt instanceof Date ||
+        typeof dto.endAt === 'string' ||
+        typeof dto.endAt === 'number'
+      )
     ) {
       throw new BadRequestException('Invalid input data');
     }
@@ -71,5 +79,4 @@ export class TranscriptChunkService {
   async deleteByTranscriptId(transcriptId: string): Promise<void> {
     await this.chunkModel.deleteMany({ transcriptId });
   }
-
 }

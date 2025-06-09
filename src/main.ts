@@ -1,4 +1,6 @@
-//src/main.ts
+import 'dotenv/config';
+
+import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import morgan from 'morgan';
@@ -7,9 +9,8 @@ import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter'
 import { setupSwagger } from '@/config/swagger.config';
 import { winstonLogger } from '@/logger/winston.logger';
 import { AppModule } from '@/modules/app.module';
-
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app: INestApplication = await NestFactory.create(AppModule);
   app.useLogger(winstonLogger);
 
   app.setGlobalPrefix('api');
@@ -24,13 +25,14 @@ async function bootstrap(): Promise<void> {
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? '*',
   });
-  app.useGlobalFilters(new GlobalExceptionFilter());
 
+  app.useGlobalFilters(new GlobalExceptionFilter());
   app.use(morgan('combined'));
   setupSwagger(app);
 
   const port = process.env.PORT ?? 4000;
   await app.listen(port);
+
   const adelaideTime = new Date().toLocaleString('en-AU', {
     timeZone: 'Australia/Adelaide',
   });

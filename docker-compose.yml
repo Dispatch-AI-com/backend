@@ -20,8 +20,7 @@ services:
       - dispatchai-network
     volumes:
       - ./:/app
-      - /app/node_modules
-
+      
   mongodb:
     image: mongo:latest
     container_name: dispatchai-mongodb
@@ -30,6 +29,20 @@ services:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    networks:
+      - dispatchai-network
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: dispatchai-ai
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai/app:/app/app
     networks:
       - dispatchai-network
 

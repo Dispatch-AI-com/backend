@@ -61,7 +61,9 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Email or password is incorrect' })
   @Post('login')
-  async login(@Body() loginDto: LoginDto): Promise<User> {
-    return this.authService.validateUser(loginDto.email, loginDto.password);
+  async login(
+    @Body() loginDto: LoginDto,
+  ): Promise<{ user: User; token: string }> {
+    return this.authService.login(loginDto);
   }
 }
