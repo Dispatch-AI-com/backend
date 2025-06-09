@@ -1,11 +1,10 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
-import { ApiOkResponse, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
-import { HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiCreatedResponse } from '@nestjs/swagger';
+import { ApiOkResponse, ApiParam, ApiQuery, ApiTags, ApiCreatedResponse } from '@nestjs/swagger';
 
 import { BlogService } from './blog.service';
 import { Blog } from './schema/blog.schema';
+import { BlogDetail } from './blog.service';
 
 interface PaginatedResponse<T> {
   data: T[];
@@ -17,63 +16,42 @@ interface PaginatedResponse<T> {
 @ApiTags('Blogs')
 @Controller('blogs')
 export class BlogController {
-  constructor(private readonly blogService: BlogService) { }
-
-  @Get()
-  @ApiOkResponse({ description: 'Get all blogs', type: [Blog] })
-  async findAll(
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
-  ): Promise<PaginatedResponse<Blog>> {
-    const [data, total] = await Promise.all([
-      this.blogService.findAll(limit, page),
-      this.blogService.countAll(),
-    ]);
-    return { data, total, page, limit };
-  }
+  constructor(private readonly blogService: BlogService) {}
 
   @Get('search')
-  @ApiOkResponse({ description: 'Search by keywords.', type: [Blog] })
-  @ApiQuery({ name: 'keyword', required: true })
-  async search(
-    @Query('keyword') keyword: string,
-    @Query('limit', ParseIntPipe) limit = 10,
-    @Query('page', ParseIntPipe) page = 1,
+  @ApiOkResponse({
+    description: 'Search blogs (by keyword and/or tag)',
+    type: [Blog],
+  })
+  @ApiQuery({ name: 'keyword', required: false })
+  @ApiQuery({ name: 'topic', required: false }) // 前端用 topic
+  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'page', required: false })
+  async searchBlogs(
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('keyword') keyword?: string,
+    @Query('topic') topic?: string,
   ): Promise<PaginatedResponse<Blog>> {
     const [data, total] = await Promise.all([
-      this.blogService.searchByKeyword(keyword, limit, page),
-      this.blogService.countSearchByKeyword(keyword),
-    ]);
-    return { data, total, page, limit };
-  }
-
-  @Get('tag/:tag')
-  @ApiOkResponse({ description: 'Search by tags.', type: [Blog] })
-  @ApiParam({ name: 'tag', required: true })
-  async findByTag(
-    @Param('tag') tag: string,
-    @Query('limit', ParseIntPipe) limit = 10,
-    @Query('page', ParseIntPipe) page = 1,
-  ): Promise<PaginatedResponse<Blog>> {
-    const [data, total] = await Promise.all([
-      this.blogService.findByTag(tag, limit, page),
-      this.blogService.countByTag(tag),
+      this.blogService.searchBlogs(keyword, topic, limit, page),
+      this.blogService.countSearchBlogs(keyword, topic),
     ]);
     return { data, total, page, limit };
   }
 
   @Get(':id')
-  @ApiOkResponse({ description: 'Search by id.', type: Blog })
+  @ApiOkResponse({ description: 'Get blog detail by id.', type: Blog })
   @ApiParam({ name: 'id', required: true })
-  async findById(@Param('id') id: string): Promise<Blog> {
-    return this.blogService.getBlogDetail(id); //details
+  async getBlogDetail(@Param('id') id: string): Promise<BlogDetail> {
+    return this.blogService.getBlogDetail(id);
   }
 
   @Post('seed')
   @HttpCode(HttpStatus.CREATED)
   @ApiCreatedResponse({
     description: 'Seed data inserted successfully',
-    type: Object
+    type: Object,
   })
   async seedData(): Promise<{ message: string; insertedCount: number }> {
     const result = await this.blogService.seedInitialBlogs();
