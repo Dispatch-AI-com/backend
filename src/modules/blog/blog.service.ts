@@ -62,8 +62,11 @@ export class BlogService {
         throw new BadRequestException('Invalid tag value');
       }
 
+      if (typeof tag !== 'string') {
+        throw new BadRequestException('Tag must be a string');
+      }
       const safeTag = tag;
-      filter.tag = safeTag;
+      filter.tag = { $eq: safeTag };
     }
 
     return this.blogModel
@@ -92,8 +95,11 @@ export class BlogService {
         throw new BadRequestException('Invalid tag value');
       }
 
+      if (typeof tag !== 'string') {
+        throw new BadRequestException('Tag must be a string');
+      }
       const safeTag = tag;
-      filter.tag = safeTag;
+      filter.tag = { $eq: safeTag };
     }
 
     return this.blogModel.countDocuments(filter).exec();
