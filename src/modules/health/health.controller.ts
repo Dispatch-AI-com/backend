@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, UnauthorizedException } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { HealthService } from '@/modules/health/health.service';
@@ -33,15 +33,6 @@ export class HealthController {
   async checkDatabase(): Promise<{ status: string }> {
     return this.healthService.checkDatabase();
   }
-  @ApiOperation({
-    summary: 'niubi！',
-    description: 'niubi！',
-  })
-  @ApiResponse({ status: 200, description: 'niubi！' })
-  @Get('niubi')
-  niubi(): { message: string } {
-    return { message: 'niubi！' };
-  }
 
   @ApiOperation({
     summary: 'Hello Endpoint',
@@ -53,5 +44,15 @@ export class HealthController {
     return {
       message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！',
     };
+  }
+
+  @ApiOperation({
+    summary: 'Unauthorized Endpoint',
+    description: 'Simulates an unauthorized access attempt',
+  })
+  @ApiResponse({ status: 401, description: 'JWT token is invalid or expired' })
+  @Get('unauthorized')
+  unauthorized(): never {
+    throw new UnauthorizedException('JWT token is invalid or expired');
   }
 }
