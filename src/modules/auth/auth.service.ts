@@ -1,5 +1,9 @@
-import { Injectable } from '@nestjs/common';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
@@ -55,7 +59,9 @@ export class AuthService {
     return { user, token };
   }
 
-  async createUser(userData: CreateUserDto): Promise<User> {
+  async createUser(
+    userData: CreateUserDto,
+  ): Promise<{ user: User; token: string }> {
     if (await this.checkUserExists(userData.email)) {
       throw new ConflictException('User already exists');
     }
@@ -70,7 +76,12 @@ export class AuthService {
     const newUser = new this.userModel(secureUserData);
     await newUser.save();
 
-    return newUser.toObject() as User;
+    const token = this.jwtService.sign({
+      sub: newUser._id,
+      email: newUser.email,
+      role: newUser.role,
+    });
+    return { user: newUser.toObject() as User, token };
   }
 
   async checkUserExists(email: string): Promise<boolean> {
