@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, FilterQuery } from 'mongoose';
 
@@ -56,6 +56,12 @@ export class BlogService {
     }
 
     if (tag != null && tag !== '') {
+      const allowedTags = ['tech', 'life', 'travel', 'news', 'sports'];
+
+      if (!allowedTags.includes(tag)) {
+        throw new BadRequestException('Invalid tag value');
+      }
+
       filter.tag = tag;
     }
 
@@ -79,6 +85,12 @@ export class BlogService {
     }
 
     if (tag != null && tag !== '') {
+      const allowedTags = ['tech', 'life', 'travel', 'news', 'sports'];
+
+      if (!allowedTags.includes(tag)) {
+        throw new BadRequestException('Invalid tag value');
+      }
+
       filter.tag = tag;
     }
 
