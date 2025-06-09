@@ -62,7 +62,8 @@ export class BlogService {
         throw new BadRequestException('Invalid tag value');
       }
 
-      filter.tag = tag;
+      const safeTag = tag;
+      filter.tag = safeTag;
     }
 
     return this.blogModel
@@ -91,7 +92,8 @@ export class BlogService {
         throw new BadRequestException('Invalid tag value');
       }
 
-      filter.tag = tag;
+      const safeTag = tag;
+      filter.tag = safeTag;
     }
 
     return this.blogModel.countDocuments(filter).exec();
