@@ -37,6 +37,7 @@ describe('Transcript (e2e)', () => {
         userId: testUserId,
         serviceBookedId: 'test-service',
         callerNumber: '1234567890',
+        callerName: 'Test User',
         startAt: new Date(),
       });
     expect(res.status).toBe(201);

@@ -19,6 +19,9 @@ export class CallLog {
   @Prop({ required: true })
   callerNumber!: string;
 
+  @Prop()
+  callerName?: string;
+
   @Prop({
     required: true,
     type: String,

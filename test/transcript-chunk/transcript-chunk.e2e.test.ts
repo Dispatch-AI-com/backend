@@ -25,6 +25,7 @@ describe('TranscriptChunk (e2e)', () => {
         userId: testUserId,
         serviceBookedId: 'test-service',
         callerNumber: '1234567890',
+        callerName: 'Test User',
         startAt: new Date(),
       });
     calllogId = calllogRes.body._id;

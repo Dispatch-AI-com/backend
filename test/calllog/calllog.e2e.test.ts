@@ -33,12 +33,14 @@ describe('CallLogController (e2e)', () => {
     createTestCallLog({
       callerNumber: '+61400001234',
       serviceBookedId: 'booking-123',
+      callerName: 'John Doe',
     }),
     createTestCallLog({
       startAt: new Date('2025-05-09T11:00:00Z'),
       endAt: new Date('2025-05-09T11:15:00Z'),
       callerNumber: '+61400005678',
       serviceBookedId: 'booking-124',
+      callerName: 'Jane Smith',
     }),
   ];
 
@@ -69,7 +71,9 @@ describe('CallLogController (e2e)', () => {
 
   describe('POST /users/:userId/calllogs', () => {
     it('should create a new call log with valid data', async () => {
-      const testCallLog = createTestCallLog();
+      const testCallLog = createTestCallLog({
+        callerName: 'Test User',
+      });
       const response = await request(app.getHttpServer())
         .post(baseUrl)
         .send(testCallLog);
@@ -79,6 +83,7 @@ describe('CallLogController (e2e)', () => {
         userId: testCallLog.userId,
         status: testCallLog.status,
         callerNumber: testCallLog.callerNumber,
+        callerName: testCallLog.callerName,
         serviceBookedId: testCallLog.serviceBookedId,
       });
       expect(response.body).toHaveProperty('_id');

@@ -5,6 +5,7 @@ export interface ICallLog {
   userId: string;
   serviceBookedId?: string;
   callerNumber: string;
+  callerName?: string;
   status: CallLogStatus;
   startAt: Date;
   endAt?: Date;

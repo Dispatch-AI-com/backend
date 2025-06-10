@@ -12,6 +12,7 @@ export function createMockCallLogDto(overrides: Partial<any> = {}) {
     userId: 'user-' + Math.floor(Math.random() * 1000),
     serviceBookedId: 'booking-' + Math.floor(Math.random() * 1000),
     callerNumber: '+6140000' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
+    callerName: 'User ' + Math.floor(Math.random() * 1000),
     status: CallLogStatus.InProgress,
     startAt,
     endAt,

@@ -29,6 +29,11 @@ export class CreateCallLogDto {
   @IsNotEmpty()
   callerNumber!: string;
 
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  callerName?: string;
+
   @ApiPropertyOptional({ enum: CallLogStatus, default: DEFAULT_CALLLOG_STATUS })
   @IsEnum(CallLogStatus)
   @IsOptional()
