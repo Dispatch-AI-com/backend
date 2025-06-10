@@ -18,7 +18,7 @@ const mockCallLogs = [
     serviceBookedId: 'booking-2',
     callerNumber: '+61400005678',
     callerName: 'Jane Smith',
-    status: CallLogStatus.InProgress,
+    status: CallLogStatus.FollowUp,
     startAt: new Date('2024-03-20T11:00:00Z'),
     summary: 'Emergency service request for water damage in bathroom. Customer needs immediate assistance.',
   },

@@ -1,8 +1,7 @@
 export enum CallLogStatus {
   Missed = 'Missed',
   Completed = 'Completed',
-  FollowUp = 'Follow-up',
-  InProgress = 'In-progress',
+  FollowUp = 'Follow-up'
 }
 
 export const DEFAULT_CALLLOG_STATUS = CallLogStatus.Completed;
