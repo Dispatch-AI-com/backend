@@ -176,7 +176,7 @@ export class CalllogService {
       this.callLogModel.countDocuments({
         userId,
         startAt: { $gte: today },
-        status: CallLogStatus.InProgress,
+        status: CallLogStatus.FollowUp,
       }),
     ]);
 
