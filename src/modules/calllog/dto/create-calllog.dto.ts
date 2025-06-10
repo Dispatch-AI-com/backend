@@ -17,7 +17,7 @@ export class CreateCallLogDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  companyId!: string;
+  userId!: string;
 
   @ApiProperty()
   @IsString()
@@ -49,4 +49,9 @@ export class CreateCallLogDto {
   @IsString()
   @IsOptional()
   audioId?: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  summary?: string;
 }

@@ -27,7 +27,7 @@ import { CallLog, CallLogDocument } from './schema/calllog.schema';
 import { sanitizeCallLogUpdate } from './utils/sanitize-update';
 
 interface FindAllOptions {
-  companyId: string;
+  userId: string;
   status?: CallLogStatus;
   search?: string;
   startAtFrom?: string;
@@ -38,7 +38,7 @@ interface FindAllOptions {
 }
 
 interface CallLogQuery {
-  companyId: string;
+  userId: string;
   status?: { $eq: CallLogStatus };
   startAt?: {
     $gte?: Date;
@@ -74,7 +74,7 @@ export class CalllogService {
   }
 
   async findAll({
-    companyId,
+    userId,
     status,
     search,
     startAtFrom,
@@ -83,7 +83,7 @@ export class CalllogService {
     page = DEFAULT_PAGE,
     limit = DEFAULT_LIMIT,
   }: FindAllOptions): Promise<ICallLogResponse> {
-    const query: CallLogQuery = { companyId };
+    const query: CallLogQuery = { userId };
 
     if (status !== undefined) {
       if (!Object.values(CallLogStatus).includes(status)) {
@@ -134,11 +134,11 @@ export class CalllogService {
     };
   }
 
-  async findOne(companyId: string, calllogId: string): Promise<ICallLog> {
+  async findOne(userId: string, calllogId: string): Promise<ICallLog> {
     try {
       const callLog = await this.callLogModel.findOne({
         _id: calllogId,
-        companyId,
+        userId,
       });
 
       if (!callLog) {
@@ -154,8 +154,8 @@ export class CalllogService {
     }
   }
 
-  async getAudio(companyId: string, calllogId: string): Promise<string> {
-    const callLog = await this.findOne(companyId, calllogId);
+  async getAudio(userId: string, calllogId: string): Promise<string> {
+    const callLog = await this.findOne(userId, calllogId);
 
     if (callLog.audioId === undefined || callLog.audioId === '') {
       throw new NotFoundException('No audio available for this call');
@@ -164,17 +164,17 @@ export class CalllogService {
     return callLog.audioId;
   }
 
-  async getTodayMetrics(companyId: string): Promise<ICallLogMetrics> {
+  async getTodayMetrics(userId: string): Promise<ICallLogMetrics> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const [totalCalls, liveCalls] = await Promise.all([
       this.callLogModel.countDocuments({
-        companyId,
+        userId,
         startAt: { $gte: today },
       }),
       this.callLogModel.countDocuments({
-        companyId,
+        userId,
         startAt: { $gte: today },
         status: CallLogStatus.InProgress,
       }),
@@ -187,7 +187,7 @@ export class CalllogService {
   }
 
   async update(
-    companyId: string,
+    userId: string,
     calllogId: string,
     updateCallLogDto: UpdateCallLogDto,
   ): Promise<ICallLog> {
@@ -195,7 +195,7 @@ export class CalllogService {
       const sanitizedUpdate = sanitizeCallLogUpdate(updateCallLogDto);
       const updatedCallLog = await this.callLogModel
         .findOneAndUpdate(
-          { _id: calllogId, companyId },
+          { _id: calllogId, userId },
           { $set: sanitizedUpdate },
           { new: true, runValidators: true },
         )

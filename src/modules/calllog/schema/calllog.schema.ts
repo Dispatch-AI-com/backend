@@ -11,7 +11,7 @@ export type CallLogDocument = HydratedDocument<CallLog>;
 @Schema({ timestamps: true })
 export class CallLog {
   @Prop({ required: true })
-  companyId!: string;
+  userId!: string;
 
   @Prop({ required: true })
   serviceBookedId!: string;
@@ -35,8 +35,11 @@ export class CallLog {
 
   @Prop()
   audioId?: string;
+
+  @Prop()
+  summary?: string;
 }
 
 export const CallLogSchema = SchemaFactory.createForClass(CallLog);
 
-CallLogSchema.index({ companyId: 1, startAt: -1 });
+CallLogSchema.index({ userId: 1, startAt: -1 });

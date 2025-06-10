@@ -8,7 +8,7 @@ describe('TranscriptChunk (e2e)', () => {
   let calllogId: string;
   let transcriptId: string;
   let chunkId: string;
-  const testCompanyId = 'test-company';
+  const testUserId = 'test-user';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -20,9 +20,9 @@ describe('TranscriptChunk (e2e)', () => {
     await app.init();
 
     const calllogRes = await request(app.getHttpServer())
-      .post(`/companies/${testCompanyId}/calllogs`)
+      .post(`/users/${testUserId}/calllogs`)
       .send({
-        companyId: testCompanyId,
+        userId: testUserId,
         serviceBookedId: 'test-service',
         callerNumber: '1234567890',
         startAt: new Date(),
@@ -30,7 +30,7 @@ describe('TranscriptChunk (e2e)', () => {
     calllogId = calllogRes.body._id;
 
     const transcriptRes = await request(app.getHttpServer())
-      .post(`/companies/${testCompanyId}/calllogs/${calllogId}/transcript`)
+      .post(`/calllogs/${calllogId}/transcript`)
       .send({
         summary: 'Test summary',
       });

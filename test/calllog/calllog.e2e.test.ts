@@ -19,12 +19,12 @@ process.on('warning', (warning) => {
 describe('CallLogController (e2e)', () => {
   let app: INestApplication;
   let createdCallLogId: string;
-  const testCompanyId = 'company-123';
-  const baseUrl = `/companies/${testCompanyId}/calllogs`;
+  const testUserId = 'user-123';
+  const baseUrl = `/users/${testUserId}/calllogs`;
 
   // Test data setup
   const createTestCallLog = (overrides = {}) => createMockCallLogDto({
-    companyId: testCompanyId,
+    userId: testUserId,
     audioId: undefined, // Ensure no audioId by default
     ...overrides
   });
@@ -67,7 +67,7 @@ describe('CallLogController (e2e)', () => {
     await mongoose.connection.close();
   });
 
-  describe('POST /companies/:companyId/calllogs', () => {
+  describe('POST /users/:userId/calllogs', () => {
     it('should create a new call log with valid data', async () => {
       const testCallLog = createTestCallLog();
       const response = await request(app.getHttpServer())
@@ -76,7 +76,7 @@ describe('CallLogController (e2e)', () => {
 
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
-        companyId: testCallLog.companyId,
+        userId: testCallLog.userId,
         status: testCallLog.status,
         callerNumber: testCallLog.callerNumber,
         serviceBookedId: testCallLog.serviceBookedId,
@@ -89,7 +89,7 @@ describe('CallLogController (e2e)', () => {
     });
 
     it('should fail to create call log with invalid data', async () => {
-      const invalidCallLog = { companyId: testCompanyId }; // Missing required fields
+      const invalidCallLog = { userId: testUserId }; // Missing required fields
       const response = await request(app.getHttpServer())
         .post(baseUrl)
         .send(invalidCallLog);
@@ -98,7 +98,7 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('GET /companies/:companyId/calllogs', () => {
+  describe('GET /users/:userId/calllogs', () => {
     it('should return paginated call logs with correct structure', async () => {
       const response = await request(app.getHttpServer()).get(baseUrl);
       
@@ -110,7 +110,7 @@ describe('CallLogController (e2e)', () => {
 
       const firstLog = response.body.data[0];
       expect(firstLog).toHaveProperty('_id');
-      expect(firstLog).toHaveProperty('companyId');
+      expect(firstLog).toHaveProperty('userId');
       expect(firstLog).toHaveProperty('status');
       expect(firstLog).toHaveProperty('startAt');
       expect(firstLog).toHaveProperty('callerNumber');
@@ -146,7 +146,6 @@ describe('CallLogController (e2e)', () => {
     });
 
     it('should search logs by keyword', async () => {
-      // Use a simpler search term that matches the pattern in our test data
       const searchTerm = '6140000';
       const response = await request(app.getHttpServer())
         .get(`${baseUrl}?search=${searchTerm}`);
@@ -162,7 +161,7 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('GET /companies/:companyId/calllogs/:calllogId', () => {
+  describe('GET /users/:userId/calllogs/:calllogId', () => {
     it('should return call log details', async () => {
       const response = await request(app.getHttpServer())
         .get(`${baseUrl}/${createdCallLogId}`);
@@ -170,7 +169,7 @@ describe('CallLogController (e2e)', () => {
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
         _id: createdCallLogId,
-        companyId: testCompanyId,
+        userId: testUserId,
       });
     });
 
@@ -182,7 +181,7 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('GET /companies/:companyId/calllogs/metrics/today', () => {
+  describe('GET /users/:userId/calllogs/metrics/today', () => {
     it('should return today\'s call metrics', async () => {
       const response = await request(app.getHttpServer())
         .get(`${baseUrl}/metrics/today`);
@@ -195,7 +194,7 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('PATCH /companies/:companyId/calllogs/:calllogId', () => {
+  describe('PATCH /users/:userId/calllogs/:calllogId', () => {
     it('should update call log status', async () => {
       const response = await request(app.getHttpServer())
         .patch(`${baseUrl}/${createdCallLogId}`)
@@ -223,7 +222,7 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('GET /companies/:companyId/calllogs/:calllogId/audio', () => {
+  describe('GET /users/:userId/calllogs/:calllogId/audio', () => {
     it('should return 404 when audio is not available', async () => {
       const response = await request(app.getHttpServer())
         .get(`${baseUrl}/${createdCallLogId}/audio`);
@@ -246,7 +245,7 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('DELETE /companies/:companyId/calllogs/:id', () => {
+  describe('DELETE /users/:userId/calllogs/:id', () => {
     it('should delete calllog and cascade delete transcript and chunks', async () => {
       // Create a calllog
       const testCallLog = createTestCallLog();
@@ -274,7 +273,6 @@ describe('CallLogController (e2e)', () => {
           startAt: 0,
           endAt: 1000
         });
-
 
       // Delete the calllog
       const deleteResponse = await request(app.getHttpServer())

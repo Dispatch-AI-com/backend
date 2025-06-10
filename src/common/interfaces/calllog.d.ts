@@ -2,7 +2,7 @@ import type { CallLogStatus } from '../constants/calllog.constant';
 
 export interface ICallLog {
   _id?: string;
-  companyId: string;
+  userId: string;
   serviceBookedId?: string;
   callerNumber: string;
   status: CallLogStatus;

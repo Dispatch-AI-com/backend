@@ -8,6 +8,9 @@ export class Transcript extends Document {
 
   @Prop({ required: true })
   summary!: string;
+
+  @Prop({ type: [String], default: [] })
+  keyPoints?: string[];
 }
 
 export const TranscriptSchema = SchemaFactory.createForClass(Transcript);

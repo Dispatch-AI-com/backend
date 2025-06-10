@@ -24,6 +24,9 @@ export function sanitizeCallLogUpdate(
   if (updateDto.audioId !== undefined) {
     sanitizedUpdate.audioId = updateDto.audioId;
   }
+  if (updateDto.summary !== undefined) {
+    sanitizedUpdate.summary = updateDto.summary;
+  }
 
   return sanitizedUpdate;
 }

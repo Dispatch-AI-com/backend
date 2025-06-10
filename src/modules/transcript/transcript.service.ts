@@ -27,8 +27,9 @@ export class TranscriptService {
   async create(dto: {
     calllogId: string;
     summary: string;
+    keyPoints?: string[];
   }): Promise<ITranscript> {
-    const { calllogId, summary } = dto;
+    const { calllogId, summary, keyPoints } = dto;
     if (!Types.ObjectId.isValid(calllogId)) {
       throw new BadRequestException('Invalid calllogid');
     }
@@ -39,6 +40,7 @@ export class TranscriptService {
     const transcript = await this.transcriptModel.create({
       calllogId: new Types.ObjectId(calllogId),
       summary,
+      keyPoints,
     });
     return this.convertToITranscript(transcript);
   }
@@ -124,6 +126,7 @@ export class TranscriptService {
       _id: obj._id,
       calllogId: obj.calllogId,
       summary: obj.summary,
+      keyPoints: obj.keyPoints,
       createdAt: obj.createdAt,
       updatedAt: obj.updatedAt,
     };

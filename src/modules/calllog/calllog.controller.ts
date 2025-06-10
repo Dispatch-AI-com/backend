@@ -27,12 +27,12 @@ import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
 
 @ApiTags('calllog')
-@Controller('companies/:companyId/calllogs')
+@Controller('users/:userId/calllogs')
 export class CalllogController {
   constructor(private readonly calllogService: CalllogService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all call logs for a company' })
+  @ApiOperation({ summary: 'Get all call logs for a user' })
   @ApiQuery({ name: 'status', required: false, enum: CallLogStatus })
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'startAtFrom', required: false, type: String })
@@ -42,7 +42,7 @@ export class CalllogController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiResponse({ status: 200, description: 'Return paginated call logs' })
   async findAll(
-    @Param('companyId') companyId: string,
+    @Param('userId') userId: string,
     @Query('status') status?: CallLogStatus,
     @Query('search') search?: string,
     @Query('startAtFrom') startAtFrom?: string,
@@ -55,7 +55,7 @@ export class CalllogController {
     pagination: { page: number; limit: number; total: number };
   }> {
     return this.calllogService.findAll({
-      companyId,
+      userId,
       status,
       search,
       startAtFrom,
@@ -71,10 +71,10 @@ export class CalllogController {
   @ApiResponse({ status: 200, description: 'Return call log details' })
   @ApiResponse({ status: 404, description: 'Call log not found' })
   async findOne(
-    @Param('companyId') companyId: string,
+    @Param('userId') userId: string,
     @Param('calllogId') calllogId: string,
   ): Promise<ICallLog> {
-    return this.calllogService.findOne(companyId, calllogId);
+    return this.calllogService.findOne(userId, calllogId);
   }
 
   @Get(':calllogId/audio')
@@ -82,31 +82,31 @@ export class CalllogController {
   @ApiResponse({ status: 200, description: 'Return audio ID' })
   @ApiResponse({ status: 404, description: 'Audio not found' })
   async getAudio(
-    @Param('companyId') companyId: string,
+    @Param('userId') userId: string,
     @Param('calllogId') calllogId: string,
   ): Promise<{ audioId: string }> {
-    const audioId = await this.calllogService.getAudio(companyId, calllogId);
+    const audioId = await this.calllogService.getAudio(userId, calllogId);
     return { audioId };
   }
 
   @Get('metrics/today')
   @ApiOperation({ summary: "Get today's call metrics" })
   @ApiResponse({ status: 200, description: "Return today's call metrics" })
-  async getTodayMetrics(@Param('companyId') companyId: string): Promise<{
+  async getTodayMetrics(@Param('userId') userId: string): Promise<{
     totalCalls: number;
     liveCalls: number;
   }> {
-    return this.calllogService.getTodayMetrics(companyId);
+    return this.calllogService.getTodayMetrics(userId);
   }
 
   @Post()
   @ApiOperation({ summary: 'Create a new call log' })
   @ApiResponse({ status: 201, description: 'Call log created successfully' })
   async create(
-    @Param('companyId') companyId: string,
+    @Param('userId') userId: string,
     @Body() createCallLogDto: CreateCallLogDto,
   ): Promise<ICallLog> {
-    const dto = Object.assign({}, createCallLogDto, { companyId });
+    const dto = Object.assign({}, createCallLogDto, { userId });
     return this.calllogService.create(dto);
   }
 
@@ -115,11 +115,11 @@ export class CalllogController {
   @ApiResponse({ status: 200, description: 'Call log updated successfully' })
   @ApiResponse({ status: 404, description: 'Call log not found' })
   async update(
-    @Param('companyId') companyId: string,
+    @Param('userId') userId: string,
     @Param('calllogId') calllogId: string,
     @Body() updateCallLogDto: UpdateCallLogDto,
   ): Promise<ICallLog> {
-    return this.calllogService.update(companyId, calllogId, updateCallLogDto);
+    return this.calllogService.update(userId, calllogId, updateCallLogDto);
   }
 
   @Delete(':id')

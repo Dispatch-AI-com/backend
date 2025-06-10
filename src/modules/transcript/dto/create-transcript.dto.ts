@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateTranscriptDto {
   @ApiProperty({
@@ -9,4 +9,21 @@ export class CreateTranscriptDto {
   @IsString()
   @IsNotEmpty()
   summary!: string;
+
+  @ApiPropertyOptional({
+    description: 'Key points from the transcript',
+    type: String,
+    isArray: true,
+    example: [
+      "User Lee from Canada's warehouse needs room repair after hailstorm.",
+      'Lee requests a booking for repair services.',
+      'Suburb mentioned is Gungahlin, confirming service area.',
+      'Sophiie offers to send a booking link for scheduling.',
+      'User requests emergency assistance for a customer, advised to call emergency services.',
+    ],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  keyPoints?: string[];
 }
