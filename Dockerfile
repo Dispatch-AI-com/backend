@@ -9,4 +9,4 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install
 
 EXPOSE 4000
-CMD ["sh", "-c", "pnpm seed && pnpm run dev"]
+CMD ["pnpm", "run", "dev"]
