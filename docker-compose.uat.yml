@@ -4,7 +4,6 @@ services:
       context: .
       dockerfile: Dockerfile.uat
     container_name: dispatchai-api
-    command: ["node", "dist/main"]
     env_file:
       - .env.uat
     environment:
@@ -15,3 +14,23 @@ services:
       - "4000:4000"
     volumes:
       - /home/ubuntu/dispatch-ai/logs:/app/logs
+    restart: always
+    networks:
+      - dispatchai-network
+
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile.uat
+    container_name: dispatchai-ai
+    env_file:
+      - .env.uat
+    ports:
+      - "8000:8000"
+    restart: always
+    networks:
+      - dispatchai-network
+
+networks:
+  dispatchai-network:
+    driver: bridge
