@@ -1,11 +1,12 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { plainToInstance } from 'class-transformer';
+import { Types } from 'mongoose';
 
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
+import { UserDocument } from '@/modules/user/schema/user.schema';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -42,10 +43,7 @@ export class AuthController {
     @Body() createUserDto: CreateUserDto,
   ): Promise<{ user: UserResponseDto; token: string }> {
     const { user, token } = await this.authService.createUser(createUserDto);
-    const safeUser = plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
-    return { user: safeUser, token };
+    return { user: this.toResponseDto(user), token };
   }
 
   @ApiOperation({
@@ -71,9 +69,19 @@ export class AuthController {
     @Body() loginDto: LoginDto,
   ): Promise<{ user: UserResponseDto; token: string }> {
     const { user, token } = await this.authService.login(loginDto);
-    const safeUser = plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
-    return { user: safeUser, token };
+    return { user: this.toResponseDto(user), token };
+  }
+
+  private toResponseDto(user: UserDocument): UserResponseDto {
+    return {
+      _id:
+        user._id instanceof Types.ObjectId
+          ? user._id.toString()
+          : String(user._id),
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+    };
   }
 }
