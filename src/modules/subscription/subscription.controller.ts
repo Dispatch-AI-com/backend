@@ -30,8 +30,18 @@ export class SubscriptionController {
     return this.subscriptionService.createSubscription(dto);
   }
 
+  @Post(':companyId/retry-payment')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Generate Billing Portal URL for retry payment after failure' })
+  @ApiResponse({ status: 200, description: 'Billing portal URL generated successfully' })
+  @ApiResponse({ status: 404, description: 'No failed subscription found for this company' })
+  async generateBillingPortalUrl(@Param('companyId') companyId: string) {
+    const url = await this.subscriptionService.generateBillingPortalUrl(companyId);
+    return { url };
+  }
 
-  @Post('change')
+
+  @Patch('change')
   @ApiOperation({ summary: 'Change subscription plan' })
   @ApiResponse({ status: 200, description: 'Plan changed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request' })
@@ -42,28 +52,15 @@ export class SubscriptionController {
     return await this.subscriptionService.changePlan(dto.companyId, dto.planId);
   }
 
-  @Post('activate')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Activate subscription after checkout' })
-  @ApiResponse({ status: 200, description: 'Subscription activated successfully' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        companyId: { type: 'string' },
-        planId: { type: 'string' },
-        subscriptionId: { type: 'string' }
-      },
-      required: ['companyId', 'planId', 'subscriptionId']
-    }
-  })
-  async activate(@Body() dto: { companyId: string; planId: string; subscriptionId: string }) {
-    return await this.subscriptionService.activateSubscription(
-      dto.companyId,
-      dto.planId,
-      dto.subscriptionId
-    );
+  @Patch(':companyId/free')
+  @ApiOperation({ summary: 'Downgrade to free plan and refund unused balance' })
+  @ApiResponse({ status: 200, description: 'Downgrade and refund successful' })
+  @ApiResponse({ status: 404, description: 'Active subscription not found' })
+  @ApiResponse({ status: 500, description: 'Internal error during downgrade' })
+  async downgradeToFree(@Param('companyId') companyId: string) {
+    return await this.subscriptionService.downgradeToFree(companyId);
   }
+
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -84,4 +81,7 @@ export class SubscriptionController {
   async getByCompany(@Param('companyId') companyId: string) {
     return await this.subscriptionService.getByCompany(companyId);
   }
+
+
+
 }

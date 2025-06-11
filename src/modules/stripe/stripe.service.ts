@@ -34,11 +34,31 @@ export class StripeService {
     return await this.stripe.subscriptions.retrieve(subscriptionId);
   }
 
-  async refundPayment(paymentIntentId: string, amount: number) {
+  async refundPayment(chargeId: string, amount: number) {
     return this.stripe.refunds.create({
-      payment_intent: paymentIntentId,
+      charge: chargeId,
       amount,
     });
+  }
+
+  async createBillingPortalSession(stripeCustomerId: string) {
+    const session = await this.client.billingPortal.sessions.create({
+      customer: stripeCustomerId,
+      return_url: process.env.APP_URL || 'http://localhost:3000',
+    });
+
+    return session.url;
+  }
+
+  async retrievecharge(customerId: string) {
+    const charges = await this.stripe.charges.list({
+      customer: customerId,
+      limit: 10, 
+    });
+
+    const charge = charges.data.find(c => c.paid && !c.refunded);
+    const chargeId = charge?.id;
+    return chargeId || null;
   }
 
   constructWebhookEvent(body: Buffer, signature: string) {

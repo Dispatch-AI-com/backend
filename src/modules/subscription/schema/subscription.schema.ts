@@ -14,14 +14,20 @@ export class Subscription {
   @Prop({ required: false })
   subscriptionId?: string;
 
+  @Prop({ required: false })
+  stripeCustomerId?: string;
+
+  @Prop({ required: false })
+  chargeId?: string;
+
   @Prop({ required: false }) 
   startAt!: Date;
 
   @Prop({ required: false }) 
   endAt!: Date;
 
-  @Prop({ required: true, enum: ['active', 'failed']})
-  status!: 'active' | 'failed';
+  @Prop({ required: true, enum: ['active', 'failed', 'cancelled'] })
+  status!: 'active' | 'failed' | 'cancelled';
 
   @Prop({ required: false })
   createdAt!: Date;

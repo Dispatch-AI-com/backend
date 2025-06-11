@@ -41,7 +41,7 @@ export class SubscriptionService {
     };
   }
 
-  async activateSubscription(companyId: string, planId: string, subscriptionId: string) {
+  async activateSubscription(companyId: string, planId: string, subscriptionId: string, stripeCustomerId: string, chargeId: string) {
     const company = await this.companyModel.findById(companyId);
     if (!company) throw new NotFoundException('Company not found');
 
@@ -68,6 +68,8 @@ export class SubscriptionService {
       companyId: new Types.ObjectId(companyId),
       planId: new Types.ObjectId(planId),
       subscriptionId: subscriptionId,
+      stripeCustomerId: stripeCustomerId,
+      chargeId: chargeId,
       createdAt: now,
       status: 'active',
       startAt: now,
@@ -133,6 +135,18 @@ export class SubscriptionService {
     );
   }
 
+  async updateChargeIdByWebhook(customerId: string, chargeId: string) {
+    const subscription = await this.subscriptionModel.findOne({ stripeCustomerId: customerId });
+    if (!subscription) throw new NotFoundException('Subscription not found for this customer');
+    if (subscription.chargeId === chargeId) {
+      return; 
+    }
+    await this.subscriptionModel.updateOne(
+      { stripeCustomerId: customerId },
+      { chargeId: chargeId }
+    );
+  }
+
   async getByCompany(companyId: string) {
     const subscription = await this.subscriptionModel
       .findOne({ companyId: new Types.ObjectId(companyId) })
@@ -152,4 +166,68 @@ export class SubscriptionService {
       .skip(skip)
       .limit(limit);
   }
+
+  async generateBillingPortalUrl(companyId: string) {
+    const subscription = await this.subscriptionModel.findOne({
+      companyId: new Types.ObjectId(companyId),
+      status: 'failed', 
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('No failed subscription found for this company');
+    }
+
+    const stripeCustomerId = subscription.stripeCustomerId;
+
+    if (!stripeCustomerId) {
+      throw new BadRequestException('Missing stripe customer id');
+    }
+
+    return await this.stripeService.createBillingPortalSession(stripeCustomerId);
+  }
+
+  async findBySuscriptionId(subscriptionId: string) {
+    return await this.subscriptionModel.findOne({ subscriptionId })
+  }
+
+  async downgradeToFree(companyId: string) {
+    const subscription = await this.subscriptionModel.findOne({
+      companyId: new Types.ObjectId(companyId),
+      status: 'active',
+    });
+
+    if (!subscription) throw new NotFoundException('Active subscription not found');
+
+    const stripeSub = await this.stripeService.client.subscriptions.retrieve(subscription.subscriptionId!);
+
+    const currentPeriodStart = stripeSub.items.data[0].current_period_start * 1000;
+    const currentPeriodEnd = stripeSub.items.data[0].current_period_end * 1000;
+    const now = Date.now();
+
+    const remainingTime = Math.max(currentPeriodEnd - now, 0);
+    const totalPeriodTime = currentPeriodEnd - currentPeriodStart;
+    const remainingPercentage = remainingTime / totalPeriodTime;
+
+    const invoice = await this.stripeService.client.invoices.retrieve(stripeSub.latest_invoice as string);
+    
+    const amountPaid = invoice.amount_paid;
+
+    const refundAmount = Math.floor(amountPaid * remainingPercentage);
+
+    if (refundAmount > 0) {
+      await this.stripeService.refundPayment(subscription.chargeId!, refundAmount);
+      console.log(`Refunded ${refundAmount} cents for subscription ${subscription.subscriptionId}`);
+    }
+
+    await this.stripeService.client.subscriptions.cancel(subscription.subscriptionId!);
+
+    await this.subscriptionModel.updateOne(
+      { subscriptionId: subscription.subscriptionId },
+      { status: 'cancelled' }
+    );
+
+  }
+
+
+
 }
