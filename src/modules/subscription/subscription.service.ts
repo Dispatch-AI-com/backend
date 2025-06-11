@@ -41,9 +41,6 @@ export class SubscriptionService {
     if (!plan) throw new NotFoundException('Plan not found');
 
     const pricing = plan.pricing[0];
-    if (!pricing || !pricing.stripePriceId) {
-      throw new BadRequestException('Missing Stripe price ID');
-    }
 
     const session = await this.stripeService.createCheckoutSession({
       priceId: pricing.stripePriceId,
