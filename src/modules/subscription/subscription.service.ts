@@ -92,8 +92,12 @@ export class SubscriptionService {
       status: 'active',
     });
     if (!subscription) throw new NotFoundException('Active subscription not found');
-
+    
+    if (!Types.ObjectId.isValid(newPlanId)) {
+      throw new BadRequestException('Invalid plan ID');
+    }
     const plan = await this.planModel.findById(newPlanId);
+    
     if (!plan) throw new NotFoundException('Plan not found');
 
     if (subscription.planId === plan.id) {
