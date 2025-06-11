@@ -1,4 +1,10 @@
-import { Body, Controller, Get, Post, UnauthorizedException} from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { HealthService } from '@/modules/health/health.service';
