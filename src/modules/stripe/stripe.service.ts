@@ -3,9 +3,7 @@ import Stripe from 'stripe';
 
 @Injectable()
 export class StripeService {
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-04-30.basil',
-  });
+  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
   get client(): Stripe {
     return this.stripe;
