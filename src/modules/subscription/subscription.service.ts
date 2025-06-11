@@ -18,9 +18,15 @@ export class SubscriptionService {
   ) {}
 
   async createSubscription(dto: CreateSubscriptionDto) {
+    if (!Types.ObjectId.isValid(dto.companyId)) {
+      throw new BadRequestException('Invalid company ID');
+    }
     const company = await this.companyModel.findById(dto.companyId);
     if (!company) throw new NotFoundException('Company not found');
     
+    if (!Types.ObjectId.isValid(dto.planId)) {
+      throw new BadRequestException('Invalid plan ID');
+    }
     const plan = await this.planModel.findById(dto.planId);
     if (!plan) throw new NotFoundException('Plan not found');
 
