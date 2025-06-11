@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 
 @Injectable()
 export class StripeService {
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
 
   get client(): Stripe {
     return this.stripe;
@@ -14,12 +14,13 @@ export class StripeService {
     companyId: string;
     planId: string;
   }) {
+    const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: input.priceId, quantity: 1 }],
-      success_url: `${process.env.APP_URL}/pricing`,
-      cancel_url: `${process.env.APP_URL}/pricing`,
+      success_url: `${appUrl}/pricing`,
+      cancel_url: `${appUrl}/pricing`,
       subscription_data: {
         metadata: { companyId: input.companyId, planId: input.planId },
       },
@@ -51,7 +52,7 @@ export class StripeService {
   async retrievecharge(customerId: string) {
     const charges = await this.stripe.charges.list({
       customer: customerId,
-      limit: 10, 
+      limit: 10,
     });
 
     const charge = charges.data.find(c => c.paid && !c.refunded);
@@ -60,10 +61,7 @@ export class StripeService {
   }
 
   constructWebhookEvent(body: Buffer, signature: string) {
-    return this.stripe.webhooks.constructEvent(
-      body,
-      signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
-    );
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
+    return this.stripe.webhooks.constructEvent(body, signature, webhookSecret);
   }
 }

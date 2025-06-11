@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 
 export type SubscriptionDocument = Subscription & Document;
 
-@Schema({ timestamps: true }) 
+@Schema({ timestamps: true })
 export class Subscription {
   @Prop({ type: Types.ObjectId, ref: 'Company', required: true })
   companyId!: Types.ObjectId;
@@ -20,10 +20,10 @@ export class Subscription {
   @Prop({ required: false })
   chargeId?: string;
 
-  @Prop({ required: false }) 
+  @Prop({ required: false })
   startAt!: Date;
 
-  @Prop({ required: false }) 
+  @Prop({ required: false })
   endAt!: Date;
 
   @Prop({ required: true, enum: ['active', 'failed', 'cancelled'] })

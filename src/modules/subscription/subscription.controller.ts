@@ -1,17 +1,18 @@
 import {
-  Controller,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
   Query,
 } from '@nestjs/common';
-import { SubscriptionService } from './subscription.service';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
-import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { SubscriptionService } from './subscription.service';
 
 @ApiTags('subscriptions')
 @Controller('subscriptions')
@@ -22,8 +23,14 @@ export class SubscriptionController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Create a new subscription' })
   @ApiBody({ type: CreateSubscriptionDto })
-  @ApiResponse({ status: 201, description: 'Subscription created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - invalid plan or pricing' })
+  @ApiResponse({
+    status: 201,
+    description: 'Subscription created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid plan or pricing',
+  })
   @ApiResponse({ status: 404, description: 'Plan or Company not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async create(@Body() dto: CreateSubscriptionDto) {
@@ -32,23 +39,29 @@ export class SubscriptionController {
 
   @Post(':companyId/retry-payment')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Generate Billing Portal URL for retry payment after failure' })
-  @ApiResponse({ status: 200, description: 'Billing portal URL generated successfully' })
-  @ApiResponse({ status: 404, description: 'No failed subscription found for this company' })
+  @ApiOperation({
+    summary: 'Generate Billing Portal URL for retry payment after failure',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Billing portal URL generated successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No failed subscription found for this company',
+  })
   async generateBillingPortalUrl(@Param('companyId') companyId: string) {
-    const url = await this.subscriptionService.generateBillingPortalUrl(companyId);
+    const url =
+      await this.subscriptionService.generateBillingPortalUrl(companyId);
     return { url };
   }
-
 
   @Patch('change')
   @ApiOperation({ summary: 'Change subscription plan' })
   @ApiResponse({ status: 200, description: 'Plan changed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request' })
   @ApiResponse({ status: 404, description: 'Subscription or Plan not found' })
-  async changePlan(
-    @Body() dto: { companyId: string; planId: string }
-  ) {
+  async changePlan(@Body() dto: { companyId: string; planId: string }) {
     return await this.subscriptionService.changePlan(dto.companyId, dto.planId);
   }
 
@@ -58,30 +71,32 @@ export class SubscriptionController {
   @ApiResponse({ status: 404, description: 'Active subscription not found' })
   @ApiResponse({ status: 500, description: 'Internal error during downgrade' })
   async downgradeToFree(@Param('companyId') companyId: string) {
-    return await this.subscriptionService.downgradeToFree(companyId);
+    await this.subscriptionService.downgradeToFree(companyId);
   }
-
 
   @Get()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'List all subscriptions (admin use)' })
-  @ApiResponse({ status: 200, description: 'Subscriptions list retrieved successfully' })
-  async getAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20
-  ) {
+  @ApiResponse({
+    status: 200,
+    description: 'Subscriptions list retrieved successfully',
+  })
+  async getAll(@Query('page') page = 1, @Query('limit') limit = 20) {
     return await this.subscriptionService.getAll(page, limit);
   }
 
   @Get(':companyId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get subscription by company ID' })
-  @ApiResponse({ status: 200, description: 'Subscription retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'Subscription not found for company' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription retrieved successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Subscription not found for company',
+  })
   async getByCompany(@Param('companyId') companyId: string) {
     return await this.subscriptionService.getByCompany(companyId);
   }
-
-
-
 }

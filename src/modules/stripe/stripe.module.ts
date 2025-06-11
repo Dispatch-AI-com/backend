@@ -1,7 +1,8 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
+
+import { SubscriptionModule } from '../subscription/subscription.module';
 import { StripeService } from './stripe.service';
 import { StripeWebhookController } from './stripe-webhook.controller';
-import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
   imports: [forwardRef(() => SubscriptionModule)],

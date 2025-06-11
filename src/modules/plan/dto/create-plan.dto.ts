@@ -28,7 +28,7 @@ export class PricingDto {
   price!: number;
 
   @IsString()
-  stripePriceId!: string; 
+  stripePriceId!: string;
 }
 
 export class FeaturesDto {

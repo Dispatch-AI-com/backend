@@ -8,18 +8,16 @@ import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
-
 import { ServiceModule } from '@/modules/service/service.module';
 import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
 import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 import { ServiceLocationMappingModule } from '@/modules/service-location-mapping/service-location-mapping.module';
-
+import { StripeModule } from '@/modules/stripe/stripe.module';
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
 
-import { SubscriptionModule } from '@/modules/subscription/subscription.module';
-import { StripeModule } from '@/modules/stripe/stripe.module';
 import { CompanyModule } from './company/company.module';
 
 @Module({
@@ -43,7 +41,7 @@ import { CompanyModule } from './company/company.module';
     ServiceLocationMappingModule,
     SubscriptionModule,
     StripeModule,
-    CompanyModule
+    CompanyModule,
   ],
 })
 export class AppModule {}

@@ -3,8 +3,8 @@ import 'dotenv/config';
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import morgan from 'morgan';
 import * as express from 'express';
+import morgan from 'morgan';
 
 import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter';
 import { setupSwagger } from '@/config/swagger.config';

@@ -1,17 +1,20 @@
 import {
   Controller,
-  Post,
-  Req,
-  Res,
   Headers,
   HttpCode,
   Logger,
+  Post,
+  Req,
+  Res,
 } from '@nestjs/common';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
-import { StripeService } from './stripe.service';
-import { SubscriptionService } from '../subscription/subscription.service';
 
+import { SubscriptionService } from '../subscription/subscription.service';
+import { StripeService } from './stripe.service';
+
+@ApiTags('Stripe Webhooks')
 @Controller('webhooks')
 export class StripeWebhookController {
   private readonly logger = new Logger(StripeWebhookController.name);
@@ -21,6 +24,7 @@ export class StripeWebhookController {
     private readonly subscriptionService: SubscriptionService,
   ) {}
 
+  @ApiOkResponse({ description: 'Stripe webhook received' })
   @Post('stripe')
   @HttpCode(200)
   async handleStripeWebhook(
@@ -31,10 +35,22 @@ export class StripeWebhookController {
     let event: Stripe.Event;
 
     try {
-      event = this.stripeService.constructWebhookEvent(req.body, signature);
-    } catch (err: any) {
-      this.logger.error('❌ Stripe signature verification failed:', err.message);
-      return res.status(400).send(`Webhook Error: ${err.message}`);
+      event = this.stripeService.constructWebhookEvent(
+        req.body as Buffer,
+        signature,
+      );
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        this.logger.error(
+          '❌ Stripe signature verification failed:',
+          err.message,
+        );
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+      }
+      this.logger.error(
+        '❌ Stripe signature verification failed: unknown error',
+      );
+      return res.status(400).send(`Webhook Error`);
     }
 
     this.logger.log(`✅ Stripe Event Received: ${event.type}`);
@@ -44,7 +60,7 @@ export class StripeWebhookController {
     try {
       await this.processStripeEvent(event);
     } catch (err) {
-      this.logger.error(`❌ Failed to process event: ${event.id}`, err);
+      this.logger.error(`❌ Failed to process event: ${String(event.id)}`, err);
     }
   }
 
@@ -65,11 +81,11 @@ export class StripeWebhookController {
       case 'invoice.payment_succeeded':
         await this.handlePaymentSucceeded(event);
         break;
-      
+
       case 'customer.subscription.deleted':
         await this.handleSubscriptionDeleted(event);
         break;
-        
+
       default:
         this.logger.log(`Unhandled event type: ${event.type}`);
     }
@@ -79,17 +95,13 @@ export class StripeWebhookController {
     const session = event.data.object as Stripe.Checkout.Session;
     const subscriptionId = session.subscription as string;
 
-    const subscription = await this.stripeService.retrieveSubscription(subscriptionId);
-    if (!subscription) {
-      this.logger.warn(`Subscription not found for ID: ${subscriptionId}`);
-      return;
-    }
+    const subscription =
+      await this.stripeService.retrieveSubscription(subscriptionId);
 
-    const companyId = subscription.metadata?.companyId as string;
-    const planId = subscription.metadata?.planId as string;
+    const { companyId, planId } = subscription.metadata;
     const stripeCustomerId = subscription.customer as string;
 
-    const chargeId = await this.stripeService.retrievecharge(stripeCustomerId) as string;
+    const chargeId = await this.stripeService.retrievecharge(stripeCustomerId);
     if (!chargeId) {
       this.logger.warn(`No charge found for customer: ${stripeCustomerId}`);
       return;
@@ -101,8 +113,16 @@ export class StripeWebhookController {
     }
 
     try {
-      await this.subscriptionService.activateSubscription(companyId, planId, subscriptionId, stripeCustomerId, chargeId);
-      this.logger.log(`✅ Subscription ${subscriptionId} activated for company ${companyId}`);
+      await this.subscriptionService.activateSubscription(
+        companyId,
+        planId,
+        subscriptionId,
+        stripeCustomerId,
+        chargeId,
+      );
+      this.logger.log(
+        `✅ Subscription ${subscriptionId} activated for company ${companyId}`,
+      );
     } catch (error) {
       this.logger.error(`❌ Failed to activate subscription`, error);
     }
@@ -112,24 +132,35 @@ export class StripeWebhookController {
     const stripeSub = event.data.object as Stripe.Subscription;
 
     if (stripeSub.items.data.length !== 1) {
-      this.logger.warn(`Unexpected multiple subscription items for ${stripeSub.id}`);
+      this.logger.warn(
+        `Unexpected multiple subscription items for ${stripeSub.id}`,
+      );
       return;
     }
 
     const newPriceId = stripeSub.items.data[0].price.id;
-    this.logger.log(`✅ newPriceId: ${newPriceId} for subscription ${stripeSub.id}`);
+    this.logger.log(
+      `✅ newPriceId: ${newPriceId} for subscription ${stripeSub.id}`,
+    );
     try {
-      await this.subscriptionService.updatePlanByWebhook(stripeSub.id, newPriceId);
+      await this.subscriptionService.updatePlanByWebhook(
+        stripeSub.id,
+        newPriceId,
+      );
       this.logger.log(`✅ Subscription ${stripeSub.id} plan updated`);
     } catch (err) {
-      this.logger.error(`❌ Failed to update plan for subscription ${stripeSub.id}`, err);
+      this.logger.error(
+        `❌ Failed to update plan for subscription ${stripeSub.id}`,
+        err,
+      );
     }
   }
 
   private async handlePaymentFailed(event: Stripe.Event) {
     const invoice = event.data.object as Stripe.Invoice;
 
-    const subscriptionId = invoice?.parent?.subscription_details?.subscription as string;
+    const subscriptionId = invoice.parent?.subscription_details
+      ?.subscription as string;
 
     if (!subscriptionId) {
       this.logger.error('No subscriptionId found in payment_failed webhook');
@@ -139,35 +170,55 @@ export class StripeWebhookController {
     this.logger.warn(`❌ Payment failed for subscription: ${subscriptionId}`);
 
     try {
-      await this.subscriptionService.updateStatusByWebhook(subscriptionId, 'failed');
-      this.logger.log(`✅ Subscription ${subscriptionId} status updated to failed`);
+      await this.subscriptionService.updateStatusByWebhook(
+        subscriptionId,
+        'failed',
+      );
+      this.logger.log(
+        `✅ Subscription ${subscriptionId} status updated to failed`,
+      );
     } catch (err) {
-      this.logger.error(`❌ Failed to update subscription status for ${subscriptionId}`, err);
+      this.logger.error(
+        `❌ Failed to update subscription status for ${subscriptionId}`,
+        err,
+      );
     }
   }
 
   private async handlePaymentSucceeded(event: Stripe.Event) {
     const invoice = event.data.object as Stripe.Invoice;
-    const subscriptionId = invoice?.parent?.subscription_details?.subscription as string;
+    const subscriptionId = invoice.parent?.subscription_details
+      ?.subscription as string;
 
     if (!subscriptionId) {
       this.logger.error('No subscriptionId found in payment_succeeded webhook');
       return;
     }
 
-    const check = await this.subscriptionService.findBySuscriptionId(subscriptionId);
+    const check =
+      await this.subscriptionService.findBySuscriptionId(subscriptionId);
     if (!check) {
-      this.logger.warn(`[Webhook] ⚠️ Subscription ${subscriptionId} not found. Probably not created yet. Skipping.`);
-      return; 
+      this.logger.warn(
+        `[Webhook] ⚠️ Subscription ${subscriptionId} not found. Probably not created yet. Skipping.`,
+      );
+      return;
     }
 
     this.logger.log(`✅ Payment succeeded for subscription: ${subscriptionId}`);
 
     try {
-      await this.subscriptionService.updateStatusByWebhook(subscriptionId, 'active');
-      this.logger.log(`✅ Subscription ${subscriptionId} status updated to active`);
+      await this.subscriptionService.updateStatusByWebhook(
+        subscriptionId,
+        'active',
+      );
+      this.logger.log(
+        `✅ Subscription ${subscriptionId} status updated to active`,
+      );
     } catch (err) {
-      this.logger.error(`❌ Failed to update subscription status for ${subscriptionId}`, err);
+      this.logger.error(
+        `❌ Failed to update subscription status for ${subscriptionId}`,
+        err,
+      );
     }
   }
 
@@ -178,10 +229,18 @@ export class StripeWebhookController {
     this.logger.log(`Subscription deleted: ${subscriptionId}`);
 
     try {
-      await this.subscriptionService.updateStatusByWebhook(subscriptionId, 'cancelled');
-      this.logger.log(`✅ Subscription ${subscriptionId} status updated to cancelled`);
+      await this.subscriptionService.updateStatusByWebhook(
+        subscriptionId,
+        'cancelled',
+      );
+      this.logger.log(
+        `✅ Subscription ${subscriptionId} status updated to cancelled`,
+      );
     } catch (err) {
-      this.logger.error(`❌ Failed to update subscription status for ${subscriptionId}`, err);
+      this.logger.error(
+        `❌ Failed to update subscription status for ${subscriptionId}`,
+        err,
+      );
     }
   }
 }

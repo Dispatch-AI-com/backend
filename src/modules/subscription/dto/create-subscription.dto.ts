@@ -1,4 +1,4 @@
-import { IsString, IsMongoId } from 'class-validator';
+import { IsMongoId, IsString } from 'class-validator';
 
 export class CreateSubscriptionDto {
   @IsMongoId()
