@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+import { EUserRole } from '@/common/constants/user.constant';
+
 import { UserStatus } from '../enum/userStatus.enum';
 
 @Schema({ timestamps: true })
@@ -39,8 +41,8 @@ export class User extends Document {
   @Prop()
   statusReason!: string;
 
-  @Prop({ default: 'user' })
-  role!: string;
+  @Prop({ default: EUserRole.user })
+  role!: EUserRole;
 }
 
 export type UserDocument = User & Document;
