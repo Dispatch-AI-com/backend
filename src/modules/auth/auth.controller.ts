@@ -1,10 +1,11 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { plainToInstance } from 'class-transformer';
 
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
-import { User } from '@/modules/user/schema/user.schema';
+import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -37,9 +38,14 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'User already exists' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   @Post('signup')
-  async createUser(@Body() createUserDto: CreateUserDto): Promise<User> {
-    const created = await this.authService.createUser(createUserDto);
-    return created;
+  async createUser(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<{ user: UserResponseDto; token: string }> {
+    const { user, token } = await this.authService.createUser(createUserDto);
+    const safeUser = plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
+    return { user: safeUser, token };
   }
 
   @ApiOperation({
@@ -63,7 +69,11 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
-  ): Promise<{ user: User; token: string }> {
-    return this.authService.login(loginDto);
+  ): Promise<{ user: UserResponseDto; token: string }> {
+    const { user, token } = await this.authService.login(loginDto);
+    const safeUser = plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
+    return { user: safeUser, token };
   }
 }
