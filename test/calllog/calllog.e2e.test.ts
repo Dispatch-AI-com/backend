@@ -275,8 +275,7 @@ describe('CallLogController (e2e)', () => {
         .send({
           speakerType: 'agent',
           text: 'Test chunk',
-          startAt: 0,
-          endAt: 1000
+          startAt: 0
         });
 
       // Delete the calllog

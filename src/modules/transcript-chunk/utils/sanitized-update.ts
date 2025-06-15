@@ -30,13 +30,6 @@ export function sanitizeTranscriptChunkUpdate(
     update.startAt = dto.startAt;
   }
 
-  if (dto.endAt !== undefined) {
-    if (typeof dto.endAt !== 'number' || dto.endAt < 0) {
-      throw new Error('End time must be a non-negative number');
-    }
-    update.endAt = dto.endAt;
-  }
-
   if (transcriptId !== undefined && transcriptId !== '') {
     if (!Types.ObjectId.isValid(transcriptId)) {
       throw new Error('Invalid transcript ID');

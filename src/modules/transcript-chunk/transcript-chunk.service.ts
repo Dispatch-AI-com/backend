@@ -22,7 +22,6 @@ interface TranscriptChunkFilter {
   transcriptId: Types.ObjectId;
   speakerType?: { $eq: 'AI' | 'User' };
   startAt?: { $gte: number };
-  endAt?: { $lte: number };
 }
 
 @Injectable()
@@ -51,14 +50,12 @@ export class TranscriptChunkService {
 
     const overlap = await this.transcriptChunkModel.findOne({
       transcriptId: new Types.ObjectId(transcriptId),
-      $or: [
-        { startAt: { $lt: dto.endAt, $gte: dto.startAt } },
-        { endAt: { $gt: dto.startAt, $lte: dto.endAt } },
-        { startAt: { $lte: dto.startAt }, endAt: { $gte: dto.endAt } },
-      ],
+      startAt: dto.startAt,
     });
     if (overlap) {
-      throw new BadRequestException('Time range overlaps with another chunk.');
+      throw new BadRequestException(
+        'A chunk with the same start time already exists.',
+      );
     }
 
     const chunk = await this.transcriptChunkModel.create(
@@ -84,7 +81,7 @@ export class TranscriptChunkService {
       );
     }
 
-    const { speakerType, startAt, endAt, page = 1, limit = 10 } = query;
+    const { speakerType, startAt, page = 1, limit = 10 } = query;
     const skip = (page - 1) * limit;
 
     const filter: TranscriptChunkFilter = {
@@ -99,11 +96,6 @@ export class TranscriptChunkService {
     // Validate and sanitize startAt
     if (startAt !== undefined && typeof startAt === 'number') {
       filter.startAt = { $gte: startAt };
-    }
-
-    // Validate and sanitize endAt
-    if (endAt !== undefined && typeof endAt === 'number') {
-      filter.endAt = { $lte: endAt };
     }
 
     const chunks = await this.transcriptChunkModel
@@ -189,21 +181,22 @@ export class TranscriptChunkService {
       );
     }
 
-    // Overlap check for each chunk
-    for (const dto of createDtos) {
-      const overlap = await this.transcriptChunkModel.findOne({
-        transcriptId: new Types.ObjectId(transcriptId),
-        $or: [
-          { startAt: { $lt: dto.endAt, $gte: dto.startAt } },
-          { endAt: { $gt: dto.startAt, $lte: dto.endAt } },
-          { startAt: { $lte: dto.startAt }, endAt: { $gte: dto.endAt } },
-        ],
-      });
-      if (overlap) {
-        throw new BadRequestException(
-          'Time range overlaps with another chunk.',
-        );
-      }
+    // Check for duplicate startAt values
+    const startTimes = createDtos.map(dto => dto.startAt);
+    const uniqueStartTimes = new Set(startTimes);
+    if (startTimes.length !== uniqueStartTimes.size) {
+      throw new BadRequestException('Duplicate start times are not allowed');
+    }
+
+    // Check for existing chunks with the same startAt
+    const existingChunks = await this.transcriptChunkModel.find({
+      transcriptId: new Types.ObjectId(transcriptId),
+      startAt: { $in: startTimes },
+    });
+    if (existingChunks.length > 0) {
+      throw new BadRequestException(
+        'Some chunks with the same start times already exist',
+      );
     }
 
     const chunks = await this.transcriptChunkModel.insertMany(
@@ -212,7 +205,6 @@ export class TranscriptChunkService {
         speakerType: dto.speakerType,
         text: dto.text,
         startAt: dto.startAt,
-        endAt: dto.endAt,
       })),
     );
 
@@ -227,7 +219,6 @@ export class TranscriptChunkService {
       speakerType: obj.speakerType,
       text: obj.text,
       startAt: obj.startAt,
-      endAt: obj.endAt,
       createdAt: obj.createdAt,
       updatedAt: obj.updatedAt,
     };

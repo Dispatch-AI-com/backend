@@ -16,9 +16,4 @@ export class CreateTranscriptChunkDto {
   @IsNumber()
   @Min(0)
   startAt!: number;
-
-  @ApiProperty({ description: 'End time in seconds' })
-  @IsNumber()
-  @Min(0)
-  endAt!: number;
 }

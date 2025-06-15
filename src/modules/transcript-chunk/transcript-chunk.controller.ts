@@ -34,18 +34,21 @@ export class TranscriptChunkController {
   ) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create multiple transcript chunks' })
+  @ApiOperation({ summary: 'Create transcript chunk(s)' })
   @ApiCreatedResponse({
-    description: 'The transcript chunks have been successfully created.',
+    description: 'The transcript chunk(s) have been successfully created.',
     type: [TranscriptChunk],
   })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Transcript not found' })
-  createMany(
+  async create(
     @Param('transcriptId') transcriptId: string,
-    @Body() createDtos: CreateTranscriptChunkDto[],
-  ): Promise<ITranscriptChunk[]> {
-    return this.transcriptChunkService.createMany(transcriptId, createDtos);
+    @Body() body: CreateTranscriptChunkDto | CreateTranscriptChunkDto[],
+  ): Promise<ITranscriptChunk | ITranscriptChunk[]> {
+    if (Array.isArray(body)) {
+      return this.transcriptChunkService.createMany(transcriptId, body);
+    }
+    return this.transcriptChunkService.create(transcriptId, body);
   }
 
   @Get()

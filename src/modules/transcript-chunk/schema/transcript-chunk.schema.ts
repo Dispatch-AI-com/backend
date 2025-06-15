@@ -18,9 +18,6 @@ export class TranscriptChunk extends Document {
 
   @Prop({ type: Number, required: true })
   startAt!: number;
-
-  @Prop({ type: Number, required: true })
-  endAt!: number;
 }
 
 export const TranscriptChunkSchema =

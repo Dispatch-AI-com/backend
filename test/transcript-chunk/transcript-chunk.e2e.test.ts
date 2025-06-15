@@ -36,7 +36,7 @@ describe('TranscriptChunk (e2e)', () => {
         summary: 'Test summary',
       });
     transcriptId = transcriptRes.body._id;
-  });
+  }, 30000);
 
   afterAll(async () => {
     await app.close();
@@ -50,19 +50,48 @@ describe('TranscriptChunk (e2e)', () => {
           speakerType: 'AI',
           text: 'Hello, this is AI.',
           startAt: 0,
-          endAt: 60,
         },
         {
           speakerType: 'User',
           text: 'Hi, this is user.',
           startAt: 61,
-          endAt: 120,
         },
       ]);
     expect(res.status).toBe(201);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(2);
     chunkId = res.body[0]._id;
+  });
+
+  it('should not allow creating chunk with duplicate startAt', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/transcripts/${transcriptId}/chunks`)
+      .send({
+        speakerType: 'AI',
+        text: 'Duplicate start time test',
+        startAt: 0, // Same startAt as the first chunk
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('A chunk with the same start time already exists.');
+  });
+
+  it('should not allow creating multiple chunks with duplicate startAt', async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/transcripts/${transcriptId}/chunks`)
+      .send([
+        {
+          speakerType: 'AI',
+          text: 'First chunk',
+          startAt: 100,
+        },
+        {
+          speakerType: 'User',
+          text: 'Second chunk with same start time',
+          startAt: 100, // Duplicate startAt
+        },
+      ]);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Duplicate start times are not allowed');
   });
 
   it('should get all chunks for a transcript', async () => {
@@ -76,26 +105,11 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should get chunks with filters', async () => {
     const res = await request(app.getHttpServer())
-      .get(`/transcripts/${transcriptId}/chunks?speakerType=AI&startAt=0&endAt=60`);
+      .get(`/transcripts/${transcriptId}/chunks?speakerType=AI&startAt=0`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(1);
     expect(res.body[0].speakerType).toBe('AI');
-  });
-
-  it('should not allow overlapping time ranges', async () => {
-    const res = await request(app.getHttpServer())
-      .post(`/transcripts/${transcriptId}/chunks`)
-      .send([
-        {
-          speakerType: 'User',
-          text: 'Overlap test',
-          startAt: 30, // overlaps with previous
-          endAt: 90,
-        },
-      ]);
-    expect(res.status).toBe(400);
-    expect(res.body.message).toContain('Time range overlaps');
   });
 
   it('should get a single chunk', async () => {

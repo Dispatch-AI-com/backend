@@ -20,13 +20,6 @@ export class QueryTranscriptChunkDto {
   @Type(() => Number)
   startAt?: number;
 
-  @ApiPropertyOptional({ description: 'End time in seconds' })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Type(() => Number)
-  endAt?: number;
-
   @ApiPropertyOptional({ description: 'Page number (1-based)' })
   @IsOptional()
   @IsNumber()
