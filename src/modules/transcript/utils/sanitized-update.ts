@@ -12,13 +12,17 @@ export async function sanitizedUpdate(
   const existing = await transcriptModel.findById(id);
   if (!existing) throw new NotFoundException('Transcript not found');
 
-  // Only update summary field, preserve calllogid
-  const sanitizedData = {
+  // Update summary and keyPoints, preserve calllogid
+  const sanitizedData: Partial<Transcript> = {
     summary:
       typeof dto.summary === 'string' && dto.summary.trim() !== ''
         ? dto.summary.trim()
         : existing.summary,
   };
+
+  if (dto.keyPoints !== undefined) {
+    sanitizedData.keyPoints = dto.keyPoints;
+  }
 
   const updated = await transcriptModel.findByIdAndUpdate(id, sanitizedData, {
     new: true,
