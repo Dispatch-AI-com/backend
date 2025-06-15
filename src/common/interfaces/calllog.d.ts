@@ -20,6 +20,9 @@ export interface ICallLogPagination {
   page: number;
   limit: number;
   total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export interface ICallLogResponse {
@@ -30,4 +33,24 @@ export interface ICallLogResponse {
 export interface ICallLogMetrics {
   totalCalls: number;
   liveCalls: number;
+}
+
+export interface ICallLogSummary {
+  totalCalls: number;
+  completedCalls: number;
+  missedCalls: number;
+  followUpCalls: number;
+  averageCallDuration: number;
+}
+
+export interface FindAllOptions {
+  userId: string;
+  status?: CallLogStatus;
+  search?: string;
+  startAtFrom?: string;
+  startAtTo?: string;
+  sort?: string;
+  page?: number;
+  limit?: number;
+  fields?: Record<string, 1>;
 }

@@ -19,7 +19,7 @@ import {
 } from '@nestjs/swagger';
 
 import { CallLogStatus } from '@/common/constants/calllog.constant';
-import { ICallLog } from '@/common/interfaces/calllog';
+import { ICallLog, ICallLogSummary } from '@/common/interfaces/calllog';
 
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
@@ -38,8 +38,24 @@ export class CalllogController {
   @ApiQuery({ name: 'startAtFrom', required: false, type: String })
   @ApiQuery({ name: 'startAtTo', required: false, type: String })
   @ApiQuery({ name: 'sort', required: false, enum: ['newest', 'oldest'] })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 10, max: 50)',
+  })
+  @ApiQuery({
+    name: 'fields',
+    required: false,
+    type: String,
+    description: 'Comma-separated fields to return (e.g., "id,status,startAt")',
+  })
   @ApiResponse({ status: 200, description: 'Return paginated call logs' })
   async findAll(
     @Param('userId') userId: string,
@@ -50,10 +66,31 @@ export class CalllogController {
     @Query('sort') sort?: 'newest' | 'oldest',
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('fields') fields?: string,
   ): Promise<{
     data: ICallLog[];
-    pagination: { page: number; limit: number; total: number };
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+    };
   }> {
+    const validatedPage = Math.max(1, typeof page === 'number' ? page : 1);
+    const validatedLimit = Math.min(
+      50,
+      Math.max(1, typeof limit === 'number' ? limit : 10),
+    );
+
+    const selectedFields = fields?.length
+      ? fields.split(',').reduce<Record<string, 1>>((acc, field) => {
+          acc[field.trim()] = 1;
+          return acc;
+        }, {})
+      : undefined;
+
     return this.calllogService.findAll({
       userId,
       status,
@@ -61,9 +98,21 @@ export class CalllogController {
       startAtFrom,
       startAtTo,
       sort,
-      page,
-      limit,
+      page: validatedPage,
+      limit: validatedLimit,
+      fields: selectedFields,
     });
+  }
+
+  @Get('summary')
+  @ApiOperation({ summary: 'Get call logs summary' })
+  @ApiResponse({ status: 200, description: 'Return call logs summary' })
+  async getSummary(
+    @Param('userId') userId: string,
+    @Query('startAtFrom') startAtFrom?: string,
+    @Query('startAtTo') startAtTo?: string,
+  ): Promise<ICallLogSummary> {
+    return this.calllogService.getSummary(userId, startAtFrom, startAtTo);
   }
 
   @Get(':calllogId')
@@ -96,7 +145,12 @@ export class CalllogController {
     totalCalls: number;
     liveCalls: number;
   }> {
-    return this.calllogService.getTodayMetrics(userId);
+    const metrics = await this.calllogService.getTodayMetrics(userId);
+    return {
+      totalCalls:
+        typeof metrics.totalCalls === 'number' ? metrics.totalCalls : 0,
+      liveCalls: typeof metrics.liveCalls === 'number' ? metrics.liveCalls : 0,
+    };
   }
 
   @Post()

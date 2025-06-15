@@ -9,7 +9,7 @@ import { CalllogService } from '../../src/modules/calllog/calllog.service';
 
 // Mock conversation chunks for each transcript
 const mockChunks: CreateTranscriptChunkDto[][] = [
-  // First conversation (about service hours)
+  // Service hours inquiry
   [
     {
       speakerType: 'User' as const,
@@ -32,7 +32,7 @@ const mockChunks: CreateTranscriptChunkDto[][] = [
       startAt: 13,
     },
   ],
-  // Second conversation (about water damage)
+  // Water damage emergency
   [
     {
       speakerType: 'User' as const,
@@ -55,11 +55,524 @@ const mockChunks: CreateTranscriptChunkDto[][] = [
       startAt: 13,
     },
   ],
-  // Third conversation (Missed call)
+  // Missed call
   [
     { speakerType: 'User' as const, text: '...', startAt: 0 },
     { speakerType: 'AI' as const, text: 'Sorry, we missed your call. Please try again later.', startAt: 2 },
   ],
+  // Pricing inquiry
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'Hi, I\'d like to know your service rates.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'d be happy to discuss our service packages. We have several options available.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'Could you send me a detailed quote?',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll prepare that for you right away.',
+      startAt: 12,
+    },
+  ],
+  // Emergency repair
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'My system has completely failed!',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I understand this is critical. Let me help you right away.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'It\'s affecting my entire operation.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'m dispatching our emergency response team immediately.',
+      startAt: 12,
+    },
+  ],
+  // Maintenance inquiry
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I need to schedule regular maintenance.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'We offer several maintenance packages. Let me explain the options.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'What\'s included in the quarterly plan?',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'The quarterly plan includes comprehensive system checks and preventive maintenance.',
+      startAt: 12,
+    },
+  ],
+  // Missed call about appointment
+  [
+    { speakerType: 'User' as const, text: '...', startAt: 0 },
+    { speakerType: 'AI' as const, text: 'Missed call during busy hours. No voicemail left.', startAt: 2 },
+  ],
+  // New installation request
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I need a new system installed.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you with that. What are your requirements?',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'I need it installed by next month.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Let\'s schedule a site survey first to assess the requirements.',
+      startAt: 12,
+    },
+  ],
+  // Service follow-up
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'The service last week was excellent.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Thank you for the feedback! Would you like to discuss a maintenance plan?',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'Yes, that would be helpful.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you set that up right away.',
+      startAt: 12,
+    },
+  ],
+  // System failure emergency
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'My system is malfunctioning badly!',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I understand this is urgent. Let me help you immediately.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'It\'s affecting my business operations.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'m dispatching our emergency team right now.',
+      startAt: 12,
+    },
+  ],
+  // Missed call about rescheduling
+  [
+    { speakerType: 'User' as const, text: '...', startAt: 0 },
+    { speakerType: 'AI' as const, text: 'Missed call about rescheduling. No message left.', startAt: 2 },
+  ],
+  // Service feedback
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I wanted to provide some feedback on your service.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'We appreciate your feedback. Please go ahead.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'The technician was very professional and thorough.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Thank you for your kind words. We\'re always looking to improve.',
+      startAt: 12,
+    },
+  ],
+  // Feature upgrade request
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I\'m interested in upgrading my system.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'d be happy to explain our upgrade options.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'What new features are available?',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Let me walk you through the latest features.',
+      startAt: 12,
+    },
+  ],
+  // Maintenance confirmation
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I need to confirm my maintenance appointment.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you with that. What\'s your appointment date?',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'It\'s scheduled for next Tuesday.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll send you the preparation instructions.',
+      startAt: 12,
+    },
+  ],
+  // Missed call about pricing
+  [
+    { speakerType: 'User' as const, text: '...', startAt: 0 },
+    { speakerType: 'AI' as const, text: 'Missed call about pricing. No message left.', startAt: 2 },
+  ],
+  // New customer inquiry
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I\'m a new customer and need information.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Welcome! I\'d be happy to explain our services.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'What services do you offer?',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Let me walk you through our service offerings.',
+      startAt: 12,
+    },
+  ],
+  // Service quality concerns
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I have some concerns about the recent service.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'m sorry to hear that. Let me help address your concerns.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'The system isn\'t working as expected.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll arrange for a follow-up service right away.',
+      startAt: 12,
+    },
+  ],
+  // Critical system repair
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'My system has failed completely!',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I understand this is critical. Let me help immediately.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'It\'s affecting my entire operation.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'m dispatching our repair team right now.',
+      startAt: 12,
+    },
+  ],
+  // Missed call about status
+  [
+    { speakerType: 'User' as const, text: '...', startAt: 0 },
+    { speakerType: 'AI' as const, text: 'Missed call about service status. No message left.', startAt: 2 },
+  ],
+  // Maintenance scheduling
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I need to schedule maintenance.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you with that. What are your needs?',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'Regular quarterly maintenance.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you set that up.',
+      startAt: 12,
+    },
+  ],
+  // Urgent system failure
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'My system has failed!',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I understand this is urgent. Let me help right away.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'It\'s a critical issue.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'m arranging immediate response.',
+      startAt: 12,
+    },
+  ],
+  // New installation booking
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I need a new system installed.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you with that. What are your requirements?',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'I need it installed soon.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Let\'s schedule an installation date.',
+      startAt: 12,
+    },
+  ],
+  // Missed call about confirmation
+  [
+    { speakerType: 'User' as const, text: '...', startAt: 0 },
+    { speakerType: 'AI' as const, text: 'Missed call about appointment confirmation. No message left.', startAt: 2 },
+  ],
+  // Service feedback discussion
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I have some feedback about the service.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'We value your feedback. Please share your thoughts.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'The service was excellent.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Thank you for your kind words.',
+      startAt: 12,
+    },
+  ],
+  // Service completion follow-up
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I wanted to follow up on the recent service.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'How was your experience with our service?',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'Everything is working well now.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Great to hear! Let\'s discuss maintenance.',
+      startAt: 12,
+    },
+  ],
+  // Critical issue emergency
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I have an urgent problem!',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I understand this is urgent. Let me help immediately.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'The system is completely down.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'m dispatching our emergency team right now.',
+      startAt: 12,
+    },
+  ],
+  // Missed call about quote
+  [
+    { speakerType: 'User' as const, text: '...', startAt: 0 },
+    { speakerType: 'AI' as const, text: 'Missed call about pricing quote. No message left.', startAt: 2 },
+  ],
+  // New customer service inquiry
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I\'m interested in your services.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Welcome! Let me explain our services.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'What do you offer?',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Let me walk you through our offerings.',
+      startAt: 12,
+    },
+  ],
+  // Feature upgrade discussion
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I want to upgrade my system.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'d be happy to discuss upgrade options.',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'What new features are available?',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'Let me explain the latest features.',
+      startAt: 12,
+    },
+  ],
+  // Maintenance scheduling
+  [
+    {
+      speakerType: 'User' as const,
+      text: 'I need to schedule maintenance.',
+      startAt: 0,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you with that. What are your needs?',
+      startAt: 4,
+    },
+    {
+      speakerType: 'User' as const,
+      text: 'Regular maintenance service.',
+      startAt: 8,
+    },
+    {
+      speakerType: 'AI' as const,
+      text: 'I\'ll help you set that up.',
+      startAt: 12,
+    },
+  ]
 ];
 
 export async function seedTranscriptChunks(app: INestApplicationContext) {

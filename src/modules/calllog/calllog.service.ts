@@ -13,9 +13,11 @@ import {
   DEFAULT_PAGE,
 } from '@/common/constants/calllog.constant';
 import {
+  FindAllOptions,
   ICallLog,
   ICallLogMetrics,
   ICallLogResponse,
+  ICallLogSummary,
 } from '@/common/interfaces/calllog';
 
 import { Transcript } from '../transcript/schema/transcript.schema';
@@ -25,17 +27,6 @@ import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
 import { sanitizeCallLogUpdate } from './utils/sanitize-update';
-
-interface FindAllOptions {
-  userId: string;
-  status?: CallLogStatus;
-  search?: string;
-  startAtFrom?: string;
-  startAtTo?: string;
-  sort?: (typeof CALLLOG_SORT_OPTIONS)[keyof typeof CALLLOG_SORT_OPTIONS];
-  page?: number;
-  limit?: number;
-}
 
 interface CallLogQuery {
   userId: string;
@@ -82,6 +73,7 @@ export class CalllogService {
     sort = CALLLOG_SORT_OPTIONS.NEWEST,
     page = DEFAULT_PAGE,
     limit = DEFAULT_LIMIT,
+    fields,
   }: FindAllOptions): Promise<ICallLogResponse> {
     const query: CallLogQuery = { userId };
 
@@ -116,7 +108,7 @@ export class CalllogService {
 
     const [callLogs, total] = await Promise.all([
       this.callLogModel
-        .find(query)
+        .find(query, fields)
         .sort({ startAt: sortOrder })
         .skip(skip)
         .limit(limit)
@@ -124,12 +116,19 @@ export class CalllogService {
       this.callLogModel.countDocuments(query),
     ]);
 
+    const totalPages = Math.ceil(total / limit);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+
     return {
       data: callLogs.map(doc => this.convertToICallLog(doc)),
       pagination: {
         page,
         limit,
         total,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
       },
     };
   }
@@ -264,6 +263,72 @@ export class CalllogService {
       }
       throw new NotFoundException(`Calllog with ID ${id} not found`);
     }
+  }
+
+  async getSummary(
+    userId: string,
+    startAtFrom?: string,
+    startAtTo?: string,
+  ): Promise<ICallLogSummary> {
+    const query: CallLogQuery = { userId };
+
+    if (startAtFrom !== undefined || startAtTo !== undefined) {
+      query.startAt = {};
+      if (startAtFrom !== undefined && startAtFrom !== '') {
+        query.startAt.$gte = new Date(startAtFrom);
+      }
+      if (startAtTo !== undefined && startAtTo !== '') {
+        query.startAt.$lte = new Date(startAtTo);
+      }
+    }
+
+    const [
+      totalCalls,
+      completedCalls,
+      missedCalls,
+      followUpCalls,
+      callDurations,
+    ] = await Promise.all([
+      this.callLogModel.countDocuments(query),
+      this.callLogModel.countDocuments({
+        ...query,
+        status: CallLogStatus.Completed,
+      }),
+      this.callLogModel.countDocuments({
+        ...query,
+        status: CallLogStatus.Missed,
+      }),
+      this.callLogModel.countDocuments({
+        ...query,
+        status: CallLogStatus.FollowUp,
+      }),
+      this.callLogModel.aggregate([
+        { $match: query },
+        { $match: { endAt: { $exists: true } } },
+        {
+          $group: {
+            _id: null,
+            totalDuration: {
+              $sum: { $subtract: ['$endAt', '$startAt'] },
+            },
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    const averageCallDuration =
+      callDurations.length > 0
+        ? callDurations[0].totalDuration / callDurations[0].count
+        : 0;
+
+    return {
+      totalCalls,
+      completedCalls,
+      missedCalls,
+      followUpCalls,
+      averageCallDuration,
+    };
   }
 
   private convertToICallLog(doc: CallLogDocument): ICallLog {
