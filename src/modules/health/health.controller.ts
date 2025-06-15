@@ -59,14 +59,4 @@ export class HealthController {
   unauthorized(): never {
     throw new UnauthorizedException('JWT token is invalid or expired');
   }
-
-  @ApiOperation({
-    summary: 'Unauthorized Endpoint',
-    description: 'Simulates an unauthorized access attempt',
-  })
-  @ApiResponse({ status: 401, description: 'JWT token is invalid or expired' })
-  @Get('unauthorized')
-  unauthorized(): never {
-    throw new UnauthorizedException('JWT token is invalid or expired');
-  }
 }
