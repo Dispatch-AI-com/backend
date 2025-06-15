@@ -51,6 +51,22 @@ export class HealthController {
   }
 
   @ApiOperation({
+    summary: 'Test AI ping',
+    description: 'Returns a test message from AI server',
+  })
+  @ApiResponse({ status: 200, description: 'Returns Test message' })
+  @Get('pingAI')
+  ping(): Promise<{
+    status: string;
+    message?: string;
+    timestamp: Date;
+    duration?: number;
+    error?: string;
+  }> {
+    return this.healthService.pingAI();
+  }
+
+  @ApiOperation({
     summary: 'Unauthorized Endpoint',
     description: 'Simulates an unauthorized access attempt',
   })
