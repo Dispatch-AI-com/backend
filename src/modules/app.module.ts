@@ -20,6 +20,8 @@ import { WhisperModule } from '@/modules/whisper/whisper.module';
 
 import { CompanyModule } from './company/company.module';
 
+import { BlogModule } from './blog/blog.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -32,6 +34,7 @@ import { CompanyModule } from './company/company.module';
     LocationModule,
     WhisperModule,
     CalllogModule,
+    BlogModule,
     TranscriptModule,
     TranscriptChunkModule,
     AvailabilityModule,
