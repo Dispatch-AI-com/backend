@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { Company, CompanySchema } from '../company/schema/company.schema';
@@ -15,7 +15,7 @@ import { SubscriptionService } from './subscription.service';
       { name: Plan.name, schema: planSchema },
       { name: Company.name, schema: CompanySchema },
     ]),
-    StripeModule,
+    forwardRef(() => StripeModule),
   ],
   controllers: [SubscriptionController],
   providers: [SubscriptionService],
