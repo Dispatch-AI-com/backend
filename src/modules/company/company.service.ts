@@ -109,7 +109,10 @@ export class CompanyService {
         throw new BadRequestException('Invalid company ID format');
       }
 
-      if (updateCompanyDto.email?.trim() !== '') {
+      if (
+        updateCompanyDto.email !== undefined &&
+        updateCompanyDto.email.trim() !== ''
+      ) {
         const existingCompany = await this.companyModel
           .findOne({
             email: { $eq: updateCompanyDto.email },
@@ -117,7 +120,7 @@ export class CompanyService {
           })
           .exec();
 
-        if (existingCompany && updateCompanyDto.email) {
+        if (existingCompany) {
           throw new ConflictException(
             `Company with email ${updateCompanyDto.email} already exists`,
           );

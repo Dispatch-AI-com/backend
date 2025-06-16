@@ -15,7 +15,7 @@ import { ServiceLocationMappingModule } from '@/modules/service-location-mapping
 import { StripeModule } from '@/modules/stripe/stripe.module';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
-import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
+import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
 
 import { CompanyModule } from './company/company.module';
