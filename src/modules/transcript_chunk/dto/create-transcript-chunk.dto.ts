@@ -22,8 +22,4 @@ export class CreateTranscriptChunkDto {
   @IsDate()
   @Type(() => Date)
   startAt!: Date;
-
-  @IsDate()
-  @Type(() => Date)
-  endAt!: Date;
 }

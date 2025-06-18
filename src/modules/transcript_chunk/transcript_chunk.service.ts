@@ -29,11 +29,6 @@ export class TranscriptChunkService {
         dto.startAt instanceof Date ||
         typeof dto.startAt === 'string' ||
         typeof dto.startAt === 'number'
-      ) ||
-      !(
-        dto.endAt instanceof Date ||
-        typeof dto.endAt === 'string' ||
-        typeof dto.endAt === 'number'
       )
     ) {
       throw new BadRequestException('Invalid input data');
@@ -42,9 +37,8 @@ export class TranscriptChunkService {
     const overlap = await this.chunkModel.findOne({
       transcriptId: { $eq: dto.transcriptId },
       $or: [
-        { startAt: { $lt: dto.endAt, $gte: dto.startAt } },
-        { endAt: { $gt: dto.startAt, $lte: dto.endAt } },
-        { startAt: { $lte: dto.startAt }, endAt: { $gte: dto.endAt } },
+        { startAt: { $lt: dto.startAt } },
+        { startAt: { $lte: dto.startAt } },
       ],
     });
     if (overlap) {

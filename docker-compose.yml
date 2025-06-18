@@ -9,6 +9,7 @@ services:
       - "4000:4000"
     depends_on:
       - mongodb
+      - redis
     env_file:
       - .env
     environment:
@@ -44,6 +45,32 @@ services:
       - "8000:8000"
     volumes:
       - ./ai/app:/app/app
+    depends_on:
+      - redis
+      - mongodb
+    networks:
+      - dispatchai-network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: dispatchai-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    networks:
+      - dispatchai-network
+    depends_on:
+      - api
+    profiles:
+      - tunnel
+
+  redis:
+    image: redis:7-alpine
+    container_name: dispatchai-redis
+    restart: always
+    ports:
+      - "6379:6379"
     networks:
       - dispatchai-network
 
