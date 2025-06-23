@@ -71,9 +71,14 @@ export class AuthController {
     @Body() loginDto: LoginDto,
   ): Promise<{ user: UserResponseDto; token: string }> {
     const { user, token } = await this.authService.login(loginDto);
-    const safeUser = plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
+
+    const safeUser: UserResponseDto = {
+      _id: String(user._id),
+      email: String(user.email),
+      firstName: user.firstName ? String(user.firstName) : undefined,
+      lastName: user.lastName ? String(user.lastName) : undefined,
+      role: user.role,
+    };
     return { user: safeUser, token };
   }
 }
