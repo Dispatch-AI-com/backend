@@ -25,11 +25,24 @@ export class TelephonyController {
     return this.telephonyService.handleVoice(body);
   }
 
+  @Post('gather')
+  @HttpCode(200)
+  @Header('Content-Type', 'text/xml')
+  @ApiOperation({ summary: 'Handle Twilio Gather Webhook' })
+  @ApiResponse({
+    status: 200,
+    description: 'TwiML XML response to control the call',
+    type: String,
+  })
+  async handleGather(@Body() body: VoiceGatherBody): Promise<string> {
+    return this.telephonyService.handleGather(body);
+  }
+
   @Post('status')
   @HttpCode(200)
   @ApiOperation({ summary: 'Handle Twilio Status Callback' })
   @ApiResponse({ status: 200, description: 'OK' })
-  handleStatus(@Body() body: VoiceStatusBody): void {
-    this.telephonyService.handleStatus(body);
+  async handleStatus(@Body() body: VoiceStatusBody): Promise<void> {
+    await this.telephonyService.handleStatus(body);
   }
 }

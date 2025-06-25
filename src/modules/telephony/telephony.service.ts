@@ -11,24 +11,31 @@ import { REDIS_CLIENT } from '@/lib/redis/redis.module';
 import { CallSkeleton, Company, Service } from './types/redis-session';
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
-const SESSION_TTL = 60 * 30; // 30 min
-const LOCK_TTL = 10_000; // 10 s
+const SESSION_TTL = 60 * 30;
 
 @Injectable()
 export class TelephonyService {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
-
-  /* ---------- /voice ---------- */
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
     const key = `call:${CallSid}`;
 
     /* 初始化骨架（仅一次） */
-    if (!(await this.redis.exists(key))) {
+    if ((await this.redis.exists(key)) === 0) {
+      const dummyCompany: Company = { id: 'cmp_demo', name: 'Demo Plumbing' };
+      const dummyServices: Service[] = [
+        {
+          id: 'srv1',
+          name: 'Leak Repair',
+          price: 120,
+          description: 'Fix pipe leaks',
+        },
+        { id: 'srv2', name: 'Drain Cleaning', price: 90 },
+      ];
       //todo: 查询公司和服务
       const skeleton: CallSkeleton = {
         callSid: CallSid,
-        services: [],
-        company: { id: '', name: '' },
+        services: dummyServices,
+        company: dummyCompany,
         user: { userInfo: {} },
         history: [],
         serviceBooked: false,
@@ -39,14 +46,14 @@ export class TelephonyService {
     }
 
     const raw = await this.redis.get(key);
-    if (!raw) return this.buildSayAndGather(CallSid, 'System error.');
+    if (raw === null) return this.buildSayAndGather(CallSid, 'System error.');
 
     const { services = [], company = {} as Company } = JSON.parse(
       raw as string,
     ) as CallSkeleton;
 
     const welcome =
-      services.length && company.name
+      services.length > 0
         ? `Welcome! We are ${company.name}. We provide ${services
             .map((s: Service) => s.name)
             .join(', ')}. How can I help you today?`
@@ -55,27 +62,16 @@ export class TelephonyService {
     return this.buildSayAndGather(CallSid, welcome);
   }
 
-  /* ---------- /gather ---------- */
-  async handleGather({
-    CallSid,
-    SpeechResult = '',
-  }: VoiceGatherBody): Promise<string> {
-    /* 并发锁：重复回调直接忽略 */
-    if (!(await this.redis.set(`lock:${CallSid}`, '1', 'PX', LOCK_TTL, 'NX'))) {
-      return '';
-    }
-
+  handleGather({ CallSid, SpeechResult = '' }: VoiceGatherBody): string {
     // TODO: 调用 AI + 写 history
     const reply = `You said: ${SpeechResult}.`;
     return this.buildSayAndGather(CallSid, reply);
   }
 
-  /* ---------- /status ---------- */
-  async handleStatus({ CallSid, CallStatus }: VoiceStatusBody): Promise<void> {
+  handleStatus({ CallSid, CallStatus }: VoiceStatusBody): void {
     console.log(`[STATUS] CallSid=${CallSid}, status=${CallStatus}`);
   }
 
-  /* ---------- 工具 ---------- */
   private buildSayAndGather(sid: string, text: string): string {
     const vr = new twiml.VoiceResponse();
     vr.say(text);
