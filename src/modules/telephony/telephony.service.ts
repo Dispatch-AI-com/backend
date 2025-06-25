@@ -7,6 +7,7 @@ import {
   VoiceStatusBody,
 } from '@/common/interfaces/twilio-voice-webhook';
 import { REDIS_CLIENT } from '@/lib/redis/redis.module';
+import { winstonLogger } from '@/logger/winston.logger';
 
 import { CallSkeleton, Company, Service } from './types/redis-session';
 
@@ -18,8 +19,6 @@ export class TelephonyService {
   constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
     const key = `call:${CallSid}`;
-
-    /* 初始化骨架（仅一次） */
     if ((await this.redis.exists(key)) === 0) {
       //todo: 查询公司和服务
       const skeleton: CallSkeleton = {
@@ -35,18 +34,20 @@ export class TelephonyService {
       await this.redis.set(key, JSON.stringify(skeleton), 'EX', SESSION_TTL);
     }
 
-    const raw = await this.redis.get(key);
-    if (raw === null) return this.buildSayAndGather(CallSid, 'System error.');
+    let session: CallSkeleton;
+    try {
+      session = JSON.parse(
+        (await this.redis.get(key)) as string,
+      ) as CallSkeleton;
+    } catch (err) {
+      winstonLogger.error(`[STATUS] ${CallSid} → ${err as string}`);
+      return this.buildSayAndGather(CallSid, 'System error.');
+    }
 
-    const { services = [], company = {} as Company } = JSON.parse(
-      raw as string,
-    ) as CallSkeleton;
-
+    const { services, company } = session;
     const welcome =
-      services.length > 0
-        ? `Welcome! We are ${company.name}. We provide ${services
-            .map((s: Service) => s.name)
-            .join(', ')}. How can I help you today?`
+      services.length && company.name
+        ? `Welcome! We are ${company.name}. We provide ${services.map(s => s.name).join(', ')}. How can I help you today?`
         : 'Welcome! How can I help you today?';
 
     return this.buildSayAndGather(CallSid, welcome);
@@ -59,7 +60,10 @@ export class TelephonyService {
   }
 
   handleStatus({ CallSid, CallStatus }: VoiceStatusBody): void {
-    console.log(`[STATUS] CallSid=${CallSid}, status=${CallStatus}`);
+    winstonLogger.log(
+      'info',
+      `[STATUS] CallSid=${CallSid}, status=${CallStatus}`,
+    );
   }
 
   private buildSayAndGather(sid: string, text: string): string {
