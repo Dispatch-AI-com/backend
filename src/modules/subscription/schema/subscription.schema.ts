@@ -5,8 +5,8 @@ export type SubscriptionDocument = Subscription & Document;
 
 @Schema({ timestamps: true })
 export class Subscription {
-  @Prop({ type: Types.ObjectId, ref: 'Company', required: true })
-  companyId!: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  userId!: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Plan', required: true })
   planId!: Types.ObjectId;

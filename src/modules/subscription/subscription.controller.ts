@@ -31,13 +31,13 @@ export class SubscriptionController {
     status: 400,
     description: 'Bad request - invalid plan or pricing',
   })
-  @ApiResponse({ status: 404, description: 'Plan or Company not found' })
+  @ApiResponse({ status: 404, description: 'Plan or user not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   async create(@Body() dto: CreateSubscriptionDto) {
     return this.subscriptionService.createSubscription(dto);
   }
 
-  @Post(':companyId/retry-payment')
+  @Post(':userId/retry-payment')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Generate Billing Portal URL for retry payment after failure',
@@ -48,11 +48,11 @@ export class SubscriptionController {
   })
   @ApiResponse({
     status: 404,
-    description: 'No failed subscription found for this company',
+    description: 'No failed subscription found for this user',
   })
-  async generateBillingPortalUrl(@Param('companyId') companyId: string) {
+  async generateBillingPortalUrl(@Param('userId') userId: string) {
     const url =
-      await this.subscriptionService.generateBillingPortalUrl(companyId);
+      await this.subscriptionService.generateBillingPortalUrl(userId);
     return { url };
   }
 
@@ -61,17 +61,17 @@ export class SubscriptionController {
   @ApiResponse({ status: 200, description: 'Plan changed successfully' })
   @ApiResponse({ status: 400, description: 'Invalid request' })
   @ApiResponse({ status: 404, description: 'Subscription or Plan not found' })
-  async changePlan(@Body() dto: { companyId: string; planId: string }) {
-    return await this.subscriptionService.changePlan(dto.companyId, dto.planId);
+  async changePlan(@Body() dto: { userId: string; planId: string }) {
+    return await this.subscriptionService.changePlan(dto.userId, dto.planId);
   }
 
-  @Patch(':companyId/free')
+  @Patch(':userId/free')
   @ApiOperation({ summary: 'Downgrade to free plan and refund unused balance' })
   @ApiResponse({ status: 200, description: 'Downgrade and refund successful' })
   @ApiResponse({ status: 404, description: 'Active subscription not found' })
   @ApiResponse({ status: 500, description: 'Internal error during downgrade' })
-  async downgradeToFree(@Param('companyId') companyId: string) {
-    await this.subscriptionService.downgradeToFree(companyId);
+  async downgradeToFree(@Param('userId') userId: string) {
+    await this.subscriptionService.downgradeToFree(userId);
   }
 
   @Get()
@@ -85,18 +85,18 @@ export class SubscriptionController {
     return await this.subscriptionService.getAll(page, limit);
   }
 
-  @Get(':companyId')
+  @Get(':userId')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Get subscription by company ID' })
+  @ApiOperation({ summary: 'Get subscription by user ID' })
   @ApiResponse({
     status: 200,
     description: 'Subscription retrieved successfully',
   })
   @ApiResponse({
     status: 404,
-    description: 'Subscription not found for company',
+    description: 'Subscription not found for user',
   })
-  async getByCompany(@Param('companyId') companyId: string) {
-    return await this.subscriptionService.getByCompany(companyId);
+  async getByuser(@Param('userId') userId: string) {
+    return await this.subscriptionService.getByuser(userId);
   }
 }

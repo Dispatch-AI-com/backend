@@ -5,5 +5,5 @@ export class CreateSubscriptionDto {
   planId!: string;
 
   @IsString()
-  companyId!: string;
+  userId!: string;
 }
