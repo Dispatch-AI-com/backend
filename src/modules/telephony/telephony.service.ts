@@ -21,22 +21,12 @@ export class TelephonyService {
 
     /* 初始化骨架（仅一次） */
     if ((await this.redis.exists(key)) === 0) {
-      const dummyCompany: Company = { id: 'cmp_demo', name: 'Demo Plumbing' };
-      const dummyServices: Service[] = [
-        {
-          id: 'srv1',
-          name: 'Leak Repair',
-          price: 120,
-          description: 'Fix pipe leaks',
-        },
-        { id: 'srv2', name: 'Drain Cleaning', price: 90 },
-      ];
       //todo: 查询公司和服务
       const skeleton: CallSkeleton = {
         callSid: CallSid,
-        services: dummyServices,
-        company: dummyCompany,
-        user: { userInfo: {} },
+        services: [],
+        company: { id: '', name: '' },
+        user: { service: undefined, userInfo: {} },
         history: [],
         serviceBooked: false,
         confirmEmailSent: false,
