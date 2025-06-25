@@ -1,77 +1,91 @@
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import type { Twilio } from 'twilio';
+import { Inject, Injectable } from '@nestjs/common';
+import Redis from 'ioredis';
 import { twiml } from 'twilio';
 
 import {
   VoiceGatherBody,
-  VoiceRecordingBody,
   VoiceStatusBody,
 } from '@/common/interfaces/twilio-voice-webhook';
-import { TWILIO_CLIENT } from '@/lib/twilio/twilio.module';
+import { REDIS_CLIENT } from '@/lib/redis/redis.module';
 
-const PUBLIC_URL =
-  process.env.PUBLIC_URL != null && process.env.PUBLIC_URL !== ''
-    ? process.env.PUBLIC_URL
-    : 'http://paco.dispatchai.click/api';
-const BOT_TO = 'client:bot123';
+import { CallSkeleton, Company, Service } from './types/redis-session';
+
+const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
+const SESSION_TTL = 60 * 30; // 30 min
+const LOCK_TTL = 10_000; // 10 s
 
 @Injectable()
 export class TelephonyService {
-  constructor(@Inject(TWILIO_CLIENT) private readonly client: Twilio) {}
+  constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
 
-  handleVoiceWebhook(body: VoiceGatherBody): string {
-    const { CallSid } = body;
-    const vr = new twiml.VoiceResponse();
+  /* ---------- /voice ---------- */
+  async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
+    const key = `call:${CallSid}`;
 
-    vr.say('您好，欢迎使用 Dispatch AI，请稍等，系统正在为您接入服务。');
-    vr.redirect(
-      `${PUBLIC_URL}/telephony/enter-conference?CallSid=${CallSid}&To=${body.To}`,
-    );
-    return vr.toString() as string;
-  }
-
-  handleRecording(body: VoiceRecordingBody): void {
-    console.log(`[RECORDING CALLBACK] CallSid=${body.CallSid}`);
-    console.log(`🎧 Recording URL: ${body.RecordingUrl}.mp3`);
-  }
-
-  async handleCallStatus(body: VoiceStatusBody): Promise<void> {
-    console.log(`[STATUS] CallSid=${body.CallSid}, status=${body.CallStatus}`);
-  }
-
-  handleEnterConference(callSid: string, to: string): string {
-    if (!callSid || !to) {
-      throw new BadRequestException('CallSid and To are required');
+    /* 初始化骨架（仅一次） */
+    if (!(await this.redis.exists(key))) {
+      //todo: 查询公司和服务
+      const skeleton: CallSkeleton = {
+        callSid: CallSid,
+        services: [],
+        company: { id: '', name: '' },
+        user: { userInfo: {} },
+        history: [],
+        serviceBooked: false,
+        confirmEmailSent: false,
+        createdAt: new Date().toISOString(),
+      };
+      await this.redis.set(key, JSON.stringify(skeleton), 'EX', SESSION_TTL);
     }
 
-    const vr = new twiml.VoiceResponse();
-    vr.dial({
-      record: 'record-from-ringing',
-      recordingStatusCallback: `${PUBLIC_URL}/telephony/recording`,
-      recordingStatusCallbackMethod: 'POST',
-      recordingStatusCallbackEvent: ['completed'],
-    }).conference(
-      {
-        startConferenceOnEnter: true,
-        endConferenceOnExit: true,
-      },
-      callSid,
-    );
-    void this.client
-      .conferences(callSid)
-      .participants.create({
-        from: to,
-        to: BOT_TO,
-        earlyMedia: true,
-        endConferenceOnExit: true,
-      })
-      .then(() => {
-        console.log(`🤖 Bot joined conference ${callSid}`);
-      })
-      .catch((err: unknown) => {
-        console.error(`❌ Bot failed to join conference ${callSid}`, err);
-      });
+    const raw = await this.redis.get(key);
+    if (!raw) return this.buildSayAndGather(CallSid, 'System error.');
 
+    const { services = [], company = {} as Company } = JSON.parse(
+      raw as string,
+    ) as CallSkeleton;
+
+    const welcome =
+      services.length && company.name
+        ? `Welcome! We are ${company.name}. We provide ${services
+            .map((s: Service) => s.name)
+            .join(', ')}. How can I help you today?`
+        : 'Welcome! How can I help you today?';
+
+    return this.buildSayAndGather(CallSid, welcome);
+  }
+
+  /* ---------- /gather ---------- */
+  async handleGather({
+    CallSid,
+    SpeechResult = '',
+  }: VoiceGatherBody): Promise<string> {
+    /* 并发锁：重复回调直接忽略 */
+    if (!(await this.redis.set(`lock:${CallSid}`, '1', 'PX', LOCK_TTL, 'NX'))) {
+      return '';
+    }
+
+    // TODO: 调用 AI + 写 history
+    const reply = `You said: ${SpeechResult}.`;
+    return this.buildSayAndGather(CallSid, reply);
+  }
+
+  /* ---------- /status ---------- */
+  async handleStatus({ CallSid, CallStatus }: VoiceStatusBody): Promise<void> {
+    console.log(`[STATUS] CallSid=${CallSid}, status=${CallStatus}`);
+  }
+
+  /* ---------- 工具 ---------- */
+  private buildSayAndGather(sid: string, text: string): string {
+    const vr = new twiml.VoiceResponse();
+    vr.say(text);
+    vr.gather({
+      input: ['speech'],
+      language: 'en-AU',
+      speechTimeout: 'auto',
+      action: `${PUBLIC_URL}/telephony/gather?CallSid=${sid}`,
+      method: 'POST',
+    });
     return vr.toString() as string;
   }
 }

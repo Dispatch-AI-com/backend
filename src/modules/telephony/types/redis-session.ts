@@ -1,19 +1,38 @@
-import type { CallLogStatus } from '@/common/constants/calllog.constant';
-
-export interface TranscriptChunk {
-  transcriptId: string;
-  speakerType: 'AI' | 'User';
-  text: string;
-  recordingUrl: string;
-  startAt: Date;
+export interface Message {
+  speaker: 'AI' | 'customer';
+  message: string;
+  startedAt: string;
 }
 
-export interface CallLog {
-  companyId: string;
-  transcriptChunks: TranscriptChunk[];
-  serviceBookedId: string;
-  callerNumber: string;
-  status: CallLogStatus;
-  startAt: Date;
-  endAt: Date;
+export interface Service {
+  id: string;
+  name: string;
+  price: number | null;
+  description?: string;
+}
+
+export interface UserInfo {
+  name?: string;
+  phone?: string;
+  address?: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface CallSkeleton {
+  callSid: string;
+  services: readonly Service[];
+  company: Company;
+  user: {
+    service?: Service;
+    userInfo: Partial<UserInfo>;
+  };
+  history: Message[];
+  serviceBooked: boolean;
+  confirmEmailSent: boolean;
+  createdAt: string;
 }

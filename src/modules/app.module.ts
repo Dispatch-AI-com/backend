@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { RedisModule } from '@/lib/redis/redis.module';
 import { TwilioModule } from '@/lib/twilio/twilio.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { AvailabilityModule } from '@/modules/availability/availability.module';
@@ -42,6 +43,7 @@ import { TelephonyModule } from './telephony/telephony.module';
     ServiceLocationMappingModule,
     TelephonyModule,
     TwilioModule,
+    RedisModule,
   ],
 })
 export class AppModule {}
