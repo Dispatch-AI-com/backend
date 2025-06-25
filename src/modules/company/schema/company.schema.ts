@@ -17,6 +17,9 @@ export class Company {
   @Prop({ required: true, unique: true })
   email!: string;
 
+  @Prop({ required: true })
+  number!: string;
+
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user!: User;
 }
