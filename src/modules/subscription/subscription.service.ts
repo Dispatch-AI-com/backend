@@ -7,7 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { RRule } from 'rrule';
 
-import { Company, CompanyDocument } from '../company/schema/company.schema';
+import { User, UserDocument } from '../user/schema/user.schema';
 import { Plan, PlanDocument } from '../plan/schema/plan.schema';
 import { StripeService } from '../stripe/stripe.service';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
@@ -22,17 +22,17 @@ export class SubscriptionService {
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
     @InjectModel(Plan.name) private readonly planModel: Model<PlanDocument>,
-    @InjectModel(Company.name)
-    private readonly companyModel: Model<CompanyDocument>,
+    @InjectModel(User.name)
+    private readonly UserModel: Model<UserDocument>,
     private readonly stripeService: StripeService,
   ) {}
 
   async createSubscription(dto: CreateSubscriptionDto) {
-    if (!Types.ObjectId.isValid(dto.companyId)) {
-      throw new BadRequestException('Invalid company ID');
+    if (!Types.ObjectId.isValid(dto.userId)) {
+      throw new BadRequestException('Invalid user ID');
     }
-    const company = await this.companyModel.findById(dto.companyId);
-    if (!company) throw new NotFoundException('Company not found');
+    const user = await this.UserModel.findById(dto.userId);
+    if (!user) throw new NotFoundException('user not found');
 
     if (!Types.ObjectId.isValid(dto.planId)) {
       throw new BadRequestException('Invalid plan ID');
@@ -44,7 +44,7 @@ export class SubscriptionService {
 
     const session = await this.stripeService.createCheckoutSession({
       priceId: pricing.stripePriceId,
-      companyId: dto.companyId,
+      userId: dto.userId,
       planId: dto.planId,
     });
 
@@ -55,14 +55,14 @@ export class SubscriptionService {
   }
 
   async activateSubscription(
-    companyId: string,
+    userId: string,
     planId: string,
     subscriptionId: string,
     stripeCustomerId: string,
     chargeId: string,
   ) {
-    const company = await this.companyModel.findById(companyId);
-    if (!company) throw new NotFoundException('Company not found');
+    const user = await this.UserModel.findById(userId);
+    if (!user) throw new NotFoundException('user not found');
 
     const plan = await this.planModel.findById(planId);
     if (!plan) {
@@ -84,7 +84,7 @@ export class SubscriptionService {
     }
 
     await this.subscriptionModel.create({
-      companyId: new Types.ObjectId(companyId),
+      userId: new Types.ObjectId(userId),
       planId: new Types.ObjectId(planId),
       subscriptionId: subscriptionId,
       stripeCustomerId: stripeCustomerId,
@@ -99,9 +99,9 @@ export class SubscriptionService {
     };
   }
 
-  async changePlan(companyId: string, newPlanId: string) {
+  async changePlan(userId: string, newPlanId: string) {
     const subscription = await this.subscriptionModel.findOne({
-      companyId: new Types.ObjectId(companyId),
+      userId: new Types.ObjectId(userId),
       status: 'active',
     });
     if (!subscription)
@@ -192,14 +192,14 @@ export class SubscriptionService {
     );
   }
 
-  async getByCompany(companyId: string) {
+  async getByuser(userId: string) {
     const subscription = await this.subscriptionModel
-      .findOne({ companyId: new Types.ObjectId(companyId) })
+      .findOne({ userId: new Types.ObjectId(userId) })
       .populate('planId')
-      .populate('companyId');
+      .populate('userId');
 
     if (!subscription)
-      throw new NotFoundException('Subscription not found for company');
+      throw new NotFoundException('Subscription not found for user');
     return subscription;
   }
 
@@ -208,20 +208,20 @@ export class SubscriptionService {
     return await this.subscriptionModel
       .find()
       .populate('planId')
-      .populate('companyId')
+      .populate('userId')
       .skip(skip)
       .limit(limit);
   }
 
-  async generateBillingPortalUrl(companyId: string) {
+  async generateBillingPortalUrl(userId: string) {
     const subscription = await this.subscriptionModel.findOne({
-      companyId: new Types.ObjectId(companyId),
+      userId: new Types.ObjectId(userId),
       status: 'failed',
     });
 
     if (!subscription) {
       throw new NotFoundException(
-        'No failed subscription found for this company',
+        'No failed subscription found for this user',
       );
     }
 
@@ -240,9 +240,9 @@ export class SubscriptionService {
     return await this.subscriptionModel.findOne({ subscriptionId });
   }
 
-  async downgradeToFree(companyId: string) {
+  async downgradeToFree(userId: string) {
     const subscription = await this.subscriptionModel.findOne({
-      companyId: new Types.ObjectId(companyId),
+      userId: new Types.ObjectId(userId),
       status: 'active',
     });
 

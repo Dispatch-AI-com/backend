@@ -11,7 +11,7 @@ export class StripeService {
 
   async createCheckoutSession(input: {
     priceId: string;
-    companyId: string;
+    userId: string;
     planId: string;
   }) {
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
@@ -22,7 +22,7 @@ export class StripeService {
       success_url: `${appUrl}/pricing`,
       cancel_url: `${appUrl}/pricing`,
       subscription_data: {
-        metadata: { companyId: input.companyId, planId: input.planId },
+        metadata: { userId: input.userId, planId: input.planId },
       },
     });
 

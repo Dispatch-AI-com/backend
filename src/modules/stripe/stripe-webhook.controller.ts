@@ -98,7 +98,7 @@ export class StripeWebhookController {
     const subscription =
       await this.stripeService.retrieveSubscription(subscriptionId);
 
-    const { companyId, planId } = subscription.metadata;
+    const { userId, planId } = subscription.metadata;
     const stripeCustomerId = subscription.customer as string;
 
     const chargeId = await this.stripeService.retrievecharge(stripeCustomerId);
@@ -107,21 +107,21 @@ export class StripeWebhookController {
       return;
     }
 
-    if (!companyId || !planId) {
-      this.logger.error('Missing metadata: companyId or planId');
+    if (!userId || !planId) {
+      this.logger.error('Missing metadata: userId or planId');
       return;
     }
 
     try {
       await this.subscriptionService.activateSubscription(
-        companyId,
+        userId,
         planId,
         subscriptionId,
         stripeCustomerId,
         chargeId,
       );
       this.logger.log(
-        `✅ Subscription ${subscriptionId} activated for company ${companyId}`,
+        `✅ Subscription ${subscriptionId} activated for user ${userId}`,
       );
     } catch (error) {
       this.logger.error(`❌ Failed to activate subscription`, error);
