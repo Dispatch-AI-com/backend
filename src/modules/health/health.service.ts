@@ -79,9 +79,12 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  async testAIChat(message: string): Promise<{
+  async testAIChat(
+    message: string,
+    callSid: string,
+  ): Promise<{
     status: string;
-    response?: string;
+    replyText?: string;
     timestamp: Date;
     duration?: number;
     error?: string;
@@ -89,13 +92,14 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     const start = performance.now();
     try {
       const { data } = await firstValueFrom(
-        this.http.post<{ response: string }>('/ai/chat', {
+        this.http.post<{ replyText: string }>('/ai/chat', {
           message: message || '你好，你是谁啊？',
+          callSid,
         }),
       );
       return {
         status: 'ok',
-        response: data.response,
+        replyText: data.replyText,
         timestamp: new Date(),
         duration: Math.round(performance.now() - start),
       };

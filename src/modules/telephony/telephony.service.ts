@@ -1,5 +1,7 @@
+import { HttpService } from '@nestjs/axios';
 import { Inject, Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
+import { firstValueFrom, retry, timeout } from 'rxjs';
 import { twiml } from 'twilio';
 
 import {
@@ -16,11 +18,14 @@ const SESSION_TTL = 60 * 30;
 
 @Injectable()
 export class TelephonyService {
-  constructor(@Inject(REDIS_CLIENT) private readonly redis: Redis) {}
+  constructor(
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+    private readonly http: HttpService,
+  ) {}
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
     const key = `call:${CallSid}`;
     if ((await this.redis.exists(key)) === 0) {
-      //todo: 查询公司和服务
+      //todo: 查询公司和服务，放到这个service和company的session里面
       const skeleton: CallSkeleton = {
         callSid: CallSid,
         services: [],
@@ -39,12 +44,18 @@ export class TelephonyService {
     }
 
     let session: CallSkeleton;
+    const raw = await this.redis.get(key);
+    if (raw === null || raw === '') {
+      winstonLogger.error(`[REDIS] key ${key} not found`);
+      return this.buildSayAndGather(CallSid, 'System error.');
+    }
+
     try {
-      session = JSON.parse(
-        (await this.redis.get(key)) as string,
-      ) as CallSkeleton;
+      session = JSON.parse(raw as string) as CallSkeleton;
     } catch (err) {
-      winstonLogger.error(`[STATUS] ${CallSid} → ${err as string}`);
+      winstonLogger.error(
+        `[PARSE] ${err instanceof Error ? err.message : String(err)}`,
+      );
       return this.buildSayAndGather(CallSid, 'System error.');
     }
 
@@ -57,9 +68,29 @@ export class TelephonyService {
     return this.buildSayAndGather(CallSid, welcome);
   }
 
-  handleGather({ CallSid, SpeechResult = '' }: VoiceGatherBody): string {
-    // TODO: 调用 AI + 写 history
-    const reply = `You said: ${SpeechResult}.`;
+  async handleGather({
+    CallSid,
+    SpeechResult = '',
+  }: VoiceGatherBody): Promise<string> {
+    let reply = `Sorry, I didn't catch that.`;
+
+    if (SpeechResult) {
+      try {
+        const { data } = (await firstValueFrom(
+          this.http
+            .post<{ replyText: string }>('/reply', {
+              callSid: CallSid,
+              message: SpeechResult,
+            })
+            .pipe(timeout(5_000), retry(2)),
+        )) as { data: { replyText: string } };
+        reply = data.replyText;
+      } catch (err) {
+        winstonLogger.warn(`AI call failed: ${(err as Error).message}`);
+        reply = `You said: ${SpeechResult}.`;
+      }
+    }
+
     return this.buildSayAndGather(CallSid, reply);
   }
 

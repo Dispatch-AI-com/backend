@@ -34,8 +34,8 @@ export class TelephonyController {
     description: 'TwiML XML response to control the call',
     type: String,
   })
-  handleGather(@Body() body: VoiceGatherBody): string {
-    return this.telephonyService.handleGather(body);
+  async handleGather(@Body() body: VoiceGatherBody): Promise<string> {
+    return await this.telephonyService.handleGather(body);
   }
 
   @Post('status')
