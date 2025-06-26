@@ -78,7 +78,7 @@ export class TelephonyService {
       try {
         const { data } = (await firstValueFrom(
           this.http
-            .post<{ replyText: string }>('/reply', {
+            .post<{ replyText: string }>('/ai/reply', {
               callSid: CallSid,
               message: SpeechResult,
             })
