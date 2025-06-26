@@ -34,7 +34,7 @@ export class TelephonyController {
     description: 'TwiML XML response to control the call',
     type: String,
   })
-  async handleGather(@Body() body: VoiceGatherBody): Promise<string> {
+  handleGather(@Body() body: VoiceGatherBody): string {
     return this.telephonyService.handleGather(body);
   }
 
@@ -42,7 +42,7 @@ export class TelephonyController {
   @HttpCode(200)
   @ApiOperation({ summary: 'Handle Twilio Status Callback' })
   @ApiResponse({ status: 200, description: 'OK' })
-  async handleStatus(@Body() body: VoiceStatusBody): Promise<void> {
-    await this.telephonyService.handleStatus(body);
+  handleStatus(@Body() body: VoiceStatusBody): void {
+    this.telephonyService.handleStatus(body);
   }
 }

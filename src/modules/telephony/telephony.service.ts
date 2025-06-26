@@ -9,7 +9,7 @@ import {
 import { REDIS_CLIENT } from '@/lib/redis/redis.module';
 import { winstonLogger } from '@/logger/winston.logger';
 
-import { CallSkeleton, Company, Service } from './types/redis-session';
+import { CallSkeleton } from './types/redis-session';
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
 const SESSION_TTL = 60 * 30;
@@ -25,9 +25,13 @@ export class TelephonyService {
         callSid: CallSid,
         services: [],
         company: { id: '', name: '' },
-        user: { service: undefined, userInfo: {} },
+        user: {
+          service: undefined,
+          serviceBookedTime: undefined,
+          userInfo: {},
+        },
         history: [],
-        serviceBooked: false,
+        confirmBooking: false,
         confirmEmailSent: false,
         createdAt: new Date().toISOString(),
       };

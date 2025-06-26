@@ -29,10 +29,11 @@ export interface CallSkeleton {
   company: Company;
   user: {
     service?: Service;
+    serviceBookedTime?: string;
     userInfo: Partial<UserInfo>;
   };
   history: Message[];
-  serviceBooked: boolean;
+  confirmBooking: boolean;
   confirmEmailSent: boolean;
   createdAt: string;
 }

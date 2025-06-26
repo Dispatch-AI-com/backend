@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { AiHttpModule } from '@/lib/ai/ai-http.module';
 import { RedisModule } from '@/lib/redis/redis.module';
 import { TwilioModule } from '@/lib/twilio/twilio.module';
 import { AuthModule } from '@/modules/auth/auth.module';
@@ -17,7 +18,6 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
 import { ServiceLocationMappingModule } from '@/modules/service-location-mapping/service-location-mapping.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
-import { WhisperModule } from '@/modules/whisper/whisper.module';
 
 import { TelephonyModule } from './telephony/telephony.module';
 
@@ -31,7 +31,6 @@ import { TelephonyModule } from './telephony/telephony.module';
     AuthModule,
     PlanModule,
     LocationModule,
-    WhisperModule,
     CalllogModule,
     CompanyModule,
     TranscriptModule,
@@ -44,6 +43,7 @@ import { TelephonyModule } from './telephony/telephony.module';
     TelephonyModule,
     TwilioModule,
     RedisModule,
+    AiHttpModule,
   ],
 })
 export class AppModule {}
