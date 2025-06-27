@@ -53,5 +53,4 @@ Thumbs.db
 __pycache__/
 
 .env.uat
-
 cloudflared/

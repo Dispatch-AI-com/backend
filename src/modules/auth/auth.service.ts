@@ -3,6 +3,12 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcryptjs';
@@ -49,7 +55,7 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Username or Password Not Match');
     }
-    const user = foundUser.toObject() as User;
+    const user = foundUser.toObject({ virtuals: false });
     const token = this.jwtService.sign({
       sub: user._id,
       email: user.email,

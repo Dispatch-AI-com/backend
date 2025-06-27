@@ -16,10 +16,12 @@ import { ServiceModule } from '@/modules/service/service.module';
 import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
 import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 import { ServiceLocationMappingModule } from '@/modules/service-location-mapping/service-location-mapping.module';
+import { StripeModule } from '@/modules/stripe/stripe.module';
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
-
-import { TelephonyModule } from './telephony/telephony.module';
+import { BlogModule } from '@/modules/blog/blog.module';
+import { TelephonyModule } from '@/modules/telephony/telephony.module';
 
 @Module({
   imports: [
@@ -32,6 +34,7 @@ import { TelephonyModule } from './telephony/telephony.module';
     PlanModule,
     LocationModule,
     CalllogModule,
+    BlogModule,
     CompanyModule,
     TranscriptModule,
     TranscriptChunkModule,
@@ -44,6 +47,9 @@ import { TelephonyModule } from './telephony/telephony.module';
     TwilioModule,
     RedisModule,
     AiHttpModule,
+    SubscriptionModule,
+    StripeModule,
+    CompanyModule,
   ],
 })
 export class AppModule {}
