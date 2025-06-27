@@ -50,7 +50,7 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Username or Password Not Match');
     }
-    const user = foundUser.toObject() as User;
+    const user = foundUser.toObject({ virtuals: false });
     const token = this.jwtService.sign({
       sub: user._id,
       email: user.email,

@@ -69,19 +69,14 @@ export class AuthController {
     @Body() loginDto: LoginDto,
   ): Promise<{ user: UserResponseDto; token: string }> {
     const { user, token } = await this.authService.login(loginDto);
-    return { user: this.toResponseDto(user), token };
-  }
 
-  private toResponseDto(user: UserDocument): UserResponseDto {
-    return {
-      _id:
-        user._id instanceof Types.ObjectId
-          ? user._id.toString()
-          : String(user._id),
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
+    const safeUser: UserResponseDto = {
+      _id: String(user._id),
+      email: String(user.email),
+      firstName: user.firstName ? String(user.firstName) : undefined,
+      lastName: user.lastName ? String(user.lastName) : undefined,
       role: user.role,
     };
+    return { user: safeUser, token };
   }
 }
