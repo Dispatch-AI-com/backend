@@ -6,6 +6,7 @@ import { RedisModule } from '@/lib/redis/redis.module';
 import { TwilioModule } from '@/lib/twilio/twilio.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { AvailabilityModule } from '@/modules/availability/availability.module';
+import { BlogModule } from '@/modules/blog/blog.module';
 import { CalllogModule } from '@/modules/calllog/calllog.module';
 import { CompanyModule } from '@/modules/company/company.module';
 import { DatabaseModule } from '@/modules/database/database.module';
@@ -18,10 +19,9 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
 import { ServiceLocationMappingModule } from '@/modules/service-location-mapping/service-location-mapping.module';
 import { StripeModule } from '@/modules/stripe/stripe.module';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
+import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
-import { BlogModule } from '@/modules/blog/blog.module';
-import { TelephonyModule } from '@/modules/telephony/telephony.module';
 
 @Module({
   imports: [
