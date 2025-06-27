@@ -1,12 +1,12 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Types } from 'mongoose';
+import { plainToInstance } from 'class-transformer';
+
 
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
-import { UserDocument } from '@/modules/user/schema/user.schema';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -43,7 +43,10 @@ export class AuthController {
     @Body() createUserDto: CreateUserDto,
   ): Promise<{ user: UserResponseDto; token: string }> {
     const { user, token } = await this.authService.createUser(createUserDto);
-    return { user: this.toResponseDto(user), token };
+    const safeUser = plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
+    return { user: safeUser, token };
   }
 
   @ApiOperation({
