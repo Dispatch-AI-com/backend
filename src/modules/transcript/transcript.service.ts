@@ -9,9 +9,8 @@ import { Model, Types } from 'mongoose';
 import { ITranscript } from '../../common/interfaces/transcript';
 import { CallLog } from '../calllog/schema/calllog.schema';
 import { TranscriptChunk } from '../transcript-chunk/schema/transcript-chunk.schema';
-import { UpdateTranscriptDto } from './dto';
-import { Transcript } from './schema/transcript.schema';
-import { sanitizedUpdate } from './utils/sanitized-update';
+import { UpdateTranscriptDto } from './dto/update-transcript.dto';
+import { Transcript, TranscriptDocument } from './schema/transcript.schema';
 
 @Injectable()
 export class TranscriptService {
@@ -68,7 +67,30 @@ export class TranscriptService {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid transcript id');
     }
-    const transcript = await sanitizedUpdate(this.transcriptModel, id, dto);
+
+    const updateData: Partial<{
+      summary: string;
+      keyPoints: string[];
+    }> = {};
+
+    if (dto.summary !== undefined) {
+      updateData.summary = dto.summary;
+    }
+
+    if (dto.keyPoints !== undefined) {
+      updateData.keyPoints = dto.keyPoints;
+    }
+
+    const transcript = await this.transcriptModel.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
+
+    if (!transcript) {
+      throw new NotFoundException('Transcript not found');
+    }
+
     return this.convertToITranscript(transcript);
   }
 
@@ -120,11 +142,11 @@ export class TranscriptService {
     await this.transcriptModel.deleteOne({ _id: transcript._id });
   }
 
-  private convertToITranscript(doc: Transcript): ITranscript {
+  private convertToITranscript(doc: TranscriptDocument): ITranscript {
     const obj = doc.toObject();
     return {
-      _id: obj._id,
-      calllogId: obj.calllogId,
+      _id: obj._id.toString(),
+      calllogId: obj.calllogId.toString(),
       summary: obj.summary,
       keyPoints: obj.keyPoints,
       createdAt: obj.createdAt,

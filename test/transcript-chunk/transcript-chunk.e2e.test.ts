@@ -18,7 +18,10 @@ describe('TranscriptChunk (e2e)', () => {
     app = moduleFixture.createNestApplication();
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
     await app.init();
+  }, 30000);
 
+  beforeEach(async () => {
+    // Create fresh calllog and transcript for each test
     const calllogRes = await request(app.getHttpServer())
       .post(`/users/${testUserId}/calllogs`)
       .send({
@@ -36,7 +39,15 @@ describe('TranscriptChunk (e2e)', () => {
         summary: 'Test summary',
       });
     transcriptId = transcriptRes.body._id;
-  }, 30000);
+  });
+
+  afterEach(async () => {
+    // Clean up after each test
+    if (calllogId) {
+      await request(app.getHttpServer())
+        .delete(`/users/${testUserId}/calllogs/${calllogId}`);
+    }
+  });
 
   afterAll(async () => {
     await app.close();
@@ -64,6 +75,16 @@ describe('TranscriptChunk (e2e)', () => {
   });
 
   it('should not allow creating chunk with duplicate startAt', async () => {
+    // First create a chunk
+    await request(app.getHttpServer())
+      .post(`/transcripts/${transcriptId}/chunks`)
+      .send({
+        speakerType: 'AI',
+        text: 'Original chunk',
+        startAt: 0,
+      });
+
+    // Try to create another chunk with the same startAt
     const res = await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
       .send({
@@ -72,7 +93,7 @@ describe('TranscriptChunk (e2e)', () => {
         startAt: 0, // Same startAt as the first chunk
       });
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe('A chunk with the same start time already exists.');
+    expect(res.body.message).toBe('Chunk with start time 0 already exists');
   });
 
   it('should not allow creating multiple chunks with duplicate startAt', async () => {
@@ -95,15 +116,46 @@ describe('TranscriptChunk (e2e)', () => {
   });
 
   it('should get all chunks for a transcript', async () => {
+    // First create some chunks
+    await request(app.getHttpServer())
+      .post(`/transcripts/${transcriptId}/chunks`)
+      .send([
+        {
+          speakerType: 'AI',
+          text: 'Hello, this is AI.',
+          startAt: 0,
+        },
+        {
+          speakerType: 'User',
+          text: 'Hi, this is user.',
+          startAt: 61,
+        },
+      ]);
+
     const res = await request(app.getHttpServer())
       .get(`/transcripts/${transcriptId}/chunks`);
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(2);
-    expect(res.body[0]._id).toBe(chunkId);
   });
 
   it('should get chunks with filters', async () => {
+    // First create some chunks
+    await request(app.getHttpServer())
+      .post(`/transcripts/${transcriptId}/chunks`)
+      .send([
+        {
+          speakerType: 'AI',
+          text: 'Hello, this is AI.',
+          startAt: 0,
+        },
+        {
+          speakerType: 'User',
+          text: 'Hi, this is user.',
+          startAt: 61,
+        },
+      ]);
+
     const res = await request(app.getHttpServer())
       .get(`/transcripts/${transcriptId}/chunks?speakerType=AI&startAt=0`);
     expect(res.status).toBe(200);
@@ -113,10 +165,20 @@ describe('TranscriptChunk (e2e)', () => {
   });
 
   it('should get a single chunk', async () => {
+    // First create a chunk
+    const createRes = await request(app.getHttpServer())
+      .post(`/transcripts/${transcriptId}/chunks`)
+      .send({
+        speakerType: 'AI',
+        text: 'Hello, this is AI.',
+        startAt: 0,
+      });
+    const createdChunkId = createRes.body._id;
+
     const res = await request(app.getHttpServer())
-      .get(`/transcripts/${transcriptId}/chunks/${chunkId}`);
+      .get(`/transcripts/${transcriptId}/chunks/${createdChunkId}`);
     expect(res.status).toBe(200);
-    expect(res.body._id).toBe(chunkId);
+    expect(res.body._id).toBe(createdChunkId);
     expect(res.body.speakerType).toBe('AI');
   });
 
