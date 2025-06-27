@@ -18,9 +18,8 @@ import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
 
-import { CompanyModule } from './company/company.module';
-
 import { BlogModule } from './blog/blog.module';
+import { CompanyModule } from './company/company.module';
 
 @Module({
   imports: [

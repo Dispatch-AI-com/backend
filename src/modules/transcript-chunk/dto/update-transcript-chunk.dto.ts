@@ -1,5 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDefined, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, Min, ValidateIf } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  Min,
+  ValidateIf,
+} from 'class-validator';
 
 export class UpdateTranscriptChunkDto {
   @ApiPropertyOptional({
@@ -7,9 +14,7 @@ export class UpdateTranscriptChunkDto {
     enum: ['AI', 'User'],
     example: 'AI',
   })
-  @IsOptional()
-  @ValidateIf((o) => o.speakerType !== undefined)
-  @IsDefined()
+  @ValidateIf(o => o.speakerType !== undefined)
   @IsEnum(['AI', 'User'])
   speakerType?: 'AI' | 'User';
 
@@ -17,9 +22,7 @@ export class UpdateTranscriptChunkDto {
     description: 'Text content of the chunk',
     example: 'Hello, how can I help you today?',
   })
-  @IsOptional()
-  @ValidateIf((o) => o.text !== undefined)
-  @IsDefined()
+  @ValidateIf(o => o.text !== undefined)
   @IsString()
   @IsNotEmpty()
   text?: string;
@@ -29,9 +32,7 @@ export class UpdateTranscriptChunkDto {
     example: 0,
     minimum: 0,
   })
-  @IsOptional()
-  @ValidateIf((o) => o.startAt !== undefined)
-  @IsDefined()
+  @ValidateIf(o => o.startAt !== undefined)
   @IsNumber()
   @Min(0)
   startAt?: number;

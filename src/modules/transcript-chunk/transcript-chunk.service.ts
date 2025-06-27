@@ -7,13 +7,15 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
 import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
-import { SpeakerType } from '@/common/constants/transcript-chunk.constant';
 
 import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
 import { UpdateTranscriptChunkDto } from './dto/update-transcript-chunk.dto';
-import { TranscriptChunk, TranscriptChunkDocument } from './schema/transcript-chunk.schema';
+import {
+  TranscriptChunk,
+  TranscriptChunkDocument,
+} from './schema/transcript-chunk.schema';
 
 interface TranscriptChunkFilter {
   transcriptId: Types.ObjectId;
@@ -52,7 +54,7 @@ export class TranscriptChunkService {
 
     if (overlap) {
       throw new BadRequestException(
-        `Chunk with start time ${dto.startAt} already exists`,
+        `Chunk with start time ${dto.startAt.toString()} already exists`,
       );
     }
 
@@ -94,8 +96,8 @@ export class TranscriptChunkService {
       filter.startAt = { $gte: query.startAt };
     }
 
-    const page = query.page || 1;
-    const limit = query.limit || 10;
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
     const skip = (page - 1) * limit;
 
     const chunks = await this.transcriptChunkModel
@@ -129,7 +131,10 @@ export class TranscriptChunkService {
     return this.convertToITranscriptChunk(chunk);
   }
 
-  async update(id: string, dto: UpdateTranscriptChunkDto): Promise<ITranscriptChunk> {
+  async update(
+    id: string,
+    dto: UpdateTranscriptChunkDto,
+  ): Promise<ITranscriptChunk> {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid chunk ID');
     }
@@ -164,7 +169,7 @@ export class TranscriptChunkService {
 
         if (overlap) {
           throw new BadRequestException(
-            `Chunk with start time ${dto.startAt} already exists`,
+            `Chunk with start time ${dto.startAt.toString()} already exists`,
           );
         }
       }
@@ -175,7 +180,7 @@ export class TranscriptChunkService {
     const updated = await this.transcriptChunkModel.findByIdAndUpdate(
       id,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!updated) {
@@ -242,7 +247,9 @@ export class TranscriptChunkService {
       })),
     );
 
-    return chunks.map(chunk => this.convertToITranscriptChunk(chunk as TranscriptChunkDocument));
+    return chunks.map(chunk =>
+      this.convertToITranscriptChunk(chunk as TranscriptChunkDocument),
+    );
   }
 
   async deleteByTranscriptId(transcriptId: string): Promise<void> {
@@ -255,7 +262,9 @@ export class TranscriptChunkService {
     });
   }
 
-  private convertToITranscriptChunk(doc: TranscriptChunkDocument): ITranscriptChunk {
+  private convertToITranscriptChunk(
+    doc: TranscriptChunkDocument,
+  ): ITranscriptChunk {
     const obj = doc.toObject();
     return {
       _id: obj._id.toString(),

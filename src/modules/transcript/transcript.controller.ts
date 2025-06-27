@@ -42,7 +42,8 @@ export class TranscriptController {
   ): Promise<ITranscript> {
     return this.transcriptService.create({
       calllogId,
-      ...createTranscriptDto,
+      summary: createTranscriptDto.summary,
+      keyPoints: createTranscriptDto.keyPoints,
     });
   }
 
@@ -72,7 +73,10 @@ export class TranscriptController {
     @Body() updateTranscriptDto: UpdateTranscriptDto,
   ): Promise<ITranscript> {
     const transcript = await this.transcriptService.findByCallLogId(calllogId);
-    return this.transcriptService.update(transcript._id.toString(), updateTranscriptDto);
+    return this.transcriptService.update(
+      transcript._id.toString(),
+      updateTranscriptDto,
+    );
   }
 
   @Delete()

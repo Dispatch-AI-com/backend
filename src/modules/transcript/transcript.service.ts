@@ -84,7 +84,7 @@ export class TranscriptService {
     const transcript = await this.transcriptModel.findByIdAndUpdate(
       id,
       { $set: updateData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     if (!transcript) {

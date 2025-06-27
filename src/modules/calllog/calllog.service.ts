@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Error as MongooseError, Model, Types } from 'mongoose';
 import { plainToInstance } from 'class-transformer';
+import { Error as MongooseError, Model, Types } from 'mongoose';
 
 import {
   CALLLOG_SORT_OPTIONS,
@@ -21,7 +21,6 @@ import {
   ICallLogSummary,
 } from '@/common/interfaces/calllog';
 
-import { Transcript } from '../transcript/schema/transcript.schema';
 import { TranscriptService } from '../transcript/transcript.service';
 import { TranscriptChunkService } from '../transcript-chunk/transcript-chunk.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
@@ -190,9 +189,14 @@ export class CalllogService {
   ): Promise<ICallLog> {
     try {
       // Transform DTO and filter out undefined values
-      const transformedDto = plainToInstance(UpdateCallLogDto, updateCallLogDto);
+      const transformedDto = plainToInstance(
+        UpdateCallLogDto,
+        updateCallLogDto,
+      );
       const updateData = Object.fromEntries(
-        Object.entries(transformedDto).filter(([_, value]) => value !== undefined)
+        Object.entries(transformedDto).filter(
+          ([_, value]) => value !== undefined,
+        ),
       );
 
       const updatedCallLog = await this.callLogModel
@@ -250,8 +254,11 @@ export class CalllogService {
 
       // Use ObjectId for _id field
       const objectId = new Types.ObjectId(id);
-      const deleted = await this.callLogModel.findOneAndDelete({ _id: objectId, userId });
-      
+      const deleted = await this.callLogModel.findOneAndDelete({
+        _id: objectId,
+        userId,
+      });
+
       if (!deleted) {
         throw new NotFoundException(`Calllog with ID ${id} not found`);
       }

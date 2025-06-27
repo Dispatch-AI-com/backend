@@ -110,12 +110,13 @@ export class CalllogController {
       Math.max(1, typeof limit === 'number' ? limit : 10),
     );
 
-    const selectedFields = fields?.length
-      ? fields.split(',').reduce<Record<string, 1>>((acc, field) => {
-          acc[field.trim()] = 1;
-          return acc;
-        }, {})
-      : undefined;
+    const selectedFields =
+      fields != null && fields.length > 0
+        ? fields.split(',').reduce<Record<string, 1>>((acc, field) => {
+            acc[field.trim()] = 1;
+            return acc;
+          }, {})
+        : undefined;
 
     return this.calllogService.findAll({
       userId,

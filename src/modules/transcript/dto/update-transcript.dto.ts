@@ -1,14 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsDefined, IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator';
+import { IsArray, IsNotEmpty, IsString, ValidateIf } from 'class-validator';
 
 export class UpdateTranscriptDto {
   @ApiPropertyOptional({
     description: 'Summary of the call transcript',
     example: 'Lee requests emergency repair after hailstorm...',
   })
-  @IsOptional()
-  @ValidateIf((o) => o.summary !== undefined)
-  @IsDefined()
+  @ValidateIf(o => o.summary !== undefined)
   @IsString()
   @IsNotEmpty()
   summary?: string;
@@ -25,9 +23,7 @@ export class UpdateTranscriptDto {
       'User requests emergency assistance for a customer, advised to call emergency services.',
     ],
   })
-  @IsOptional()
-  @ValidateIf((o) => o.keyPoints !== undefined)
-  @IsDefined()
+  @ValidateIf(o => o.keyPoints !== undefined)
   @IsArray()
   @IsString({ each: true })
   @IsNotEmpty()
