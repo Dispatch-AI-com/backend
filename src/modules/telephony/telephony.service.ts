@@ -2,6 +2,7 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom, retry, timeout } from 'rxjs';
 
+import { SYSTEM_RESPONSES } from '@/common/constants/system-responses.constant';
 import {
   VoiceGatherBody,
   VoiceStatusBody,
@@ -12,6 +13,7 @@ import {
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
 
+import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
@@ -23,16 +25,13 @@ export class TelephonyService {
   constructor(
     private readonly sessions: SessionRepository,
     private readonly http: HttpService,
+    private readonly sessionHelper: SessionHelper,
   ) {}
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
-    let session = await this.sessions.load(CallSid);
-    session ??= await this.sessions.create(CallSid);
+    const session = await this.sessionHelper.ensureSession(CallSid);
 
     const { services, company } = session;
-    const welcome =
-      services.length && company.name
-        ? `Welcome! We are ${company.name}. We provide ${services.map(s => s.name).join(', ')}. How can I help you today?`
-        : 'Welcome! How can I help you today?';
+    const welcome = this.buildWelcomeMessage(company.name, services);
 
     return this.speakAndLog(CallSid, welcome, NextAction.GATHER);
   }
@@ -41,49 +40,31 @@ export class TelephonyService {
     CallSid,
     SpeechResult = '',
   }: VoiceGatherBody): Promise<string> {
-    const session = await this.sessions.load(CallSid);
-    if (!session) {
-      return buildSayResponse({
-        text: 'System error.',
-        next: NextAction.HANGUP,
-        sid: CallSid,
-        publicUrl: PUBLIC_URL,
-      });
-    }
-
-    let reply = `Sorry, I didn't catch that.`;
+    await this.sessionHelper.ensureSession(CallSid);
+    let reply: string = SYSTEM_RESPONSES.fallback;
     if (SpeechResult) {
-      await this.sessions.appendHistory(CallSid, {
-        speaker: 'customer',
-        message: SpeechResult,
-        startedAt: new Date().toISOString(),
-      });
       try {
-        const { data } = (await firstValueFrom(
-          this.http
-            .post<{ replyText: string }>('/ai/reply', {
-              callSid: CallSid,
-              message: SpeechResult,
-            })
-            .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
-        )) as { data: { replyText: string } };
-        reply = data.replyText;
+        await this.sessionHelper.appendUserMessage(CallSid, SpeechResult);
+        const aiReply = await this.getAIReply(CallSid, SpeechResult);
+        reply = aiReply.trim() || SYSTEM_RESPONSES.fallback;
       } catch (err) {
-        winstonLogger.error(`AI call failed: ${(err as Error).message}`);
-        return this.speakAndLog(
-          CallSid,
-          'I am sorry, system error.',
-          NextAction.HANGUP,
+        winstonLogger.error(
+          `[TelephonyService][callSid=${CallSid}][handleGather] AI call failed`,
+          { stack: (err as Error).stack },
         );
+        reply = SYSTEM_RESPONSES.error;
       }
     }
     return this.speakAndLog(CallSid, reply, NextAction.GATHER);
   }
   async handleStatus({ CallSid, CallStatus }: VoiceStatusBody): Promise<void> {
-    if (['completed', 'canceled'].includes(CallStatus)) {
+    const FINAL_CALL_STATUSES = ['completed', 'canceled'];
+    if (FINAL_CALL_STATUSES.includes(CallStatus)) {
       await this.sessions.delete(CallSid);
     }
-    winstonLogger.log(`[STATUS] CallSid=${CallSid}, status=${CallStatus}`);
+    winstonLogger.log(
+      `[TelephonyService][callSid=${CallSid}][handleStatus] status=${CallStatus}`,
+    );
   }
 
   private async speakAndLog(
@@ -91,11 +72,7 @@ export class TelephonyService {
     text: string,
     next: NextAction,
   ): Promise<string> {
-    await this.sessions.appendHistory(callSid, {
-      speaker: 'AI',
-      message: text,
-      startedAt: new Date().toISOString(),
-    });
+    await this.sessionHelper.appendAiMessage(callSid, text);
 
     return buildSayResponse({
       text,
@@ -103,5 +80,24 @@ export class TelephonyService {
       sid: callSid,
       publicUrl: PUBLIC_URL,
     });
+  }
+  private async getAIReply(callSid: string, message: string): Promise<string> {
+    const { data } = await firstValueFrom(
+      this.http
+        .post<{ replyText: string }>('/ai/reply', { callSid, message })
+        .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
+    );
+    return data.replyText;
+  }
+
+  private buildWelcomeMessage(
+    companyName?: string,
+    services?: readonly { name: string }[],
+  ): string {
+    if (companyName !== undefined && services && services.length > 0) {
+      const serviceList = services.map(s => s.name).join(', ');
+      return `Welcome! We are ${companyName}. We provide ${serviceList}. How can I help you today?`;
+    }
+    return 'Welcome! How can I help you today?';
   }
 }
