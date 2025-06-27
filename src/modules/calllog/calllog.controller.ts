@@ -31,6 +31,32 @@ import { CallLog, CallLogDocument } from './schema/calllog.schema';
 export class CalllogController {
   constructor(private readonly calllogService: CalllogService) {}
 
+  @Get('summary')
+  @ApiOperation({ summary: 'Get call logs summary' })
+  @ApiResponse({ status: 200, description: 'Return call logs summary' })
+  async getSummary(
+    @Param('userId') userId: string,
+    @Query('startAtFrom') startAtFrom?: string,
+    @Query('startAtTo') startAtTo?: string,
+  ): Promise<ICallLogSummary> {
+    return this.calllogService.getSummary(userId, startAtFrom, startAtTo);
+  }
+
+  @Get('metrics/today')
+  @ApiOperation({ summary: "Get today's call metrics" })
+  @ApiResponse({ status: 200, description: "Return today's call metrics" })
+  async getTodayMetrics(@Param('userId') userId: string): Promise<{
+    totalCalls: number;
+    liveCalls: number;
+  }> {
+    const metrics = await this.calllogService.getTodayMetrics(userId);
+    return {
+      totalCalls:
+        typeof metrics.totalCalls === 'number' ? metrics.totalCalls : 0,
+      liveCalls: typeof metrics.liveCalls === 'number' ? metrics.liveCalls : 0,
+    };
+  }
+
   @Get()
   @ApiOperation({ summary: 'Get all call logs for a user' })
   @ApiQuery({ name: 'status', required: false, enum: CallLogStatus })
@@ -104,26 +130,15 @@ export class CalllogController {
     });
   }
 
-  @Get('summary')
-  @ApiOperation({ summary: 'Get call logs summary' })
-  @ApiResponse({ status: 200, description: 'Return call logs summary' })
-  async getSummary(
+  @Post()
+  @ApiOperation({ summary: 'Create a new call log' })
+  @ApiResponse({ status: 201, description: 'Call log created successfully' })
+  async create(
     @Param('userId') userId: string,
-    @Query('startAtFrom') startAtFrom?: string,
-    @Query('startAtTo') startAtTo?: string,
-  ): Promise<ICallLogSummary> {
-    return this.calllogService.getSummary(userId, startAtFrom, startAtTo);
-  }
-
-  @Get(':calllogId')
-  @ApiOperation({ summary: 'Get call log details' })
-  @ApiResponse({ status: 200, description: 'Return call log details' })
-  @ApiResponse({ status: 404, description: 'Call log not found' })
-  async findOne(
-    @Param('userId') userId: string,
-    @Param('calllogId') calllogId: string,
+    @Body() createCallLogDto: CreateCallLogDto,
   ): Promise<ICallLog> {
-    return this.calllogService.findOne(userId, calllogId);
+    const dto = Object.assign({}, createCallLogDto, { userId });
+    return this.calllogService.create(dto);
   }
 
   @Get(':calllogId/audio')
@@ -138,30 +153,15 @@ export class CalllogController {
     return { audioId };
   }
 
-  @Get('metrics/today')
-  @ApiOperation({ summary: "Get today's call metrics" })
-  @ApiResponse({ status: 200, description: "Return today's call metrics" })
-  async getTodayMetrics(@Param('userId') userId: string): Promise<{
-    totalCalls: number;
-    liveCalls: number;
-  }> {
-    const metrics = await this.calllogService.getTodayMetrics(userId);
-    return {
-      totalCalls:
-        typeof metrics.totalCalls === 'number' ? metrics.totalCalls : 0,
-      liveCalls: typeof metrics.liveCalls === 'number' ? metrics.liveCalls : 0,
-    };
-  }
-
-  @Post()
-  @ApiOperation({ summary: 'Create a new call log' })
-  @ApiResponse({ status: 201, description: 'Call log created successfully' })
-  async create(
+  @Get(':calllogId')
+  @ApiOperation({ summary: 'Get call log details' })
+  @ApiResponse({ status: 200, description: 'Return call log details' })
+  @ApiResponse({ status: 404, description: 'Call log not found' })
+  async findOne(
     @Param('userId') userId: string,
-    @Body() createCallLogDto: CreateCallLogDto,
+    @Param('calllogId') calllogId: string,
   ): Promise<ICallLog> {
-    const dto = Object.assign({}, createCallLogDto, { userId });
-    return this.calllogService.create(dto);
+    return this.calllogService.findOne(userId, calllogId);
   }
 
   @Patch(':calllogId')
@@ -176,7 +176,7 @@ export class CalllogController {
     return this.calllogService.update(userId, calllogId, updateCallLogDto);
   }
 
-  @Delete(':id')
+  @Delete(':calllogId')
   @ApiOperation({ summary: 'Delete a calllog and all its associated data' })
   @ApiOkResponse({
     description:
@@ -185,7 +185,10 @@ export class CalllogController {
   })
   @ApiNotFoundResponse({ description: 'Calllog not found' })
   @ApiBadRequestResponse({ description: 'Invalid calllog ID' })
-  async delete(@Param('id') id: string): Promise<CallLogDocument> {
-    return this.calllogService.delete(id);
+  async delete(
+    @Param('userId') userId: string,
+    @Param('calllogId') calllogId: string,
+  ): Promise<CallLogDocument> {
+    return this.calllogService.delete(userId, calllogId);
   }
 }

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Error as MongooseError, Model, Types } from 'mongoose';
+import { plainToInstance } from 'class-transformer';
 
 import {
   CALLLOG_SORT_OPTIONS,
@@ -26,7 +27,6 @@ import { TranscriptChunkService } from '../transcript-chunk/transcript-chunk.ser
 import { CreateCallLogDto } from './dto/create-calllog.dto';
 import { UpdateCallLogDto } from './dto/update-calllog.dto';
 import { CallLog, CallLogDocument } from './schema/calllog.schema';
-import { sanitizeCallLogUpdate } from './utils/sanitize-update';
 
 interface CallLogQuery {
   userId: string;
@@ -47,7 +47,6 @@ export class CalllogService {
     @InjectModel(CallLog.name)
     private readonly callLogModel: Model<CallLogDocument>,
     @InjectModel(Transcript.name)
-    private readonly transcriptModel: Model<Transcript>,
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
   ) {}
@@ -191,11 +190,16 @@ export class CalllogService {
     updateCallLogDto: UpdateCallLogDto,
   ): Promise<ICallLog> {
     try {
-      const sanitizedUpdate = sanitizeCallLogUpdate(updateCallLogDto);
+      // Transform DTO and filter out undefined values
+      const transformedDto = plainToInstance(UpdateCallLogDto, updateCallLogDto);
+      const updateData = Object.fromEntries(
+        Object.entries(transformedDto).filter(([_, value]) => value !== undefined)
+      );
+
       const updatedCallLog = await this.callLogModel
         .findOneAndUpdate(
           { _id: calllogId, userId },
-          { $set: sanitizedUpdate },
+          { $set: updateData },
           { new: true, runValidators: true },
         )
         .exec();
@@ -220,15 +224,10 @@ export class CalllogService {
     }
   }
 
-  async delete(id: string): Promise<CallLogDocument> {
+  async delete(userId: string, id: string): Promise<CallLogDocument> {
     try {
       if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('Invalid calllog ID');
-      }
-
-      const calllog = await this.callLogModel.findById(id);
-      if (!calllog) {
-        throw new NotFoundException(`Calllog with ID ${id} not found`);
       }
 
       // Delete transcript and its chunks if they exist
@@ -247,8 +246,9 @@ export class CalllogService {
         }
       }
 
-      // Finally delete the calllog
-      const deleted = await this.callLogModel.findByIdAndDelete(id);
+      // Use ObjectId for _id field
+      const objectId = new Types.ObjectId(id);
+      const deleted = await this.callLogModel.findOneAndDelete({ _id: objectId, userId });
       if (!deleted) {
         throw new NotFoundException(`Calllog with ID ${id} not found`);
       }

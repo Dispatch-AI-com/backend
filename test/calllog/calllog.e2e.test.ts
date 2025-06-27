@@ -250,38 +250,62 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('DELETE /users/:userId/calllogs/:id', () => {
-    it('should delete calllog and cascade delete transcript and chunks', async () => {
-      // Create a calllog
+  describe('DELETE /users/:userId/calllogs/:calllogId', () => {
+    let calllogId: string;
+    let transcriptId: string;
+
+    beforeEach(async () => {
+      // Create calllog
       const testCallLog = createTestCallLog();
       const createResponse = await request(app.getHttpServer())
         .post(baseUrl)
         .send(testCallLog);
+      calllogId = createResponse.body._id;
       
-      const calllogId = createResponse.body._id;
+      console.log('Created calllog:', {
+        _id: createResponse.body._id,
+        userId: createResponse.body.userId,
+        expectedUserId: testUserId
+      });
 
-      // Create a transcript for this calllog
+      // Verify calllog is present
+      const getResponse = await request(app.getHttpServer())
+        .get(`${baseUrl}/${calllogId}`);
+      console.log('GET after create status:', getResponse.status);
+      console.log('GET after create body:', getResponse.body);
+
+      // Create transcript
       const transcriptResponse = await request(app.getHttpServer())
         .post(`${baseUrl}/${calllogId}/transcript`)
-        .send({
-          summary: 'Test transcript'
-        });
+        .send({ summary: 'Test transcript' });
+      transcriptId = transcriptResponse.body._id;
 
-      const transcriptId = transcriptResponse.body._id;
-
-      // Create chunks for this transcript
-      const chunkResponse = await request(app.getHttpServer())
+      // Create chunk
+      await request(app.getHttpServer())
         .post(`${baseUrl}/${calllogId}/transcript/chunks`)
-        .send({
-          speakerType: 'agent',
-          text: 'Test chunk',
-          startAt: 0
-        });
+        .send({ speakerType: 'agent', text: 'Test chunk', startAt: 0 });
+    });
 
-      // Delete the calllog
+    afterEach(async () => {
+      // Clean up to prevent test interference
+      try {
+        await request(app.getHttpServer()).delete(`${baseUrl}/${calllogId}`);
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    });
+
+    it('should delete calllog and cascade delete transcript and chunks', async () => {
+      console.log('Test calllogId:', calllogId);
+      console.log('Test userId:', testUserId);
+      
+      // Delete calllog
       const deleteResponse = await request(app.getHttpServer())
         .delete(`${baseUrl}/${calllogId}`);
-
+      
+      console.log('Delete response status:', deleteResponse.status);
+      console.log('Delete response body:', deleteResponse.body);
+      
       expect(deleteResponse.status).toBe(200);
       expect(deleteResponse.body._id).toBe(calllogId);
 
@@ -302,18 +326,13 @@ describe('CallLogController (e2e)', () => {
     });
 
     it('should delete calllog even when transcript does not exist', async () => {
-      // Create a calllog without transcript
-      const testCallLog = createTestCallLog();
-      const createResponse = await request(app.getHttpServer())
-        .post(baseUrl)
-        .send(testCallLog);
-      
-      const calllogId = createResponse.body._id;
+      // Delete transcript first
+      await request(app.getHttpServer())
+        .delete(`${baseUrl}/${calllogId}/transcript`);
 
-      // Delete the calllog
+      // Then delete calllog
       const deleteResponse = await request(app.getHttpServer())
         .delete(`${baseUrl}/${calllogId}`);
-
       expect(deleteResponse.status).toBe(200);
       expect(deleteResponse.body._id).toBe(calllogId);
 
@@ -327,14 +346,12 @@ describe('CallLogController (e2e)', () => {
       const nonExistentId = new mongoose.Types.ObjectId().toString();
       const response = await request(app.getHttpServer())
         .delete(`${baseUrl}/${nonExistentId}`);
-
       expect(response.status).toBe(404);
     });
 
     it('should return 400 for invalid calllog ID', async () => {
       const response = await request(app.getHttpServer())
         .delete(`${baseUrl}/invalid-id`);
-
       expect(response.status).toBe(400);
     });
   });
