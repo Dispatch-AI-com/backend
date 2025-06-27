@@ -38,5 +38,6 @@ async def chat_endpoint(body: MessageIn) -> MessageOut:
     summary="Echo reply (placeholder)",
 )
 async def reply_endpoint(body: MessageIn) -> MessageOut:
+    replyText=body.message+",Please say next i will repeat it"
 
-    return MessageOut(replyText=body.message)
+    return MessageOut(replyText=replyText)
