@@ -14,16 +14,18 @@ export class SessionHelper {
   }
 
   async appendUserMessage(callSid: string, message: string): Promise<void> {
-    await this.sessions.appendHistory(callSid, {
-      speaker: 'customer',
-      message,
-      startedAt: new Date().toISOString(),
-    });
+    await this.appendMessage(callSid, 'customer', message);
   }
-
   async appendAiMessage(callSid: string, message: string): Promise<void> {
+    await this.appendMessage(callSid, 'AI', message);
+  }
+  private async appendMessage(
+    callSid: string,
+    speaker: 'AI' | 'customer',
+    message: string,
+  ): Promise<void> {
     await this.sessions.appendHistory(callSid, {
-      speaker: 'AI',
+      speaker,
       message,
       startedAt: new Date().toISOString(),
     });
