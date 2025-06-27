@@ -46,7 +46,6 @@ export class CalllogService {
   constructor(
     @InjectModel(CallLog.name)
     private readonly callLogModel: Model<CallLogDocument>,
-    @InjectModel(Transcript.name)
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
   ) {}
@@ -240,8 +239,11 @@ export class CalllogService {
         // Then delete transcript
         await this.transcriptService.deleteByCallLogId(id);
       } catch (error) {
-        // If transcript doesn't exist, that's fine
-        if (!(error instanceof NotFoundException)) {
+        // If transcript doesn't exist, that's fine - continue with calllog deletion
+        if (error instanceof NotFoundException) {
+          // Transcript not found is OK, just continue
+        } else {
+          // Other errors should be re-thrown
           throw error;
         }
       }
@@ -249,6 +251,7 @@ export class CalllogService {
       // Use ObjectId for _id field
       const objectId = new Types.ObjectId(id);
       const deleted = await this.callLogModel.findOneAndDelete({ _id: objectId, userId });
+      
       if (!deleted) {
         throw new NotFoundException(`Calllog with ID ${id} not found`);
       }
