@@ -29,13 +29,6 @@ export async function sanitizedUpdate(
     typeof dto.startAt === 'number'
   )
     sanitizedData.startAt = new Date(dto.startAt);
-  if (
-    dto.endAt instanceof Date ||
-    typeof dto.endAt === 'string' ||
-    typeof dto.endAt === 'number'
-  )
-    sanitizedData.endAt = new Date(dto.endAt);
-
   const updated = await chunkModel.findByIdAndUpdate(id, sanitizedData, {
     new: true,
   });
