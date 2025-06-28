@@ -15,11 +15,13 @@ export interface UserInfo {
   name?: string;
   phone?: string;
   address?: string;
+  email?: string;
 }
 
 export interface Company {
   id: string;
   name: string;
+  email: string;
   description?: string;
 }
 

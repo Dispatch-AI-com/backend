@@ -60,6 +60,8 @@ export class TelephonyService {
   async handleStatus({ CallSid, CallStatus }: VoiceStatusBody): Promise<void> {
     const FINAL_CALL_STATUSES = ['completed', 'canceled'];
     if (FINAL_CALL_STATUSES.includes(CallStatus)) {
+      //todo:把这个session里面的hisoty作为calllog上传到数据库：mark
+      //todo:如果confirmservice为true，则需要上传servicebooked的数据库：tim
       await this.sessions.delete(CallSid);
     }
     winstonLogger.log(

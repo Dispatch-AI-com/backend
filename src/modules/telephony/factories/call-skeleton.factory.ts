@@ -6,11 +6,16 @@ export function createEmptySkeleton(callSid: string): CallSkeleton {
   return {
     callSid,
     services: [],
-    company: { id: '', name: '' },
+    company: { id: '', name: '', email: '' },
     user: {
       service: undefined,
       serviceBookedTime: undefined,
-      userInfo: {},
+      userInfo: {
+        email: '',
+        name: '',
+        phone: '',
+        address: '',
+      },
     },
     history: [],
     confirmBooking: false,
