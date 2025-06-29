@@ -21,7 +21,16 @@ export class TaskService {
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
-    const task = await this.taskModel.findByIdAndUpdate(id, updateTaskDto, {
+    // Whitelist allowed fields for updates
+    const allowedFields = ['title', 'description', 'status', 'dueDate'];
+    const sanitizedUpdate = Object.keys(updateTaskDto)
+      .filter(key => allowedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = updateTaskDto[key];
+        return obj;
+      }, {});
+
+    const task = await this.taskModel.findByIdAndUpdate(id, sanitizedUpdate, {
       new: true,
     });
     if (!task) throw new NotFoundException('Task not found');
