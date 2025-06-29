@@ -6,7 +6,7 @@ def getEnvironmentConfig(branchName, tagName) {
         config.environment = "uat"
         config.awsAccountId = "893774231297"
         config.imageTag = "uat-${env.BUILD_ID}"
-    } else if (branchName.startsWith('DEVOPS-')){
+    } else if (branchName.startsWith('F-')){
         echo "Matched UAT environment."
         config.environment = "uat"
         config.awsAccountId = "893774231297"
