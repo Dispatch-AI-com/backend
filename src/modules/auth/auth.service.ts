@@ -67,7 +67,8 @@ export class AuthService {
     }
     const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
     const secureUserData = {
-      name: userData.name,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
       email: userData.email,
       password: hashedPassword,
       role: userData.role ?? EUserRole.user,

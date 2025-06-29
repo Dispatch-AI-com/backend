@@ -18,9 +18,9 @@ import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
 import { WhisperModule } from '@/modules/whisper/whisper.module';
 
-import { CompanyModule } from './company/company.module';
-
 import { BlogModule } from './blog/blog.module';
+import { CompanyModule } from './company/company.module';
+import { TaskModule } from './task/task.module';
 
 @Module({
   imports: [
@@ -45,6 +45,7 @@ import { BlogModule } from './blog/blog.module';
     SubscriptionModule,
     StripeModule,
     CompanyModule,
+    TaskModule,
   ],
 })
 export class AppModule {}

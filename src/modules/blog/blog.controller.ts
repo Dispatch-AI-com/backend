@@ -1,10 +1,24 @@
-import { Controller, Get, Param, Query, Post, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
-import { ApiOkResponse, ApiParam, ApiQuery, ApiTags, ApiCreatedResponse } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiParam,
+  ApiQuery,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { BlogService } from './blog.service';
-import { Blog } from './schema/blog.schema';
 import { BlogDetail } from './blog.service';
+import { Blog } from './schema/blog.schema';
 
 interface PaginatedResponse<T> {
   data: T[];
@@ -24,7 +38,7 @@ export class BlogController {
     type: [Blog],
   })
   @ApiQuery({ name: 'keyword', required: false })
-  @ApiQuery({ name: 'topic', required: false }) // 前端用 topic
+  @ApiQuery({ name: 'topic', required: false }) // used by frontend as topic
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'page', required: false })
   async searchBlogs(

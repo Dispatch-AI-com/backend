@@ -43,6 +43,9 @@ export class Service {
 
   @Prop({ default: false })
   isDeleted?: boolean;
+
+  @Prop({ required: true })
+  userId!: string;
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Service);
