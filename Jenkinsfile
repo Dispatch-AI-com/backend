@@ -42,7 +42,7 @@ pipeline {
     agent {
         kubernetes {
             cloud 'EKS-Agent-UAT-lawrence'
-            yamlFile 'jenkins-agent-uat.yaml'
+            yamlFile 'jenkins-agent-backend-uat.yaml'
         }
     }
 
