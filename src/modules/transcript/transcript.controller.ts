@@ -7,41 +7,89 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBadRequestResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 
-import { CreateTranscriptDto, UpdateTranscriptDto } from './dto';
+import { ITranscript } from '@/common/interfaces/transcript';
+
+import { CreateTranscriptDto } from './dto/create-transcript.dto';
+import { UpdateTranscriptDto } from './dto/update-transcript.dto';
 import { Transcript } from './schema/transcript.schema';
 import { TranscriptService } from './transcript.service';
 
-@ApiTags('Transcripts')
-@Controller('transcripts')
+@ApiTags('transcripts')
+@Controller('calllogs/:calllogId/transcript')
 export class TranscriptController {
   constructor(private readonly transcriptService: TranscriptService) {}
 
   @Post()
-  @ApiOkResponse({ type: Transcript })
-  create(@Body() dto: CreateTranscriptDto): Promise<Transcript> {
-    return this.transcriptService.create(dto);
+  @ApiOperation({ summary: 'Create a transcript for a call log' })
+  @ApiCreatedResponse({
+    description: 'The transcript has been successfully created.',
+    type: Transcript,
+  })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  @ApiNotFoundResponse({ description: 'Call log not found' })
+  async create(
+    @Param('calllogId') calllogId: string,
+    @Body() createTranscriptDto: CreateTranscriptDto,
+  ): Promise<ITranscript> {
+    return this.transcriptService.create({
+      calllogId,
+      summary: createTranscriptDto.summary,
+      keyPoints: createTranscriptDto.keyPoints,
+    });
   }
 
-  @Get('calllog/:calllogid')
-  @ApiOkResponse({ type: [Transcript] })
-  findByCalllog(@Param('calllogid') calllogid: string): Promise<Transcript[]> {
-    return this.transcriptService.findByCalllogId(calllogid);
+  @Get()
+  @ApiOperation({ summary: 'Get transcript by call log ID' })
+  @ApiOkResponse({
+    description: 'Return the transcript',
+    type: Transcript,
+  })
+  @ApiNotFoundResponse({ description: 'Transcript not found' })
+  async findByCalllogId(
+    @Param('calllogId') calllogId: string,
+  ): Promise<ITranscript> {
+    return this.transcriptService.findByCallLogId(calllogId);
   }
 
-  @Patch(':id')
-  @ApiOkResponse({ type: Transcript })
-  update(
-    @Param('id') id: string,
-    @Body() dto: UpdateTranscriptDto,
-  ): Promise<Transcript> {
-    return this.transcriptService.update(id, dto);
+  @Patch()
+  @ApiOperation({ summary: 'Update transcript by call log ID' })
+  @ApiOkResponse({
+    description: 'The transcript has been successfully updated.',
+    type: Transcript,
+  })
+  @ApiNotFoundResponse({ description: 'Transcript not found' })
+  @ApiBadRequestResponse({ description: 'Invalid input data' })
+  async updateByCalllogId(
+    @Param('calllogId') calllogId: string,
+    @Body() updateTranscriptDto: UpdateTranscriptDto,
+  ): Promise<ITranscript> {
+    const transcript = await this.transcriptService.findByCallLogId(calllogId);
+    return this.transcriptService.update(
+      transcript._id.toString(),
+      updateTranscriptDto,
+    );
   }
 
-  @Delete(':id')
-  @ApiOkResponse({ type: Transcript })
-  delete(@Param('id') id: string): Promise<Transcript> {
-    return this.transcriptService.delete(id);
+  @Delete()
+  @ApiOperation({ summary: 'Delete transcript by call log ID' })
+  @ApiOkResponse({
+    description: 'The transcript has been successfully deleted.',
+    type: Transcript,
+  })
+  @ApiNotFoundResponse({ description: 'Transcript not found' })
+  async deleteByCalllogId(
+    @Param('calllogId') calllogId: string,
+  ): Promise<ITranscript> {
+    const transcript = await this.transcriptService.findByCallLogId(calllogId);
+    return this.transcriptService.delete(transcript._id.toString());
   }
 }
