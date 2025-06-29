@@ -18,7 +18,7 @@ describe('TranscriptChunk (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
     await app.init();
 
-    // 先创建 CallLog 和 Transcript
+    // Create CallLog and Transcript first
     const calllogRes = await request(app.getHttpServer())
       .post('/calllog')
       .send({

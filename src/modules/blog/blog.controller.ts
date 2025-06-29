@@ -24,7 +24,7 @@ export class BlogController {
     type: [Blog],
   })
   @ApiQuery({ name: 'keyword', required: false })
-  @ApiQuery({ name: 'topic', required: false }) // 前端用 topic
+  @ApiQuery({ name: 'topic', required: false }) // used by frontend as topic
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'page', required: false })
   async searchBlogs(

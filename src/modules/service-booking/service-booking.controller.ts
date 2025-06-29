@@ -5,6 +5,9 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
+  Delete,
+  Patch,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -37,8 +40,8 @@ export class ServiceBookingController {
     type: [ServiceBooking],
     description: 'Return all service bookings.',
   })
-  async findAllBookings(): Promise<ServiceBooking[]> {
-    return this.bookingService.findAll();
+  async findAllBookings(@Query('userId') userId?: string): Promise<ServiceBooking[]> {
+    return this.bookingService.findAll(userId);
   }
 
   @Get(':id')
@@ -55,5 +58,22 @@ export class ServiceBookingController {
       throw new NotFoundException('Booking not found');
     }
     return booking;
+  }
+
+  @Delete(':id')
+  async deleteBooking(@Param('id') id: string): Promise<{ message: string }> {
+    const result = await this.bookingService.deleteById(id);
+    if (!result) {
+      throw new NotFoundException('Booking not found');
+    }
+    return { message: 'Booking deleted successfully' };
+  }
+
+  @Patch(':id')
+  async updateBooking(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateServiceBookingDto>,
+  ): Promise<ServiceBooking | null> {
+    return this.bookingService.updateById(id, dto);
   }
 }

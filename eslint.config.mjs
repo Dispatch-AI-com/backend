@@ -5,16 +5,16 @@ import globals from "globals";
 import tseslint, { parser } from "typescript-eslint";
 import nestjsTyped from "@darraghor/eslint-plugin-nestjs-typed";
 import prettier from "eslint-plugin-prettier";
-import importSort from "eslint-plugin-simple-import-sort";   // ← 新增
-import jestPlugin from "eslint-plugin-jest";                 // ← 新增
+import importSort from "eslint-plugin-simple-import-sort";   // newly added
+import jestPlugin from "eslint-plugin-jest";                 // newly added
 
 export default tseslint.config(
-  /* 基础推荐 + type‑aware 推荐 */
+  /* Basic recommended + type‑aware recommended */
   eslint.configs.recommended,
   tseslint.configs.strictTypeChecked,
   tseslint.configs.stylisticTypeChecked,
 
-  /* ---------- 主代码块 ---------- */
+  /* ---------- Main code block ---------- */
   {
     files: ["src/**/*.ts"],
     languageOptions: {
@@ -27,14 +27,14 @@ export default tseslint.config(
         tsconfigRootDir: import.meta.dirname,
       },
     },
-    plugins: { prettier, "simple-import-sort": importSort }, // ← 注册导入排序
+    plugins: { prettier, "simple-import-sort": importSort }, // register import sort
     rules: {
-      /* 代码风格 / 质量 */
+      /* Code style / Quality */
       "prettier/prettier": "error",
       "no-console": "warn",
       "no-debugger": "error",
 
-      /* TypeScript 规则（保持不变） */
+      /* TypeScript rules (unchanged) */
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/explicit-function-return-type": "warn",
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
@@ -50,13 +50,13 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
 
-      /* --- 新增导入排序规则 --- */
+      /* --- New import sort rules --- */
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
     },
   },
 
-  /* ---------- Jest 测试文件块 ---------- */
+  /* ---------- Jest test file block ---------- */
   {
     files: ["tests/**/*.spec.ts", "**/*.test.ts"],
     plugins: { jest: jestPlugin },
@@ -67,12 +67,12 @@ export default tseslint.config(
     },
   },
 
-  /* 关闭 Nest 模块空壳类误报 */
+  /* Disable false positive for empty Nest module classes */
   {
     files: ["src/**/*.module.ts"],
     rules: { "@typescript-eslint/no-extraneous-class": "off" },
   },
 
-  /* NestJS‑typed 官方推荐 */
+  /* Official recommendation for NestJS‑typed */
   nestjsTyped.configs.flatRecommended
 );

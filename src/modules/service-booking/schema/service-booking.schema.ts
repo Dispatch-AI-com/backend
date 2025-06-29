@@ -45,6 +45,9 @@ export class ServiceBooking {
 
   @Prop({ required: true })
   bookingTime!: Date;
+
+  @Prop({ required: true })
+  userId!: string;
 }
 
 export const ServiceBookingSchema =
