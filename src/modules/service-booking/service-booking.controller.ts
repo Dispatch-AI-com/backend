@@ -63,6 +63,12 @@ export class ServiceBookingController {
   }
 
   @Delete(':id')
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Booking deleted successfully' } },
+    description: 'Booking deleted',
+  })
+  @ApiResponse({ status: 404, description: 'Booking not found.' })
   async deleteBooking(@Param('id') id: string): Promise<{ message: string }> {
     const result = await this.bookingService.deleteById(id);
     if (!result) {
@@ -72,6 +78,12 @@ export class ServiceBookingController {
   }
 
   @Patch(':id')
+  @ApiResponse({
+    status: 200,
+    type: ServiceBooking,
+    description: 'Updated booking',
+  })
+  @ApiResponse({ status: 404, description: 'Booking not found.' })
   async updateBooking(
     @Param('id') id: string,
     @Body() dto: Partial<CreateServiceBookingDto>,
