@@ -61,7 +61,7 @@ export class OnboardingService {
 
     return {
       currentStep: session.currentStep,
-      answers: session.answers || {},
+      answers: session.answers,
       status: session.status,
     };
   }
