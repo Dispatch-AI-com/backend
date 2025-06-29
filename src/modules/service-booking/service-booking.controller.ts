@@ -1,13 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
   Query,
-  Delete,
-  Patch,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -40,7 +40,9 @@ export class ServiceBookingController {
     type: [ServiceBooking],
     description: 'Return all service bookings.',
   })
-  async findAllBookings(@Query('userId') userId?: string): Promise<ServiceBooking[]> {
+  async findAllBookings(
+    @Query('userId') userId?: string,
+  ): Promise<ServiceBooking[]> {
     return this.bookingService.findAll(userId);
   }
 

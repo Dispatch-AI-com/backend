@@ -17,7 +17,11 @@ export class ServiceBookingService {
 
   async create(dto: CreateServiceBookingDto): Promise<ServiceBooking> {
     // 兼容 user.name 为对象的情况
-    if (dto.client && typeof dto.client.name === 'object' && dto.client.name !== null) {
+    if (
+      dto.client &&
+      typeof dto.client.name === 'object' &&
+      dto.client.name !== null
+    ) {
       const { firstName, lastName } = dto.client.name as any;
       dto.client.name = [firstName, lastName].filter(Boolean).join(' ');
     }
@@ -38,7 +42,10 @@ export class ServiceBookingService {
     return this.bookingModel.findByIdAndDelete(id).exec();
   }
 
-  async updateById(id: string, dto: Partial<CreateServiceBookingDto>): Promise<ServiceBooking | null> {
+  async updateById(
+    id: string,
+    dto: Partial<CreateServiceBookingDto>,
+  ): Promise<ServiceBooking | null> {
     if ('_id' in dto) delete (dto as any)._id;
     return this.bookingModel.findByIdAndUpdate(id, dto, { new: true }).exec();
   }

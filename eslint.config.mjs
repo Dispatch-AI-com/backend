@@ -7,6 +7,8 @@ import nestjsTyped from "@darraghor/eslint-plugin-nestjs-typed";
 import prettier from "eslint-plugin-prettier";
 import importSort from "eslint-plugin-simple-import-sort";   // newly added
 import jestPlugin from "eslint-plugin-jest";                 // newly added
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
 export default tseslint.config(
   /* Basic recommended + type‑aware recommended */
@@ -24,7 +26,7 @@ export default tseslint.config(
       sourceType: "module",
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        tsconfigRootDir: dirname(fileURLToPath(import.meta.url)),
       },
     },
     plugins: { prettier, "simple-import-sort": importSort }, // register import sort
@@ -49,6 +51,8 @@ export default tseslint.config(
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
+
+      "@typescript-eslint/await-thenable": "off",
 
       /* --- New import sort rules --- */
       "simple-import-sort/imports": "error",
