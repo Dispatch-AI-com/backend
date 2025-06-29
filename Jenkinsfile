@@ -48,7 +48,7 @@ pipeline {
 
     environment {
         AWS_REGION = "ap-southeast-2"
-        ECR_REPO = "dispatchai-frontend"
+        ECR_REPO = "dispatchai-backend"
         K8S_VERSION = "v1.32.3"
     }
 
@@ -59,6 +59,7 @@ pipeline {
                     branch 'DEVOPS-*'
                     branch 'main'
                     branch 'prod'
+                    branch 'F-*'
                 }
             }
             steps {
@@ -88,6 +89,7 @@ pipeline {
                     branch 'DEVOPS-*'
                     branch 'main'
                     branch 'prod'
+                    branch 'F-*'
                 }
             }
             steps {
@@ -97,7 +99,7 @@ pipeline {
                     sh "pnpm run type-check"
                     sh "pnpm run lint"
                     sh "pnpm test"
-                    sh "NEXT_PUBLIC_API_BASE_URL=${globalEnv.backendUrl} pnpm build"
+                    sh "pnpm run build"
                 }
             }
         }
@@ -108,7 +110,7 @@ pipeline {
                     branch 'DEVOPS-*'
                     branch 'main'
                     branch 'prod'
-                    branch 'F-42'
+                    branch 'F-*'
                 }
             }
             steps {
@@ -128,12 +130,13 @@ pipeline {
             }
         }
 
-        stage('helm to deploy frontend') {
+        stage('helm to deploy backend') {
             when {
                 anyOf {
                     branch 'DEVOPS-*'
                     branch 'main'
                     branch 'prod'
+                    branch 'F-*'
                 }
             }
             steps {
@@ -144,7 +147,7 @@ pipeline {
                             // checkout helm repo
                             git branch: "main", credentialsId: '2c8f4c5f-0bc2-48ee-b820-f107d08db968', url: 'https://github.com/Dispatch-AI-com/helm.git'
                             // deploy to eks
-                            sh "bash deploy-frontend-${globalEnv.environment}.sh ${globalEnv.imageTag}"
+                            sh "bash deploy-backend-${globalEnv.environment}.sh ${globalEnv.imageTag}"
                         }
                     }
                 }
@@ -154,10 +157,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Frontend has been deployed successfully with image: ${globalEnv.imageName}:${globalEnv.imageTag}"
+            echo "✅ Backend has been deployed successfully with image: ${globalEnv.imageName}:${globalEnv.imageTag}"
             emailext(
-                to: "lawrence.wenboli@gmail.com",
-                subject: "✅ DispatchAI Frontend pipeline succeeded.",
+                to: "fanhang995@gmail.com",
+                subject: "✅ DispatchAI Backend pipeline succeeded.",
                 body: "Jenkins CICD Pipeline succeeded!<br/>" +
                     "Job Result: ${currentBuild.result}<br/>" +
                     "Job Name: ${env.JOB_NAME}<br/>" +
@@ -170,8 +173,8 @@ pipeline {
 
         failure {
             emailext(
-                to: "lawrence.wenboli@gmail.com",
-                subject: "❌ DispatchAI Frontend pipeline failed.",
+                to: "fanhang995@gmail.com",
+                subject: "❌ DispatchAI Backend pipeline failed.",
                 body: "Jenkins CICD Pipeline failed!<br/>" +
                     "Job Result: ${currentBuild.result}<br/>" +
                     "Job Name: ${env.JOB_NAME}<br/>" +
