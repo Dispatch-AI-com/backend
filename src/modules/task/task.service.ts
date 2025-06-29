@@ -29,9 +29,9 @@ export class TaskService {
     const sanitizedUpdate = Object.keys(updateTaskDto)
       .filter(key => allowedFields.includes(key))
       .reduce((obj, key) => {
-        obj[key] = updateTaskDto[key];
+        (obj as any)[key] = (updateTaskDto as any)[key];
         return obj;
-      }, {});
+      }, {} as Partial<UpdateTaskDto>);
 
     const task = await this.taskModel.findByIdAndUpdate(id, sanitizedUpdate, {
       new: true,
