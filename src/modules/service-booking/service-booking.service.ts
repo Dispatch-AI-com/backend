@@ -30,7 +30,10 @@ export class ServiceBookingService {
   }
 
   async findAll(userId?: string): Promise<ServiceBooking[]> {
-    const filter = userId ? { userId } : {};
+    if (userId && typeof userId !== 'string') {
+      throw new Error('Invalid userId parameter');
+    }
+    const filter = userId ? { userId: { $eq: userId } } : {};
     return this.bookingModel.find(filter).exec();
   }
 
