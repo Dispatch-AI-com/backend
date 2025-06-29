@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  BadRequestException,
 } from '@nestjs/common';
 
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -25,6 +26,9 @@ export class TaskController {
 
   @Get()
   async findAllByUser(@Query('userId') userId: string): Promise<Task[]> {
+    if (typeof userId !== 'string') {
+      throw new BadRequestException('Invalid userId');
+    }
     return this.taskService.findAllByUser(userId);
   }
 

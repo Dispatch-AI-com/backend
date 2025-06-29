@@ -17,7 +17,7 @@ export class TaskService {
   }
 
   async findAllByUser(userId: string): Promise<Task[]> {
-    return this.taskModel.find({ userId }).sort({ dateTime: -1 }).exec();
+    return this.taskModel.find({ userId: { $eq: userId } }).sort({ dateTime: -1 }).exec();
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto): Promise<Task> {
