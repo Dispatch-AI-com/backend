@@ -16,8 +16,8 @@ export class User extends Document {
   @Prop({ required: true, unique: true })
   email!: string;
 
-  @Prop({ required: true, select: false })
-  password!: string;
+  @Prop({ required: false, select: false })
+  password?: string;
 
   @Prop()
   fullPhoneNumber!: string;
@@ -43,6 +43,15 @@ export class User extends Document {
 
   @Prop({ default: EUserRole.user })
   role!: EUserRole;
+
+  @Prop()
+  googleId?: string;
+
+  @Prop()
+  avatar?: string;
+
+  @Prop({ default: 'local' })
+  provider!: string;
 }
 
 export type UserDocument = User & Document;
