@@ -13,14 +13,16 @@ export class StripeService {
     priceId: string;
     userId: string;
     planId: string;
+    stripeCustomerId?: string;
   }) {
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: input.priceId, quantity: 1 }],
-      success_url: `${appUrl}/pricing`,
-      cancel_url: `${appUrl}/pricing`,
+      success_url: `${appUrl}/admin/billing/success?status=success`,
+      cancel_url: `${appUrl}/admin/billing/failed?status=failed`,
+      ...(input.stripeCustomerId ? { customer: input.stripeCustomerId } : {}),
       subscription_data: {
         metadata: { userId: input.userId, planId: input.planId },
       },

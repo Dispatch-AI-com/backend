@@ -7,9 +7,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { RRule } from 'rrule';
 
-import { User, UserDocument } from '../user/schema/user.schema';
 import { Plan, PlanDocument } from '../plan/schema/plan.schema';
 import { StripeService } from '../stripe/stripe.service';
+import { User, UserDocument } from '../user/schema/user.schema';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import {
   Subscription,
@@ -42,10 +42,22 @@ export class SubscriptionService {
 
     const pricing = plan.pricing[0];
 
+    const lastSubscription = await this.subscriptionModel
+      .findOne({
+        userId: new Types.ObjectId(dto.userId),
+        stripeCustomerId: { $exists: true },
+      })
+      .sort({ createdAt: -1 });
+
+    const existingStripeCustomerId = lastSubscription?.stripeCustomerId;
+
+    console.log('customerId', existingStripeCustomerId);
+
     const session = await this.stripeService.createCheckoutSession({
       priceId: pricing.stripePriceId,
       userId: dto.userId,
       planId: dto.planId,
+      stripeCustomerId: existingStripeCustomerId,
     });
 
     return {
@@ -192,14 +204,14 @@ export class SubscriptionService {
     );
   }
 
-  async getByuser(userId: string) {
+  async getActiveByuser(userId: string) {
     const subscription = await this.subscriptionModel
-      .findOne({ userId: new Types.ObjectId(userId) })
+      .findOne({ userId: new Types.ObjectId(userId), status: 'active' })
       .populate('planId')
       .populate('userId');
 
     if (!subscription)
-      throw new NotFoundException('Subscription not found for user');
+      throw new NotFoundException('Active Subscription not found for user');
     return subscription;
   }
 
@@ -220,9 +232,7 @@ export class SubscriptionService {
     });
 
     if (!subscription) {
-      throw new NotFoundException(
-        'No failed subscription found for this user',
-      );
+      throw new NotFoundException('No failed subscription found for this user');
     }
 
     const stripeCustomerId = subscription.stripeCustomerId;

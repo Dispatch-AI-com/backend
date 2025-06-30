@@ -51,8 +51,7 @@ export class SubscriptionController {
     description: 'No failed subscription found for this user',
   })
   async generateBillingPortalUrl(@Param('userId') userId: string) {
-    const url =
-      await this.subscriptionService.generateBillingPortalUrl(userId);
+    const url = await this.subscriptionService.generateBillingPortalUrl(userId);
     return { url };
   }
 
@@ -97,6 +96,6 @@ export class SubscriptionController {
     description: 'Subscription not found for user',
   })
   async getByuser(@Param('userId') userId: string) {
-    return await this.subscriptionService.getByuser(userId);
+    return await this.subscriptionService.getActiveByuser(userId);
   }
 }
