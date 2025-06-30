@@ -29,6 +29,7 @@ export class TelephonyService {
   ) {}
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
     const session = await this.sessionHelper.ensureSession(CallSid);
+    //把redis sessinon里面的company services填满
 
     const { services, company } = session;
     const welcome = this.buildWelcomeMessage(company.name, services);

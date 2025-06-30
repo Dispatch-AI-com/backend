@@ -22,7 +22,7 @@ export interface Company {
   id: string;
   name: string;
   email: string;
-  calendar_access_token: string;
+  calendar_access_token?: string;
   description?: string;
 }
 
