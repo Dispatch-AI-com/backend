@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -18,21 +19,27 @@ import {
 
 @Injectable()
 export class SubscriptionService {
+  private readonly logger = new Logger(SubscriptionService.name);
+
   constructor(
     @InjectModel(Subscription.name)
     private readonly subscriptionModel: Model<SubscriptionDocument>,
-    @InjectModel(Plan.name) private readonly planModel: Model<PlanDocument>,
+    @InjectModel(Plan.name)
+    private readonly planModel: Model<PlanDocument>,
     @InjectModel(User.name)
     private readonly UserModel: Model<UserDocument>,
     private readonly stripeService: StripeService,
   ) {}
 
-  async createSubscription(dto: CreateSubscriptionDto) {
+  async createSubscription(dto: CreateSubscriptionDto): Promise<{
+    message: string;
+    checkoutUrl: string;
+  }> {
     if (!Types.ObjectId.isValid(dto.userId)) {
       throw new BadRequestException('Invalid user ID');
     }
     const user = await this.UserModel.findById(dto.userId);
-    if (!user) throw new NotFoundException('user not found');
+    if (!user) throw new NotFoundException('User not found');
 
     if (!Types.ObjectId.isValid(dto.planId)) {
       throw new BadRequestException('Invalid plan ID');
@@ -51,8 +58,6 @@ export class SubscriptionService {
 
     const existingStripeCustomerId = lastSubscription?.stripeCustomerId;
 
-    console.log('customerId', existingStripeCustomerId);
-
     const session = await this.stripeService.createCheckoutSession({
       priceId: pricing.stripePriceId,
       userId: dto.userId,
@@ -62,7 +67,7 @@ export class SubscriptionService {
 
     return {
       message: 'Stripe checkout session created',
-      checkoutUrl: session.url,
+      checkoutUrl: session.url ?? '',
     };
   }
 
@@ -72,9 +77,9 @@ export class SubscriptionService {
     subscriptionId: string,
     stripeCustomerId: string,
     chargeId: string,
-  ) {
+  ): Promise<{ message: string }> {
     const user = await this.UserModel.findById(userId);
-    if (!user) throw new NotFoundException('user not found');
+    if (!user) throw new NotFoundException('User not found');
 
     const plan = await this.planModel.findById(planId);
     if (!plan) {
@@ -91,27 +96,30 @@ export class SubscriptionService {
 
     const now = new Date();
     const endAt = rule.after(now);
-    if (!endAt) {
+    if (endAt == null) {
       throw new BadRequestException('Could not compute end date from rrule');
     }
 
     await this.subscriptionModel.create({
       userId: new Types.ObjectId(userId),
       planId: new Types.ObjectId(planId),
-      subscriptionId: subscriptionId,
-      stripeCustomerId: stripeCustomerId,
-      chargeId: chargeId,
+      subscriptionId,
+      stripeCustomerId,
+      chargeId,
       createdAt: now,
       status: 'active',
       startAt: now,
-      endAt: endAt,
+      endAt,
     });
     return {
       message: 'Subscription activated',
     };
   }
 
-  async changePlan(userId: string, newPlanId: string) {
+  async changePlan(
+    userId: string,
+    newPlanId: string,
+  ): Promise<{ message: string }> {
     const subscription = await this.subscriptionModel.findOne({
       userId: new Types.ObjectId(userId),
       status: 'active',
@@ -126,11 +134,11 @@ export class SubscriptionService {
 
     if (!plan) throw new NotFoundException('Plan not found');
 
-    if (subscription.planId === plan.id) {
+    if (subscription.planId.equals(plan._id)) {
       return { message: 'Already on the target plan' };
     }
 
-    if (!subscription.subscriptionId) {
+    if (subscription.subscriptionId == null) {
       throw new BadRequestException('Missing subscription ID');
     }
 
@@ -150,9 +158,14 @@ export class SubscriptionService {
         payment_behavior: 'pending_if_incomplete',
       },
     );
+
+    return { message: 'Plan updated on Stripe' };
   }
 
-  async updatePlanByWebhook(stripeSubscriptionId: string, newPriceId: string) {
+  async updatePlanByWebhook(
+    stripeSubscriptionId: string,
+    newPriceId: string,
+  ): Promise<void> {
     const plan = await this.planModel.findOne({
       'pricing.stripePriceId': newPriceId,
     });
@@ -163,19 +176,22 @@ export class SubscriptionService {
     });
     if (!subscription) throw new NotFoundException('Subscription not found');
 
-    if (subscription.planId === plan.id) {
+    if (subscription.planId.equals(plan._id)) {
       return;
     }
 
     await this.subscriptionModel.updateOne(
       { subscriptionId: stripeSubscriptionId },
-      { planId: plan.id },
+      { planId: plan._id },
     );
   }
 
-  async updateStatusByWebhook(subscriptionId: string, status: string) {
+  async updateStatusByWebhook(
+    subscriptionId: string,
+    status: string,
+  ): Promise<void> {
     const subscription = await this.subscriptionModel.findOne({
-      subscriptionId: subscriptionId,
+      subscriptionId,
     });
     if (!subscription) throw new NotFoundException('Subscription not found');
 
@@ -183,28 +199,30 @@ export class SubscriptionService {
       return;
     }
 
-    await this.subscriptionModel.updateOne(
-      { subscriptionId },
-      { status: status },
-    );
+    await this.subscriptionModel.updateOne({ subscriptionId }, { status });
   }
 
-  async updateChargeIdByWebhook(customerId: string, chargeId: string) {
+  async updateChargeIdByWebhook(
+    customerId: string,
+    chargeId: string,
+  ): Promise<void> {
     const subscription = await this.subscriptionModel.findOne({
       stripeCustomerId: customerId,
     });
     if (!subscription)
       throw new NotFoundException('Subscription not found for this customer');
+
     if (subscription.chargeId === chargeId) {
       return;
     }
+
     await this.subscriptionModel.updateOne(
       { stripeCustomerId: customerId },
-      { chargeId: chargeId },
+      { chargeId },
     );
   }
 
-  async getActiveByuser(userId: string) {
+  async getActiveByuser(userId: string): Promise<SubscriptionDocument> {
     const subscription = await this.subscriptionModel
       .findOne({ userId: new Types.ObjectId(userId), status: 'active' })
       .populate('planId')
@@ -215,9 +233,9 @@ export class SubscriptionService {
     return subscription;
   }
 
-  async getAll(page = 1, limit = 20) {
+  async getAll(page = 1, limit = 20): Promise<SubscriptionDocument[]> {
     const skip = (page - 1) * limit;
-    return await this.subscriptionModel
+    return this.subscriptionModel
       .find()
       .populate('planId')
       .populate('userId')
@@ -225,7 +243,7 @@ export class SubscriptionService {
       .limit(limit);
   }
 
-  async generateBillingPortalUrl(userId: string) {
+  async generateBillingPortalUrl(userId: string): Promise<string> {
     const subscription = await this.subscriptionModel.findOne({
       userId: new Types.ObjectId(userId),
       status: 'failed',
@@ -236,8 +254,7 @@ export class SubscriptionService {
     }
 
     const stripeCustomerId = subscription.stripeCustomerId;
-
-    if (!stripeCustomerId) {
+    if (stripeCustomerId == null) {
       throw new BadRequestException('Missing stripe customer id');
     }
 
@@ -246,11 +263,13 @@ export class SubscriptionService {
     );
   }
 
-  async findBySuscriptionId(subscriptionId: string) {
-    return await this.subscriptionModel.findOne({ subscriptionId });
+  async findBySuscriptionId(
+    subscriptionId: string,
+  ): Promise<SubscriptionDocument | null> {
+    return this.subscriptionModel.findOne({ subscriptionId });
   }
 
-  async downgradeToFree(userId: string) {
+  async downgradeToFree(userId: string): Promise<void> {
     const subscription = await this.subscriptionModel.findOne({
       userId: new Types.ObjectId(userId),
       status: 'active',
@@ -259,11 +278,11 @@ export class SubscriptionService {
     if (!subscription)
       throw new NotFoundException('Active subscription not found');
 
-    if (!subscription.subscriptionId) {
+    if (subscription.subscriptionId == null) {
       throw new BadRequestException('Missing subscription ID');
     }
 
-    if (!subscription.chargeId) {
+    if (subscription.chargeId == null) {
       throw new BadRequestException('Missing charge ID for refund');
     }
 
@@ -285,7 +304,6 @@ export class SubscriptionService {
     );
 
     const amountPaid = invoice.amount_paid;
-
     const refundAmount = Math.floor(amountPaid * remainingPercentage);
 
     if (refundAmount > 0) {

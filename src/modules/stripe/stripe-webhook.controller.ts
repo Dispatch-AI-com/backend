@@ -31,7 +31,7 @@ export class StripeWebhookController {
     @Req() req: Request,
     @Res() res: Response,
     @Headers('stripe-signature') signature: string,
-  ) {
+  ): Promise<void> {
     let event: Stripe.Event;
 
     try {
@@ -45,16 +45,17 @@ export class StripeWebhookController {
           '❌ Stripe signature verification failed:',
           err.message,
         );
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        res.status(400).send(`Webhook Error: ${err.message}`);
+      } else {
+        this.logger.error(
+          '❌ Stripe signature verification failed: unknown error',
+        );
+        res.status(400).send('Webhook Error');
       }
-      this.logger.error(
-        '❌ Stripe signature verification failed: unknown error',
-      );
-      return res.status(400).send(`Webhook Error`);
+      return;
     }
 
     this.logger.log(`✅ Stripe Event Received: ${event.type}`);
-
     res.status(200).send('received');
 
     try {
@@ -64,7 +65,7 @@ export class StripeWebhookController {
     }
   }
 
-  private async processStripeEvent(event: Stripe.Event) {
+  private async processStripeEvent(event: Stripe.Event): Promise<void> {
     switch (event.type) {
       case 'checkout.session.completed':
         await this.handleCheckoutSessionCompleted(event);
@@ -91,7 +92,9 @@ export class StripeWebhookController {
     }
   }
 
-  private async handleCheckoutSessionCompleted(event: Stripe.Event) {
+  private async handleCheckoutSessionCompleted(
+    event: Stripe.Event,
+  ): Promise<void> {
     const session = event.data.object as Stripe.Checkout.Session;
     const subscriptionId = session.subscription as string;
 
@@ -102,12 +105,12 @@ export class StripeWebhookController {
     const stripeCustomerId = subscription.customer as string;
 
     const chargeId = await this.stripeService.retrievecharge(stripeCustomerId);
-    if (!chargeId) {
+    if (typeof chargeId !== 'string') {
       this.logger.warn(`No charge found for customer: ${stripeCustomerId}`);
       return;
     }
 
-    if (!userId || !planId) {
+    if (typeof userId !== 'string' || typeof planId !== 'string') {
       this.logger.error('Missing metadata: userId or planId');
       return;
     }
@@ -128,7 +131,7 @@ export class StripeWebhookController {
     }
   }
 
-  private async handleSubscriptionUpdated(event: Stripe.Event) {
+  private async handleSubscriptionUpdated(event: Stripe.Event): Promise<void> {
     const stripeSub = event.data.object as Stripe.Subscription;
 
     if (stripeSub.items.data.length !== 1) {
@@ -156,13 +159,13 @@ export class StripeWebhookController {
     }
   }
 
-  private async handlePaymentFailed(event: Stripe.Event) {
+  private async handlePaymentFailed(event: Stripe.Event): Promise<void> {
     const invoice = event.data.object as Stripe.Invoice;
 
     const subscriptionId = invoice.parent?.subscription_details
       ?.subscription as string;
 
-    if (!subscriptionId) {
+    if (typeof subscriptionId !== 'string') {
       this.logger.error('No subscriptionId found in payment_failed webhook');
       return;
     }
@@ -185,12 +188,12 @@ export class StripeWebhookController {
     }
   }
 
-  private async handlePaymentSucceeded(event: Stripe.Event) {
+  private async handlePaymentSucceeded(event: Stripe.Event): Promise<void> {
     const invoice = event.data.object as Stripe.Invoice;
     const subscriptionId = invoice.parent?.subscription_details
       ?.subscription as string;
 
-    if (!subscriptionId) {
+    if (typeof subscriptionId !== 'string') {
       this.logger.error('No subscriptionId found in payment_succeeded webhook');
       return;
     }
@@ -222,7 +225,7 @@ export class StripeWebhookController {
     }
   }
 
-  private async handleSubscriptionDeleted(event: Stripe.Event) {
+  private async handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {
     const subscription = event.data.object as Stripe.Subscription;
     const subscriptionId = subscription.id;
 
