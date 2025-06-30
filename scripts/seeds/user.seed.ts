@@ -16,6 +16,7 @@ const mockUsers = [
     role: EUserRole.admin,
     status: UserStatus.active,
     receivedAdverts: true,
+    provider: 'local',
   },
   {
     firstName: 'Jane',
@@ -26,6 +27,7 @@ const mockUsers = [
     role: EUserRole.user,
     status: UserStatus.active,
     receivedAdverts: true,
+    provider: 'local',
   },
   {
     firstName: 'Bob',
@@ -36,6 +38,32 @@ const mockUsers = [
     role: EUserRole.user,
     status: UserStatus.active,
     receivedAdverts: false,
+    provider: 'local',
+  },
+  {
+    firstName: 'Alice',
+    lastName: 'Google',
+    email: 'alice.google@gmail.com',
+    googleId: '1234567890',
+    avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+    fullPhoneNumber: '+61400003456',
+    role: EUserRole.user,
+    status: UserStatus.active,
+    receivedAdverts: true,
+    provider: 'google',
+  },
+  {
+    firstName: 'Charlie',
+    lastName: 'Mixed',
+    email: 'charlie.mixed@example.com',
+    password: bcrypt.hashSync('Mixed123!', 10),
+    googleId: '0987654321',
+    avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+    fullPhoneNumber: '+61400007890',
+    role: EUserRole.user,
+    status: UserStatus.active,
+    receivedAdverts: false,
+    provider: 'google',
   },
 ];
 
