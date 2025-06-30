@@ -1,10 +1,14 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, FilterQuery } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 
 import { Blog, BlogDocument } from './schema/blog.schema';
-import { escapeForRegex, getYouTubeEmbedUrl } from './utils/blog-detail.helper';
 import { initialBlogs } from './seed-data';
+import { escapeForRegex, getYouTubeEmbedUrl } from './utils/blog-detail.helper';
 
 export interface BlogDetail {
   _id: string;
@@ -113,7 +117,20 @@ export class BlogService {
       throw new NotFoundException(`Blog with ID ${id} not found`);
     }
 
-    const { _id, title, summary, content, tag, date, author, videoUrl, imageUrl, avatarUrl, createdAt, updatedAt } = blog;
+    const {
+      _id,
+      title,
+      summary,
+      content,
+      tag,
+      date,
+      author,
+      videoUrl,
+      imageUrl,
+      avatarUrl,
+      createdAt,
+      updatedAt,
+    } = blog;
 
     if (createdAt == null || updatedAt == null) {
       throw new NotFoundException(`Timestamps missing for blog ${id}`);
