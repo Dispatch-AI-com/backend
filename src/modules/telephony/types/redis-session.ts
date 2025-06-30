@@ -37,5 +37,4 @@ export interface CallSkeleton {
   history: Message[];
   confirmBooking: boolean;
   confirmEmailSent: boolean;
-  createdAt: string;
 }

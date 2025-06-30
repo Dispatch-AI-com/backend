@@ -1,8 +1,6 @@
 import type { CallSkeleton } from '@/modules/telephony/types/redis-session';
 
 export function createEmptySkeleton(callSid: string): CallSkeleton {
-  const now = new Date().toISOString();
-
   return {
     callSid,
     services: [],
@@ -20,6 +18,5 @@ export function createEmptySkeleton(callSid: string): CallSkeleton {
     history: [],
     confirmBooking: false,
     confirmEmailSent: false,
-    createdAt: now,
   };
 }
