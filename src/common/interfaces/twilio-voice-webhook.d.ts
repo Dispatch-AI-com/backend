@@ -40,6 +40,7 @@ export interface VoiceRecordingBody {
 }
 
 export interface VoiceStatusBody {
+  Caller: string;
   CallSid: string;
   CallStatus:
     | 'queued'
@@ -50,5 +51,5 @@ export interface VoiceStatusBody {
     | 'failed'
     | 'no-answer';
   Timestamp: string;
-  CallDuration?: string;
+  CallDuration: string;
 }
