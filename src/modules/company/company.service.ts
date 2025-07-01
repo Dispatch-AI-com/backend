@@ -177,4 +177,30 @@ export class CompanyService {
       );
     }
   }
+
+  async findByUserId(userId: string): Promise<Company> {
+    try {
+      if (!Types.ObjectId.isValid(userId)) {
+        throw new BadRequestException('Invalid user ID format');
+      }
+      const company = await this.companyModel
+        .findOne({ user: userId })
+        .populate('user')
+        .exec();
+      if (!company) {
+        throw new NotFoundException(`Company with user ID ${userId} not found`);
+      }
+      return company;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException(
+        'Failed to fetch company by userId: ' + (error as Error).message,
+      );
+    }
+  }
 }
