@@ -1,8 +1,24 @@
-import { Body, Controller, Get, HttpStatus, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { AnswerDto } from './dto/answer.dto';
 import { CompleteDto } from './dto/complete.dto';
+import { DeleteSessionDto } from './dto/delete.dto';
 import { OnboardingService } from './onboarding.service';
 
 @ApiTags('onboarding')
@@ -87,5 +103,29 @@ export class OnboardingController {
   })
   async complete(@Body() dto: CompleteDto): Promise<{ success: boolean }> {
     return this.onboardingService.completeSession(dto.userId);
+  }
+
+  @Delete('delete')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Delete onboarding session' })
+  @ApiBody({
+    type: DeleteSessionDto,
+    description: 'Pass the userId of the session to be deleted',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Successfully deleted',
+    schema: {
+      example: { success: true },
+    },
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'User session not found',
+  })
+  async deleteSession(
+    @Body() dto: DeleteSessionDto,
+  ): Promise<{ success: boolean }> {
+    return this.onboardingService.deleteSession(dto.userId);
   }
 }

@@ -82,4 +82,17 @@ export class OnboardingService {
 
     return { success: true };
   }
+
+  /**
+   * 删除指定用户的 Onboarding Session
+   */
+  async deleteSession(userId: string): Promise<{ success: boolean }> {
+    const result = await this.sessionModel.deleteOne({ userId });
+
+    if (result.deletedCount === 0) {
+      throw new NotFoundException(`User session not found: ${userId}`);
+    }
+
+    return { success: true };
+  }
 }
