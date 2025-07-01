@@ -92,4 +92,14 @@ export class CompanyController {
   async remove(@Param('id') id: string): Promise<void> {
     return this.companyService.remove(id);
   }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get a company by userId' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return the company.' })
+  @ApiResponse({ status: 400, description: 'Invalid userId.' })
+  @ApiResponse({ status: 404, description: 'Company not found.' })
+  async findByUserId(@Param('userId') userId: string): Promise<Company> {
+    return this.companyService.findByUserId(userId);
+  }
 }
