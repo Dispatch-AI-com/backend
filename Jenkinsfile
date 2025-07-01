@@ -1,189 +1,165 @@
 // getEnvironmentConfig function to set environment variables
-def getEnvironmentConfig(branchName, tagName) {
-    def config = [:]
-    if (branchName == 'main') {
-        echo "Matched UAT environment."
-        config.environment = "uat"
-        config.awsAccountId = "893774231297"
-        config.imageTag = "uat-${env.BUILD_ID}"
-    } else if (branchName.startsWith('F-')){
-        echo "Matched UAT environment."
-        config.environment = "uat"
-        config.awsAccountId = "893774231297"
-        config.imageTag = "${branchName.toLowerCase()}-${env.BUILD_ID}"
-    }
-    else if (branchName == 'prod') {
-        echo "Matched PROD environment."
-        if (tagName != null && tagName.trim() != '') {
-            config.environment = "prod"
-            config.awsAccountId = "981349713333"
-            config.imageTag = "${tagName}"
-        } else {
-            error("Production builds require a tag!")
-        }
-    } else {
-        echo "Error!!! No environment matched."
-        error("Branch '${branchName ?: 'unknown'}' is not allowed to run this pipeline.")
-    }
-    
-    config.backendUrl = "https://backend.${config.environment}.getdispatch.ai/api"
-    config.eksClusterName = "DispatchAI-${config.environment.toUpperCase()}-EKS-Cluster"
-    config.imageName = "${config.awsAccountId}.dkr.ecr.ap-southeast-2.amazonaws.com/${env.ECR_REPO}"
-    
-    echo "Global environment variables stored in globalEnv successfully! \n${config}"
-        
-    return config
-}
-
-// globalEnv to store environment variables
-def globalEnv = [:]
-
 pipeline {
     agent {
         kubernetes {
-            cloud 'EKS-Agent-UAT-lawrence'
-            yamlFile 'jenkins-agent-backend-uat.yaml'
+            yaml """
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - name: docker
+    image: docker:24.0.6-dind
+    command: ["dockerd", "--host=unix:///var/run/docker.sock", "--storage-driver=overlay2"]
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "500m"
+      limits:
+        memory: "2Gi"
+        cpu: "1000m"
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run
+    - name: docker-cache
+      mountPath: /var/lib/docker
+  - name: build-tools
+    image: alpine:3.18
+    command: ["sleep"]
+    args: ["99d"]
+    env:
+    - name: DOCKER_HOST
+      value: unix:///var/run/docker.sock
+    - name: AWS_DEFAULT_REGION
+      value: ap-southeast-2
+    - name: DOCKER_BUILDKIT
+      value: "0"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "250m"
+      limits:
+        memory: "1Gi"
+        cpu: "500m"
+    volumeMounts:
+    - name: docker-sock
+      mountPath: /var/run
+  volumes:
+  - name: docker-sock
+    emptyDir: {}
+  - name: docker-cache
+    emptyDir:
+      sizeLimit: 10Gi
+"""
         }
     }
 
     environment {
-        AWS_REGION = "ap-southeast-2"
-        ECR_REPO = "dispatchai-backend"
-        K8S_VERSION = "v1.32.3"
+        AWS_REGION = 'ap-southeast-2'
+        ECR_REGISTRY = '893774231297.dkr.ecr.ap-southeast-2.amazonaws.com'
+        ECR_REPOSITORY = 'dispatchai-backend'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKERFILE_PATH = 'Dockerfile'
     }
 
     stages {
-        stage('Setup global environment variables') {
-            when {
-                anyOf {
-                    branch 'DEVOPS-*'
-                    branch 'main'
-                    branch 'prod'
-                    branch 'F-*'
-                }
-            }
+        stage('Checkout') {
             steps {
-                container('dispatchai-jenkins-agent') {
+                git branch: 'main', url: 'https://github.com/Dispatch-AI-com/backend.git'
+            }
+        }
+
+        stage('Build & Push Image') {
+            steps {
+                container('build-tools') {
                     script {
-                        echo "Starting echo environment."
-                        echo "BRANCH_NAME = '${env.BRANCH_NAME}'"
-                        echo "TAG_NAME = '${env.TAG_NAME}'"
-                        
-                        // Setup global environment
-                        globalEnv = getEnvironmentConfig(env.BRANCH_NAME, env.TAG_NAME)
-                        echo "globalEnv config: ${globalEnv}"
-                        echo "ENVIRONMENT: ${globalEnv.environment}"
-                        echo "AWS_ACCOUNT_ID: ${globalEnv.awsAccountId}"
-                        echo "BACKEND_URL: ${globalEnv.backendUrl}"
-                        echo "EKS_CLUSTER_NAME: ${globalEnv.eksClusterName}"
-                        echo "imageName: ${globalEnv.imageName}"
-                        echo "imageTag: ${globalEnv.imageTag}"
-                    }
-                }
-            }
-        }
+                        try {
+                            sh '''
+                                apk update && apk add --no-cache aws-cli docker-cli curl
 
-        stage('install, test and build') {
-            when {
-                anyOf {
-                    branch 'DEVOPS-*'
-                    branch 'main'
-                    branch 'prod'
-                    branch 'F-*'
-                }
-            }
-            steps {
-                container('node') {
-                    sh "npm install -g pnpm"
-                    sh "pnpm install"
-                    sh "pnpm run type-check"
-                    sh "pnpm run lint"
-                    sh "pnpm test"
-                    sh "pnpm run build"
-                }
-            }
-        }
+                                echo "Waiting for Docker daemon to start..."
+                                timeout=60
+                                while ! docker info >/dev/null 2>&1; do
+                                    sleep 2
+                                    timeout=$((timeout-2))
+                                    if [ $timeout -le 0 ]; then
+                                        echo "❌ Docker daemon startup timed out"
+                                        exit 1
+                                    fi
+                                done
 
-        stage('build docker image') {
-            when {
-                anyOf {
-                    branch 'DEVOPS-*'
-                    branch 'main'
-                    branch 'prod'
-                    branch 'F-*'
-                }
-            }
-            steps {
-                container('dispatchai-jenkins-agent') {
-                    script {
-                        // Use BuildKit to build docker image and push to ECR
-                        sh """
-                            docker-credential-ecr-login list
-                            buildctl --addr=tcp://localhost:1234 build \\
-                              --frontend=dockerfile.v0 \\
-                              --local context=. \\
-                              --local dockerfile=. \\
-                              --output type=image,name=${globalEnv.imageName}:${globalEnv.imageTag},push=true
-                        """
-                    }
-                }
-            }
-        }
+                                if [ ! -f "${DOCKERFILE_PATH}" ]; then
+                                    echo "❌ Dockerfile not found at path: ${DOCKERFILE_PATH}"
+                                    exit 1
+                                fi
 
-        stage('helm to deploy backend') {
-            when {
-                anyOf {
-                    branch 'DEVOPS-*'
-                    branch 'main'
-                    branch 'prod'
-                    branch 'F-*'
-                }
-            }
-            steps {
-                container('dispatchai-jenkins-agent') {
-                    cleanWs()
-                    dir('helm') {
-                        script {
-                            // checkout helm repo
-                            git branch: "main", credentialsId: '2c8f4c5f-0bc2-48ee-b820-f107d08db968', url: 'https://github.com/Dispatch-AI-com/helm.git'
-                            // deploy to eks
-                            sh "bash deploy-backend-${globalEnv.environment}.sh ${globalEnv.imageTag}"
+                                echo "Building Docker image..."
+                                docker build -f ${DOCKERFILE_PATH} -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+
+                                echo "Ensuring ECR repository exists..."
+                                if ! aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} --region ${AWS_REGION} >/dev/null 2>&1; then
+                                    aws ecr create-repository --repository-name ${ECR_REPOSITORY} --region ${AWS_REGION}
+                                fi
+
+                                echo "Logging in to AWS ECR..."
+                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+                                echo "Tagging and pushing image..."
+                                docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                                docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+                                docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                                docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+
+                                docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} || true
+                                docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest || true
+
+                                echo "✅ Image successfully built and pushed: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+                            '''
+                        } catch (e) {
+                            echo "❌ Image build failed: ${e.getMessage()}"
+                            throw e
                         }
                     }
+                }
+            }
+        }
+
+        stage('Deploy to UAT (Helm)') {
+            steps {
+                container('build-tools') {
+                    sh '''
+                        echo "Deploying to UAT via Helm..."
+                        apk add --no-cache bash curl tar gzip
+                        curl -sSL https://get.helm.sh/helm-v3.14.4-linux-amd64.tar.gz | tar -xz
+                        mv linux-amd64/helm /usr/local/bin/helm
+
+                        helm version
+
+                        helm upgrade --install backend ./helm/backend \
+                          --namespace=uat \
+                          --create-namespace \
+                          --set image.repository=${ECR_REGISTRY}/${ECR_REPOSITORY} \
+                          --set image.tag=${IMAGE_TAG}
+                    '''
                 }
             }
         }
     }
 
     post {
-        success {
-            echo "✅ Backend has been deployed successfully with image: ${globalEnv.imageName}:${globalEnv.imageTag}"
-            emailext(
-                to: "fanhang995@gmail.com",
-                subject: "✅ DispatchAI Backend pipeline succeeded.",
-                body: "Jenkins CICD Pipeline succeeded!<br/>" +
-                    "Job Result: ${currentBuild.result}<br/>" +
-                    "Job Name: ${env.JOB_NAME}<br/>" +
-                    "Branch: ${env.BRANCH_NAME}<br/>" +
-                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
-                    "URL: ${env.BUILD_URL}<br/>",
-                attachLog: false
-            )
+        always {
+            cleanWs()
         }
-
+        success {
+            mail to: 'fanhang995@gmail.com',
+                 subject: "✅ Jenkins Pipeline Success - Build #${BUILD_NUMBER}",
+                 body: "Image was successfully built and deployed.\n\nImage: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}\nBuild: ${env.BUILD_URL}"
+        }
         failure {
-            emailext(
-                to: "fanhang995@gmail.com",
-                subject: "❌ DispatchAI Backend pipeline failed.",
-                body: "Jenkins CICD Pipeline failed!<br/>" +
-                    "Job Result: ${currentBuild.result}<br/>" +
-                    "Job Name: ${env.JOB_NAME}<br/>" +
-                    "Branch: ${env.BRANCH_NAME}<br/>" +
-                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
-                    "URL: ${env.BUILD_URL}<br/>" +
-                    "Please check logfile for more details.<br/>",
-                attachLog: false
-            )
+            mail to: 'fanhang995@gmail.com',
+                 subject: "❌ Jenkins Pipeline Failed - Build #${BUILD_NUMBER}",
+                 body: "Pipeline failed. Please review the logs at:\n\n${env.BUILD_URL}"
         }
     }
 }
