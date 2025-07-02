@@ -109,3 +109,59 @@ spec:
 
                             echo "Building image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
                             docker build -f ${DOCKERFILE_PATH} -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+
+                            echo "Ensuring ECR repo exists..."
+                            aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} --region ${AWS_REGION} >/dev/null 2>&1 || \
+                                aws ecr create-repository --repository-name ${ECR_REPOSITORY} --region ${AWS_REGION}
+
+                            echo "Login to ECR..."
+                            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
+                            echo "Pushing image to ECR..."
+                            docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                            docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+                            docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                            docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+
+                            docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} || true
+                            docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest || true
+
+                            echo "✅ Image pushed: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to UAT (Helm)') {
+            steps {
+                container('build-tools') {
+                    sh '''
+                        echo "Deploying with Helm..."
+                        apk add --no-cache curl tar gzip bash
+                        curl -sSL https://get.helm.sh/helm-v3.14.4-linux-amd64.tar.gz | tar -xz
+                        mv linux-amd64/helm /usr/local/bin/helm
+
+                        helm upgrade --install backend ./helm/backend \
+                          --namespace=uat \
+                          --create-namespace \
+                          --set image.repository=${ECR_REGISTRY}/${ECR_REPOSITORY} \
+                          --set image.tag=${IMAGE_TAG}
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo "✅ Jenkins pipeline succeeded"
+        }
+        failure {
+            echo "❌ Jenkins pipeline failed"
+        }
+    }
+}
