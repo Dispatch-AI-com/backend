@@ -1,4 +1,3 @@
-// getEnvironmentConfig function to set environment variables
 pipeline {
     agent {
         kubernetes {
@@ -59,7 +58,6 @@ spec:
         AWS_REGION = 'ap-southeast-2'
         ECR_REGISTRY = '893774231297.dkr.ecr.ap-southeast-2.amazonaws.com'
         ECR_REPOSITORY = 'dispatchai-backend'
-        IMAGE_TAG = "${BUILD_NUMBER}"
         DOCKERFILE_PATH = 'Dockerfile'
     }
 
@@ -75,15 +73,19 @@ spec:
                 container('build-tools') {
                     script {
                         try {
-                            sh '''
-                                apk update && apk add --no-cache aws-cli docker-cli curl
+                            // 获取 Git commit hash
+                            def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                            env.IMAGE_TAG = commitHash
+
+                            sh """
+                                apk update && apk add --no-cache aws-cli docker-cli curl git
 
                                 echo "Waiting for Docker daemon to start..."
                                 timeout=60
                                 while ! docker info >/dev/null 2>&1; do
                                     sleep 2
-                                    timeout=$((timeout-2))
-                                    if [ $timeout -le 0 ]; then
+                                    timeout=\$((timeout-2))
+                                    if [ \$timeout -le 0 ]; then
                                         echo "❌ Docker daemon startup timed out"
                                         exit 1
                                     fi
@@ -107,15 +109,12 @@ spec:
 
                                 echo "Tagging and pushing image..."
                                 docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-                                docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
                                 docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-                                docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
 
                                 docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} || true
-                                docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest || true
 
                                 echo "✅ Image successfully built and pushed: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-                            '''
+                            """
                         } catch (e) {
                             echo "❌ Image build failed: ${e.getMessage()}"
                             throw e
