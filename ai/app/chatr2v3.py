@@ -1,20 +1,56 @@
-#目前融合前端的代码，需要更新的
-#1.ai response message要精简，现在的内容太复杂了。
-#2.redis update内容要对齐
-#3.还没有问询用户的电子邮件
-#4.目前的步骤是先获取用户所有的信息之后，每一步都update state，但是最后都完成之后才更新到redis里边。
-'''虽然 extract_name_from_conversation 函数理论上不会返回 None，但是：
-可能gpt-4o-mini模型的响应格式与预期不符
-JSON解析可能出现意外情况
-在异常处理中可能有遗漏的情况
-'''
+"""
+AI客户服务工作流控制器 - 重构版本
+
+专注于工作流控制和业务逻辑处理，提示词和验证功能已解耦到独立模块。
+
+主要职责：
+- 管理客户信息收集工作流
+- 处理对话状态和转换
+- 协调LLM交互和数据验证
+- 管理Redis数据更新
+- 处理异常和错误恢复
+
+架构说明：
+- 提示词模块：app.prompt.customer_info_prompts
+- 验证模块：app.validate.customer_validators
+- 工作流控制：本文件(chatr2v3.py)
+"""
+
 import json
 import os
 import re
 from datetime import datetime
 from typing import TypedDict, Literal, Optional
 from openai import OpenAI
-#from langgraph.graph import StateGraph, END
+
+# 导入解耦后的模块
+from .prompt.customer_info_prompts import (
+    get_name_extraction_prompt,
+    get_phone_extraction_prompt,
+    get_address_extraction_prompt,
+    get_email_extraction_prompt,
+    get_service_extraction_prompt,
+    get_time_extraction_prompt
+)
+
+from .validate.customer_validators import (
+    validate_name,
+    validate_phone,
+    validate_address,
+    validate_email,
+    validate_service,
+    validate_time
+)
+
+from .redis_client import (
+    update_user_info_field,
+    update_service_selection,
+    update_conversation_history,
+    update_booking_status
+)
+
+from .models import Message
+
 
 class CustomerServiceState(TypedDict):
     """客服系统状态定义"""
@@ -63,7 +99,13 @@ class CustomerServiceState(TypedDict):
     service_timestamp: Optional[str]  # 新增服务时间戳
     time_timestamp: Optional[str]  # 新增服务时间时间戳
 
+
 class CustomerServiceLangGraph:
+    """客户服务工作流控制器
+    
+    主要负责管理整个客户信息收集流程，协调各个组件之间的交互。
+    """
+    
     def __init__(self, api_key=None):
         """初始化客服系统"""
         if api_key:
@@ -74,237 +116,13 @@ class CustomerServiceLangGraph:
         # 创建LangGraph工作流 - 使用简化的方式
         self.workflow = None
         
-    def get_name_extraction_prompt(self):
-        """获取姓名提取的系统提示词"""
-        return """你是一个专业的客服助手。你的任务是：
-1. 与用户进行自然友好的对话
-2. 收集用户的姓名信息，而不是用户提到的他人的姓名。
-3. 严格按照JSON格式返回结果
-
-请务必按照以下JSON格式回复，不要添加任何其他内容：
-{
-  "response": "你要说给用户的话",
-  "info_extracted": {
-    "name": "提取到的姓名，如果没有提取到则为null"
-  },
-  "info_complete": true/false,
-  "analysis": "简短分析用户输入是否包含用户自己的有效姓名"
-}
-
-规则：
-- 如果用户提供了有效的中文或英文姓名，将info_complete设为true
-- 如果用户没有提供自己的姓名或提供的不是姓名（如数字、符号等），将info_complete设为false
-- response字段要自然友好，符合客服语气
-- 姓名应该是合理的人名，不接受明显的假名或无意义字符，必须是用户自己的名字，而不是第三方的名字。
-- 分析用户输入内容，判断是否真的包含姓名信息"""
-
-    def get_phone_extraction_prompt(self):
-        """获取电话提取的系统提示词"""
-        return """你是一个专业的客服助手。你的任务是：
-1. 与用户进行自然友好的对话
-2. 收集用户的电话号码信息
-3. 严格按照JSON格式返回结果
-
-请务必按照以下JSON格式回复，不要添加任何其他内容：
-{
-  "response": "你要说给用户的话",
-  "info_extracted": {
-    "phone": "提取到的电话号码，如果没有提取到则为null"
-  },
-  "info_complete": true/false,
-  "analysis": "简短分析用户输入是否包含有效澳洲电话号码"
-}
-
-规则：
-- 只接受澳洲手机号格式：04XXXXXXXX 或 +614XXXXXXXX 或 0061XXXXXXXXX 或 614XXXXXXXX
-- 不接受其他国家的电话号码格式（如中国的138xxxxxxxx、美国的+1xxxxxxxxxx等）
-- 如果用户提供了澳洲格式的有效电话号码，将info_complete设为true
-- 如果用户提供的不是澳洲格式电话号码，将info_complete设为false，并友善地说明只接受澳洲号码
-- response字段要自然友好，符合客服语气
-- 严格验证电话号码格式，只有符合澳洲格式的才认为有效"""
-
-    def get_address_extraction_prompt(self):
-        """获取地址提取的系统提示词"""
-        return """你是一个专业的客服助手。你的任务是：
-1. 与用户进行自然友好的对话
-2. 收集用户的澳大利亚地址信息
-3. 严格按照JSON格式返回结果
-
-请务必按照以下JSON格式回复，不要添加任何其他内容：
-{
-  "response": "你要说给用户的话",
-  "info_extracted": {
-    "address": "提取到的完整地址，如果没有提取到则为null"
-  },
-  "info_complete": true/false,
-  "analysis": "简短分析用户输入是否包含有效澳洲地址"
-}
-
-规则：
-- 地址必须包含：街道号码、街道名称、城市/区域、州/领地、邮编
-- 只接受澳大利亚地址格式
-- 邮编必须是有效的澳大利亚邮编（4位数字）
-- 州/领地必须是以下之一：NSW, VIC, QLD, WA, SA, TAS, NT, ACT
-- 如果用户提供了完整的澳洲格式地址，将info_complete设为true
-- 如果地址信息不完整或不符合澳洲格式，将info_complete设为false
-- response字段要自然友好，引导用户提供完整地址信息
-- 分析用户输入是否包含所有必要的地址组成部分"""
-
-    def get_email_extraction_prompt(self):
-        """获取电子邮件提取的系统提示词"""
-        return """你是一个专业的客服助手。你的任务是：
-1. 与用户进行自然友好的对话
-2. 收集用户的电子邮件地址信息
-3. 严格按照JSON格式返回结果
-
-请务必按照以下JSON格式回复，不要添加任何其他内容：
-{
-  "response": "你要说给用户的话",
-  "info_extracted": {
-    "email": "提取到的电子邮件地址，如果没有提取到则为null"
-  },
-  "info_complete": true/false,
-  "analysis": "简短分析用户输入是否包含有效电子邮件地址"
-}
-
-规则：
-- 电子邮件必须符合标准格式：用户名@域名.后缀
-- 必须包含@符号，且@符号前后都有内容
-- 域名部分必须包含至少一个点(.)
-- 不接受明显无效的邮箱格式（如缺少@、域名等）
-- 如果用户提供了有效格式的电子邮件地址，将info_complete设为true
-- 如果邮件格式无效或未提供，将info_complete设为false
-- response字段要自然友好，引导用户提供正确的电子邮件格式
-- 分析用户输入是否包含有效的电子邮件地址格式"""
-
-    def get_service_extraction_prompt(self):
-        """获取服务需求提取的系统提示词"""
-        return """你是一个专业的客服助手。你的任务是：
-1. 与用户进行自然友好的对话
-2. 理解并提取用户需要的服务类型
-3. 严格按照JSON格式返回结果
-
-请务必按照以下JSON格式回复，不要添加任何其他内容：
-{
-  "response": "你要说给用户的话",
-  "info_extracted": {
-    "service": "提取到的服务类型，如果没有提取到则为null"
-  },
-  "info_complete": true/false,
-  "analysis": "简短分析用户需要的服务是否在支持范围内"
-}
-
-规则：
-- 目前支持的服务类型仅限于：clean（清洁）, garden（园艺）, plumber（水管工）
-- 如果用户提到的服务在支持范围内，将info_complete设为true
-- 如果用户提到的服务不在支持范围内，将info_complete设为false
-- response字段要自然友好，说明是否能提供相应服务
-- 如果服务不可用，友善地解释并表示会通知用户
-- 分析用户输入，准确判断所需服务类型"""
-
-    def get_time_extraction_prompt(self):
-        """获取服务时间提取的系统提示词"""
-        return """你是一个专业的客服助手。你的任务是：
-1. 与用户进行自然友好的对话
-2. 理解并提取用户期望的服务时间
-3. 严格按照JSON格式返回结果
-
-请务必按照以下JSON格式回复，不要添加任何其他内容：
-{
-  "response": "你要说给用户的话",
-  "info_extracted": {
-    "time": "提取到的服务时间，如果没有提取到则为null"
-  },
-  "info_complete": true/false,
-  "analysis": "简短分析用户期望的服务时间是否在可提供范围内"
-}
-
-规则：
-- 目前支持的服务时间仅限于：tomorrow morning, Saturday morning, Sunday afternoon
-- 如果用户提到的时间在支持范围内，将info_complete设为true
-- 如果用户提到的时间不在支持范围内，将info_complete设为false
-- response字段要自然友好，说明是否能在该时间提供服务
-- 如果时间不可用，友善地解释并表示会通知用户下周可用时间
-- 分析用户输入，准确判断所需服务时间"""
-
-    def validate_service(self, service):
-        """验证服务类型的有效性"""
-        if not service or service.strip() == "":
-            return False, False
-        
-        service = service.strip().lower()
-        
-        # 支持的服务类型列表
-        supported_services = ['clean', 'garden', 'plumber']
-        
-        # 检查服务是否在支持列表中
-        service_available = service in supported_services
-        
-        return True, service_available
-
-    def validate_time(self, service_time):
-        """验证服务时间的有效性"""
-        if not service_time or service_time.strip() == "":
-            return False, False
-        
-        service_time = service_time.strip().lower()
-        
-        # 支持的服务时间列表
-        supported_times = ['tomorrow morning', 'saturday morning', 'sunday afternoon']
-        
-        # 检查时间是否在支持列表中
-        time_available = service_time in supported_times
-        
-        return True, time_available
-
-    def extract_service_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取服务需求信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": self.get_service_extraction_prompt()}, #注意role system是从系统角度出发给LLM的设定、条件和约束，比如“你是一个CS架构师”这个设定就应该是一个role system，也不会在终端客户的输入中出现。
-                    {"role": "user", "content": f"对话历史：{conversation_context}\n\n当前用户输入：{state['last_user_input']}"} #此时的user的input就是完全的用户的输入。
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您需要什么服务。",
-                    "info_extracted": {"service": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您需要什么服务。",
-                "info_extracted": {"service": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
+    # ================== LLM信息提取函数 ==================
+    
     def extract_name_from_conversation(self, state: CustomerServiceState):
         """使用LLM提取姓名信息"""
         try:
             # 构建对话历史
-            conversation_context = "\n".join([
+            conversation_context = "\\n".join([
                 f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
                 for msg in state["conversation_history"][-3:]
             ])
@@ -313,8 +131,8 @@ class CustomerServiceLangGraph:
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": self.get_name_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\n\n当前用户输入：{state['last_user_input']}"}
+                    {"role": "system", "content": get_name_extraction_prompt()},
+                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
                 ],
                 temperature=0.3,
                 max_tokens=500
@@ -347,7 +165,7 @@ class CustomerServiceLangGraph:
         """使用LLM提取电话信息"""
         try:
             # 构建对话历史
-            conversation_context = "\n".join([
+            conversation_context = "\\n".join([
                 f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
                 for msg in state["conversation_history"][-3:]
             ])
@@ -356,8 +174,8 @@ class CustomerServiceLangGraph:
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": self.get_phone_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\n\n当前用户输入：{state['last_user_input']}"}
+                    {"role": "system", "content": get_phone_extraction_prompt()},
+                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
                 ],
                 temperature=0.3,
                 max_tokens=500
@@ -386,180 +204,11 @@ class CustomerServiceLangGraph:
                 "analysis": f"API错误：{str(e)}"
             }
 
-    def extract_email_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取电子邮件信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": self.get_email_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\n\n当前用户输入：{state['last_user_input']}"}
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您的电子邮件地址。",
-                    "info_extracted": {"email": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您的电子邮件地址。",
-                "info_extracted": {"email": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
-    def validate_name(self, name):
-        """验证姓名的有效性"""
-        if not name or name.strip() == "":
-            return False
-        
-        name = name.strip()
-        
-        if len(name) < 1 or len(name) > 50:
-            return False
-            
-        invalid_chars = ['@', '#', '$', '%', '^', '&', '*', '(', ')', '=', '+', '{', '}', '[', ']']
-        if any(char in name for char in invalid_chars):
-            return False
-            
-        if name.isdigit():
-            return False
-            
-        return True
-
-    def validate_email(self, email):
-        """验证电子邮件地址的有效性"""
-        if not email or email.strip() == "":
-            return False
-        
-        email = email.strip()
-        
-        # 基本长度检查
-        if len(email) < 5 or len(email) > 254:  # RFC 5321 标准
-            return False
-        
-        # 检查是否包含@符号，且只有一个
-        if email.count('@') != 1:
-            return False
-        
-        # 分割用户名和域名部分
-        local_part, domain_part = email.split('@')
-        
-        # 验证用户名部分（不能为空）
-        if not local_part or len(local_part) > 64:  # RFC 5321 标准
-            return False
-        
-        # 验证域名部分
-        if not domain_part or len(domain_part) > 253:  # RFC 5321 标准
-            return False
-        
-        # 域名必须包含至少一个点
-        if '.' not in domain_part:
-            return False
-        
-        # 简单的正则表达式验证
-        import re
-        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        
-        if not re.match(email_pattern, email):
-            return False
-        
-        # 检查域名部分是否以点开头或结尾
-        if domain_part.startswith('.') or domain_part.endswith('.'):
-            return False
-        
-        # 检查是否有连续的点
-        if '..' in email:
-            return False
-        
-        return True
-
-    def validate_phone(self, phone):
-        """验证电话号码的有效性（仅支持澳洲格式）"""
-        if not phone or phone.strip() == "":
-            return False
-        
-        phone = phone.strip()
-        
-        # 澳洲手机号格式
-        australian_patterns = [
-            r'^04\d{8}$',  # 04XXXXXXXX
-            r'^\+614\d{8}$',  # +614XXXXXXXX
-            r'^00614\d{8}$',  # 00614XXXXXXXX
-            r'^614\d{8}$',  # 614XXXXXXXX
-        ]
-        
-        # 只使用澳洲格式，不再支持通用格式
-        all_patterns = australian_patterns
-        
-        # 清理电话号码（移除空格、连字符等）
-        cleaned_phone = re.sub(r'[\s\-\(\)]', '', phone)
-        
-        for pattern in all_patterns:
-            if re.match(pattern, cleaned_phone):
-                return True
-                
-        return False
-
-    def validate_address(self, address):
-        """验证澳大利亚地址的有效性"""
-        if not address or address.strip() == "":
-            return False
-        
-        address = address.strip()
-        
-        # 验证基本长度
-        if len(address) < 5 or len(address) > 200:  # 降低最小长度要求
-            return False
-        
-        # 验证是否包含必要组成部分
-        required_components = [
-            r'\d+',  # 街道号码
-            r'[A-Za-z\s]+(Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Lane|Ln|Place|Pl|Way|Parade|Pde|Circuit|Cct|Close|Cl)',  # 扩展街道类型
-            r'[A-Za-z\s]+',  # 城市/区域名称 - 更灵活的匹配
-            r'(NSW|VIC|QLD|WA|SA|TAS|NT|ACT)',  # 州/领地
-            r'\d{4}'  # 邮编
-        ]
-        
-        # 将地址转换为大写以进行不区分大小写的匹配
-        upper_address = address.upper()
-        
-        # 检查每个必要组成部分是否存在
-        matches = 0
-        for pattern in required_components:
-            if re.search(pattern, upper_address, re.IGNORECASE):
-                matches += 1
-        
-        # 如果匹配到至少4个组成部分，则认为地址有效
-        # 这样可以允许一些灵活性，比如街道类型的缩写可能不在我们的列表中
-        return matches >= 4
-
     def extract_address_from_conversation(self, state: CustomerServiceState):
         """使用LLM提取地址信息"""
         try:
             # 构建对话历史
-            conversation_context = "\n".join([
+            conversation_context = "\\n".join([
                 f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
                 for msg in state["conversation_history"][-3:]
             ])
@@ -568,8 +217,8 @@ class CustomerServiceLangGraph:
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": self.get_address_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\n\n当前用户输入：{state['last_user_input']}"}
+                    {"role": "system", "content": get_address_extraction_prompt()},
+                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
                 ],
                 temperature=0.3,
                 max_tokens=500
@@ -598,11 +247,11 @@ class CustomerServiceLangGraph:
                 "analysis": f"API错误：{str(e)}"
             }
 
-    def extract_time_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取服务时间信息"""
+    def extract_email_from_conversation(self, state: CustomerServiceState):
+        """使用LLM提取电子邮件信息"""
         try:
             # 构建对话历史
-            conversation_context = "\n".join([
+            conversation_context = "\\n".join([
                 f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
                 for msg in state["conversation_history"][-3:]
             ])
@@ -611,8 +260,94 @@ class CustomerServiceLangGraph:
             response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 messages=[
-                    {"role": "system", "content": self.get_time_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\n\n当前用户输入：{state['last_user_input']}"}
+                    {"role": "system", "content": get_email_extraction_prompt()},
+                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
+                ],
+                temperature=0.3,
+                max_tokens=500
+            )
+            
+            content = response.choices[0].message.content.strip()
+            
+            try:
+                result = json.loads(content)
+                return result
+            except json.JSONDecodeError:
+                print(f"⚠️  JSON解析失败，原始回复：{content}")
+                return {
+                    "response": "抱歉，系统处理出现问题。请重新告诉我您的电子邮件地址。",
+                    "info_extracted": {"email": None},
+                    "info_complete": False,
+                    "analysis": "系统解析错误"
+                }
+                
+        except Exception as e:
+            print(f"❌ API调用失败：{e}")
+            return {
+                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您的电子邮件地址。",
+                "info_extracted": {"email": None},
+                "info_complete": False,
+                "analysis": f"API错误：{str(e)}"
+            }
+
+    def extract_service_from_conversation(self, state: CustomerServiceState):
+        """使用LLM提取服务需求信息"""
+        try:
+            # 构建对话历史
+            conversation_context = "\\n".join([
+                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
+                for msg in state["conversation_history"][-3:]
+            ])
+            
+            # 调用OpenAI API
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": get_service_extraction_prompt()},
+                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
+                ],
+                temperature=0.3,
+                max_tokens=500
+            )
+            
+            content = response.choices[0].message.content.strip()
+            
+            try:
+                result = json.loads(content)
+                return result
+            except json.JSONDecodeError:
+                print(f"⚠️  JSON解析失败，原始回复：{content}")
+                return {
+                    "response": "抱歉，系统处理出现问题。请重新告诉我您需要什么服务。",
+                    "info_extracted": {"service": None},
+                    "info_complete": False,
+                    "analysis": "系统解析错误"
+                }
+                
+        except Exception as e:
+            print(f"❌ API调用失败：{e}")
+            return {
+                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您需要什么服务。",
+                "info_extracted": {"service": None},
+                "info_complete": False,
+                "analysis": f"API错误：{str(e)}"
+            }
+
+    def extract_time_from_conversation(self, state: CustomerServiceState):
+        """使用LLM提取服务时间信息"""
+        try:
+            # 构建对话历史
+            conversation_context = "\\n".join([
+                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
+                for msg in state["conversation_history"][-3:]
+            ])
+            
+            # 调用OpenAI API
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": get_time_extraction_prompt()},
+                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
                 ],
                 temperature=0.3,
                 max_tokens=500
@@ -641,418 +376,352 @@ class CustomerServiceLangGraph:
                 "analysis": f"API错误：{str(e)}"
             }
 
+    # ================== 对话管理函数 ==================
+    
     def add_to_conversation(self, state: CustomerServiceState, role, content, call_sid: str = None):
-        """添加对话到历史记录并实时更新Redis"""
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        """添加对话记录并实时更新到Redis"""
+        current_time = datetime.utcnow().isoformat() + "Z"
         
-        # 添加到本地状态
+        # 本地状态更新
         state["conversation_history"].append({
             "role": role,
             "content": content,
-            "timestamp": timestamp
+            "timestamp": current_time
         })
         
-        # 🆕 实时更新Redis中的对话历史
+        # 🆕 实时Redis更新
         if call_sid:
-            from .redis_client import update_conversation_history
-            from .models import Message
-            
-            # 转换为Message对象
+            # 确定消息发送者
             speaker = "customer" if role == "user" else "AI"
+            
+            # 创建Message对象
             message = Message(
                 speaker=speaker,
                 message=content,
-                startedAt=timestamp + "Z"  # 添加Z后缀表示UTC时间
+                startedAt=current_time
             )
             
-            # 更新Redis
+            # 实时更新对话历史到Redis
             redis_success = update_conversation_history(call_sid, message)
+            
             if not redis_success:
-                print(f"⚠️ 对话历史Redis更新失败: {speaker} - {content[:50]}...")
-
-    def process_name_collection(self, state: CustomerServiceState, call_sid: str = None):
-        """处理姓名收集逻辑"""
-        if not state["last_user_input"]:
-            return state
-            
-        print("🔄 正在处理您的消息...")
-        result = self.extract_name_from_conversation(state)
+                print(f"⚠️ 对话历史Redis更新失败，但继续处理: {speaker} - {content[:50]}...")
         
-        # 检查result是否为None
-        if result is None:
-            print("⚠️  系统处理出现问题，请重新输入您的姓名。")
-            state["name_attempts"] += 1
-            return state
-            
+        return state
+
+    # ================== 信息收集处理函数 ==================
+    
+    def process_name_collection(self, state: CustomerServiceState, call_sid: str = None):
+        """处理姓名收集步骤"""
+        # 添加用户输入到对话历史
+        state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
+        
+        # 调用LLM提取姓名
+        result = self.extract_name_from_conversation(state)
         state["last_llm_response"] = result
         
-        # 显示AI回复
-        ai_response = result.get("response", "抱歉，我没有理解您的意思。")
-        print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response, call_sid)
+        # 添加AI回复到对话历史
+        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
-        # 显示分析结果
-        analysis = result.get("analysis", "")
-        if analysis:
-            print(f"💭 系统分析：{analysis}")
+        # 检查是否提取到姓名
+        extracted_name = result["info_extracted"].get("name")
+        is_complete = result["info_complete"]
         
-        # 检查是否提取到有效姓名
-        info_extracted = result.get("info_extracted", {})
-        extracted_name = info_extracted.get("name") if info_extracted else None
-        is_complete = result.get("info_complete", False)
-        
-        if is_complete and extracted_name and self.validate_name(extracted_name):
-            # 成功提取到姓名
+        if is_complete and extracted_name and validate_name(extracted_name):
+            # 清理和标准化姓名
             cleaned_name = extracted_name.strip()
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            current_time = datetime.utcnow().isoformat() + "Z"
             
+            # 本地状态更新
             state["name"] = cleaned_name
             state["name_timestamp"] = current_time
             state["name_complete"] = True
             state["current_step"] = "collect_phone"
             
-            # 🆕 实时更新Redis中的姓名信息
+            # 🆕 实时Redis更新
             if call_sid:
-                from .redis_client import update_user_info_field
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="name",
+                    field_name="name", 
                     field_value=cleaned_name,
                     timestamp=current_time
                 )
-            else:
-                redis_success = False
+                
+                if redis_success:
+                    print(f"✅ 姓名提取并保存成功：{cleaned_name}")
+                else:
+                    print(f"⚠️ 姓名提取成功但Redis保存失败：{cleaned_name}")
             
-            if redis_success:
-                print(f"✅ 姓名提取并保存成功：{cleaned_name}")
-            else:
-                print(f"⚠️ 姓名提取成功但Redis保存失败：{cleaned_name}")
+            print(f"✅ 姓名收集完成：{cleaned_name}")
         else:
-            # 未能提取到有效姓名
-            if extracted_name:
-                print(f"⚠️  提取到的姓名可能无效：{extracted_name}")
+            # 增加尝试次数
             state["name_attempts"] += 1
+            
+            if state["name_attempts"] >= state["max_attempts"]:
+                print(f"❌ 姓名收集失败，已达到最大尝试次数 ({state['max_attempts']})")
+                state["current_step"] = "collect_phone"  # 跳到下一步骤
+            else:
+                print(f"⚠️ 姓名提取失败，尝试次数：{state['name_attempts']}/{state['max_attempts']}")
         
         return state
 
     def process_phone_collection(self, state: CustomerServiceState, call_sid: str = None):
-        """处理电话收集逻辑"""
-        if not state["last_user_input"]:
-            return state
-            
-        print("🔄 正在处理您的电话号码...")
-        result = self.extract_phone_from_conversation(state)
+        """处理电话收集步骤"""
+        # 添加用户输入到对话历史
+        state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
-        # 检查result是否为None
-        if result is None:
-            print("⚠️  系统处理出现问题，请重新输入您的电话号码。")
-            state["phone_attempts"] += 1
-            return state
-            
+        # 调用LLM提取电话
+        result = self.extract_phone_from_conversation(state)
         state["last_llm_response"] = result
         
-        # 显示AI回复
-        ai_response = result.get("response", "抱歉，我没有理解您的电话号码。")
-        print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response, call_sid)
+        # 添加AI回复到对话历史
+        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
-        # 显示分析结果
-        analysis = result.get("analysis", "")
-        if analysis:
-            print(f"💭 系统分析：{analysis}")
+        # 检查是否提取到电话
+        extracted_phone = result["info_extracted"].get("phone")
+        is_complete = result["info_complete"]
         
-        # 检查是否提取到有效电话
-        info_extracted = result.get("info_extracted", {})
-        extracted_phone = info_extracted.get("phone") if info_extracted else None
-        is_complete = result.get("info_complete", False)
-        
-        if is_complete and extracted_phone and self.validate_phone(extracted_phone):
-            # 成功提取到电话
+        if is_complete and extracted_phone and validate_phone(extracted_phone):
+            # 清理和标准化电话
             cleaned_phone = extracted_phone.strip()
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            current_time = datetime.utcnow().isoformat() + "Z"
             
+            # 本地状态更新
             state["phone"] = cleaned_phone
             state["phone_timestamp"] = current_time
             state["phone_complete"] = True
-            state["current_step"] = "collect_address"  # 修改为进入地址收集步骤
+            state["current_step"] = "collect_address"
             
-            # 🆕 实时更新Redis中的电话信息
+            # 🆕 实时Redis更新
             if call_sid:
-                from .redis_client import update_user_info_field
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="phone",
                     field_value=cleaned_phone,
                     timestamp=current_time
                 )
-            else:
-                redis_success = False
+                
+                if redis_success:
+                    print(f"✅ 电话提取并保存成功：{cleaned_phone}")
+                else:
+                    print(f"⚠️ 电话提取成功但Redis保存失败：{cleaned_phone}")
             
-            if redis_success:
-                print(f"✅ 电话提取并保存成功：{cleaned_phone}")
-            else:
-                print(f"⚠️ 电话提取成功但Redis保存失败：{cleaned_phone}")
+            print(f"✅ 电话收集完成：{cleaned_phone}")
         else:
-            # 未能提取到有效电话
-            if extracted_phone:
-                print(f"⚠️  提取到的电话可能无效：{extracted_phone}")
+            # 增加尝试次数
             state["phone_attempts"] += 1
+            
+            if state["phone_attempts"] >= state["max_attempts"]:
+                print(f"❌ 电话收集失败，已达到最大尝试次数 ({state['max_attempts']})")
+                state["current_step"] = "collect_address"  # 跳到下一步骤
+            else:
+                print(f"⚠️ 电话提取失败，尝试次数：{state['phone_attempts']}/{state['max_attempts']}")
         
         return state
 
     def process_address_collection(self, state: CustomerServiceState, call_sid: str = None):
-        """处理地址收集逻辑"""
-        if not state["last_user_input"]:
-            return state
-            
-        print("🔄 正在处理您的地址信息...")
-        result = self.extract_address_from_conversation(state)
+        """处理地址收集步骤"""
+        # 添加用户输入到对话历史
+        state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
-        # 检查result是否为None
-        if result is None:
-            print("⚠️  系统处理出现问题，请重新输入您的地址。")
-            state["address_attempts"] += 1
-            return state
-            
+        # 调用LLM提取地址
+        result = self.extract_address_from_conversation(state)
         state["last_llm_response"] = result
         
-        # 显示AI回复
-        ai_response = result.get("response", "抱歉，我没有理解您的地址。")
-        print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response, call_sid)
+        # 添加AI回复到对话历史
+        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
-        # 显示分析结果
-        analysis = result.get("analysis", "")
-        if analysis:
-            print(f"💭 系统分析：{analysis}")
+        # 检查是否提取到地址
+        extracted_address = result["info_extracted"].get("address")
+        is_complete = result["info_complete"]
         
-        # 检查是否提取到有效地址
-        info_extracted = result.get("info_extracted", {})
-        extracted_address = info_extracted.get("address") if info_extracted else None
-        is_complete = result.get("info_complete", False)
-        
-        if is_complete and extracted_address and self.validate_address(extracted_address):
-            # 成功提取到地址
+        if is_complete and extracted_address and validate_address(extracted_address):
+            # 清理和标准化地址
             cleaned_address = extracted_address.strip()
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            current_time = datetime.utcnow().isoformat() + "Z"
             
+            # 本地状态更新
             state["address"] = cleaned_address
             state["address_timestamp"] = current_time
             state["address_complete"] = True
-            state["current_step"] = "collect_email"  # 修改为进入邮箱收集步骤
+            state["current_step"] = "collect_email"
             
-            # 🆕 实时更新Redis中的地址信息
+            # 🆕 实时Redis更新
             if call_sid:
-                from .redis_client import update_user_info_field
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="address",
                     field_value=cleaned_address,
                     timestamp=current_time
                 )
-            else:
-                redis_success = False
+                
+                if redis_success:
+                    print(f"✅ 地址提取并保存成功：{cleaned_address}")
+                else:
+                    print(f"⚠️ 地址提取成功但Redis保存失败：{cleaned_address}")
             
-            if redis_success:
-                print(f"✅ 地址提取并保存成功：{cleaned_address}")
-            else:
-                print(f"⚠️ 地址提取成功但Redis保存失败：{cleaned_address}")
+            print(f"✅ 地址收集完成：{cleaned_address}")
         else:
-            # 未能提取到有效地址
-            if extracted_address:
-                print(f"⚠️  提取到的地址可能无效：{extracted_address}")
+            # 增加尝试次数
             state["address_attempts"] += 1
+            
+            if state["address_attempts"] >= state["max_attempts"]:
+                print(f"❌ 地址收集失败，已达到最大尝试次数 ({state['max_attempts']})")
+                state["current_step"] = "collect_email"  # 跳到下一步骤
+            else:
+                print(f"⚠️ 地址提取失败，尝试次数：{state['address_attempts']}/{state['max_attempts']}")
         
         return state
 
     def process_email_collection(self, state: CustomerServiceState, call_sid: str = None):
-        """处理电子邮件收集逻辑"""
-        if not state["last_user_input"]:
-            return state
-            
-        print("🔄 正在处理您的电子邮件地址...")
-        result = self.extract_email_from_conversation(state)
+        """处理电子邮件收集步骤"""
+        # 添加用户输入到对话历史
+        state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
-        # 检查result是否为None
-        if result is None:
-            print("⚠️  系统处理出现问题，请重新输入您的电子邮件地址。")
-            state["email_attempts"] += 1
-            return state
-            
+        # 调用LLM提取电子邮件
+        result = self.extract_email_from_conversation(state)
         state["last_llm_response"] = result
         
-        # 显示AI回复
-        ai_response = result.get("response", "抱歉，我没有理解您的电子邮件地址。")
-        print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response, call_sid)
+        # 添加AI回复到对话历史
+        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
-        # 显示分析结果
-        analysis = result.get("analysis", "")
-        if analysis:
-            print(f"💭 系统分析：{analysis}")
+        # 检查是否提取到电子邮件
+        extracted_email = result["info_extracted"].get("email")
+        is_complete = result["info_complete"]
         
-        # 检查是否提取到有效邮箱
-        info_extracted = result.get("info_extracted", {})
-        extracted_email = info_extracted.get("email") if info_extracted else None
-        is_complete = result.get("info_complete", False)
-        
-        if is_complete and extracted_email and self.validate_email(extracted_email):
-            # 成功提取到邮箱
-            cleaned_email = extracted_email.strip().lower()
-            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if is_complete and extracted_email and validate_email(extracted_email):
+            # 清理和标准化电子邮件
+            cleaned_email = extracted_email.strip()
+            current_time = datetime.utcnow().isoformat() + "Z"
             
+            # 本地状态更新
             state["email"] = cleaned_email
             state["email_timestamp"] = current_time
             state["email_complete"] = True
-            state["current_step"] = "collect_service"  # 修改为进入服务收集步骤
+            state["current_step"] = "collect_service"
             
-            # 🆕 实时更新Redis中的邮箱信息
+            # 🆕 实时Redis更新
             if call_sid:
-                from .redis_client import update_user_info_field
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="email",
+                    field_name="email", 
                     field_value=cleaned_email,
                     timestamp=current_time
                 )
-            else:
-                redis_success = False
+                
+                if redis_success:
+                    print(f"✅ 电子邮件提取并保存成功：{cleaned_email}")
+                else:
+                    print(f"⚠️ 电子邮件提取成功但Redis保存失败：{cleaned_email}")
             
-            if redis_success:
-                print(f"✅ 邮箱提取并保存成功：{cleaned_email}")
-            else:
-                print(f"⚠️ 邮箱提取成功但Redis保存失败：{cleaned_email}")
+            print(f"✅ 电子邮件收集完成：{cleaned_email}")
         else:
-            # 未能提取到有效邮箱
-            if extracted_email:
-                print(f"⚠️  提取到的邮箱可能无效：{extracted_email}")
+            # 增加尝试次数
             state["email_attempts"] += 1
+            
+            if state["email_attempts"] >= state["max_attempts"]:
+                print(f"❌ 电子邮件收集失败，已达到最大尝试次数 ({state['max_attempts']})")
+                state["current_step"] = "collect_service"  # 跳到下一步骤
+            else:
+                print(f"⚠️ 电子邮件提取失败，尝试次数：{state['email_attempts']}/{state['max_attempts']}")
         
         return state
 
     def process_service_collection(self, state: CustomerServiceState, call_sid: str = None):
-        """处理服务需求收集逻辑"""
-        if not state["last_user_input"]:
-            return state
-            
-        print("🔄 正在处理您的服务需求...")
-        result = self.extract_service_from_conversation(state)
+        """处理服务收集步骤"""
+        # 添加用户输入到对话历史
+        state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
-        # 检查result是否为None
-        if result is None:
-            print("⚠️  系统处理出现问题，请重新告诉我您需要什么服务。")
-            state["service_attempts"] += 1
-            return state
-            
+        # 调用LLM提取服务
+        result = self.extract_service_from_conversation(state)
         state["last_llm_response"] = result
         
-        # 显示AI回复
-        ai_response = result.get("response", "抱歉，我没有理解您需要的服务。")
-        print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response, call_sid)
+        # 添加AI回复到对话历史
+        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
-        # 显示分析结果
-        analysis = result.get("analysis", "")
-        if analysis:
-            print(f"💭 系统分析：{analysis}")
-        
-        # 检查是否提取到有效服务
-        info_extracted = result.get("info_extracted", {})
-        extracted_service = info_extracted.get("service") if info_extracted else None
-        is_complete = result.get("info_complete", False)
+        # 检查是否提取到服务
+        extracted_service = result["info_extracted"].get("service")
+        is_complete = result["info_complete"]
         
         if is_complete and extracted_service:
-            # 验证服务有效性和可用性
-            is_valid, is_available = self.validate_service(extracted_service)
+            # 验证服务
+            is_valid_input, service_available = validate_service(extracted_service)
             
-            if is_valid:
+            if is_valid_input:
+                # 清理和标准化服务
                 cleaned_service = extracted_service.strip().lower()
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                current_time = datetime.utcnow().isoformat() + "Z"
                 
+                # 本地状态更新
                 state["service"] = cleaned_service
                 state["service_timestamp"] = current_time
                 state["service_complete"] = True
-                state["service_available"] = is_available
-                state["current_step"] = "collect_time"  # 修改为进入时间收集步骤
+                state["service_available"] = service_available
+                state["current_step"] = "collect_time"
                 
-                # 🆕 实时更新Redis中的服务信息
+                # 🆕 实时Redis更新
                 if call_sid:
-                    from .redis_client import update_service_selection
                     redis_success = update_service_selection(
                         call_sid=call_sid,
                         service_name=cleaned_service,
                         timestamp=current_time
                     )
-                else:
-                    redis_success = False
-                
-                if is_available:
+                    
                     if redis_success:
-                        print(f"✅ 服务需求提取并保存成功：{cleaned_service}")
+                        print(f"✅ 服务提取并保存成功：{cleaned_service}")
                     else:
-                        print(f"⚠️ 服务需求提取成功但Redis保存失败：{cleaned_service}")
-                else:
-                    print(f"❌ 服务暂不可用：{cleaned_service}")
+                        print(f"⚠️ 服务提取成功但Redis保存失败：{cleaned_service}")
+                
+                print(f"✅ 服务收集完成：{cleaned_service}，可用性：{service_available}")
             else:
-                print(f"⚠️  提取到的服务类型无效：{extracted_service}")
+                print(f"⚠️ 服务验证失败：{extracted_service}")
                 state["service_attempts"] += 1
         else:
-            # 未能提取到有效服务
-            if extracted_service:
-                print(f"⚠️  提取到的服务类型可能无效：{extracted_service}")
+            # 增加尝试次数
             state["service_attempts"] += 1
+            
+        # 检查是否超过最大尝试次数
+        if state["service_attempts"] >= state["service_max_attempts"]:
+            print(f"❌ 服务收集失败，已达到最大尝试次数 ({state['service_max_attempts']})")
+            state["current_step"] = "collect_time"  # 跳到下一步骤
+        elif state["service_attempts"] > 0 and not state["service_complete"]:
+            print(f"⚠️ 服务提取失败，尝试次数：{state['service_attempts']}/{state['service_max_attempts']}")
         
         return state
 
     def process_time_collection(self, state: CustomerServiceState, call_sid: str = None):
-        """处理服务时间收集逻辑"""
-        if not state["last_user_input"]:
-            return state
-            
-        print("🔄 正在处理您期望的服务时间...")
-        result = self.extract_time_from_conversation(state)
+        """处理时间收集步骤"""
+        # 添加用户输入到对话历史
+        state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
-        # 检查result是否为None
-        if result is None:
-            print("⚠️  系统处理出现问题，请重新告诉我您期望的服务时间。")
-            state["time_attempts"] += 1
-            return state
-            
+        # 调用LLM提取时间
+        result = self.extract_time_from_conversation(state)
         state["last_llm_response"] = result
         
-        # 显示AI回复
-        ai_response = result.get("response", "抱歉，我没有理解您期望的服务时间。")
-        print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response, call_sid)
+        # 添加AI回复到对话历史
+        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
-        # 显示分析结果
-        analysis = result.get("analysis", "")
-        if analysis:
-            print(f"💭 系统分析：{analysis}")
-        
-        # 检查是否提取到有效时间
-        info_extracted = result.get("info_extracted", {})
-        extracted_time = info_extracted.get("time") if info_extracted else None
-        is_complete = result.get("info_complete", False)
+        # 检查是否提取到时间
+        extracted_time = result["info_extracted"].get("time")
+        is_complete = result["info_complete"]
         
         if is_complete and extracted_time:
-            # 验证时间有效性和可用性
-            is_valid, is_available = self.validate_time(extracted_time)
+            # 验证时间
+            is_valid_input, time_available = validate_time(extracted_time)
             
-            if is_valid:
+            if is_valid_input:
+                # 清理和标准化时间
                 cleaned_time = extracted_time.strip().lower()
-                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                current_time = datetime.utcnow().isoformat() + "Z"
                 
+                # 本地状态更新
                 state["service_time"] = cleaned_time
                 state["time_timestamp"] = current_time
                 state["time_complete"] = True
-                state["time_available"] = is_available
-                state["current_step"] = "completed"
-                state["conversation_complete"] = True
+                state["time_available"] = time_available
                 
-                # 🆕 实时更新Redis中的服务时间信息
+                # 🆕 实时Redis更新
                 if call_sid:
-                    from .redis_client import update_service_selection, update_booking_status
                     # 更新服务时间
                     redis_success = update_service_selection(
                         call_sid=call_sid,
@@ -1060,146 +729,149 @@ class CustomerServiceLangGraph:
                         service_time=cleaned_time,
                         timestamp=current_time
                     )
-                    # 更新预订状态
-                    if is_available:
-                        update_booking_status(call_sid, is_booked=True, email_sent=False)
-                else:
-                    redis_success = False
-                
-                if is_available:
+                    
                     if redis_success:
                         print(f"✅ 服务时间提取并保存成功：{cleaned_time}")
-                        print("🎉 信息收集完成！我们将安排服务人员与您电话联系具体细节。")
                     else:
                         print(f"⚠️ 服务时间提取成功但Redis保存失败：{cleaned_time}")
-                        print("🎉 信息收集完成！我们将安排服务人员与您电话联系具体细节。")
-                else:
-                    print(f"❌ 该时间段暂不可预约：{cleaned_time}")
-                    print("📱 我们会将下周可预约时间通过短信发送给您。")
+                    
+                    # 如果时间可用，更新预订状态
+                    if time_available:
+                        state["conversation_complete"] = True
+                        state["current_step"] = "completed"
+                        update_booking_status(call_sid, is_booked=True, email_sent=False)
+                        print("✅ 预订完成，所有信息收集成功")
+                    else:
+                        print("⚠️ 请求的时间不可用，但信息已收集")
+                
+                print(f"✅ 时间收集完成：{cleaned_time}，可用性：{time_available}")
             else:
-                print(f"⚠️  提取到的服务时间无效：{extracted_time}")
+                print(f"⚠️ 时间验证失败：{extracted_time}")
                 state["time_attempts"] += 1
         else:
-            # 未能提取到有效时间
-            if extracted_time:
-                print(f"⚠️  提取到的服务时间可能无效：{extracted_time}")
+            # 增加尝试次数
             state["time_attempts"] += 1
+            
+        # 检查是否超过最大尝试次数
+        if state["time_attempts"] >= state["max_attempts"]:
+            print(f"❌ 时间收集失败，已达到最大尝试次数 ({state['max_attempts']})")
+            state["conversation_complete"] = True
+            state["current_step"] = "completed"
+            
+            # 即使时间收集失败，也标记为完成状态
+            if call_sid:
+                update_booking_status(call_sid, is_booked=False, email_sent=False)
+                print("⚠️ 时间收集失败，但流程已完成")
+        elif state["time_attempts"] > 0 and not state["time_complete"]:
+            print(f"⚠️ 时间提取失败，尝试次数：{state['time_attempts']}/{state['max_attempts']}")
         
         return state
 
+    # ================== 实用工具函数 ==================
+    
     def print_results(self, state: CustomerServiceState):
-        """打印最终收集到的信息"""
-        print("\n" + "=" * 50)
-        print("📋 最终收集结果")
-        print("=" * 50)
+        """打印收集结果的摘要"""
+        print("\\n" + "="*50)
+        print("📋 客户信息收集结果摘要")
+        print("="*50)
         
-        if state["name"]:
-            print(f"✅ 客户姓名：{state['name']}")
-            print(f"📅 姓名收集时间：{state['name_timestamp']}")
-        else:
-            print("❌ 未能成功收集到客户姓名")
+        # 基本信息
+        print(f"👤 姓名: {state.get('name', '未收集')} {'✅' if state.get('name_complete') else '❌'}")
+        print(f"📞 电话: {state.get('phone', '未收集')} {'✅' if state.get('phone_complete') else '❌'}")
+        print(f"🏠 地址: {state.get('address', '未收集')} {'✅' if state.get('address_complete') else '❌'}")
+        print(f"📧 邮箱: {state.get('email', '未收集')} {'✅' if state.get('email_complete') else '❌'}")
         
-        if state["phone"]:
-            print(f"✅ 客户电话：{state['phone']}")
-            print(f"📅 电话收集时间：{state['phone_timestamp']}")
-        else:
-            print("❌ 未能成功收集到客户电话")
-            
-        if state["address"]:
-            print(f"✅ 客户地址：{state['address']}")
-            print(f"📅 地址收集时间：{state['address_timestamp']}")
-        else:
-            print("❌ 未能成功收集到客户地址")
-            
-        if state["email"]:
-            print(f"✅ 客户邮箱：{state['email']}")
-            print(f"📅 邮箱收集时间：{state['email_timestamp']}")
-        else:
-            print("❌ 未能成功收集到客户邮箱")
-            
-        if state["service"]:
-            print(f"✅ 所需服务：{state['service']}")
-            print(f"📅 服务收集时间：{state['service_timestamp']}")
-            if state["service_available"]:
-                print("✨ 服务状态：可提供")
-                
-                if state["service_time"]:
-                    print(f"✅ 预约时间：{state['service_time']}")
-                    print(f"📅 时间收集时间：{state['time_timestamp']}")
-                    if state["time_available"]:
-                        print("✨ 时间状态：可预约")
-                    else:
-                        print("❌ 时间状态：不可预约")
-                else:
-                    print("❌ 未能成功收集到预约时间")
+        # 服务信息
+        service_status = ""
+        if state.get('service_complete'):
+            if state.get('service_available'):
+                service_status = "✅ (可提供)"
             else:
-                print("❌ 服务状态：暂不可用")
+                service_status = "⚠️ (不可提供)"
         else:
-            print("❌ 未能成功收集到客户所需服务")
-        
-        print(f"💬 总对话轮数：{len(state['conversation_history'])}")
-        print(f"🔄 姓名尝试次数：{state['name_attempts']}")
-        print(f"🔄 电话尝试次数：{state['phone_attempts']}")
-        print(f"🔄 地址尝试次数：{state['address_attempts']}")
-        print(f"🔄 邮箱尝试次数：{state['email_attempts']}")
-        print(f"🔄 服务尝试次数：{state['service_attempts']}")
-        print(f"🔄 时间尝试次数：{state['time_attempts']}")
-        
-        # 保存信息到文件
-        self.save_to_file(state)
-
-    def save_to_file(self, state: CustomerServiceState):
-        """保存对话记录到文件"""
-        try:
-            filename = f"customer_service_simple_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+            service_status = "❌"
             
-            log_data = {
-                "customer_info": {
-                    "name": state["name"],
-                    "phone": state["phone"],
-                    "address": state["address"],
-                    "email": state["email"],
-                    "service": state["service"],
-                    "service_time": state["service_time"],
-                    "name_timestamp": state["name_timestamp"],
-                    "phone_timestamp": state["phone_timestamp"],
-                    "address_timestamp": state["address_timestamp"],
-                    "email_timestamp": state["email_timestamp"],
-                    "service_timestamp": state["service_timestamp"],
-                    "time_timestamp": state["time_timestamp"],
-                    "service_available": state["service_available"],
-                    "time_available": state["time_available"],
-                    "conversation_complete": state["conversation_complete"]
-                },
-                "attempts": {
-                    "name_attempts": state["name_attempts"],
-                    "phone_attempts": state["phone_attempts"],
-                    "address_attempts": state["address_attempts"],
-                    "email_attempts": state["email_attempts"],
-                    "service_attempts": state["service_attempts"],
-                    "time_attempts": state["time_attempts"],
-                    "max_attempts": state["max_attempts"],
-                    "service_max_attempts": state["service_max_attempts"]
-                },
-                "conversation_history": state["conversation_history"],
-                "total_messages": len(state["conversation_history"])
+        time_status = ""
+        if state.get('time_complete'):
+            if state.get('time_available'):
+                time_status = "✅ (可安排)"
+            else:
+                time_status = "⚠️ (不可安排)"
+        else:
+            time_status = "❌"
+        
+        print(f"🔧 服务: {state.get('service', '未收集')} {service_status}")
+        print(f"⏰ 时间: {state.get('service_time', '未收集')} {time_status}")
+        
+        # 对话统计
+        print(f"💬 对话轮数: {len(state.get('conversation_history', []))}")
+        print(f"📊 当前步骤: {state.get('current_step', '未知')}")
+        print(f"✅ 流程完成: {'是' if state.get('conversation_complete') else '否'}")
+        
+        # 尝试次数统计
+        print("\\n📈 尝试次数统计:")
+        print(f"  • 姓名: {state.get('name_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • 电话: {state.get('phone_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • 地址: {state.get('address_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • 邮箱: {state.get('email_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • 服务: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}")
+        print(f"  • 时间: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}")
+        
+        print("="*50)
+
+    def save_to_file(self, state: CustomerServiceState, filename: str = None):
+        """保存对话到文件"""
+        if filename is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"customer_service_conversation_{timestamp}.json"
+        
+        # 准备保存的数据
+        save_data = {
+            "metadata": {
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "conversation_complete": state.get("conversation_complete", False),
+                "total_messages": len(state.get("conversation_history", []))
+            },
+            "customer_info": {
+                "name": state.get("name"),
+                "phone": state.get("phone"),
+                "address": state.get("address"),
+                "email": state.get("email"),
+                "service": state.get("service"),
+                "service_time": state.get("service_time")
+            },
+            "collection_status": {
+                "name_complete": state.get("name_complete", False),
+                "phone_complete": state.get("phone_complete", False),
+                "address_complete": state.get("address_complete", False),
+                "email_complete": state.get("email_complete", False),
+                "service_complete": state.get("service_complete", False),
+                "time_complete": state.get("time_complete", False)
+            },
+            "conversation_history": state.get("conversation_history", []),
+            "attempts": {
+                "name_attempts": state.get("name_attempts", 0),
+                "phone_attempts": state.get("phone_attempts", 0),
+                "address_attempts": state.get("address_attempts", 0),
+                "email_attempts": state.get("email_attempts", 0),
+                "service_attempts": state.get("service_attempts", 0),
+                "time_attempts": state.get("time_attempts", 0)
             }
-            
-            with open(filename, 'w', encoding='utf-8') as f:
-                json.dump(log_data, f, ensure_ascii=False, indent=2)
-            
-            print(f"💾 对话记录已保存到：{filename}")
-        except Exception as e:
-            print(f"⚠️  保存文件失败：{e}")
-
-    def start_conversation(self):
-        """开始客服对话 - 简化版本，先不用LangGraph"""
-        print("=" * 50)
-        print("🤖 AI客服系统启动 (简化版本)")
-        print("=" * 50)
+        }
         
+        try:
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(save_data, f, ensure_ascii=False, indent=2)
+            print(f"✅ 对话已保存到文件: {filename}")
+            return filename
+        except Exception as e:
+            print(f"❌ 保存文件失败: {e}")
+            return None
+
+    def start_conversation(self, initial_message: str = "你好！我是AI客服助手。请问您的姓名是什么？"):
+        """启动对话流程 (用于独立测试)"""
         # 初始化状态
-        current_state: CustomerServiceState = {
+        state: CustomerServiceState = {
             "name": None,
             "phone": None,
             "address": None,
@@ -1213,7 +885,7 @@ class CustomerServiceLangGraph:
             "email_attempts": 0,
             "service_attempts": 0,
             "time_attempts": 0,
-            "max_attempts": 10,
+            "max_attempts": 3,
             "service_max_attempts": 3,
             "conversation_history": [],
             "last_user_input": None,
@@ -1224,170 +896,109 @@ class CustomerServiceLangGraph:
             "email_complete": False,
             "service_complete": False,
             "time_complete": False,
-            "service_available": False,
-            "time_available": False,
             "conversation_complete": False,
+            "service_available": True,
+            "time_available": True,
             "name_timestamp": None,
             "phone_timestamp": None,
             "address_timestamp": None,
             "email_timestamp": None,
             "service_timestamp": None,
-            "time_timestamp": None
+            "time_timestamp": None,
         }
         
-        # 显示欢迎消息
-        welcome_msg = "您好，欢迎使用客服服务！为了更好地为您服务，请告诉我您的姓名。"
-        print(f"\n🤖 客服：{welcome_msg}")
-        self.add_to_conversation(current_state, "assistant", welcome_msg, None)
-        current_state["name_attempts"] += 1
+        print("🤖 AI客服助手已启动")
+        print("💡 输入 'quit' 或 'exit' 退出对话")
+        print("💡 输入 'status' 查看当前收集状态")
+        print("💡 输入 'save' 保存对话到文件")
+        print("-" * 50)
+        
+        # 添加初始消息
+        state = self.add_to_conversation(state, "assistant", initial_message)
+        print(f"🤖 AI: {initial_message}")
         
         # 主对话循环
-        while not current_state["conversation_complete"]:
-            # 显示当前状态
-            if current_state["current_step"] == "collect_name":
-                print(f"\n[姓名收集 - 第 {current_state['name_attempts']} 次尝试]")
-            elif current_state["current_step"] == "collect_phone":
-                print(f"\n[电话收集 - 第 {current_state['phone_attempts']} 次尝试]")
-            elif current_state["current_step"] == "collect_address":
-                print(f"\n[地址收集 - 第 {current_state['address_attempts']} 次尝试]")
-            elif current_state["current_step"] == "collect_email":
-                print(f"\n[邮箱收集 - 第 {current_state['email_attempts']} 次尝试]")
-            elif current_state["current_step"] == "collect_service":
-                print(f"\n[服务需求收集 - 第 {current_state['service_attempts']} 次尝试]")
-            elif current_state["current_step"] == "collect_time":
-                print(f"\n[服务时间收集 - 第 {current_state['time_attempts']} 次尝试]")
-            
-            # 获取用户输入
-            user_input = input("👤 您：").strip()
-            
-            if not user_input:
-                print("🤖 客服：请输入您的回复。")
-                continue
-                
-            # 处理退出命令
-            if user_input.lower() in ['quit', 'exit', '退出', '结束']:
-                print("🤖 客服：感谢您的使用，再见！")
-                break
-            
-            # 记录用户输入
-            self.add_to_conversation(current_state, "user", user_input, None)
-            current_state["last_user_input"] = user_input
-            
-            # 根据当前步骤处理
+        while not state["conversation_complete"]:
             try:
-                if current_state["current_step"] == "collect_name":
-                    current_state = self.process_name_collection(current_state)
+                # 获取用户输入
+                user_input = input("\\n👤 您: ").strip()
+                
+                # 检查特殊命令
+                if user_input.lower() in ['quit', 'exit']:
+                    print("👋 感谢使用AI客服助手，再见！")
+                    break
+                elif user_input.lower() == 'status':
+                    self.print_results(state)
+                    continue
+                elif user_input.lower() == 'save':
+                    filename = self.save_to_file(state)
+                    if filename:
+                        print(f"📁 对话已保存: {filename}")
+                    continue
+                elif not user_input:
+                    print("⚠️ 请输入有效内容")
+                    continue
+                
+                # 设置用户输入
+                state["last_user_input"] = user_input
+                
+                # 根据当前步骤处理
+                if not state["name_complete"]:
+                    state = self.process_name_collection(state)
+                elif not state["phone_complete"]:
+                    state = self.process_phone_collection(state)
+                elif not state["address_complete"]:
+                    state = self.process_address_collection(state)
+                elif not state["email_complete"]:
+                    state = self.process_email_collection(state)
+                elif not state["service_complete"]:
+                    state = self.process_service_collection(state)
+                elif not state["time_complete"]:
+                    state = self.process_time_collection(state)
+                else:
+                    state["conversation_complete"] = True
+                
+                # 显示AI回复
+                if state["last_llm_response"]:
+                    ai_response = state["last_llm_response"]["response"]
+                    print(f"🤖 AI: {ai_response}")
+                
+                # 检查是否完成
+                if state["conversation_complete"]:
+                    print("\\n🎉 信息收集完成！")
+                    self.print_results(state)
                     
-                    # 检查是否需要转到电话收集
-                    if current_state["name_complete"]:
-                        current_state["current_step"] = "collect_phone"
-                        phone_msg = f"好的，{current_state['name']}！现在请提供您的联系电话，以便我们能够及时与您联系。"
-                        print(f"\n🤖 客服：{phone_msg}")
-                        self.add_to_conversation(current_state, "assistant", phone_msg, None)
-                        current_state["phone_attempts"] += 1
-                    elif current_state["name_attempts"] >= current_state["max_attempts"]:
-                        print(f"\n⏰ 姓名收集已达到最大尝试次数（{current_state['max_attempts']}次）")
-                        break
-                        
-                elif current_state["current_step"] == "collect_phone":
-                    current_state = self.process_phone_collection(current_state)
+                    # 询问是否保存
+                    save_choice = input("\\n💾 是否保存对话记录？(y/n): ").strip().lower()
+                    if save_choice in ['y', 'yes', '是']:
+                        self.save_to_file(state)
                     
-                    # 检查是否需要转到地址收集
-                    if current_state["phone_complete"]:
-                        current_state["current_step"] = "collect_address"
-                        address_msg = f"谢谢您提供电话号码！现在请告诉我您的详细住址，包括街道号码、街道名称、城市、州/领地和邮编。"
-                        print(f"\n🤖 客服：{address_msg}")
-                        self.add_to_conversation(current_state, "assistant", address_msg, None)
-                        current_state["address_attempts"] += 1
-                    elif current_state["phone_attempts"] >= current_state["max_attempts"]:
-                        print(f"\n⏰ 电话收集已达到最大尝试次数（{current_state['max_attempts']}次）")
-                        break
-                        
-                elif current_state["current_step"] == "collect_address":
-                    current_state = self.process_address_collection(current_state)
+                    break
                     
-                    # 检查是否需要转到邮箱收集
-                    if current_state["address_complete"]:
-                        current_state["current_step"] = "collect_email"
-                        email_msg = f"很好！最后，为了方便我们发送服务确认和后续通知，请提供您的电子邮件地址。"
-                        print(f"\n🤖 客服：{email_msg}")
-                        self.add_to_conversation(current_state, "assistant", email_msg, None)
-                        current_state["email_attempts"] += 1
-                    elif current_state["address_attempts"] >= current_state["max_attempts"]:
-                        print(f"\n⏰ 地址收集已达到最大尝试次数（{current_state['max_attempts']}次）")
-                        break
-                        
-                elif current_state["current_step"] == "collect_email":
-                    current_state = self.process_email_collection(current_state)
-                    
-                    # 检查是否需要转到服务收集
-                    if current_state["email_complete"]:
-                        current_state["current_step"] = "collect_service"
-                        service_msg = f"感谢您提供邮箱信息！现在请告诉我您需要什么服务？我们目前提供：清洁(clean)、园艺(garden)和水管维修(plumber)服务。"
-                        print(f"\n🤖 客服：{service_msg}")
-                        self.add_to_conversation(current_state, "assistant", service_msg, None)
-                        current_state["service_attempts"] += 1
-                    elif current_state["email_attempts"] >= current_state["max_attempts"]:
-                        print(f"\n⏰ 邮箱收集已达到最大尝试次数（{current_state['max_attempts']}次）")
-                        break
-                        
-                elif current_state["current_step"] == "collect_service":
-                    current_state = self.process_service_collection(current_state)
-                    
-                    # 检查是否需要转到时间收集
-                    if current_state["service_complete"]:
-                        if current_state["service_available"]:
-                            current_state["current_step"] = "collect_time"
-                            time_msg = f"很好！我们可以提供{current_state['service']}服务。请告诉我您期望的服务时间，我们目前可以安排：tomorrow morning、Saturday morning或Sunday afternoon。"
-                            print(f"\n🤖 客服：{time_msg}")
-                            self.add_to_conversation(current_state, "assistant", time_msg, None)
-                            current_state["time_attempts"] += 1
-                        else:
-                            current_state["conversation_complete"] = True
-                            print("📱 我们会在服务开通后通过短信通知您。")
-                    elif current_state["service_attempts"] >= current_state["service_max_attempts"]:
-                        print(f"\n⏰ 服务需求收集已达到最大尝试次数（{current_state['service_max_attempts']}次）")
-                        break
-                        
-                elif current_state["current_step"] == "collect_time":
-                    current_state = self.process_time_collection(current_state)
-                    
-                    # 检查是否完成
-                    if current_state["time_complete"]:
-                        current_state["conversation_complete"] = True
-                    elif current_state["time_attempts"] >= current_state["max_attempts"]:
-                        print(f"\n⏰ 服务时间收集已达到最大尝试次数（{current_state['max_attempts']}次）")
-                        break
-                    
-            except Exception as e:
-                print(f"❌ 处理过程出错：{e}")
+            except KeyboardInterrupt:
+                print("\\n\\n⚠️ 对话被中断")
+                save_choice = input("💾 是否保存当前对话记录？(y/n): ").strip().lower()
+                if save_choice in ['y', 'yes', '是']:
+                    self.save_to_file(state)
                 break
+            except Exception as e:
+                print(f"❌ 处理过程中出现错误：{e}")
+                continue
         
-        # 显示最终结果
-        self.print_results(current_state)
+        return state
 
-def main():
-    """主函数"""
-    print("🚀 正在启动AI客服系统...")
-    
-    # 检查API密钥
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("❌ 请设置OPENAI_API_KEY环境变量")
-        api_key = input("请输入您的OpenAI API密钥：").strip()
-        if not api_key:
-            print("❌ 未提供API密钥，程序退出")
-            return
-    
-    try:
-        # 创建客服实例
-        cs = CustomerServiceLangGraph(api_key=api_key)
-        
-        # 开始对话
-        cs.start_conversation()
-        
-    except Exception as e:
-        print(f"❌ 程序运行出错：{e}")
+
+# ================== 模块测试入口 ==================
 
 if __name__ == "__main__":
-    main()
+    """模块测试入口"""
+    print("🚀 启动AI客服系统测试...")
+    
+    # 创建客服实例
+    cs_agent = CustomerServiceLangGraph()
+    
+    # 启动对话
+    final_state = cs_agent.start_conversation()
+    
+    print("\\n📊 最终状态总结:")
+    cs_agent.print_results(final_state)
