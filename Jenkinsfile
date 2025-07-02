@@ -68,97 +68,44 @@ spec:
             }
         }
 
-        stage('Build & Push Image') {
+        stage('Generate Image Tag') {
             steps {
                 container('build-tools') {
                     script {
-                        try {
-                            // 获取 Git commit hash
-                            def commitHash = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                            env.IMAGE_TAG = commitHash
-
-                            sh """
-                                apk update && apk add --no-cache aws-cli docker-cli curl git
-
-                                echo "Waiting for Docker daemon to start..."
-                                timeout=60
-                                while ! docker info >/dev/null 2>&1; do
-                                    sleep 2
-                                    timeout=\$((timeout-2))
-                                    if [ \$timeout -le 0 ]; then
-                                        echo "❌ Docker daemon startup timed out"
-                                        exit 1
-                                    fi
-                                done
-
-                                if [ ! -f "${DOCKERFILE_PATH}" ]; then
-                                    echo "❌ Dockerfile not found at path: ${DOCKERFILE_PATH}"
-                                    exit 1
-                                fi
-
-                                echo "Building Docker image..."
-                                docker build -f ${DOCKERFILE_PATH} -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
-
-                                echo "Ensuring ECR repository exists..."
-                                if ! aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} --region ${AWS_REGION} >/dev/null 2>&1; then
-                                    aws ecr create-repository --repository-name ${ECR_REPOSITORY} --region ${AWS_REGION}
-                                fi
-
-                                echo "Logging in to AWS ECR..."
-                                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
-
-                                echo "Tagging and pushing image..."
-                                docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-                                docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-
-                                docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} || true
-
-                                echo "✅ Image successfully built and pushed: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-                            """
-                        } catch (e) {
-                            echo "❌ Image build failed: ${e.getMessage()}"
-                            throw e
-                        }
+                        sh '''
+                            apk add --no-cache git
+                            export GIT_TAG=$(git rev-parse --short HEAD)
+                            echo "IMAGE_TAG=${GIT_TAG}" > image_tag.txt
+                        '''
+                        env.IMAGE_TAG = readFile('image_tag.txt').trim()
+                        echo "✅ Using IMAGE_TAG: ${env.IMAGE_TAG}"
                     }
                 }
             }
         }
 
-        stage('Deploy to UAT (Helm)') {
+        stage('Build & Push Image') {
             steps {
                 container('build-tools') {
-                    sh '''
-                        echo "Deploying to UAT via Helm..."
-                        apk add --no-cache bash curl tar gzip
-                        curl -sSL https://get.helm.sh/helm-v3.14.4-linux-amd64.tar.gz | tar -xz
-                        mv linux-amd64/helm /usr/local/bin/helm
+                    script {
+                        sh '''
+                            apk add --no-cache docker-cli aws-cli curl
 
-                        helm version
+                            echo "Waiting for Docker daemon to start..."
+                            timeout=60
+                            while ! docker info >/dev/null 2>&1; do
+                                sleep 2
+                                timeout=$((timeout-2))
+                                if [ $timeout -le 0 ]; then
+                                    echo "❌ Docker daemon startup timed out"
+                                    exit 1
+                                fi
+                            done
 
-                        helm upgrade --install backend ./helm/backend \
-                          --namespace=uat \
-                          --create-namespace \
-                          --set image.repository=${ECR_REGISTRY}/${ECR_REPOSITORY} \
-                          --set image.tag=${IMAGE_TAG}
-                    '''
-                }
-            }
-        }
-    }
+                            if [ ! -f "${DOCKERFILE_PATH}" ]; then
+                                echo "❌ Dockerfile not found at path: ${DOCKERFILE_PATH}"
+                                exit 1
+                            fi
 
-    post {
-        always {
-            cleanWs()
-        }
-        success {
-            mail to: 'fanhang995@gmail.com',
-                 subject: "✅ Jenkins Pipeline Success - Build #${BUILD_NUMBER}",
-                 body: "Image was successfully built and deployed.\n\nImage: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}\nBuild: ${env.BUILD_URL}"
-        }
-        failure {
-            mail to: 'fanhang995@gmail.com',
-                 subject: "❌ Jenkins Pipeline Failed - Build #${BUILD_NUMBER}",
-                 body: "Pipeline failed. Please review the logs at:\n\n${env.BUILD_URL}"
-        }
-    }
-}
+                            echo "Building image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
+                            docker build -f ${DOCKERFILE_PATH} -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
