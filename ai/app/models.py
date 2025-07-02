@@ -16,10 +16,12 @@ class UserInfo(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    email: Optional[str] = None
 
 class Company(BaseModel):
     id: str
     name: str
+    email: str
     phone: Optional[str] = None
 
 class UserState(BaseModel):

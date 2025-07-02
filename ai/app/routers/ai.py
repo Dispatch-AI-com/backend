@@ -46,12 +46,14 @@ async def ai_conversation(data: ConversationInput):
         "name": callskeleton.user.userInfo.get("name"),
         "phone": callskeleton.user.userInfo.get("phone"),
         "address": callskeleton.user.userInfo.get("address"),
+        "email": callskeleton.user.userInfo.get("email"),
         "service": callskeleton.user.service.name if callskeleton.user.service else None,
         "service_time": callskeleton.user.serviceBookedTime,
         "current_step": "collect_name",  # 默认第一步
         "name_attempts": 0,
         "phone_attempts": 0,
         "address_attempts": 0,
+        "email_attempts": 0,
         "service_attempts": 0,
         "time_attempts": 0,
         "max_attempts": 3,
@@ -62,6 +64,7 @@ async def ai_conversation(data: ConversationInput):
         "name_complete": bool(callskeleton.user.userInfo.get("name")),
         "phone_complete": bool(callskeleton.user.userInfo.get("phone")),
         "address_complete": bool(callskeleton.user.userInfo.get("address")),
+        "email_complete": bool(callskeleton.user.userInfo.get("email")),
         "service_complete": bool(callskeleton.user.service),
         "time_complete": bool(callskeleton.user.serviceBookedTime),
         "conversation_complete": callskeleton.servicebooked,
@@ -70,6 +73,7 @@ async def ai_conversation(data: ConversationInput):
         "name_timestamp": None,
         "phone_timestamp": None,
         "address_timestamp": None,
+        "email_timestamp": None,
         "service_timestamp": None,
         "time_timestamp": None,
     }
@@ -95,6 +99,8 @@ async def ai_conversation(data: ConversationInput):
         state = cs_agent.process_phone_collection(state)
     elif not state["address_complete"]:
         state = cs_agent.process_address_collection(state)
+    elif not state["email_complete"]:
+        state = cs_agent.process_email_collection(state)
     elif not state["service_complete"]:
         state = cs_agent.process_service_collection(state)
     elif not state["time_complete"]:

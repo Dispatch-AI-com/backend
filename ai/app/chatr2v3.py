@@ -22,14 +22,16 @@ class CustomerServiceState(TypedDict):
     name: Optional[str]
     phone: Optional[str]
     address: Optional[str]
+    email: Optional[str]  # 新增电子邮件字段
     service: Optional[str]  # 新增服务项目字段
     service_time: Optional[str]  # 新增服务时间字段
     
     # 流程控制
-    current_step: Literal["collect_name", "collect_phone", "collect_address", "collect_service", "collect_time", "completed"]  # 更新状态流转
+    current_step: Literal["collect_name", "collect_phone", "collect_address", "collect_email", "collect_service", "collect_time", "completed"]  # 更新状态流转
     name_attempts: int
     phone_attempts: int
     address_attempts: int
+    email_attempts: int  # 新增邮箱尝试次数
     service_attempts: int  # 新增服务尝试次数
     time_attempts: int  # 新增时间尝试次数
     max_attempts: int
@@ -46,6 +48,7 @@ class CustomerServiceState(TypedDict):
     name_complete: bool
     phone_complete: bool
     address_complete: bool
+    email_complete: bool  # 新增邮箱完成标记
     service_complete: bool  # 新增服务完成标记
     time_complete: bool  # 新增时间完成标记
     conversation_complete: bool
@@ -56,6 +59,7 @@ class CustomerServiceState(TypedDict):
     name_timestamp: Optional[str]
     phone_timestamp: Optional[str]
     address_timestamp: Optional[str]
+    email_timestamp: Optional[str]  # 新增邮箱时间戳
     service_timestamp: Optional[str]  # 新增服务时间戳
     time_timestamp: Optional[str]  # 新增服务时间时间戳
 
@@ -145,6 +149,33 @@ class CustomerServiceLangGraph:
 - 如果地址信息不完整或不符合澳洲格式，将info_complete设为false
 - response字段要自然友好，引导用户提供完整地址信息
 - 分析用户输入是否包含所有必要的地址组成部分"""
+
+    def get_email_extraction_prompt(self):
+        """获取电子邮件提取的系统提示词"""
+        return """你是一个专业的客服助手。你的任务是：
+1. 与用户进行自然友好的对话
+2. 收集用户的电子邮件地址信息
+3. 严格按照JSON格式返回结果
+
+请务必按照以下JSON格式回复，不要添加任何其他内容：
+{
+  "response": "你要说给用户的话",
+  "info_extracted": {
+    "email": "提取到的电子邮件地址，如果没有提取到则为null"
+  },
+  "info_complete": true/false,
+  "analysis": "简短分析用户输入是否包含有效电子邮件地址"
+}
+
+规则：
+- 电子邮件必须符合标准格式：用户名@域名.后缀
+- 必须包含@符号，且@符号前后都有内容
+- 域名部分必须包含至少一个点(.)
+- 不接受明显无效的邮箱格式（如缺少@、域名等）
+- 如果用户提供了有效格式的电子邮件地址，将info_complete设为true
+- 如果邮件格式无效或未提供，将info_complete设为false
+- response字段要自然友好，引导用户提供正确的电子邮件格式
+- 分析用户输入是否包含有效的电子邮件地址格式"""
 
     def get_service_extraction_prompt(self):
         """获取服务需求提取的系统提示词"""
@@ -355,6 +386,49 @@ class CustomerServiceLangGraph:
                 "analysis": f"API错误：{str(e)}"
             }
 
+    def extract_email_from_conversation(self, state: CustomerServiceState):
+        """使用LLM提取电子邮件信息"""
+        try:
+            # 构建对话历史
+            conversation_context = "\n".join([
+                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
+                for msg in state["conversation_history"][-3:]
+            ])
+            
+            # 调用OpenAI API
+            response = self.client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": self.get_email_extraction_prompt()},
+                    {"role": "user", "content": f"对话历史：{conversation_context}\n\n当前用户输入：{state['last_user_input']}"}
+                ],
+                temperature=0.3,
+                max_tokens=500
+            )
+            
+            content = response.choices[0].message.content.strip()
+            
+            try:
+                result = json.loads(content)
+                return result
+            except json.JSONDecodeError:
+                print(f"⚠️  JSON解析失败，原始回复：{content}")
+                return {
+                    "response": "抱歉，系统处理出现问题。请重新告诉我您的电子邮件地址。",
+                    "info_extracted": {"email": None},
+                    "info_complete": False,
+                    "analysis": "系统解析错误"
+                }
+                
+        except Exception as e:
+            print(f"❌ API调用失败：{e}")
+            return {
+                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您的电子邮件地址。",
+                "info_extracted": {"email": None},
+                "info_complete": False,
+                "analysis": f"API错误：{str(e)}"
+            }
+
     def validate_name(self, name):
         """验证姓名的有效性"""
         if not name or name.strip() == "":
@@ -372,6 +446,53 @@ class CustomerServiceLangGraph:
         if name.isdigit():
             return False
             
+        return True
+
+    def validate_email(self, email):
+        """验证电子邮件地址的有效性"""
+        if not email or email.strip() == "":
+            return False
+        
+        email = email.strip()
+        
+        # 基本长度检查
+        if len(email) < 5 or len(email) > 254:  # RFC 5321 标准
+            return False
+        
+        # 检查是否包含@符号，且只有一个
+        if email.count('@') != 1:
+            return False
+        
+        # 分割用户名和域名部分
+        local_part, domain_part = email.split('@')
+        
+        # 验证用户名部分（不能为空）
+        if not local_part or len(local_part) > 64:  # RFC 5321 标准
+            return False
+        
+        # 验证域名部分
+        if not domain_part or len(domain_part) > 253:  # RFC 5321 标准
+            return False
+        
+        # 域名必须包含至少一个点
+        if '.' not in domain_part:
+            return False
+        
+        # 简单的正则表达式验证
+        import re
+        email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        
+        if not re.match(email_pattern, email):
+            return False
+        
+        # 检查域名部分是否以点开头或结尾
+        if domain_part.startswith('.') or domain_part.endswith('.'):
+            return False
+        
+        # 检查是否有连续的点
+        if '..' in email:
+            return False
+        
         return True
 
     def validate_phone(self, phone):
@@ -658,7 +779,7 @@ class CustomerServiceLangGraph:
             state["address"] = extracted_address.strip()
             state["address_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             state["address_complete"] = True
-            state["current_step"] = "collect_service"  # 修改为进入服务收集步骤
+            state["current_step"] = "collect_email"  # 修改为进入邮箱收集步骤
             
             print(f"✅ 地址提取成功：{extracted_address}")
         else:
@@ -666,6 +787,53 @@ class CustomerServiceLangGraph:
             if extracted_address:
                 print(f"⚠️  提取到的地址可能无效：{extracted_address}")
             state["address_attempts"] += 1
+        
+        return state
+
+    def process_email_collection(self, state: CustomerServiceState):
+        """处理电子邮件收集逻辑"""
+        if not state["last_user_input"]:
+            return state
+            
+        print("🔄 正在处理您的电子邮件地址...")
+        result = self.extract_email_from_conversation(state)
+        
+        # 检查result是否为None
+        if result is None:
+            print("⚠️  系统处理出现问题，请重新输入您的电子邮件地址。")
+            state["email_attempts"] += 1
+            return state
+            
+        state["last_llm_response"] = result
+        
+        # 显示AI回复
+        ai_response = result.get("response", "抱歉，我没有理解您的电子邮件地址。")
+        print(f"🤖 客服：{ai_response}")
+        self.add_to_conversation(state, "assistant", ai_response)
+        
+        # 显示分析结果
+        analysis = result.get("analysis", "")
+        if analysis:
+            print(f"💭 系统分析：{analysis}")
+        
+        # 检查是否提取到有效邮箱
+        info_extracted = result.get("info_extracted", {})
+        extracted_email = info_extracted.get("email") if info_extracted else None
+        is_complete = result.get("info_complete", False)
+        
+        if is_complete and extracted_email and self.validate_email(extracted_email):
+            # 成功提取到邮箱
+            state["email"] = extracted_email.strip().lower()
+            state["email_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            state["email_complete"] = True
+            state["current_step"] = "collect_service"  # 修改为进入服务收集步骤
+            
+            print(f"✅ 邮箱提取成功：{extracted_email}")
+        else:
+            # 未能提取到有效邮箱
+            if extracted_email:
+                print(f"⚠️  提取到的邮箱可能无效：{extracted_email}")
+            state["email_attempts"] += 1
         
         return state
 
@@ -810,6 +978,12 @@ class CustomerServiceLangGraph:
         else:
             print("❌ 未能成功收集到客户地址")
             
+        if state["email"]:
+            print(f"✅ 客户邮箱：{state['email']}")
+            print(f"📅 邮箱收集时间：{state['email_timestamp']}")
+        else:
+            print("❌ 未能成功收集到客户邮箱")
+            
         if state["service"]:
             print(f"✅ 所需服务：{state['service']}")
             print(f"📅 服务收集时间：{state['service_timestamp']}")
@@ -834,6 +1008,7 @@ class CustomerServiceLangGraph:
         print(f"🔄 姓名尝试次数：{state['name_attempts']}")
         print(f"🔄 电话尝试次数：{state['phone_attempts']}")
         print(f"🔄 地址尝试次数：{state['address_attempts']}")
+        print(f"🔄 邮箱尝试次数：{state['email_attempts']}")
         print(f"🔄 服务尝试次数：{state['service_attempts']}")
         print(f"🔄 时间尝试次数：{state['time_attempts']}")
         
@@ -850,11 +1025,13 @@ class CustomerServiceLangGraph:
                     "name": state["name"],
                     "phone": state["phone"],
                     "address": state["address"],
+                    "email": state["email"],
                     "service": state["service"],
                     "service_time": state["service_time"],
                     "name_timestamp": state["name_timestamp"],
                     "phone_timestamp": state["phone_timestamp"],
                     "address_timestamp": state["address_timestamp"],
+                    "email_timestamp": state["email_timestamp"],
                     "service_timestamp": state["service_timestamp"],
                     "time_timestamp": state["time_timestamp"],
                     "service_available": state["service_available"],
@@ -865,6 +1042,7 @@ class CustomerServiceLangGraph:
                     "name_attempts": state["name_attempts"],
                     "phone_attempts": state["phone_attempts"],
                     "address_attempts": state["address_attempts"],
+                    "email_attempts": state["email_attempts"],
                     "service_attempts": state["service_attempts"],
                     "time_attempts": state["time_attempts"],
                     "max_attempts": state["max_attempts"],
@@ -892,12 +1070,14 @@ class CustomerServiceLangGraph:
             "name": None,
             "phone": None,
             "address": None,
+            "email": None,
             "service": None,
             "service_time": None,
             "current_step": "collect_name",
             "name_attempts": 0,
             "phone_attempts": 0,
             "address_attempts": 0,
+            "email_attempts": 0,
             "service_attempts": 0,
             "time_attempts": 0,
             "max_attempts": 10,
@@ -908,6 +1088,7 @@ class CustomerServiceLangGraph:
             "name_complete": False,
             "phone_complete": False,
             "address_complete": False,
+            "email_complete": False,
             "service_complete": False,
             "time_complete": False,
             "service_available": False,
@@ -916,6 +1097,7 @@ class CustomerServiceLangGraph:
             "name_timestamp": None,
             "phone_timestamp": None,
             "address_timestamp": None,
+            "email_timestamp": None,
             "service_timestamp": None,
             "time_timestamp": None
         }
@@ -935,6 +1117,8 @@ class CustomerServiceLangGraph:
                 print(f"\n[电话收集 - 第 {current_state['phone_attempts']} 次尝试]")
             elif current_state["current_step"] == "collect_address":
                 print(f"\n[地址收集 - 第 {current_state['address_attempts']} 次尝试]")
+            elif current_state["current_step"] == "collect_email":
+                print(f"\n[邮箱收集 - 第 {current_state['email_attempts']} 次尝试]")
             elif current_state["current_step"] == "collect_service":
                 print(f"\n[服务需求收集 - 第 {current_state['service_attempts']} 次尝试]")
             elif current_state["current_step"] == "collect_time":
@@ -978,7 +1162,7 @@ class CustomerServiceLangGraph:
                     # 检查是否需要转到地址收集
                     if current_state["phone_complete"]:
                         current_state["current_step"] = "collect_address"
-                        address_msg = f"谢谢您提供电话号码！最后，请告诉我您的详细住址，包括街道号码、街道名称、城市、州/领地和邮编。"
+                        address_msg = f"谢谢您提供电话号码！现在请告诉我您的详细住址，包括街道号码、街道名称、城市、州/领地和邮编。"
                         print(f"\n🤖 客服：{address_msg}")
                         self.add_to_conversation(current_state, "assistant", address_msg)
                         current_state["address_attempts"] += 1
@@ -989,15 +1173,29 @@ class CustomerServiceLangGraph:
                 elif current_state["current_step"] == "collect_address":
                     current_state = self.process_address_collection(current_state)
                     
-                    # 检查是否需要转到服务收集
+                    # 检查是否需要转到邮箱收集
                     if current_state["address_complete"]:
+                        current_state["current_step"] = "collect_email"
+                        email_msg = f"很好！最后，为了方便我们发送服务确认和后续通知，请提供您的电子邮件地址。"
+                        print(f"\n🤖 客服：{email_msg}")
+                        self.add_to_conversation(current_state, "assistant", email_msg)
+                        current_state["email_attempts"] += 1
+                    elif current_state["address_attempts"] >= current_state["max_attempts"]:
+                        print(f"\n⏰ 地址收集已达到最大尝试次数（{current_state['max_attempts']}次）")
+                        break
+                        
+                elif current_state["current_step"] == "collect_email":
+                    current_state = self.process_email_collection(current_state)
+                    
+                    # 检查是否需要转到服务收集
+                    if current_state["email_complete"]:
                         current_state["current_step"] = "collect_service"
-                        service_msg = f"感谢您提供地址信息！请告诉我您需要什么服务？我们目前提供：清洁(clean)、园艺(garden)和水管维修(plumber)服务。"
+                        service_msg = f"感谢您提供邮箱信息！现在请告诉我您需要什么服务？我们目前提供：清洁(clean)、园艺(garden)和水管维修(plumber)服务。"
                         print(f"\n🤖 客服：{service_msg}")
                         self.add_to_conversation(current_state, "assistant", service_msg)
                         current_state["service_attempts"] += 1
-                    elif current_state["address_attempts"] >= current_state["max_attempts"]:
-                        print(f"\n⏰ 地址收集已达到最大尝试次数（{current_state['max_attempts']}次）")
+                    elif current_state["email_attempts"] >= current_state["max_attempts"]:
+                        print(f"\n⏰ 邮箱收集已达到最大尝试次数（{current_state['max_attempts']}次）")
                         break
                         
                 elif current_state["current_step"] == "collect_service":
