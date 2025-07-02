@@ -641,15 +641,36 @@ class CustomerServiceLangGraph:
                 "analysis": f"API错误：{str(e)}"
             }
 
-    def add_to_conversation(self, state: CustomerServiceState, role, content):
-        """添加对话到历史记录"""
+    def add_to_conversation(self, state: CustomerServiceState, role, content, call_sid: str = None):
+        """添加对话到历史记录并实时更新Redis"""
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 添加到本地状态
         state["conversation_history"].append({
             "role": role,
             "content": content,
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            "timestamp": timestamp
         })
+        
+        # 🆕 实时更新Redis中的对话历史
+        if call_sid:
+            from .redis_client import update_conversation_history
+            from .models import Message
+            
+            # 转换为Message对象
+            speaker = "customer" if role == "user" else "AI"
+            message = Message(
+                speaker=speaker,
+                message=content,
+                startedAt=timestamp + "Z"  # 添加Z后缀表示UTC时间
+            )
+            
+            # 更新Redis
+            redis_success = update_conversation_history(call_sid, message)
+            if not redis_success:
+                print(f"⚠️ 对话历史Redis更新失败: {speaker} - {content[:50]}...")
 
-    def process_name_collection(self, state: CustomerServiceState):
+    def process_name_collection(self, state: CustomerServiceState, call_sid: str = None):
         """处理姓名收集逻辑"""
         if not state["last_user_input"]:
             return state
@@ -668,7 +689,7 @@ class CustomerServiceLangGraph:
         # 显示AI回复
         ai_response = result.get("response", "抱歉，我没有理解您的意思。")
         print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response)
+        self.add_to_conversation(state, "assistant", ai_response, call_sid)
         
         # 显示分析结果
         analysis = result.get("analysis", "")
@@ -682,12 +703,30 @@ class CustomerServiceLangGraph:
         
         if is_complete and extracted_name and self.validate_name(extracted_name):
             # 成功提取到姓名
-            state["name"] = extracted_name.strip()
-            state["name_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cleaned_name = extracted_name.strip()
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            state["name"] = cleaned_name
+            state["name_timestamp"] = current_time
             state["name_complete"] = True
             state["current_step"] = "collect_phone"
             
-            print(f"✅ 姓名提取成功：{extracted_name}")
+            # 🆕 实时更新Redis中的姓名信息
+            if call_sid:
+                from .redis_client import update_user_info_field
+                redis_success = update_user_info_field(
+                    call_sid=call_sid,
+                    field_name="name",
+                    field_value=cleaned_name,
+                    timestamp=current_time
+                )
+            else:
+                redis_success = False
+            
+            if redis_success:
+                print(f"✅ 姓名提取并保存成功：{cleaned_name}")
+            else:
+                print(f"⚠️ 姓名提取成功但Redis保存失败：{cleaned_name}")
         else:
             # 未能提取到有效姓名
             if extracted_name:
@@ -696,7 +735,7 @@ class CustomerServiceLangGraph:
         
         return state
 
-    def process_phone_collection(self, state: CustomerServiceState):
+    def process_phone_collection(self, state: CustomerServiceState, call_sid: str = None):
         """处理电话收集逻辑"""
         if not state["last_user_input"]:
             return state
@@ -715,7 +754,7 @@ class CustomerServiceLangGraph:
         # 显示AI回复
         ai_response = result.get("response", "抱歉，我没有理解您的电话号码。")
         print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response)
+        self.add_to_conversation(state, "assistant", ai_response, call_sid)
         
         # 显示分析结果
         analysis = result.get("analysis", "")
@@ -729,12 +768,30 @@ class CustomerServiceLangGraph:
         
         if is_complete and extracted_phone and self.validate_phone(extracted_phone):
             # 成功提取到电话
-            state["phone"] = extracted_phone.strip()
-            state["phone_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cleaned_phone = extracted_phone.strip()
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            state["phone"] = cleaned_phone
+            state["phone_timestamp"] = current_time
             state["phone_complete"] = True
             state["current_step"] = "collect_address"  # 修改为进入地址收集步骤
             
-            print(f"✅ 电话提取成功：{extracted_phone}")
+            # 🆕 实时更新Redis中的电话信息
+            if call_sid:
+                from .redis_client import update_user_info_field
+                redis_success = update_user_info_field(
+                    call_sid=call_sid,
+                    field_name="phone",
+                    field_value=cleaned_phone,
+                    timestamp=current_time
+                )
+            else:
+                redis_success = False
+            
+            if redis_success:
+                print(f"✅ 电话提取并保存成功：{cleaned_phone}")
+            else:
+                print(f"⚠️ 电话提取成功但Redis保存失败：{cleaned_phone}")
         else:
             # 未能提取到有效电话
             if extracted_phone:
@@ -743,7 +800,7 @@ class CustomerServiceLangGraph:
         
         return state
 
-    def process_address_collection(self, state: CustomerServiceState):
+    def process_address_collection(self, state: CustomerServiceState, call_sid: str = None):
         """处理地址收集逻辑"""
         if not state["last_user_input"]:
             return state
@@ -762,7 +819,7 @@ class CustomerServiceLangGraph:
         # 显示AI回复
         ai_response = result.get("response", "抱歉，我没有理解您的地址。")
         print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response)
+        self.add_to_conversation(state, "assistant", ai_response, call_sid)
         
         # 显示分析结果
         analysis = result.get("analysis", "")
@@ -776,12 +833,30 @@ class CustomerServiceLangGraph:
         
         if is_complete and extracted_address and self.validate_address(extracted_address):
             # 成功提取到地址
-            state["address"] = extracted_address.strip()
-            state["address_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cleaned_address = extracted_address.strip()
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            state["address"] = cleaned_address
+            state["address_timestamp"] = current_time
             state["address_complete"] = True
             state["current_step"] = "collect_email"  # 修改为进入邮箱收集步骤
             
-            print(f"✅ 地址提取成功：{extracted_address}")
+            # 🆕 实时更新Redis中的地址信息
+            if call_sid:
+                from .redis_client import update_user_info_field
+                redis_success = update_user_info_field(
+                    call_sid=call_sid,
+                    field_name="address",
+                    field_value=cleaned_address,
+                    timestamp=current_time
+                )
+            else:
+                redis_success = False
+            
+            if redis_success:
+                print(f"✅ 地址提取并保存成功：{cleaned_address}")
+            else:
+                print(f"⚠️ 地址提取成功但Redis保存失败：{cleaned_address}")
         else:
             # 未能提取到有效地址
             if extracted_address:
@@ -790,7 +865,7 @@ class CustomerServiceLangGraph:
         
         return state
 
-    def process_email_collection(self, state: CustomerServiceState):
+    def process_email_collection(self, state: CustomerServiceState, call_sid: str = None):
         """处理电子邮件收集逻辑"""
         if not state["last_user_input"]:
             return state
@@ -809,7 +884,7 @@ class CustomerServiceLangGraph:
         # 显示AI回复
         ai_response = result.get("response", "抱歉，我没有理解您的电子邮件地址。")
         print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response)
+        self.add_to_conversation(state, "assistant", ai_response, call_sid)
         
         # 显示分析结果
         analysis = result.get("analysis", "")
@@ -823,12 +898,30 @@ class CustomerServiceLangGraph:
         
         if is_complete and extracted_email and self.validate_email(extracted_email):
             # 成功提取到邮箱
-            state["email"] = extracted_email.strip().lower()
-            state["email_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            cleaned_email = extracted_email.strip().lower()
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            state["email"] = cleaned_email
+            state["email_timestamp"] = current_time
             state["email_complete"] = True
             state["current_step"] = "collect_service"  # 修改为进入服务收集步骤
             
-            print(f"✅ 邮箱提取成功：{extracted_email}")
+            # 🆕 实时更新Redis中的邮箱信息
+            if call_sid:
+                from .redis_client import update_user_info_field
+                redis_success = update_user_info_field(
+                    call_sid=call_sid,
+                    field_name="email",
+                    field_value=cleaned_email,
+                    timestamp=current_time
+                )
+            else:
+                redis_success = False
+            
+            if redis_success:
+                print(f"✅ 邮箱提取并保存成功：{cleaned_email}")
+            else:
+                print(f"⚠️ 邮箱提取成功但Redis保存失败：{cleaned_email}")
         else:
             # 未能提取到有效邮箱
             if extracted_email:
@@ -837,7 +930,7 @@ class CustomerServiceLangGraph:
         
         return state
 
-    def process_service_collection(self, state: CustomerServiceState):
+    def process_service_collection(self, state: CustomerServiceState, call_sid: str = None):
         """处理服务需求收集逻辑"""
         if not state["last_user_input"]:
             return state
@@ -856,7 +949,7 @@ class CustomerServiceLangGraph:
         # 显示AI回复
         ai_response = result.get("response", "抱歉，我没有理解您需要的服务。")
         print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response)
+        self.add_to_conversation(state, "assistant", ai_response, call_sid)
         
         # 显示分析结果
         analysis = result.get("analysis", "")
@@ -873,16 +966,33 @@ class CustomerServiceLangGraph:
             is_valid, is_available = self.validate_service(extracted_service)
             
             if is_valid:
-                state["service"] = extracted_service.strip().lower()
-                state["service_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                cleaned_service = extracted_service.strip().lower()
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                state["service"] = cleaned_service
+                state["service_timestamp"] = current_time
                 state["service_complete"] = True
                 state["service_available"] = is_available
                 state["current_step"] = "collect_time"  # 修改为进入时间收集步骤
                 
-                if is_available:
-                    print(f"✅ 服务需求提取成功：{extracted_service}")
+                # 🆕 实时更新Redis中的服务信息
+                if call_sid:
+                    from .redis_client import update_service_selection
+                    redis_success = update_service_selection(
+                        call_sid=call_sid,
+                        service_name=cleaned_service,
+                        timestamp=current_time
+                    )
                 else:
-                    print(f"❌ 服务暂不可用：{extracted_service}")
+                    redis_success = False
+                
+                if is_available:
+                    if redis_success:
+                        print(f"✅ 服务需求提取并保存成功：{cleaned_service}")
+                    else:
+                        print(f"⚠️ 服务需求提取成功但Redis保存失败：{cleaned_service}")
+                else:
+                    print(f"❌ 服务暂不可用：{cleaned_service}")
             else:
                 print(f"⚠️  提取到的服务类型无效：{extracted_service}")
                 state["service_attempts"] += 1
@@ -894,7 +1004,7 @@ class CustomerServiceLangGraph:
         
         return state
 
-    def process_time_collection(self, state: CustomerServiceState):
+    def process_time_collection(self, state: CustomerServiceState, call_sid: str = None):
         """处理服务时间收集逻辑"""
         if not state["last_user_input"]:
             return state
@@ -913,7 +1023,7 @@ class CustomerServiceLangGraph:
         # 显示AI回复
         ai_response = result.get("response", "抱歉，我没有理解您期望的服务时间。")
         print(f"🤖 客服：{ai_response}")
-        self.add_to_conversation(state, "assistant", ai_response)
+        self.add_to_conversation(state, "assistant", ai_response, call_sid)
         
         # 显示分析结果
         analysis = result.get("analysis", "")
@@ -930,18 +1040,41 @@ class CustomerServiceLangGraph:
             is_valid, is_available = self.validate_time(extracted_time)
             
             if is_valid:
-                state["service_time"] = extracted_time.strip().lower()
-                state["time_timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                cleaned_time = extracted_time.strip().lower()
+                current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                state["service_time"] = cleaned_time
+                state["time_timestamp"] = current_time
                 state["time_complete"] = True
                 state["time_available"] = is_available
                 state["current_step"] = "completed"
                 state["conversation_complete"] = True
                 
-                if is_available:
-                    print(f"✅ 服务时间提取成功：{extracted_time}")
-                    print("🎉 信息收集完成！我们将安排服务人员与您电话联系具体细节。")
+                # 🆕 实时更新Redis中的服务时间信息
+                if call_sid:
+                    from .redis_client import update_service_selection, update_booking_status
+                    # 更新服务时间
+                    redis_success = update_service_selection(
+                        call_sid=call_sid,
+                        service_name=state.get("service", ""),
+                        service_time=cleaned_time,
+                        timestamp=current_time
+                    )
+                    # 更新预订状态
+                    if is_available:
+                        update_booking_status(call_sid, is_booked=True, email_sent=False)
                 else:
-                    print(f"❌ 该时间段暂不可预约：{extracted_time}")
+                    redis_success = False
+                
+                if is_available:
+                    if redis_success:
+                        print(f"✅ 服务时间提取并保存成功：{cleaned_time}")
+                        print("🎉 信息收集完成！我们将安排服务人员与您电话联系具体细节。")
+                    else:
+                        print(f"⚠️ 服务时间提取成功但Redis保存失败：{cleaned_time}")
+                        print("🎉 信息收集完成！我们将安排服务人员与您电话联系具体细节。")
+                else:
+                    print(f"❌ 该时间段暂不可预约：{cleaned_time}")
                     print("📱 我们会将下周可预约时间通过短信发送给您。")
             else:
                 print(f"⚠️  提取到的服务时间无效：{extracted_time}")
@@ -1105,7 +1238,7 @@ class CustomerServiceLangGraph:
         # 显示欢迎消息
         welcome_msg = "您好，欢迎使用客服服务！为了更好地为您服务，请告诉我您的姓名。"
         print(f"\n🤖 客服：{welcome_msg}")
-        self.add_to_conversation(current_state, "assistant", welcome_msg)
+        self.add_to_conversation(current_state, "assistant", welcome_msg, None)
         current_state["name_attempts"] += 1
         
         # 主对话循环
@@ -1137,7 +1270,7 @@ class CustomerServiceLangGraph:
                 break
             
             # 记录用户输入
-            self.add_to_conversation(current_state, "user", user_input)
+            self.add_to_conversation(current_state, "user", user_input, None)
             current_state["last_user_input"] = user_input
             
             # 根据当前步骤处理
@@ -1150,7 +1283,7 @@ class CustomerServiceLangGraph:
                         current_state["current_step"] = "collect_phone"
                         phone_msg = f"好的，{current_state['name']}！现在请提供您的联系电话，以便我们能够及时与您联系。"
                         print(f"\n🤖 客服：{phone_msg}")
-                        self.add_to_conversation(current_state, "assistant", phone_msg)
+                        self.add_to_conversation(current_state, "assistant", phone_msg, None)
                         current_state["phone_attempts"] += 1
                     elif current_state["name_attempts"] >= current_state["max_attempts"]:
                         print(f"\n⏰ 姓名收集已达到最大尝试次数（{current_state['max_attempts']}次）")
@@ -1164,7 +1297,7 @@ class CustomerServiceLangGraph:
                         current_state["current_step"] = "collect_address"
                         address_msg = f"谢谢您提供电话号码！现在请告诉我您的详细住址，包括街道号码、街道名称、城市、州/领地和邮编。"
                         print(f"\n🤖 客服：{address_msg}")
-                        self.add_to_conversation(current_state, "assistant", address_msg)
+                        self.add_to_conversation(current_state, "assistant", address_msg, None)
                         current_state["address_attempts"] += 1
                     elif current_state["phone_attempts"] >= current_state["max_attempts"]:
                         print(f"\n⏰ 电话收集已达到最大尝试次数（{current_state['max_attempts']}次）")
@@ -1178,7 +1311,7 @@ class CustomerServiceLangGraph:
                         current_state["current_step"] = "collect_email"
                         email_msg = f"很好！最后，为了方便我们发送服务确认和后续通知，请提供您的电子邮件地址。"
                         print(f"\n🤖 客服：{email_msg}")
-                        self.add_to_conversation(current_state, "assistant", email_msg)
+                        self.add_to_conversation(current_state, "assistant", email_msg, None)
                         current_state["email_attempts"] += 1
                     elif current_state["address_attempts"] >= current_state["max_attempts"]:
                         print(f"\n⏰ 地址收集已达到最大尝试次数（{current_state['max_attempts']}次）")
@@ -1192,7 +1325,7 @@ class CustomerServiceLangGraph:
                         current_state["current_step"] = "collect_service"
                         service_msg = f"感谢您提供邮箱信息！现在请告诉我您需要什么服务？我们目前提供：清洁(clean)、园艺(garden)和水管维修(plumber)服务。"
                         print(f"\n🤖 客服：{service_msg}")
-                        self.add_to_conversation(current_state, "assistant", service_msg)
+                        self.add_to_conversation(current_state, "assistant", service_msg, None)
                         current_state["service_attempts"] += 1
                     elif current_state["email_attempts"] >= current_state["max_attempts"]:
                         print(f"\n⏰ 邮箱收集已达到最大尝试次数（{current_state['max_attempts']}次）")
@@ -1207,7 +1340,7 @@ class CustomerServiceLangGraph:
                             current_state["current_step"] = "collect_time"
                             time_msg = f"很好！我们可以提供{current_state['service']}服务。请告诉我您期望的服务时间，我们目前可以安排：tomorrow morning、Saturday morning或Sunday afternoon。"
                             print(f"\n🤖 客服：{time_msg}")
-                            self.add_to_conversation(current_state, "assistant", time_msg)
+                            self.add_to_conversation(current_state, "assistant", time_msg, None)
                             current_state["time_attempts"] += 1
                         else:
                             current_state["conversation_complete"] = True

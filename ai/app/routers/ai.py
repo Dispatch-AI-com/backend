@@ -92,19 +92,19 @@ async def ai_conversation(data: ConversationInput):
     })
     state["last_user_input"] = data.customerMessage.message
 
-    # 3. 判断当前步骤
+    # 3. 判断当前步骤 - 传递call_sid实现实时Redis更新
     if not state["name_complete"]:
-        state = cs_agent.process_name_collection(state)
+        state = cs_agent.process_name_collection(state, call_sid=data.callSid)
     elif not state["phone_complete"]:
-        state = cs_agent.process_phone_collection(state)
+        state = cs_agent.process_phone_collection(state, call_sid=data.callSid)
     elif not state["address_complete"]:
-        state = cs_agent.process_address_collection(state)
+        state = cs_agent.process_address_collection(state, call_sid=data.callSid)
     elif not state["email_complete"]:
-        state = cs_agent.process_email_collection(state)
+        state = cs_agent.process_email_collection(state, call_sid=data.callSid)
     elif not state["service_complete"]:
-        state = cs_agent.process_service_collection(state)
+        state = cs_agent.process_service_collection(state, call_sid=data.callSid)
     elif not state["time_complete"]:
-        state = cs_agent.process_time_collection(state)
+        state = cs_agent.process_time_collection(state, call_sid=data.callSid)
     else:
         state["conversation_complete"] = True
 
@@ -116,20 +116,31 @@ async def ai_conversation(data: ConversationInput):
         "startedAt": datetime.utcnow().isoformat() + "Z"
     }
 
-    # 5. 映射为CallSkeleton格式
-    updated_callskeleton = state_to_callskeleton(
-        state,
-        callSid=callskeleton.callSid,
-        services=callskeleton.services,
-        company=callskeleton.company,
-        createdAt=callskeleton.createdAt
-    )
+    # 5. 🗑️ 移除批量更新逻辑 - 现在使用实时更新
+    # 注意：客户信息和对话历史已在各个步骤中实时更新到Redis
+    # 这里只需要获取当前最新的CallSkeleton状态用于返回
+    
+    try:
+        # 从Redis获取最新的CallSkeleton状态
+        from .redis_client import get_call_skeleton_dict
+        updated_skeleton_dict = get_call_skeleton_dict(data.callSid)
+        
+        # 转换为CallSkeleton对象用于返回
+        updated_callskeleton = CallSkeleton.parse_obj(updated_skeleton_dict)
+        
+    except Exception as e:
+        print(f"⚠️ 获取最新CallSkeleton失败，使用默认值: {str(e)}")
+        # 如果获取失败，使用原有逻辑作为备用
+        updated_callskeleton = state_to_callskeleton(
+            state,
+            callSid=callskeleton.callSid,
+            services=callskeleton.services,
+            company=callskeleton.company,
+            createdAt=callskeleton.createdAt
+        )
 
-    # 6. 存回Redis
-    set_call_skeleton(data.callSid, updated_callskeleton)
-
-    # 7. 返回
+    # 6. 返回AI回复和最新状态
     return {
         "aiResponse": ai_response,
-        "updatedCallSkeleton": updated_callskeleton
+        "updatedCallSkeleton": updated_callskeleton.dict()  # 返回字典格式
     }
