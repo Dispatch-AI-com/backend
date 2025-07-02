@@ -121,12 +121,8 @@ spec:
 
                             echo "Pushing image to ECR..."
                             docker tag ${ECR_REPOSITORY}:${env.IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG}
-                            docker tag ${ECR_REPOSITORY}:${env.IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
                             docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG}
-                            docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
-
                             docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG} || true
-                            docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest || true
 
                             echo "✅ Image pushed: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG}"
                         """
