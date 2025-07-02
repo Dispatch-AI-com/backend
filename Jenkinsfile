@@ -72,12 +72,13 @@ spec:
             steps {
                 container('build-tools') {
                     script {
-                        sh '''
+                        sh """
                             apk add --no-cache git
-                            export GIT_TAG=$(git rev-parse --short HEAD)
-                            echo "IMAGE_TAG=${GIT_TAG}" > image_tag.txt
-                        '''
-                        env.IMAGE_TAG = readFile('image_tag.txt').trim()
+                            git config --global --add safe.directory \$(pwd)
+                            GIT_TAG=\$(git rev-parse --short HEAD)
+                            echo "IMAGE_TAG=\$GIT_TAG" > image_tag.txt
+                        """
+                        env.IMAGE_TAG = readFile('image_tag.txt').trim().split('=')[1]
                         echo "✅ Using IMAGE_TAG: ${env.IMAGE_TAG}"
                     }
                 }
@@ -88,15 +89,15 @@ spec:
             steps {
                 container('build-tools') {
                     script {
-                        sh '''
+                        sh """
                             apk add --no-cache docker-cli aws-cli curl
 
                             echo "Waiting for Docker daemon to start..."
                             timeout=60
                             while ! docker info >/dev/null 2>&1; do
                                 sleep 2
-                                timeout=$((timeout-2))
-                                if [ $timeout -le 0 ]; then
+                                timeout=\$((timeout-2))
+                                if [ \$timeout -le 0 ]; then
                                     echo "❌ Docker daemon startup timed out"
                                     exit 1
                                 fi
@@ -107,8 +108,8 @@ spec:
                                 exit 1
                             fi
 
-                            echo "Building image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
-                            docker build -f ${DOCKERFILE_PATH} -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+                            echo "Building image: ${ECR_REPOSITORY}:${env.IMAGE_TAG}"
+                            docker build -f ${DOCKERFILE_PATH} -t ${ECR_REPOSITORY}:${env.IMAGE_TAG} .
 
                             echo "Ensuring ECR repo exists..."
                             aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} --region ${AWS_REGION} >/dev/null 2>&1 || \
@@ -118,16 +119,16 @@ spec:
                             aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
                             echo "Pushing image to ECR..."
-                            docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-                            docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
-                            docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
+                            docker tag ${ECR_REPOSITORY}:${env.IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG}
+                            docker tag ${ECR_REPOSITORY}:${env.IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
+                            docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG}
                             docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
 
-                            docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} || true
+                            docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG} || true
                             docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest || true
 
-                            echo "✅ Image pushed: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
-                        '''
+                            echo "✅ Image pushed: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${env.IMAGE_TAG}"
+                        """
                     }
                 }
             }
@@ -136,7 +137,7 @@ spec:
         stage('Deploy to UAT (Helm)') {
             steps {
                 container('build-tools') {
-                    sh '''
+                    sh """
                         echo "Deploying with Helm..."
                         apk add --no-cache curl tar gzip bash
                         curl -sSL https://get.helm.sh/helm-v3.14.4-linux-amd64.tar.gz | tar -xz
@@ -146,8 +147,8 @@ spec:
                           --namespace=uat \
                           --create-namespace \
                           --set image.repository=${ECR_REGISTRY}/${ECR_REPOSITORY} \
-                          --set image.tag=${IMAGE_TAG}
-                    '''
+                          --set image.tag=${env.IMAGE_TAG}
+                    """
                 }
             }
         }
