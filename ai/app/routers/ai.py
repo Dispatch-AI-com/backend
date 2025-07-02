@@ -118,29 +118,9 @@ async def ai_conversation(data: ConversationInput):
 
     # 5. 🗑️ 移除批量更新逻辑 - 现在使用实时更新
     # 注意：客户信息和对话历史已在各个步骤中实时更新到Redis
-    # 这里只需要获取当前最新的CallSkeleton状态用于返回
-    
-    try:
-        # 从Redis获取最新的CallSkeleton状态
-        from .redis_client import get_call_skeleton_dict
-        updated_skeleton_dict = get_call_skeleton_dict(data.callSid)
-        
-        # 转换为CallSkeleton对象用于返回
-        updated_callskeleton = CallSkeleton.parse_obj(updated_skeleton_dict)
-        
-    except Exception as e:
-        print(f"⚠️ 获取最新CallSkeleton失败，使用默认值: {str(e)}")
-        # 如果获取失败，使用原有逻辑作为备用
-        updated_callskeleton = state_to_callskeleton(
-            state,
-            callSid=callskeleton.callSid,
-            services=callskeleton.services,
-            company=callskeleton.company,
-            createdAt=callskeleton.createdAt
-        )
+    # 无需再返回CallSkeleton数据给TS，数据已保存在Redis中
 
-    # 6. 返回AI回复和最新状态
+    # 6. 返回AI回复 (CallSkeleton数据已通过实时更新保存到Redis)
     return {
-        "aiResponse": ai_response,
-        "updatedCallSkeleton": updated_callskeleton.dict()  # 返回字典格式
+        "aiResponse": ai_response
     }
