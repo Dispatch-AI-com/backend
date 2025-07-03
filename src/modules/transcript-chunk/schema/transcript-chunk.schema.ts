@@ -21,6 +21,9 @@ export class TranscriptChunk {
 
   @Prop({ type: Date, required: true })
   startAt!: Date;
+
+  @Prop({ type: Date, required: true })
+  endAt!: Date;
 }
 
 export const TranscriptChunkSchema =

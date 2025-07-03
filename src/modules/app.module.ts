@@ -21,7 +21,7 @@ import { StripeModule } from '@/modules/stripe/stripe.module';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
-import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
+import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 
 @Module({
   imports: [
