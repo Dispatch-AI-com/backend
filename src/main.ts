@@ -3,6 +3,7 @@ import 'dotenv/config';
 import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import morgan from 'morgan';
 
@@ -29,6 +30,7 @@ async function bootstrap(): Promise<void> {
 
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.use(morgan('combined'));
+  app.use(bodyParser.urlencoded({ extended: false }));
   setupSwagger(app);
 
   const port = process.env.PORT ?? 4000;

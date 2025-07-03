@@ -8,8 +8,6 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 
-import { WhisperTranscriptionException } from '@/modules/whisper/exceptions/whisper-transcription.exception';
-
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(GlobalExceptionFilter.name);
@@ -30,10 +28,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       case exception instanceof HttpException:
         status = exception.getStatus();
         message = this.extractHttpMessage(exception);
-        break;
-      case exception instanceof WhisperTranscriptionException:
-        status = 502;
-        message = exception.message;
         break;
       case exception instanceof Error:
         message = exception.message;
