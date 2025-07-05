@@ -29,6 +29,7 @@ export class TelephonyService {
   ) {}
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
     const session = await this.sessionHelper.ensureSession(CallSid);
+    //把redis sessinon里面的company services填满
 
     const { services, company } = session;
     const welcome = this.buildWelcomeMessage(company.name, services);
@@ -69,8 +70,12 @@ export class TelephonyService {
       winstonLogger.log(
         `[TelephonyService][callSid=${CallSid}][handleStatus] status=${CallStatus},timestamp=${Timestamp},callDuration=${CallDuration},caller=${Caller}`,
       );
-      //todo:把这个session里面的hisoty作为calllog,caller,timestamp,callDuration,上传到数据库：mark
-      //todo:如果confirmservice为true，则需要上传servicebooked的数据库：tim
+      //let serviceupload = false;
+      //1，如果confirmservice为true，上传service拿到上传service的结果，成功或者失败，失败原因，或者不需要上传
+      //2，生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结，通过调用ai接口（ai/summary）
+      //3，把这个session里面的hisoty作为calllog,caller,timestamp,callDuration,上传到数据库：mark
+      //4，将summary 和sid 发送给python 完成链路（调用callender-mcp，发送邮件-mcp）
+
       await this.sessions.delete(CallSid);
     }
     winstonLogger.log(

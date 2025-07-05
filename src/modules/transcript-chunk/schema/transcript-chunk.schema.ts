@@ -1,26 +1,23 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+import { SpeakerType } from '../../../common/constants/transcript-chunk.constant';
+
 export type TranscriptChunkDocument = TranscriptChunk & Document;
 
 @Schema({ timestamps: true })
-export class TranscriptChunk {
-  @Prop({
-    type: Types.ObjectId,
-    ref: 'Transcript',
-    required: true,
-    index: true,
-  })
+export class TranscriptChunk extends Document {
+  @Prop({ type: Types.ObjectId, required: true })
   transcriptId!: Types.ObjectId;
 
-  @Prop({ enum: ['AI', 'User'], required: true })
-  speakerType!: 'AI' | 'User';
+  @Prop({ type: String, enum: ['AI', 'User'], required: true })
+  speakerType!: SpeakerType;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true })
   text!: string;
 
-  @Prop({ type: Date, required: true })
-  startAt!: Date;
+  @Prop({ type: Number, required: true })
+  startAt!: number;
 }
 
 export const TranscriptChunkSchema =

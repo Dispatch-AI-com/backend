@@ -45,7 +45,8 @@
     "start": "node dist/main",
     "type-check": "tsc --noEmit",
     "test": "jest --config jest.config.json",
-    "lint": "prettier --write \"src/**/*.ts\" && eslint --fix \"src/**/*.ts\""
+    "lint": "prettier --write \"src/**/*.ts\" && eslint --fix \"src/**/*.ts\"",
+    "seed": "ts-node -r tsconfig-paths/register scripts/seeds/index.ts"
   },
   "devDependencies": {
     "@darraghor/eslint-plugin-nestjs-typed": "^6.4.12",
@@ -60,6 +61,7 @@
     "@types/node": "^22.13.8",
     "@types/passport-jwt": "^4.0.1",
     "@types/streamifier": "^0.1.2",
+    "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.31.1",
     "@typescript-eslint/parser": "^8.31.1",
     "eslint": "^9.26.0",
@@ -73,6 +75,7 @@
     "supertest": "^7.1.0",
     "ts-jest": "^29.3.2",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.1"
   }
