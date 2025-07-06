@@ -108,7 +108,7 @@ def test_ai_summary_endpoint():
             result = response.json()
             print("   ✅ AI Response Success!")
             print(f"   Summary: {result['summary']}")
-            print(f"   Key Points:")
+            print("   Key Points:")
             for i, point in enumerate(result['keyPoints'], 1):
                 print(f"     {i}. {point}")
         else:
@@ -139,7 +139,7 @@ def main():
     print("\n" + "="*50 + "\n")
     
     # 3. Show prompt statistics
-    print(f"3. Prompt Statistics:")
+    print("3. Prompt Statistics:")
     print(f"   - Character count: {len(prompt)}")
     print(f"   - Line count: {len(prompt.split(chr(10)))}")
     print(f"   - Conversation turns: {len(test_conversation)}")
