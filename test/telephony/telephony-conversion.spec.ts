@@ -180,15 +180,7 @@ describe('TelephonyService - Session Conversion', () => {
       });
     });
 
-    it('should use Twilio Caller when user phone is not available', async () => {
-      const sessionWithoutPhone = {
-        ...mockSession,
-        user: {
-          ...mockSession.user,
-          userInfo: { ...mockSession.user.userInfo, phone: undefined }
-        }
-      };
-
+    it('should prioritize Twilio Caller over user phone', async () => {
       const twilioParams = {
         CallSid: 'test-call-123',
         CallStatus: 'completed',
@@ -199,11 +191,31 @@ describe('TelephonyService - Session Conversion', () => {
 
       mockCalllogService.create.mockResolvedValue({} as any);
 
-      await (service as any).createCallLogRecord(sessionWithoutPhone, twilioParams);
+      await (service as any).createCallLogRecord(mockSession, twilioParams);
 
       expect(mockCalllogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
           callerNumber: '+61400999999'
+        })
+      );
+    });
+
+    it('should use user phone as fallback when Twilio Caller is not available', async () => {
+      const twilioParams = {
+        CallSid: 'test-call-123',
+        CallStatus: 'completed',
+        Timestamp: '2024-03-21T09:03:00Z',
+        CallDuration: '180',
+        Caller: undefined as any
+      };
+
+      mockCalllogService.create.mockResolvedValue({} as any);
+
+      await (service as any).createCallLogRecord(mockSession, twilioParams);
+
+      expect(mockCalllogService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          callerNumber: '+61400123456'
         })
       );
     });
