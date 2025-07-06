@@ -216,7 +216,7 @@ export class TelephonyService {
 
     // 生成AI摘要
     try {
-      const aiSummary = await this.generateAISummary(session.callSid);
+      const aiSummary = await this.generateAISummary(session.callSid, session);
       await this.transcriptService.update(transcript._id, aiSummary);
       winstonLogger.log(
         `[TelephonyService][createTranscriptAndChunks] Generated AI summary for ${session.callSid}`,
@@ -251,16 +251,42 @@ export class TelephonyService {
     }));
   }
 
-  private async generateAISummary(callSid: string): Promise<{
+  private async generateAISummary(
+    callSid: string,
+    session: CallSkeleton,
+  ): Promise<{
     summary: string;
     keyPoints: string[];
   }> {
+    // Prepare conversation data for AI analysis
+    const conversation = session.history.map(msg => ({
+      speaker: msg.speaker === 'AI' ? 'AI' : 'customer',
+      message: msg.message,
+      timestamp: msg.startedAt,
+    }));
+
+    // Prepare service information
+    const serviceInfo = {
+      name:
+        session.user.service?.name ??
+        (session.services.length > 0 ? session.services[0].name : null) ??
+        'general inquiry',
+      booked: Boolean(session.confirmBooking),
+      company: session.company.name,
+    };
+
+    const requestData = {
+      callSid,
+      conversation,
+      serviceInfo,
+    };
+
     const { data } = await firstValueFrom(
       this.http
         .post<{
           summary: string;
           keyPoints: string[];
-        }>('http://dispatchai-ai:8000/api/ai/summary', { callSid })
+        }>('http://dispatchai-ai:8000/api/ai/summary', requestData)
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
     return data;
