@@ -1,4 +1,5 @@
 # app/routers/ai.py
+from typing import List
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 from ..services.llm import chain  # make sure this exists and is async
@@ -17,6 +18,15 @@ class MessageIn(BaseModel):
 
 class MessageOut(BaseModel):
     replyText: str = Field(..., description="Assistant response")
+
+
+class SummaryIn(BaseModel):
+    callSid: str = Field(..., description="Twilio CallSid – unique call ID")
+
+
+class SummaryOut(BaseModel):
+    summary: str = Field(..., description="Call summary")
+    keyPoints: List[str] = Field(..., description="Key points from the conversation")
 
 
 @router.post(
@@ -44,4 +54,22 @@ async def reply_endpoint(body: MessageIn) -> MessageOut:
     replyText = body.message + ",Please say next i will repeat it"
 
     return MessageOut(replyText=replyText)
+
+
+@router.post(
+    "/summary",
+    response_model=SummaryOut,
+    status_code=status.HTTP_200_OK,
+    summary="Generate call summary (placeholder)",
+)
+async def summary_endpoint(body: SummaryIn) -> SummaryOut:
+    # Placeholder implementation - in production this would analyze the call history
+    summary = f"Call summary for {body.callSid}: Customer service interaction completed successfully."
+    keyPoints = [
+        "Customer contacted for service inquiry",
+        "Service details provided",
+        "Booking confirmation processed"
+    ]
+    
+    return SummaryOut(summary=summary, keyPoints=keyPoints)
 

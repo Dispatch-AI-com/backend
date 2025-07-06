@@ -2,19 +2,24 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom, retry, timeout } from 'rxjs';
 
+import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { SYSTEM_RESPONSES } from '@/common/constants/system-responses.constant';
 import {
   VoiceGatherBody,
   VoiceStatusBody,
-} from '@/common/interfaces/twilio-voice-webhook';
+} from '@/common/interfaces/twilio-voice-webhook.d';
 import { winstonLogger } from '@/logger/winston.logger';
+import { CalllogService } from '@/modules/calllog/calllog.service';
 import {
   buildSayResponse,
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
+import { TranscriptService } from '@/modules/transcript/transcript.service';
+import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
+import { CallSkeleton, Message } from './types/redis-session';
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
 const AI_TIMEOUT_MS = 5_000;
@@ -26,6 +31,9 @@ export class TelephonyService {
     private readonly sessions: SessionRepository,
     private readonly http: HttpService,
     private readonly sessionHelper: SessionHelper,
+    private readonly callLogService: CalllogService,
+    private readonly transcriptService: TranscriptService,
+    private readonly transcriptChunkService: TranscriptChunkService,
   ) {}
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
     const session = await this.sessionHelper.ensureSession(CallSid);
@@ -70,13 +78,27 @@ export class TelephonyService {
       winstonLogger.log(
         `[TelephonyService][callSid=${CallSid}][handleStatus] status=${CallStatus},timestamp=${Timestamp},callDuration=${CallDuration},caller=${Caller}`,
       );
+
       //let serviceupload = false;
       //1，如果confirmservice为true，上传service拿到上传service的结果，成功或者失败，失败原因，或者不需要上传
       //2，生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结，通过调用ai接口（ai/summary）
       //3，把这个session里面的hisoty作为calllog,caller,timestamp,callDuration,上传到数据库：mark
       //4，将summary 和sid 发送给python 完成链路（调用callender-mcp，发送邮件-mcp）
 
-      await this.sessions.delete(CallSid);
+      try {
+        await this.processCallCompletion(CallSid, {
+          CallSid,
+          CallStatus,
+          Timestamp,
+          CallDuration,
+          Caller,
+        });
+      } catch (error) {
+        winstonLogger.error(
+          `[TelephonyService][callSid=${CallSid}][handleStatus] Failed to process call completion`,
+          { error: (error as Error).message, stack: (error as Error).stack },
+        );
+      }
     }
     winstonLogger.log(
       `[TelephonyService][callSid=${CallSid}][handleStatus] status=${CallStatus}`,
@@ -100,7 +122,9 @@ export class TelephonyService {
   private async getAIReply(callSid: string, message: string): Promise<string> {
     const { data } = await firstValueFrom(
       this.http
-        .post<{ replyText: string }>('/ai/reply', { callSid, message })
+        .post<{
+          replyText: string;
+        }>('http://dispatchai-ai:8000/api/ai/reply', { callSid, message })
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
     return data.replyText;
@@ -115,5 +139,130 @@ export class TelephonyService {
       return `Welcome! We are ${companyName}. We provide ${serviceList}. How can I help you today?`;
     }
     return 'Welcome! How can I help you today?';
+  }
+
+  private async processCallCompletion(
+    callSid: string,
+    twilioParams: VoiceStatusBody,
+  ): Promise<void> {
+    const session = await this.sessions.load(callSid);
+    if (!session) {
+      winstonLogger.warn(
+        `[TelephonyService][processCallCompletion] Session not found for callSid: ${callSid}`,
+      );
+      return;
+    }
+
+    try {
+      // Step 3: 把这个session里面的history作为calllog,caller,timestamp,callDuration,上传到数据库
+      await this.createCallLogRecord(session, twilioParams);
+
+      // Step 2: 生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结
+      await this.createTranscriptAndChunks(session);
+
+      // Step 1: 如果confirmservice为true，上传service（暂时跳过，按注释保留）
+      // Step 4: 将summary和sid发送给python完成链路（暂时跳过，按注释保留）
+
+      // 清理Redis会话
+      await this.sessions.delete(callSid);
+
+      winstonLogger.log(
+        `[TelephonyService][processCallCompletion] Successfully processed call completion for ${callSid}`,
+      );
+    } catch (error) {
+      winstonLogger.error(
+        `[TelephonyService][processCallCompletion] Error processing call ${callSid}`,
+        { error: (error as Error).message, stack: (error as Error).stack },
+      );
+      throw error;
+    }
+  }
+
+  private async createCallLogRecord(
+    session: CallSkeleton,
+    twilioParams: VoiceStatusBody,
+  ): Promise<void> {
+    const callLogData = {
+      callSid: session.callSid,
+      userId: session.company.id,
+      serviceBookedId: session.user.service?.id,
+      callerNumber: session.user.userInfo.phone ?? twilioParams.Caller,
+      callerName: session.user.userInfo.name,
+      status: this.determineCallLogStatus(session),
+      startAt: new Date(twilioParams.Timestamp),
+    };
+
+    await this.callLogService.create(callLogData);
+    winstonLogger.log(
+      `[TelephonyService][createCallLogRecord] Created CallLog for ${session.callSid}`,
+    );
+  }
+
+  private async createTranscriptAndChunks(
+    session: CallSkeleton,
+  ): Promise<void> {
+    // 创建Transcript占位记录
+    const transcript = await this.transcriptService.create({
+      callSid: session.callSid,
+      summary: '', // 将通过AI生成
+      keyPoints: [],
+    });
+
+    // 转换会话历史为TranscriptChunk
+    const chunks = this.convertMessagesToChunks(session.history);
+    if (chunks.length > 0) {
+      await this.transcriptChunkService.createMany(transcript._id, chunks);
+    }
+
+    // 生成AI摘要
+    try {
+      const aiSummary = await this.generateAISummary(session.callSid);
+      await this.transcriptService.update(transcript._id, aiSummary);
+      winstonLogger.log(
+        `[TelephonyService][createTranscriptAndChunks] Generated AI summary for ${session.callSid}`,
+      );
+    } catch (error) {
+      winstonLogger.error(
+        `[TelephonyService][createTranscriptAndChunks] Failed to generate AI summary for ${session.callSid}`,
+        { error: (error as Error).message },
+      );
+    }
+  }
+
+  private determineCallLogStatus(session: CallSkeleton): CallLogStatus {
+    if (session.confirmBooking && session.user.service) {
+      return CallLogStatus.Completed;
+    }
+    if (session.user.service && !session.confirmBooking) {
+      return CallLogStatus.FollowUp;
+    }
+    return CallLogStatus.Missed;
+  }
+
+  private convertMessagesToChunks(messages: Message[]): {
+    speakerType: 'AI' | 'User';
+    text: string;
+    startAt: number;
+  }[] {
+    return messages.map((msg, index) => ({
+      speakerType: msg.speaker === 'AI' ? 'AI' : 'User',
+      text: msg.message,
+      startAt: new Date(msg.startedAt).getTime() + index, // 确保唯一性
+    }));
+  }
+
+  private async generateAISummary(callSid: string): Promise<{
+    summary: string;
+    keyPoints: string[];
+  }> {
+    const { data } = await firstValueFrom(
+      this.http
+        .post<{
+          summary: string;
+          keyPoints: string[];
+        }>('http://dispatchai-ai:8000/api/ai/summary', { callSid })
+        .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
+    );
+    return data;
   }
 }

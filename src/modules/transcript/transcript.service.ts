@@ -24,20 +24,17 @@ export class TranscriptService {
   ) {}
 
   async create(dto: {
-    calllogId: string;
+    callSid: string;
     summary: string;
     keyPoints?: string[];
   }): Promise<ITranscript> {
-    const { calllogId, summary, keyPoints } = dto;
-    if (!Types.ObjectId.isValid(calllogId)) {
-      throw new BadRequestException('Invalid calllogid');
-    }
-    const calllog = await this.callLogModel.findById(calllogId);
+    const { callSid, summary, keyPoints } = dto;
+    const calllog = await this.callLogModel.findOne({ callSid });
     if (!calllog) {
-      throw new NotFoundException(`CallLog with ID ${calllogId} not found`);
+      throw new NotFoundException(`CallLog with callSid ${callSid} not found`);
     }
     const transcript = await this.transcriptModel.create({
-      calllogId: new Types.ObjectId(calllogId),
+      callSid,
       summary,
       keyPoints,
     });
@@ -49,9 +46,9 @@ export class TranscriptService {
     return transcripts.map(t => this.convertToITranscript(t));
   }
 
-  async findByCalllogId(calllogid: string): Promise<ITranscript[]> {
-    const transcripts = await this.transcriptModel.find({ calllogid }).exec();
-    return transcripts.map(t => this.convertToITranscript(t));
+  async findByCallSid(callSid: string): Promise<ITranscript | null> {
+    const transcript = await this.transcriptModel.findOne({ callSid }).exec();
+    return transcript ? this.convertToITranscript(transcript) : null;
   }
 
   async findOne(id: string): Promise<ITranscript> {
@@ -146,7 +143,7 @@ export class TranscriptService {
     const obj = doc.toObject();
     return {
       _id: obj._id.toString(),
-      calllogId: obj.calllogId.toString(),
+      callSid: obj.callSid,
       summary: obj.summary,
       keyPoints: obj.keyPoints,
       createdAt: obj.createdAt,
