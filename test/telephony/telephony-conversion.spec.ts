@@ -200,13 +200,13 @@ describe('TelephonyService - Session Conversion', () => {
       );
     });
 
-    it('should use user phone as fallback when Twilio Caller is not available', async () => {
+    it('should always use Twilio Caller as callerNumber', async () => {
       const twilioParams = {
         CallSid: 'test-call-123',
         CallStatus: 'completed',
         Timestamp: '2024-03-21T09:03:00Z',
         CallDuration: '180',
-        Caller: undefined as any
+        Caller: '+61400888888'
       };
 
       mockCalllogService.create.mockResolvedValue({} as any);
@@ -215,7 +215,7 @@ describe('TelephonyService - Session Conversion', () => {
 
       expect(mockCalllogService.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          callerNumber: '+61400123456'
+          callerNumber: '+61400888888'
         })
       );
     });
