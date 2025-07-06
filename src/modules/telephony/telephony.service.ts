@@ -186,7 +186,7 @@ export class TelephonyService {
       callSid: session.callSid,
       userId: session.company.id,
       serviceBookedId: session.user.service?.id,
-      callerNumber: session.user.userInfo.phone ?? twilioParams.Caller,
+      callerNumber: twilioParams.Caller ?? session.user.userInfo.phone,
       callerName: session.user.userInfo.name,
       status: this.determineCallLogStatus(session),
       startAt: new Date(twilioParams.Timestamp),
