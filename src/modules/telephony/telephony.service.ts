@@ -124,7 +124,7 @@ export class TelephonyService {
       this.http
         .post<{
           replyText: string;
-        }>('http://dispatchai-ai:8000/api/ai/reply', { callSid, message })
+        }>('/ai/reply', { callSid, message })
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
     return data.replyText;
@@ -286,7 +286,7 @@ export class TelephonyService {
         .post<{
           summary: string;
           keyPoints: string[];
-        }>('http://dispatchai-ai:8000/api/ai/summary', requestData)
+        }>('/ai/summary', requestData)
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
     return data;
