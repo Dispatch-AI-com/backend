@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@nestjs/axios": "^4.0.0",
     "@nestjs/common": "^11.0.11",
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^11.0.11",
@@ -13,12 +14,14 @@
     "ansis": "^4.1.0",
     "axios": "^1.9.0",
     "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
+    "ioredis": "^5.6.1",
     "mongoose": "^8.11.0",
     "morgan": "^1.10.0",
     "nest-winston": "^1.10.2",
@@ -33,6 +36,7 @@
     "streamifier": "^0.1.1",
     "stripe": "^18.1.1",
     "swagger-jsdoc": "^6.2.8",
+    "twilio": "^5.7.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "winston-transport": "^4.9.0"
@@ -52,6 +56,7 @@
     "@nestjs/cli": "^11.0.7",
     "@nestjs/testing": "^11.0.11",
     "@types/bcrypt": "^5.0.2",
+    "@types/body-parser": "^1.19.6",
     "@types/express": "^5.0.1",
     "@types/jest": "^29.5.14",
     "@types/morgan": "^1.9.9",
