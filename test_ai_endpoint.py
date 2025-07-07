@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 """
-通过HTTP请求测试AI端点的真实响应
-需要AI服务运行: docker compose up dispatchai-ai
+Test AI endpoint with real HTTP requests
+Requires AI service to be running: docker compose up dispatchai-ai
 """
 
 import requests
 import json
+import os
+from dotenv import load_dotenv
 
-# 测试数据
+# Load environment variables from .env file
+load_dotenv()
+
+# Test data
 test_data = {
     "callSid": "test-prompt-demo",
     "conversation": [
@@ -50,33 +55,34 @@ test_data = {
 }
 
 def test_ai_summary():
-    """测试AI summary端点"""
-    url = "http://localhost:8000/api/ai/summary"
+    """Test AI summary endpoint"""
+    ai_url = os.getenv('AI_URL')
+    url = f"{ai_url}/ai/summary"
     
     try:
-        print("🚀 发送请求到AI服务...")
+        print("🚀 Sending request to AI service...")
         print(f"URL: {url}")
-        print(f"数据: {json.dumps(test_data, indent=2)}")
+        print(f"Data: {json.dumps(test_data, indent=2)}")
         print("-" * 50)
         
         response = requests.post(url, json=test_data, timeout=30)
         
         if response.status_code == 200:
             result = response.json()
-            print("✅ AI响应成功!")
+            print("✅ AI response successful!")
             print(f"Summary: {result['summary']}")
             print(f"Key Points:")
             for i, point in enumerate(result['keyPoints'], 1):
                 print(f"  {i}. {point}")
         else:
-            print(f"❌ 请求失败: {response.status_code}")
-            print(f"错误: {response.text}")
+            print(f"❌ Request failed: {response.status_code}")
+            print(f"Error: {response.text}")
             
     except requests.exceptions.ConnectionError:
-        print("❌ 无法连接AI服务")
-        print("💡 请先运行: docker compose up dispatchai-ai")
+        print("❌ Cannot connect to AI service")
+        print("💡 Please run first: docker compose up dispatchai-ai")
     except Exception as e:
-        print(f"❌ 请求错误: {str(e)}")
+        print(f"❌ Request error: {str(e)}")
 
 if __name__ == "__main__":
     test_ai_summary()
