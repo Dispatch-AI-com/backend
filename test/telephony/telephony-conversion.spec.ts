@@ -11,7 +11,7 @@ import { CallLogStatus } from '@/common/constants/calllog.constant';
 /**
  * Telephony Service Unit Tests
  * 
- * 重点测试会话转换逻辑的核心功能
+ * Focus on testing core session conversion logic functionality
  */
 describe('TelephonyService - Session Conversion', () => {
   let service: TelephonyService;
@@ -114,7 +114,7 @@ describe('TelephonyService - Session Conversion', () => {
   describe('determineCallLogStatus', () => {
     it('should return Completed when booking is confirmed and service exists', () => {
       const session = { ...mockSession, confirmBooking: true };
-      // 通过反射访问私有方法进行测试
+      // Test private method through reflection
       const status = (service as any).determineCallLogStatus(session);
       expect(status).toBe(CallLogStatus.Completed);
     });
@@ -180,26 +180,6 @@ describe('TelephonyService - Session Conversion', () => {
       });
     });
 
-    it('should prioritize Twilio Caller over user phone', async () => {
-      const twilioParams = {
-        CallSid: 'test-call-123',
-        CallStatus: 'completed',
-        Timestamp: '2024-03-21T09:03:00Z',
-        CallDuration: '180',
-        Caller: '+61400999999'
-      };
-
-      mockCalllogService.create.mockResolvedValue({} as any);
-
-      await (service as any).createCallLogRecord(mockSession, twilioParams);
-
-      expect(mockCalllogService.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          callerNumber: '+61400999999'
-        })
-      );
-    });
-
     it('should always use Twilio Caller as callerNumber', async () => {
       const twilioParams = {
         CallSid: 'test-call-123',
@@ -225,7 +205,7 @@ describe('TelephonyService - Session Conversion', () => {
     it('should handle missing session gracefully', async () => {
       mockSessionRepository.load.mockResolvedValue(null);
 
-      // 应该不抛出错误
+      // Should not throw error
       await expect(
         (service as any).processCallCompletion('nonexistent-call', {})
       ).resolves.toBeUndefined();
@@ -250,7 +230,7 @@ describe('TelephonyService - Session Conversion', () => {
 
       await (service as any).processCallCompletion('test-call-123', twilioParams);
 
-      // 验证所有步骤都被调用
+      // Verify all steps are called
       expect(mockCalllogService.create).toHaveBeenCalled();
       expect(mockTranscriptService.create).toHaveBeenCalled();
       expect(mockTranscriptChunkService.createMany).toHaveBeenCalled();

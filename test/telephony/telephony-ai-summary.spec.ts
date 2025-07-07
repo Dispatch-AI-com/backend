@@ -12,7 +12,7 @@ import { CallLogStatus } from '@/common/constants/calllog.constant';
 /**
  * AI Summary Generation and Database Integration Tests
  * 
- * 测试完整的AI摘要生成流程和数据库写入
+ * Test complete AI summary generation flow and database integration
  */
 describe('TelephonyService - AI Summary Integration', () => {
   let service: TelephonyService;
@@ -22,7 +22,7 @@ describe('TelephonyService - AI Summary Integration', () => {
   let mockTranscriptService: jest.Mocked<TranscriptService>;
   let mockTranscriptChunkService: jest.Mocked<TranscriptChunkService>;
 
-  // 真实的通话记录数据用于测试
+  // Real conversation data for testing
   const realConversationSession = {
     callSid: 'test-call-ai-summary',
     services: [
@@ -83,7 +83,7 @@ describe('TelephonyService - AI Summary Integration', () => {
     confirmEmailSent: false
   };
 
-  // AI服务返回的真实摘要数据
+  // Real AI summary response data
   const mockAISummaryResponse = {
     summary: 'Customer contacted for emergency plumbing service due to major kitchen leak. Emergency plumber was successfully booked for 123 Main Street, Melbourne with 30-minute response time.',
     keyPoints: [
@@ -165,7 +165,7 @@ describe('TelephonyService - AI Summary Integration', () => {
 
       // Verify AI service was called with correct data structure
       expect(mockHttpService.post).toHaveBeenCalledWith(
-        'http://dispatchai-ai:8000/api/ai/summary',
+        '/ai/summary',
         {
           callSid: 'test-call-ai-summary',
           conversation: [
@@ -296,7 +296,7 @@ describe('TelephonyService - AI Summary Integration', () => {
 
       // Verify AI Summary generation
       expect(mockHttpService.post).toHaveBeenCalledWith(
-        'http://dispatchai-ai:8000/api/ai/summary',
+        '/ai/summary',
         expect.objectContaining({
           callSid: 'test-call-ai-summary',
           conversation: expect.any(Array),
