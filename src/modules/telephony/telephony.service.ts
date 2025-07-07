@@ -204,7 +204,7 @@ export class TelephonyService {
     // 创建Transcript占位记录
     const transcript = await this.transcriptService.create({
       callSid: session.callSid,
-      summary: '', // 将通过AI生成
+      summary: 'Transcript summary', // 将通过AI生成
       keyPoints: [],
     });
 
