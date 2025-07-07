@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test AI Summary Prompt Generation
-Usage: python test_prompt.py
+Usage: python3 test_prompt.py
 """
 
 def format_conversation_for_ai(conversation):
@@ -106,21 +106,21 @@ def test_ai_summary_endpoint():
         
         if response.status_code == 200:
             result = response.json()
-            print("   ✅ AI Response Success!")
+            print("   AI Response Success!")
             print(f"   Summary: {result['summary']}")
             print("   Key Points:")
             for i, point in enumerate(result['keyPoints'], 1):
                 print(f"     {i}. {point}")
         else:
-            print(f"   ❌ Request failed: {response.status_code}")
+            print(f"   Request failed: {response.status_code}")
             print(f"   Error: {response.text}")
             
     except ImportError:
-        print("   ⚠️  requests module not available")
-        print("   💡 Install with: pip install requests")
+        print("   requests module not available")
+        print("   Install with: pip install requests")
     except Exception as e:
-        print(f"   ❌ Error: {str(e)}")
-        print("   💡 Make sure AI service is running: docker compose up dispatchai-ai")
+        print(f"  Error: {str(e)}")
+        print("   Make sure AI service is running: docker compose up dispatchai-ai")
 
 
 def main():
