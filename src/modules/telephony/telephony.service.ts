@@ -154,13 +154,13 @@ export class TelephonyService {
     }
 
     try {
-      // Step 3: 把这个session里面的history作为calllog,caller,timestamp,callDuration,上传到数据库
-      await this.createCallLogRecord(session, twilioParams);
-
-      // Step 2: 生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结
+      // Step 1: 生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结
       await this.createTranscriptAndChunks(session);
 
-      // Step 1: 如果confirmservice为true，上传service（暂时跳过，按注释保留）
+      // Step 2: 把这个session里面的history和summary作为calllog,caller,timestamp,callDuration,上传到数据库
+      await this.createCallLogRecord(session, twilioParams);
+
+      // Step 3: 如果confirmservice为true，上传service（暂时跳过，按注释保留）
       // Step 4: 将summary和sid发送给python完成链路（暂时跳过，按注释保留）
 
       // 清理Redis会话
