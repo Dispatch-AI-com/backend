@@ -10,11 +10,14 @@ export type CallLogDocument = HydratedDocument<CallLog>;
 
 @Schema({ timestamps: true })
 export class CallLog {
+  @Prop({ required: true, unique: true })
+  callSid!: string;
+
   @Prop({ required: true })
   userId!: string;
 
-  @Prop({ required: true })
-  serviceBookedId!: string;
+  @Prop()
+  serviceBookedId?: string;
 
   @Prop({ required: true })
   callerNumber!: string;
@@ -32,17 +35,9 @@ export class CallLog {
 
   @Prop({ required: true, type: Date })
   startAt!: Date;
-
-  @Prop({ type: Date })
-  endAt?: Date;
-
-  @Prop()
-  audioId?: string;
-
-  @Prop()
-  summary?: string;
 }
 
 export const CallLogSchema = SchemaFactory.createForClass(CallLog);
 
 CallLogSchema.index({ userId: 1, startAt: -1 });
+CallLogSchema.index({ callSid: 1 });
