@@ -8,9 +8,6 @@ export class Company {
   @Prop({ required: true })
   businessName!: string;
 
-  @Prop({ required: true })
-  jobTitle!: string;
-
   @Prop({
     type: {
       unitAptPOBox: { type: String },

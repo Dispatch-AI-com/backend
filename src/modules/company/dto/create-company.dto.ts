@@ -39,11 +39,6 @@ export class CreateCompanyDto {
   @IsNotEmpty({ message: 'Business name cannot be empty' })
   businessName!: string;
 
-  @ApiProperty({ description: 'Job title in the company' })
-  @IsString({ message: 'Job title must be a string' })
-  @IsNotEmpty({ message: 'Job title cannot be empty' })
-  jobTitle!: string;
-
   @ApiProperty({ description: 'Company address', type: AddressDto })
   @ValidateNested()
   @Type(() => AddressDto)
@@ -59,6 +54,11 @@ export class CreateCompanyDto {
   @IsString({ message: 'Phone number must be a string' })
   @IsNotEmpty({ message: 'Phone number cannot be empty' })
   number!: string;
+
+  @ApiProperty({ description: 'Company ABN' })
+  @IsString({ message: 'ABN must be a string' })
+  @IsNotEmpty({ message: 'ABN cannot be empty' })
+  abn!: string;
 
   @ApiProperty({ description: 'User ID reference' })
   @IsString({ message: 'User ID must be a string' })
