@@ -24,13 +24,13 @@ from typing import TypedDict, Literal, Optional
 from openai import OpenAI
 
 # 导入解耦后的模块
-from .prompt.customer_info_prompts import (
-    get_name_extraction_prompt,
-    get_phone_extraction_prompt,
-    get_address_extraction_prompt,
-    get_email_extraction_prompt,
-    get_service_extraction_prompt,
-    get_time_extraction_prompt
+from .retrieve.customer_info_extractors import (
+    extract_name_from_conversation,
+    extract_phone_from_conversation,
+    extract_address_from_conversation,
+    extract_email_from_conversation,
+    extract_service_from_conversation,
+    extract_time_from_conversation
 )
 
 from .validate.customer_validators import (
@@ -116,266 +116,6 @@ class CustomerServiceLangGraph:
         # 创建LangGraph工作流 - 使用简化的方式
         self.workflow = None
         
-    # ================== LLM信息提取函数 ==================
-    
-    def extract_name_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取姓名信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": get_name_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您的姓名。",
-                    "info_extracted": {"name": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您的姓名。",
-                "info_extracted": {"name": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
-    def extract_phone_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取电话信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": get_phone_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您的电话号码。",
-                    "info_extracted": {"phone": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您的电话号码。",
-                "info_extracted": {"phone": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
-    def extract_address_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取地址信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": get_address_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您的地址。",
-                    "info_extracted": {"address": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您的地址。",
-                "info_extracted": {"address": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
-    def extract_email_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取电子邮件信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": get_email_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您的电子邮件地址。",
-                    "info_extracted": {"email": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您的电子邮件地址。",
-                "info_extracted": {"email": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
-    def extract_service_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取服务需求信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": get_service_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您需要什么服务。",
-                    "info_extracted": {"service": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您需要什么服务。",
-                "info_extracted": {"service": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
-    def extract_time_from_conversation(self, state: CustomerServiceState):
-        """使用LLM提取服务时间信息"""
-        try:
-            # 构建对话历史
-            conversation_context = "\\n".join([
-                f"{'用户' if msg['role'] == 'user' else '客服'}: {msg['content']}" 
-                for msg in state["conversation_history"][-3:]
-            ])
-            
-            # 调用OpenAI API
-            response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": get_time_extraction_prompt()},
-                    {"role": "user", "content": f"对话历史：{conversation_context}\\n\\n当前用户输入：{state['last_user_input']}"}
-                ],
-                temperature=0.3,
-                max_tokens=500
-            )
-            
-            content = response.choices[0].message.content.strip()
-            
-            try:
-                result = json.loads(content)
-                return result
-            except json.JSONDecodeError:
-                print(f"⚠️  JSON解析失败，原始回复：{content}")
-                return {
-                    "response": "抱歉，系统处理出现问题。请重新告诉我您期望的服务时间。",
-                    "info_extracted": {"time": None},
-                    "info_complete": False,
-                    "analysis": "系统解析错误"
-                }
-                
-        except Exception as e:
-            print(f"❌ API调用失败：{e}")
-            return {
-                "response": "抱歉，系统暂时无法处理您的请求。请重新告诉我您期望的服务时间。",
-                "info_extracted": {"time": None},
-                "info_complete": False,
-                "analysis": f"API错误：{str(e)}"
-            }
-
     # ================== 对话管理函数 ==================
     
     def add_to_conversation(self, state: CustomerServiceState, role, content, call_sid: str = None):
@@ -417,7 +157,7 @@ class CustomerServiceLangGraph:
         state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
         # 调用LLM提取姓名
-        result = self.extract_name_from_conversation(state)
+        result = extract_name_from_conversation(state)
         state["last_llm_response"] = result
         
         # 添加AI回复到对话历史
@@ -471,7 +211,7 @@ class CustomerServiceLangGraph:
         state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
         # 调用LLM提取电话
-        result = self.extract_phone_from_conversation(state)
+        result = extract_phone_from_conversation(state)
         state["last_llm_response"] = result
         
         # 添加AI回复到对话历史
@@ -525,7 +265,7 @@ class CustomerServiceLangGraph:
         state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
         # 调用LLM提取地址
-        result = self.extract_address_from_conversation(state)
+        result = extract_address_from_conversation(state)
         state["last_llm_response"] = result
         
         # 添加AI回复到对话历史
@@ -579,7 +319,7 @@ class CustomerServiceLangGraph:
         state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
         # 调用LLM提取电子邮件
-        result = self.extract_email_from_conversation(state)
+        result = extract_email_from_conversation(state)
         state["last_llm_response"] = result
         
         # 添加AI回复到对话历史
@@ -633,7 +373,7 @@ class CustomerServiceLangGraph:
         state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
         # 调用LLM提取服务
-        result = self.extract_service_from_conversation(state)
+        result = extract_service_from_conversation(state)
         state["last_llm_response"] = result
         
         # 添加AI回复到对话历史
@@ -695,7 +435,7 @@ class CustomerServiceLangGraph:
         state = self.add_to_conversation(state, "user", state["last_user_input"], call_sid)
         
         # 调用LLM提取时间
-        result = self.extract_time_from_conversation(state)
+        result = extract_time_from_conversation(state)
         state["last_llm_response"] = result
         
         # 添加AI回复到对话历史
@@ -764,6 +504,42 @@ class CustomerServiceLangGraph:
                 print("⚠️ 时间收集失败，但流程已完成")
         elif state["time_attempts"] > 0 and not state["time_complete"]:
             print(f"⚠️ 时间提取失败，尝试次数：{state['time_attempts']}/{state['max_attempts']}")
+        
+        return state
+
+    # ================== 统一工作流入口函数 ==================
+    
+    def process_customer_workflow(self, state: CustomerServiceState, call_sid: str = None):
+        """统一的客户信息收集工作流处理函数
+        
+        这是供外部API调用的主要入口点，负责根据当前状态自动判断
+        应该执行哪个收集步骤，并返回更新后的状态。
+        
+        Args:
+            state: 客户服务状态对象
+            call_sid: 可选的通话ID，用于Redis实时更新
+            
+        Returns:
+            CustomerServiceState: 更新后的状态对象
+        """
+        # 根据完成状态判断当前应该执行的步骤
+        if not state["name_complete"]:
+            state = self.process_name_collection(state, call_sid)
+        elif not state["phone_complete"]:
+            state = self.process_phone_collection(state, call_sid)
+        elif not state["address_complete"]:
+            state = self.process_address_collection(state, call_sid)
+        elif not state["email_complete"]:
+            state = self.process_email_collection(state, call_sid)
+        elif not state["service_complete"]:
+            state = self.process_service_collection(state, call_sid)
+        elif not state["time_complete"]:
+            state = self.process_time_collection(state, call_sid)
+        else:
+            # 所有信息收集完成
+            state["conversation_complete"] = True
+            state["current_step"] = "completed"
+            print("✅ 所有客户信息收集完成")
         
         return state
 
