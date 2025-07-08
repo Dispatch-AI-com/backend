@@ -37,11 +37,11 @@ export class TranscriptController {
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Call log not found' })
   async create(
-    @Param('calllogId') calllogId: string,
+    @Param('calllogId') callSid: string,
     @Body() createTranscriptDto: CreateTranscriptDto,
   ): Promise<ITranscript> {
     return this.transcriptService.create({
-      calllogId,
+      callSid,
       summary: createTranscriptDto.summary,
       keyPoints: createTranscriptDto.keyPoints,
     });

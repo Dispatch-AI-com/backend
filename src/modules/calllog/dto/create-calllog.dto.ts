@@ -17,12 +17,17 @@ export class CreateCallLogDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  userId!: string;
+  callSid!: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  serviceBookedId!: string;
+  userId!: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  serviceBookedId?: string;
 
   @ApiProperty()
   @IsString()
@@ -43,20 +48,4 @@ export class CreateCallLogDto {
   @IsDate()
   @Type(() => Date)
   startAt!: Date;
-
-  @ApiPropertyOptional()
-  @IsDate()
-  @IsOptional()
-  @Type(() => Date)
-  endAt?: Date;
-
-  @ApiPropertyOptional()
-  @IsString()
-  @IsOptional()
-  audioId?: string;
-
-  @ApiPropertyOptional()
-  @IsString()
-  @IsOptional()
-  summary?: string;
 }
