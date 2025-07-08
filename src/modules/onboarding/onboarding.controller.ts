@@ -20,6 +20,7 @@ import { AnswerDto } from './dto/answer.dto';
 import { CompleteDto } from './dto/complete.dto';
 import { DeleteSessionDto } from './dto/delete.dto';
 import { OnboardingService } from './onboarding.service';
+import type { OnboardingSession } from './schema/onboarding-session.schema';
 
 @ApiTags('onboarding')
 @Controller('onboarding')
@@ -127,5 +128,45 @@ export class OnboardingController {
     @Body() dto: DeleteSessionDto,
   ): Promise<{ success: boolean }> {
     return this.onboardingService.deleteSession(dto.userId);
+  }
+
+  @Get('sessions')
+  @ApiOperation({ summary: 'Get all onboarding sessions' })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Array of onboarding sessions',
+    schema: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          userId: { type: 'string', example: '64e9b4f2c1234567890abcde' },
+          currentStep: { type: 'number', example: 2 },
+          answers: {
+            type: 'object',
+            additionalProperties: { type: 'string' },
+            example: { '1': 'John', '2': 'Acme Inc.' },
+          },
+          status: {
+            type: 'string',
+            enum: ['in_progress', 'completed'],
+            example: 'in_progress',
+          },
+          createdAt: {
+            type: 'string',
+            format: 'date-time',
+            example: '2025-07-01T04:00:00.000Z',
+          },
+          updatedAt: {
+            type: 'string',
+            format: 'date-time',
+            example: '2025-07-01T05:00:00.000Z',
+          },
+        },
+      },
+    },
+  })
+  async getAllSessions(): Promise<OnboardingSession[]> {
+    return this.onboardingService.getAllSessions();
   }
 }

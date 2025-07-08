@@ -95,4 +95,15 @@ export class OnboardingService {
 
     return { success: true };
   }
+
+  /**
+   * 获取所有用户的 Onboarding Session 列表
+   */
+  async getAllSessions() {
+    return this.sessionModel
+      .find()
+      .select('-__v') // 去掉 __v 版本字段，按需保留
+      .lean()
+      .exec();
+  }
 }
