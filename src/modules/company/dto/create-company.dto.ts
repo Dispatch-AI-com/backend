@@ -1,6 +1,38 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+class AddressDto {
+  @ApiPropertyOptional({ description: 'Unit/Apartment/PO Box' })
+  @IsOptional()
+  @IsString({ message: 'Unit/Apt/PO Box must be a string' })
+  unitAptPOBox?: string;
 
+  @ApiProperty({ description: 'Street address' })
+  @IsString({ message: 'Street address must be a string' })
+  @IsNotEmpty({ message: 'Street address cannot be empty' })
+  streetAddress!: string;
+
+  @ApiProperty({ description: 'Suburb' })
+  @IsString({ message: 'Suburb must be a string' })
+  @IsNotEmpty({ message: 'Suburb cannot be empty' })
+  suburb!: string;
+
+  @ApiProperty({ description: 'State' })
+  @IsString({ message: 'State must be a string' })
+  @IsNotEmpty({ message: 'State cannot be empty' })
+  state!: string;
+
+  @ApiProperty({ description: 'Postcode' })
+  @IsString({ message: 'Postcode must be a string' })
+  @IsNotEmpty({ message: 'Postcode cannot be empty' })
+  postcode!: string;
+}
 export class CreateCompanyDto {
   @ApiProperty({ description: 'Business name of the company' })
   @IsString({ message: 'Business name must be a string' })
@@ -12,10 +44,11 @@ export class CreateCompanyDto {
   @IsNotEmpty({ message: 'Job title cannot be empty' })
   jobTitle!: string;
 
-  @ApiProperty({ description: 'Company address' })
-  @IsString({ message: 'Address must be a string' })
+  @ApiProperty({ description: 'Company address', type: AddressDto })
+  @ValidateNested()
+  @Type(() => AddressDto)
   @IsNotEmpty({ message: 'Address cannot be empty' })
-  address!: string;
+  address!: AddressDto;
 
   @ApiProperty({ description: 'Company email' })
   @IsEmail({}, { message: 'Please enter a valid email address' })
