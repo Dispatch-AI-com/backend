@@ -5,9 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Model, Types } from 'mongoose';
 import { isValidObjectId } from 'mongoose';
+
+import { SALT_ROUNDS } from '@/modules/auth/auth.config';
 
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { User, UserDocument } from './schema/user.schema';
@@ -57,7 +59,10 @@ export class UserService {
     }
 
     if (typeof updateFields.password === 'string') {
-      updateFields.password = await bcrypt.hash(updateFields.password, 10);
+      updateFields.password = await bcrypt.hash(
+        updateFields.password,
+        SALT_ROUNDS,
+      );
     }
 
     const user = await this.userModel
