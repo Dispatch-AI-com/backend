@@ -1,8 +1,6 @@
-import type { Types } from 'mongoose';
-
 export interface ITranscript {
-  _id: Types.ObjectId;
-  calllogId: Types.ObjectId;
+  _id: string;
+  callSid: string;
   summary: string;
   keyPoints?: string[];
   createdAt?: Date;

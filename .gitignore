@@ -26,6 +26,9 @@ target/
 # JetBrains IDE
 .idea/
 
+# VS Code
+.vscode/
+
 # Unit test reports
 TEST*.xml
 
@@ -53,3 +56,4 @@ Thumbs.db
 __pycache__/
 
 .env.uat
+cloudflared/
