@@ -1,4 +1,14 @@
 import { CallLogStatus } from '../../src/common/constants/calllog.constant';
+import { randomBytes } from 'crypto';
+
+function generateRandomNumber(max: number): number {
+  const range = Math.floor(65536 / max) * max;
+  let randomValue;
+  do {
+    randomValue = randomBytes(2).readUInt16BE(0);
+  } while (randomValue >= range);
+  return randomValue % max;
+}
 
 function randomDate(start: Date, end: Date) {
   return new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
@@ -9,13 +19,13 @@ export function createMockCallLogDto(overrides: Partial<any> = {}) {
   const endAt = new Date(startAt.getTime() + 10 * 60 * 1000); 
 
   return {
-    companyId: 'company-' + Math.floor(Math.random() * 1000),
-    serviceBookedId: 'booking-' + Math.floor(Math.random() * 1000),
-    callerNumber: '+6140000' + Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
-    status: CallLogStatus.Active,
+    userId: 'user-' + generateRandomNumber(1000),
+    serviceBookedId: 'booking-' + generateRandomNumber(1000),
+    callerNumber: '+6140000' + generateRandomNumber(10000).toString().padStart(4, '0'),
+    callerName: 'User ' + generateRandomNumber(1000),
+    status: CallLogStatus.Completed,
     startAt,
     endAt,
-    recordingUrl: 'https://example.com/recording.mp3',
     ...overrides,
   };
 }

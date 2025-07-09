@@ -22,6 +22,11 @@ export class CreateCompanyDto {
   @IsNotEmpty({ message: 'Email cannot be empty' })
   email!: string;
 
+  @ApiProperty({ description: 'Company phone number' })
+  @IsString({ message: 'Phone number must be a string' })
+  @IsNotEmpty({ message: 'Phone number cannot be empty' })
+  number!: string;
+
   @ApiProperty({ description: 'User ID reference' })
   @IsString({ message: 'User ID must be a string' })
   @IsNotEmpty({ message: 'User ID cannot be empty' })

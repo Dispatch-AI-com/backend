@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { AiHttpModule } from '@/lib/ai/ai-http.module';
+import { RedisModule } from '@/lib/redis/redis.module';
+import { TwilioModule } from '@/lib/twilio/twilio.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { AvailabilityModule } from '@/modules/availability/availability.module';
+import { BlogModule } from '@/modules/blog/blog.module';
 import { CalllogModule } from '@/modules/calllog/calllog.module';
+import { CompanyModule } from '@/modules/company/company.module';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
@@ -14,13 +19,9 @@ import { ServiceFormFieldModule } from '@/modules/service-form-field/service-for
 import { ServiceLocationMappingModule } from '@/modules/service-location-mapping/service-location-mapping.module';
 import { StripeModule } from '@/modules/stripe/stripe.module';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
+import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
-import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
-import { WhisperModule } from '@/modules/whisper/whisper.module';
-
-import { BlogModule } from './blog/blog.module';
-import { CompanyModule } from './company/company.module';
-import { TaskModule } from './task/task.module';
+import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 
 @Module({
   imports: [
@@ -32,9 +33,9 @@ import { TaskModule } from './task/task.module';
     AuthModule,
     PlanModule,
     LocationModule,
-    WhisperModule,
     CalllogModule,
     BlogModule,
+    CompanyModule,
     TranscriptModule,
     TranscriptChunkModule,
     AvailabilityModule,
@@ -42,10 +43,13 @@ import { TaskModule } from './task/task.module';
     ServiceFormFieldModule,
     ServiceModule,
     ServiceLocationMappingModule,
+    TelephonyModule,
+    TwilioModule,
+    RedisModule,
+    AiHttpModule,
     SubscriptionModule,
     StripeModule,
     CompanyModule,
-    TaskModule,
   ],
 })
 export class AppModule {}

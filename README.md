@@ -11,13 +11,23 @@ dispatchai-backend/
 │   │   ├── app.module.ts         # Main application module
 │   │   ├── database/
 │   │   │   └── database.module.ts # MongoDB connection module
+│   │   ├── telephony/            # Voice interaction system
+│   │   ├── calllog/              # Call record management
+│   │   ├── transcript/           # Call transcripts and summaries
 │   │   └── health/
 │   │       ├── health.controller.ts # Health check endpoints
 │   │       ├── health.module.ts    # Health module configuration
 │   │       └── health.service.ts   # Health check business logic
 │   └── main.ts                   # Application entry point
+├── ai/                          # Python AI service
+│   ├── app/
+│   │   ├── main.py              # FastAPI application
+│   │   └── routers/
+│   │       └── ai.py            # AI endpoints (/chat, /reply, /summary)
+│   ├── pyproject.toml           # Python dependencies (uv)
+│   └── Dockerfile               # AI service container
 ├── docker-compose.yml           # Docker multi-container setup
-├── Dockerfile                   # Docker container configuration
+├── Dockerfile                   # NestJS API container configuration
 ├── nest-cli.json                # NestJS CLI configuration
 ├── package.json                 # Project dependencies
 └── tsconfig.json                # TypeScript configuration
@@ -28,6 +38,8 @@ dispatchai-backend/
 - Node.js (v16+)
 - Docker and Docker Compose
 - MongoDB (local or Docker)
+- Python 3.11+ (for AI module)
+- uv (Python package manager)
 
 ## Getting Started
 
@@ -42,7 +54,7 @@ dispatchai-backend/
 2. Run the application:
 
    ```bash
-   pnpm run build
+   pnpm build
    ```
 
 ### Docker Setup (DEV)
@@ -78,6 +90,60 @@ dispatchai-backend/
    ```bash
    docker compose -f docker-compose.uat.yml up -d --build
    ```
+
+## AI Module Setup
+
+The AI module is a Python FastAPI service that provides AI-powered conversation processing for the telephony system.
+
+### Dependencies
+
+The AI module uses [uv](https://docs.astral.sh/uv/) as the Python package manager. Dependencies are defined in `ai/pyproject.toml`:
+
+- **FastAPI**: Web framework for the AI API
+- **LangChain OpenAI**: LLM integration for conversation processing
+- **Ruff**: Python linting and formatting
+
+### Local Development
+
+To run the AI module locally:
+
+1. Install uv (if not already installed):
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+
+2. Navigate to AI directory and install dependencies:
+   ```bash
+   cd ai
+   uv sync
+   ```
+
+3. Run the FastAPI development server:
+   ```bash
+   uv run fastapi dev app/main.py
+   ```
+
+The AI service will be available at `http://localhost:8000` with automatic API documentation at `http://localhost:8000/docs`.
+
+### Docker Deployment
+
+The AI service is automatically included in the Docker Compose setup:
+
+- **Service name**: `dispatchai-ai`
+- **Internal port**: 8000
+- **Container networking**: The NestJS backend communicates with the AI service via `http://dispatchai-ai:8000`
+
+### AI Endpoints
+
+- `POST /api/ai/chat` - LLM-powered conversation processing
+- `POST /api/ai/reply` - Echo/placeholder responses  
+- `POST /api/ai/summary` - Generate call summaries and key points
+
+### Integration
+
+The telephony service integrates with the AI module through HTTP calls:
+- **Conversation processing**: `telephony.service.ts:125` calls `/api/ai/reply`
+- **Call summarization**: `telephony.service.ts:258` calls `/api/ai/summary`
 
 ### Health Checks
 

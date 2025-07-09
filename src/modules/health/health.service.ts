@@ -1,3 +1,4 @@
+import { HttpService } from '@nestjs/axios';
 import {
   Injectable,
   Logger,
@@ -6,16 +7,16 @@ import {
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection, STATES as ConnectionStates } from 'mongoose';
-
-import ai from '@/lib/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class HealthService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(HealthService.name);
-  private heartbeatTimer: NodeJS.Timeout | undefined;
+  private heartbeatTimer: NodeJS.Timeout | null = null;
 
   constructor(
     @InjectConnection() private readonly mongoConnection: Connection,
+    private readonly http: HttpService,
   ) {}
 
   onModuleInit(): void {
@@ -25,7 +26,10 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleDestroy(): void {
-    clearInterval(this.heartbeatTimer);
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
   }
 
   check(): {
@@ -42,32 +46,19 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
-  checkDatabase(): Promise<{
+  checkDatabase(): {
     status: string;
     database: string;
     connected: boolean;
     timestamp: Date;
-    error?: string;
-  }> {
-    try {
-      const isConnected =
-        this.mongoConnection.readyState === ConnectionStates.connected;
-      return Promise.resolve({
-        status: isConnected ? 'ok' : 'error',
-        database: 'MongoDB',
-        connected: isConnected,
-        timestamp: new Date(),
-        error: undefined,
-      });
-    } catch (error) {
-      return Promise.resolve({
-        status: 'error',
-        database: 'MongoDB',
-        connected: false,
-        timestamp: new Date(),
-        error: error instanceof Error ? error.message : String(error),
-      });
-    }
+  } {
+    const ok = this.mongoConnection.readyState === ConnectionStates.connected;
+    return {
+      status: ok ? 'ok' : 'error',
+      database: 'MongoDB',
+      connected: ok,
+      timestamp: new Date(),
+    };
   }
 
   async testAIConnection(): Promise<{
@@ -77,31 +68,38 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     duration?: number;
   }> {
     const start = performance.now();
-    const response = await ai('/');
+    const { data } = await firstValueFrom(
+      this.http.get<{ message: string }>('/health/ping'),
+    );
     return {
       status: 'ok',
-      message: response.data.message,
+      message: data.message,
       timestamp: new Date(),
       duration: Math.round(performance.now() - start),
     };
   }
 
-  async testAIChat(message: string): Promise<{
+  async testAIChat(
+    message: string,
+    callSid: string,
+  ): Promise<{
     status: string;
-    response?: string;
+    replyText?: string;
     timestamp: Date;
     duration?: number;
     error?: string;
   }> {
     const start = performance.now();
     try {
-      const response = await ai('/ai/chat', {
-        method: 'POST',
-        data: { message: message || '你好，你是谁' },
-      });
+      const { data } = await firstValueFrom(
+        this.http.post<{ replyText: string }>('/ai/chat', {
+          message: message || '你好，你是谁啊？',
+          callSid,
+        }),
+      );
       return {
         status: 'ok',
-        response: response.data.response,
+        replyText: data.replyText,
         timestamp: new Date(),
         duration: Math.round(performance.now() - start),
       };
@@ -128,10 +126,12 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
   }> {
     const start = performance.now();
     try {
-      const response = await ai('/health/ping', { method: 'GET' });
+      const { data } = await firstValueFrom(
+        this.http.get<{ message: string }>('/health/ping'),
+      );
       return {
         status: 'ok',
-        message: response.data.message,
+        message: data.message,
         timestamp: new Date(),
         duration: Math.round(performance.now() - start),
       };
@@ -152,10 +152,12 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
   private async sendHeartbeat(): Promise<void> {
     try {
       const start = performance.now();
-      const response = await ai('/health/ping', { method: 'GET' });
+      const { data } = await firstValueFrom(
+        this.http.get<{ message: string }>('/health/ping'),
+      );
       const duration = Math.round(performance.now() - start);
       this.logger.verbose(
-        `✅ AI 心跳成功（/health/ping），返回: ${JSON.stringify(response.data)}, 耗时: ${String(duration)}ms`,
+        `✅ AI 心跳成功（/health/ping），返回: ${JSON.stringify(data)}, 耗时: ${String(duration)}ms`,
       );
     } catch (err) {
       const msg =

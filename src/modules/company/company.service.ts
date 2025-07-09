@@ -109,7 +109,10 @@ export class CompanyService {
         throw new BadRequestException('Invalid company ID format');
       }
 
-      if (updateCompanyDto.email?.trim() !== '') {
+      if (
+        updateCompanyDto.email !== undefined &&
+        updateCompanyDto.email.trim() !== ''
+      ) {
         const existingCompany = await this.companyModel
           .findOne({
             email: { $eq: updateCompanyDto.email },
@@ -117,7 +120,7 @@ export class CompanyService {
           })
           .exec();
 
-        if (existingCompany && updateCompanyDto.email) {
+        if (existingCompany) {
           throw new ConflictException(
             `Company with email ${updateCompanyDto.email} already exists`,
           );
@@ -171,6 +174,32 @@ export class CompanyService {
       }
       throw new BadRequestException(
         'Failed to delete company: ' + (error as Error).message,
+      );
+    }
+  }
+
+  async findByUserId(userId: string): Promise<Company> {
+    try {
+      if (!Types.ObjectId.isValid(userId)) {
+        throw new BadRequestException('Invalid user ID format');
+      }
+      const company = await this.companyModel
+        .findOne({ user: userId })
+        .populate('user')
+        .exec();
+      if (!company) {
+        throw new NotFoundException(`Company with user ID ${userId} not found`);
+      }
+      return company;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException(
+        'Failed to fetch company by userId: ' + (error as Error).message,
       );
     }
   }

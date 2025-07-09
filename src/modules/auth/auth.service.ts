@@ -1,6 +1,5 @@
 import {
   ConflictException,
-  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -29,7 +28,7 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password ?? '');
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid password');
     }
@@ -45,7 +44,7 @@ export class AuthService {
     }
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
-      foundUser.password,
+      foundUser.password ?? '',
     );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Username or Password Not Match');
@@ -66,9 +65,10 @@ export class AuthService {
       throw new ConflictException('User already exists');
     }
     const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
+    const nameParts = userData.name ? userData.name.split(' ') : [''];
     const secureUserData = {
-      firstName: userData.firstName,
-      lastName: userData.lastName,
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
       email: userData.email,
       password: hashedPassword,
       role: userData.role ?? EUserRole.user,
@@ -88,5 +88,43 @@ export class AuthService {
   async checkUserExists(email: string): Promise<boolean> {
     const user = await this.userModel.findOne({ email });
     return !!user;
+  }
+
+  async validateGoogleUser(googleUser: {
+    googleId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    avatar: string;
+  }): Promise<{ user: User; token: string }> {
+    let user = await this.userModel.findOne({
+      $or: [{ email: googleUser.email }, { googleId: googleUser.googleId }],
+    });
+
+    if (!user) {
+      user = new this.userModel({
+        email: googleUser.email,
+        firstName: googleUser.firstName,
+        lastName: googleUser.lastName,
+        googleId: googleUser.googleId,
+        avatar: googleUser.avatar,
+        provider: 'google',
+        role: EUserRole.user,
+      });
+      await user.save();
+    } else if (user.googleId == null) {
+      user.googleId = googleUser.googleId;
+      user.avatar = googleUser.avatar;
+      user.provider = 'google';
+      await user.save();
+    }
+
+    const token = this.jwtService.sign({
+      sub: user._id,
+      email: user.email,
+      role: user.role,
+    });
+
+    return { user: user.toObject() as User, token };
   }
 }

@@ -17,17 +17,27 @@ export class CreateCallLogDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  companyId!: string;
+  callSid!: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  serviceBookedId!: string;
+  userId!: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  serviceBookedId?: string;
 
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
   callerNumber!: string;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  callerName?: string;
 
   @ApiPropertyOptional({ enum: CallLogStatus, default: DEFAULT_CALLLOG_STATUS })
   @IsEnum(CallLogStatus)
@@ -38,15 +48,4 @@ export class CreateCallLogDto {
   @IsDate()
   @Type(() => Date)
   startAt!: Date;
-
-  @ApiPropertyOptional()
-  @IsDate()
-  @IsOptional()
-  @Type(() => Date)
-  endAt?: Date;
-
-  @ApiPropertyOptional()
-  @IsString()
-  @IsOptional()
-  recordingUrl?: string;
 }
