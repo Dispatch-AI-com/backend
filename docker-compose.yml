@@ -22,7 +22,6 @@ services:
       - dispatchai-network
     volumes:
       - ./:/app
-      - /app/node_modules
       
   mongodb:
     image: mongo:latest
