@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 from datetime import datetime
 import json
 import re
@@ -133,12 +133,12 @@ class ConversationValidationService:
     """Domain service for validating conversation data."""
 
     @staticmethod
-    def validate_message_content(message: str) -> bool:
+    def validate_message_content(message: Optional[str]) -> bool:
         """Validate message content."""
         return bool(message and message.strip())
 
     @staticmethod
-    def validate_call_data(call_sid: str, conversation: List[Dict[str, Any]]) -> bool:
+    def validate_call_data(call_sid: str, conversation: Optional[List[Dict[str, Any]]]) -> bool:
         """Validate call data structure."""
         if not call_sid or not call_sid.strip():
             return False

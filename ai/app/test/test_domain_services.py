@@ -200,7 +200,7 @@ class TestConversationValidationService:
         assert ConversationValidationService.validate_call_data("", []) is False
         
         # Invalid conversation format
-        assert ConversationValidationService.validate_call_data("CA123", "not a list") is False
+        assert ConversationValidationService.validate_call_data("CA123", None) is False
         
         # Missing message fields
         invalid_conversation = [{"speaker": "AI"}]  # Missing message

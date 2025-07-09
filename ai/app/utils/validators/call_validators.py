@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import re
 
 
@@ -15,7 +15,7 @@ def validate_call_sid(call_sid: str) -> bool:
     return len(call_sid.strip()) >= 10
 
 
-def validate_call_data(call_sid: str, conversation: List[Dict[str, Any]]) -> bool:
+def validate_call_data(call_sid: str, conversation: Optional[List[Dict[str, Any]]]) -> bool:
     """Validate call data structure."""
     if not validate_call_sid(call_sid):
         return False
@@ -40,7 +40,7 @@ def validate_call_data(call_sid: str, conversation: List[Dict[str, Any]]) -> boo
     return True
 
 
-def validate_message_content(message: str) -> bool:
+def validate_message_content(message: Optional[str]) -> bool:
     """Validate message content."""
     if not message or not isinstance(message, str):
         return False
