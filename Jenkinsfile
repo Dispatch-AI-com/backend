@@ -53,6 +53,9 @@ spec:
 """
         }
     }
+    parameters {
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Git 分支名')
+    }
     
     environment {
         ECR_REGISTRY = "893774231297.dkr.ecr.ap-southeast-2.amazonaws.com"
@@ -63,7 +66,7 @@ spec:
     stages {
         stage('检出代码') {
             steps {
-                git branch: 'main', url: 'https://github.com/Dispatch-AI-com/backend.git'
+                git branch: "${env.BRANCH_NAME}", url: 'https://github.com/Dispatch-AI-com/backend.git'
             }
         }
         
