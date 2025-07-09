@@ -13,4 +13,11 @@ export class AnswerDto {
   @ApiProperty({ example: 'Kenves', description: 'User answer for the step' })
   @IsString()
   answer!: string;
+
+  @ApiProperty({
+    example: 'company.businessName',
+    description: 'The business field this answer should be written to',
+  })
+  @IsString()
+  field!: string;
 }

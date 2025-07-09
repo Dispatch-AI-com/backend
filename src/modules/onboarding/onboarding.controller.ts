@@ -51,6 +51,7 @@ export class OnboardingController {
       dto.userId,
       dto.stepId,
       dto.answer,
+      dto.field,
     );
   }
 
