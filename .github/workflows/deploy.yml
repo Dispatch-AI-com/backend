@@ -1,62 +1,63 @@
-name: 🚀 Deploy Backend to EC2
+# .github/workflows/deploy-backend-and-ai.yml
+name: 🚀 Deploy Backend & AI to EC2
 
 on:
   push:
     branches:
       - main
+    # 只有 backend 目录内容有改动才触发
+    paths:
+      - 'backend/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        # 所有本地命令都在 backend/ 下执行
+        working-directory: backend
 
     steps:
       # 1. 签出代码
-      - name: 📥 Checkout code
+      - name: 📥 Checkout repository
         uses: actions/checkout@v3
 
-      # 2. 安装 Node.js
-      - name: 🧰 Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
-      # 3. 安装 pnpm
+      # 2. 安装 pnpm（CI 校验用，不影响远端构建）
       - name: 📥 Install pnpm
         run: npm install -g pnpm
 
-      # 4. 安装依赖并构建
-      - name: 📦 Install dependencies and build
-        run: |
-          pnpm install --frozen-lockfile
-          pnpm build
+      # 3. （可选）本地依赖校验
+      - name: 📦 Validate dependencies
+        run: pnpm install --frozen-lockfile
 
-      # 5. 使用 rsync 同步构建产物到 EC2
-      - name: 📤 Sync build artifacts to EC2
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+      # 4. 准备 SSH 密钥
+      - name: 🔑 Setup SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
+      # 5. 同步整个 backend（含 ai/）到 EC2
+      - name: 📤 Rsync backend to EC2
+        run: |
           rsync -avz --delete \
+            --exclude 'node_modules' \
+            --exclude '.git' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
-            dist/ package.json pnpm-lock.yaml docker-compose.uat.yml Dockerfile.uat ai/ \
-            ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
+            ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
 
-      # 6. 在 EC2 上重建镜像并重启容器（强制不使用缓存）
-      - name: 🔁 Restart backend on EC2
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+      # 6. 在 EC2 上无缓存重建并重启所有服务
+      - name: 🔁 Build & Restart on EC2
         run: |
-          mkdir -p ~/.ssh
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
-            cd /home/ubuntu/deploy/dispatch-backend
-            docker build --no-cache -f Dockerfile.uat -t dispatch-backend_api .
-            docker build --no-cache -f ai/Dockerfile.uat -t dispatch-backend_ai ai
+            cd /home/ubuntu/deploy/dispatch-backend || exit 1
+
+            # 停掉旧容器
             docker-compose -f docker-compose.uat.yml down
+
+            # 强制无缓存重建（包含 api 与 ai 两个服务）
+            docker-compose -f docker-compose.uat.yml build --no-cache
+
+            # 启动所有服务
             docker-compose -f docker-compose.uat.yml up -d
           EOF
