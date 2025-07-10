@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
+import { CompanyModule } from '../company/company.module';
+import { UserModule } from '../user/user.module';
 import { OnboardingController } from './onboarding.controller';
 import { OnboardingService } from './onboarding.service';
 import {
@@ -13,6 +15,8 @@ import {
     MongooseModule.forFeature([
       { name: OnboardingSession.name, schema: OnboardingSessionSchema },
     ]),
+    CompanyModule,
+    UserModule,
   ],
   controllers: [OnboardingController],
   providers: [OnboardingService],

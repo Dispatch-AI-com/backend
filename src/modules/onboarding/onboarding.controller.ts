@@ -20,7 +20,10 @@ import { AnswerDto } from './dto/answer.dto';
 import { CompleteDto } from './dto/complete.dto';
 import { DeleteSessionDto } from './dto/delete.dto';
 import { OnboardingService } from './onboarding.service';
-import type { OnboardingSession } from './schema/onboarding-session.schema';
+import type {
+  OnboardingAnswers,
+  OnboardingSession,
+} from './schema/onboarding-session.schema';
 
 @ApiTags('onboarding')
 @Controller('onboarding')
@@ -82,7 +85,7 @@ export class OnboardingController {
   })
   async getProgress(@Query('userId') userId: string): Promise<{
     currentStep: number;
-    answers: Record<string, string>;
+    answers: OnboardingAnswers;
     status: string;
   }> {
     return this.onboardingService.getProgress(userId);

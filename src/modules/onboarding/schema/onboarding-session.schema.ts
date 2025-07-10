@@ -3,6 +3,32 @@ import { Document } from 'mongoose';
 
 export type OnboardingSessionDocument = OnboardingSession & Document;
 
+export interface AddressAnswers {
+  unitAptPOBox?: string;
+  streetAddress: string;
+  suburb: string;
+  state: string;
+  postcode: string;
+}
+
+export interface CompanyAnswers {
+  businessName: string;
+  abn: string;
+  number: string;
+  email: string;
+  address: AddressAnswers;
+}
+
+export interface UserAnswers {
+  phone?: string;
+  position?: string;
+}
+
+export interface OnboardingAnswers {
+  company?: CompanyAnswers;
+  user?: UserAnswers;
+}
+
 @Schema({ timestamps: true })
 export class OnboardingSession {
   @Prop({ required: true, unique: true })
@@ -12,7 +38,7 @@ export class OnboardingSession {
   currentStep!: number;
 
   @Prop({ type: Object, default: {} })
-  answers!: Record<string, string>;
+  answers!: OnboardingAnswers;
 
   @Prop({ enum: ['in_progress', 'completed'], default: 'in_progress' })
   status!: string;

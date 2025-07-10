@@ -1,16 +1,28 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { plainToInstance } from 'class-transformer';
+import { validateOrReject } from 'class-validator';
+import { Model, UpdateQuery } from 'mongoose';
 
 import { CompanyService } from '../company/company.service';
+import { CreateCompanyDto } from '../company/dto/create-company.dto';
 import { UserService } from '../user/user.service';
 import {
+  OnboardingAnswers,
   OnboardingSession,
   OnboardingSessionDocument,
 } from './schema/onboarding-session.schema';
 
 @Injectable()
 export class OnboardingService {
+  AU_ADDR_REGEX =
+    /^(?<street>[^,]+),\s*(?<suburb>[^,]+),\s*(?<state>[A-Z]{2,3})\s+(?<postcode>\d{4})$/;
+
   constructor(
     @InjectModel(OnboardingSession.name)
     private readonly sessionModel: Model<OnboardingSessionDocument>,
@@ -19,7 +31,7 @@ export class OnboardingService {
   ) {}
 
   /**
-   * 保存用户某一步的回答
+   * save answer of one step
    */
   async saveAnswer(
     userId: string,
@@ -27,18 +39,35 @@ export class OnboardingService {
     answer: string,
     field: string,
   ): Promise<{ success: boolean; currentStep: number }> {
-    await this.sessionModel.updateOne(
-      { userId },
-      {
-        $set: {
-          [`answers.${field}`]: answer,
-          updatedAt: new Date(),
-        },
-        $setOnInsert: { currentStep: 1, status: 'in_progress' },
+    const update: UpdateQuery<OnboardingSessionDocument> = {
+      $set: {
+        currentStep: stepId + 1,
+        status: 'in_progress',
+        updatedAt: new Date(),
       },
-      { upsert: true },
-    );
+      $setOnInsert: { createdAt: new Date() },
+    };
 
+    if (field === 'company.address.full') {
+      const match = this.AU_ADDR_REGEX.exec(answer.trim());
+      if (!match?.groups) {
+        throw new BadRequestException(
+          'Unable to parse address; please check the format.',
+        );
+      }
+
+      update.$set['answers.company.address.streetAddress'] =
+        match.groups.street.trim();
+      update.$set['answers.company.address.suburb'] =
+        match.groups.suburb.trim();
+      update.$set['answers.company.address.state'] = match.groups.state;
+      update.$set['answers.company.address.postcode'] = match.groups.postcode;
+      update.$set['answers.company.address.full'] = answer; // keep the raw string
+    } else if (field.trim()) {
+      update.$set[`answers.${field}`] = answer;
+    }
+
+    await this.sessionModel.updateOne({ userId }, update, { upsert: true });
     if (field.startsWith('user.')) {
       const [, key] = field.split('.');
       await this.userService.patch(userId, { [key]: answer });
@@ -51,11 +80,11 @@ export class OnboardingService {
   }
 
   /**
-   * 查询当前用户的 Onboarding 状态和填写进度
+   * search current onboarding session of user
    */
   async getProgress(userId: string): Promise<{
     currentStep: number;
-    answers: Record<string, string>;
+    answers: OnboardingAnswers;
     status: string;
   }> {
     const session = await this.sessionModel.findOne({ userId }).lean();
@@ -76,29 +105,44 @@ export class OnboardingService {
   }
 
   /**
-   * 标记用户 Onboarding 为已完成
+   * mark onboarding as complete
    */
   async completeSession(userId: string): Promise<{ success: boolean }> {
     const session = await this.sessionModel.findOne({ userId }).lean();
     if (!session) throw new NotFoundException('session not found');
 
-    const a = session.answers;
+    const companyAns = session.answers.company;
+    if (!companyAns) {
+      throw new BadRequestException('company answers not found in session');
+    }
+
     const companyPayload = {
-      businessName: a['company.businessName'],
+      businessName: companyAns.businessName,
       address: {
-        unitAptPOBox: a['company.address.unitAptPOBox'] ?? '',
-        streetAddress: a['company.address.streetAddress'],
-        suburb: a['company.address.suburb'],
-        state: a['company.address.state'],
-        postcode: a['company.address.postcode'],
+        unitAptPOBox: companyAns.address.unitAptPOBox ?? '',
+        streetAddress: companyAns.address.streetAddress,
+        suburb: companyAns.address.suburb,
+        state: companyAns.address.state,
+        postcode: companyAns.address.postcode,
       },
-      email: a['company.email'],
-      abn: a['company.abn'],
-      number: a['company.number'],
+      email: companyAns.email,
+      abn: companyAns.abn,
+      number: companyAns.number,
+      twilioPhoneNumber: companyAns.number,
       user: userId,
     };
 
-    await this.companyService.create(companyPayload);
+    try {
+      const dto = plainToInstance(CreateCompanyDto, companyPayload);
+      await validateOrReject(dto);
+      await this.companyService.create(dto);
+    } catch (err: any) {
+      // handle index uniqueness conflict
+      if (err.code === 11000) {
+        throw new ConflictException('Company email/abn/phone already exists');
+      }
+      throw err;
+    }
 
     await this.sessionModel.updateOne(
       { userId },
@@ -109,7 +153,7 @@ export class OnboardingService {
   }
 
   /**
-   * 删除指定用户的 Onboarding Session
+   * delete Onboarding Session of certain user
    */
   async deleteSession(userId: string): Promise<{ success: boolean }> {
     const result = await this.sessionModel.deleteOne({ userId });
@@ -122,13 +166,9 @@ export class OnboardingService {
   }
 
   /**
-   * 获取所有用户的 Onboarding Session 列表
+   * get all onboarding sessions
    */
   async getAllSessions() {
-    return this.sessionModel
-      .find()
-      .select('-__v') // 去掉 __v 版本字段，按需保留
-      .lean()
-      .exec();
+    return this.sessionModel.find().select('-__v').lean().exec();
   }
 }
