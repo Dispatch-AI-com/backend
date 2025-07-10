@@ -4,20 +4,17 @@ on:
   push:
     branches:
       - main
-    # 也可以只监测后端目录改动：
-    # paths:
-    #   - 'backend/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 签出代码
+      # 1. 签出仓库
       - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      # 2. 安装 pnpm（仅用于后续 rsync 中排除 node_modules）
+      # 2. 安装 pnpm（仅用于排除 node_modules）
       - name: 📥 Install pnpm
         run: npm install -g pnpm
 
@@ -28,7 +25,7 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      # 4. Rsync 整个后端目录到 EC2（含 API 与 AI 服务代码）
+      # 4. 同步 backend 目录到 EC2
       - name: 📤 Sync backend to EC2
         run: |
           rsync -avz --delete \
@@ -37,7 +34,7 @@ jobs:
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             backend/ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
 
-      # 5. 远端无缓存构建并重启容器
+      # 5. 在 EC2 上无缓存构建并重启容器
       - name: 🔁 Build & Restart on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
@@ -46,7 +43,7 @@ jobs:
             # 停掉旧容器
             docker-compose -f docker-compose.uat.yml down
 
-            # 强制无缓存构建（API 的 pnpm build 会在容器内执行）
+            # 强制无缓存重建（API 与 AI 服务都在容器内构建）
             docker-compose -f docker-compose.uat.yml build --no-cache
 
             # 启动所有服务
