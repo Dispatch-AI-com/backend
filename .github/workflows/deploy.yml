@@ -25,14 +25,14 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      # 4. 同步 backend 目录到 EC2
-      - name: 📤 Sync backend to EC2
+      # 4. 同步项目根目录到 EC2
+      - name: 📤 Sync code to EC2
         run: |
           rsync -avz --delete \
             --exclude 'node_modules' \
             --exclude '.git' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
-            backend/ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
+            ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
 
       # 5. 在 EC2 上无缓存构建并重启容器
       - name: 🔁 Build & Restart on EC2
