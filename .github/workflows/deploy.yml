@@ -1,50 +1,43 @@
-# .github/workflows/deploy-backend-and-ai.yml
 name: 🚀 Deploy Backend & AI to EC2
 
 on:
   push:
     branches:
       - main
-    # 只有 backend 目录内容有改动才触发
+    # 也可以只监测后端目录改动：
+    # paths:
+    #   - 'backend/**'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        # 所有本地命令都在 backend/ 下执行
-        working-directory: backend
 
     steps:
       # 1. 签出代码
-      - name: 📥 Checkout repository
+      - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      # 2. 安装 pnpm（CI 校验用，不影响远端构建）
+      # 2. 安装 pnpm（仅用于后续 rsync 中排除 node_modules）
       - name: 📥 Install pnpm
         run: npm install -g pnpm
 
-      # 3. （可选）本地依赖校验
-      - name: 📦 Validate dependencies
-        run: pnpm install --frozen-lockfile
-
-      # 4. 准备 SSH 密钥
+      # 3. 准备 SSH 私钥
       - name: 🔑 Setup SSH key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      # 5. 同步整个 backend（含 ai/）到 EC2
-      - name: 📤 Rsync backend to EC2
+      # 4. Rsync 整个后端目录到 EC2（含 API 与 AI 服务代码）
+      - name: 📤 Sync backend to EC2
         run: |
           rsync -avz --delete \
             --exclude 'node_modules' \
             --exclude '.git' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
-            ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
+            backend/ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
 
-      # 6. 在 EC2 上无缓存重建并重启所有服务
+      # 5. 远端无缓存构建并重启容器
       - name: 🔁 Build & Restart on EC2
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
@@ -53,7 +46,7 @@ jobs:
             # 停掉旧容器
             docker-compose -f docker-compose.uat.yml down
 
-            # 强制无缓存重建（包含 api 与 ai 两个服务）
+            # 强制无缓存构建（API 的 pnpm build 会在容器内执行）
             docker-compose -f docker-compose.uat.yml build --no-cache
 
             # 启动所有服务
