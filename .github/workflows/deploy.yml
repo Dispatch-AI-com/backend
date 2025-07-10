@@ -25,12 +25,13 @@ jobs:
           echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-      # 4. 同步项目根目录到 EC2
+      # 4. 同步项目根目录到 EC2（保留远端 .env.uat）
       - name: 📤 Sync code to EC2
         run: |
           rsync -avz --delete \
             --exclude 'node_modules' \
             --exclude '.git' \
+            --exclude '.env.uat' \
             -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
             ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
 
@@ -39,13 +40,7 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ubuntu/deploy/dispatch-backend || exit 1
-
-            # 停掉旧容器
             docker-compose -f docker-compose.uat.yml down
-
-            # 强制无缓存重建（API 与 AI 服务都在容器内构建）
             docker-compose -f docker-compose.uat.yml build --no-cache
-
-            # 启动所有服务
             docker-compose -f docker-compose.uat.yml up -d
           EOF
