@@ -3,9 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from .core.config import get_settings
-from .routers import health
-from .routers import chat
-from .routers import call_summary
+from .api.router import api_router
 
 
 @asynccontextmanager
@@ -39,10 +37,8 @@ def create_app() -> FastAPI:
         allow_headers=settings.cors_headers,
     )
 
-    # Include routers
-    app.include_router(health.router, prefix=settings.api_prefix)
-    app.include_router(chat.router, prefix=settings.api_prefix)
-    app.include_router(call_summary.router, prefix=settings.api_prefix)
+    # Include API router
+    app.include_router(api_router, prefix=settings.api_prefix)
 
     return app
 

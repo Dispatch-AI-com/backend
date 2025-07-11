@@ -1,36 +1,17 @@
-from typing import List
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field
 
-from ..services.service_factory import get_ai_service
-from ..services.ai_service import AIService, AIServiceError
-from ..utils.validators.validation import validate_call_sid, validate_conversation_data
+from ...services.service_factory import get_ai_service
+from ...services.ai_service import AIService, AIServiceError
+from ...utils.validators.validation import validate_call_sid, validate_conversation_data
+from ...models.request_models import SummaryIn
+from ...models.response_models import SummaryOut
 
 
 router = APIRouter(
-    prefix="/ai/summary",
+    prefix="/summary",
     tags=["Call Summary"],
     responses={404: {"description": "Not found"}},
 )
-
-
-class ConversationMessage(BaseModel):
-    speaker: str = Field(..., description="Speaker type: AI or customer")
-    message: str = Field(..., description="Message content")
-    timestamp: str = Field(..., description="Message timestamp")
-
-
-class SummaryIn(BaseModel):
-    callSid: str = Field(..., description="Twilio CallSid – unique call ID")
-    conversation: List[ConversationMessage] = Field(
-        ..., description="Full conversation history"
-    )
-    serviceInfo: dict = Field(default={}, description="Service booking information")
-
-
-class SummaryOut(BaseModel):
-    summary: str = Field(..., description="Call summary")
-    keyPoints: List[str] = Field(..., description="Key points from the conversation")
 
 
 @router.post(

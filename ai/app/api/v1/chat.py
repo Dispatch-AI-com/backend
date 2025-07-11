@@ -1,25 +1,17 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, Field
 
-from ..services.service_factory import get_ai_service
-from ..services.ai_service import AIService, AIServiceError
-from ..utils.validators.validation import validate_call_sid, validate_message_content
+from ...services.service_factory import get_ai_service
+from ...services.ai_service import AIService, AIServiceError
+from ...utils.validators.validation import validate_call_sid, validate_message_content
+from ...models.request_models import MessageIn
+from ...models.response_models import MessageOut
 
 
 router = APIRouter(
-    prefix="/ai/chat",
+    prefix="/chat",
     tags=["Chat"],
     responses={404: {"description": "Not found"}},
 )
-
-
-class MessageIn(BaseModel):
-    callSid: str = Field(..., description="Twilio CallSid – unique call ID")
-    message: str = Field(..., description="Customer utterance")
-
-
-class MessageOut(BaseModel):
-    replyText: str = Field(..., description="Assistant response")
 
 
 @router.post(
