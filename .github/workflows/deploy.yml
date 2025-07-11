@@ -1,49 +1,46 @@
-name: 🚀 Deploy Backend to EC2
+name: 🚀 Deploy Backend & AI to EC2
 
 on:
   push:
     branches:
       - main
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. 签出仓库
       - name: 📥 Checkout code
         uses: actions/checkout@v3
 
-      - name: 🧰 Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-
+      # 2. 安装 pnpm（仅用于排除 node_modules）
       - name: 📥 Install pnpm
         run: npm install -g pnpm
 
-      - name: 📦 Install dependencies and build
+      # 3. 准备 SSH 私钥
+      - name: 🔑 Setup SSH key
         run: |
-          pnpm install
-          pnpm build
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
-      - name: 📤 Upload build artifacts to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "dist/**,package.json,pnpm-lock.yaml,docker-compose.uat.yml,Dockerfile.uat,ai/**"
-          target: /home/ubuntu/deploy/dispatch-backend
-          strip_components: 0
+      # 4. 同步项目根目录到 EC2（保留远端 .env.uat）
+      - name: 📤 Sync code to EC2
+        run: |
+          rsync -avz --delete \
+            --exclude 'node_modules' \
+            --exclude '.git' \
+            --exclude '.env.uat' \
+            -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa" \
+            ./ ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/deploy/dispatch-backend/
 
-      - name: 🔁 Restart backend on EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd /home/ubuntu/deploy/dispatch-backend
-            docker build -f Dockerfile.uat -t dispatch-backend_api .
-            docker build -f ai/Dockerfile.uat -t dispatch-backend_ai ai
+      # 5. 在 EC2 上无缓存构建并重启容器
+      - name: 🔁 Build & Restart on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
+            cd /home/ubuntu/deploy/dispatch-backend || exit 1
             docker-compose -f docker-compose.uat.yml down
+            docker-compose -f docker-compose.uat.yml build --no-cache
             docker-compose -f docker-compose.uat.yml up -d
+          EOF
