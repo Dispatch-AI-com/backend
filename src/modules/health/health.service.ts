@@ -1,13 +1,17 @@
 import { HttpService } from '@nestjs/axios';
 import {
+  Inject,
   Injectable,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/mongoose';
+import Redis from 'ioredis';
 import { Connection, STATES as ConnectionStates } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
+
+import { REDIS_CLIENT } from '@/lib/redis/redis.module';
 
 @Injectable()
 export class HealthService implements OnModuleInit, OnModuleDestroy {
@@ -17,6 +21,7 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectConnection() private readonly mongoConnection: Connection,
     private readonly http: HttpService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
   ) {}
 
   onModuleInit(): void {
@@ -48,15 +53,17 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
 
   checkDatabase(): {
     status: string;
-    database: string;
-    connected: boolean;
+    mongo: boolean;
+    redis: boolean;
     timestamp: Date;
   } {
-    const ok = this.mongoConnection.readyState === ConnectionStates.connected;
+    const mongoOK =
+      this.mongoConnection.readyState === ConnectionStates.connected;
+    const redisOK = this.redis.status === 'ready';
     return {
-      status: ok ? 'ok' : 'error',
-      database: 'MongoDB',
-      connected: ok,
+      status: mongoOK && redisOK ? 'ok' : 'error',
+      mongo: mongoOK,
+      redis: redisOK,
       timestamp: new Date(),
     };
   }

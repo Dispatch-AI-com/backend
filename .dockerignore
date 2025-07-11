@@ -1,7 +1,18 @@
-src/
-*.ts
-node_modules/
+# ───────── 会拖慢上下文传输的目录 ─────────
+node_modules
+**/.pnpm
+.git
+# Mac/Windows 垃圾
+.DS_Store
+Thumbs.db
+
+# ───────── 只在本地用得到的文件 ─────────
+*.log
+.env*
+.cache
+.idea
+.vscode
+test
+README.md
 Dockerfile
 .dockerignore
-README.md
-test/

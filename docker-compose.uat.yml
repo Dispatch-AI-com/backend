@@ -12,8 +12,6 @@ services:
       - LOG_TO_FILE=true
     ports:
       - "4000:4000"
-    volumes:
-      - /home/ubuntu/dispatch-ai/logs:/app/logs
     restart: always
     networks:
       - dispatchai-network
