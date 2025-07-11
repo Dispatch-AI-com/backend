@@ -6,6 +6,7 @@ import os
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
+from pydantic import SecretStr
 
 from ..domain.value_objects import AIPrompt
 
@@ -29,14 +30,14 @@ class OpenAILLMAdapter(LLMAdapter):
 
     def __init__(self, api_key: Optional[str] = None):
         load_dotenv()
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        if not self.api_key:
+        api_key_value = api_key or os.getenv("OPENAI_API_KEY")
+        if not api_key_value:
             raise ValueError("OpenAI API key is required")
+        self.api_key = SecretStr(api_key_value)
         
         self.llm = ChatOpenAI(
-            api_key=self.api_key,
+            api_key=self.api_key.get_secret_value(),  # type: ignore
             model="gpt-4o",
-            max_tokens=2500,
             streaming=False,
             temperature=0.0
         )
