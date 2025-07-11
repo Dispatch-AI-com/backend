@@ -51,7 +51,9 @@ async def generate_call_summary(
         
         return SummaryOut(
             summary=summary.summary,
-            keyPoints=summary.key_points
+            keyPoints=summary.key_points,
+            sentiment="neutral",  # 默认值，可以后续从 AI 分析中获取
+            actionItems=[]  # 默认值，可以后续从 AI 分析中获取
         )
     except ValueError as e:
         raise HTTPException(422, detail=str(e))
