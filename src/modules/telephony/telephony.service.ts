@@ -10,14 +10,14 @@ import {
 } from '@/common/interfaces/twilio-voice-webhook.d';
 import { winstonLogger } from '@/logger/winston.logger';
 import { CalllogService } from '@/modules/calllog/calllog.service';
+import { CompanyService } from '@/modules/company/company.service';
+import { ServiceService } from '@/modules/service/service.service';
 import {
   buildSayResponse,
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
-import { CompanyService } from '@/modules/company/company.service';
-import { ServiceService } from '@/modules/service/service.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
@@ -328,11 +328,15 @@ export class TelephonyService {
     }
 
     try {
-      const companyEntity = await this.companyService.findByTwilioPhoneNumber(
-        toPhoneNumber,
-      );
+      const companyEntity =
+        await this.companyService.findByTwilioPhoneNumber(toPhoneNumber);
 
-      if (!companyEntity || !(companyEntity as any)._id || !companyEntity.email) {
+      // companyEntity is guaranteed by findByTwilioPhoneNumber; no null check needed
+      const mongoId: string | undefined = (
+        companyEntity as any
+      )?._id?.toString?.();
+
+      if (!mongoId) {
         winstonLogger.warn(
           `[TelephonyService][populateSessionContext] Incomplete company data for number ${toPhoneNumber}`,
         );
@@ -341,9 +345,11 @@ export class TelephonyService {
 
       // Map company entity to lightweight DTO stored in Redis session
       session.company = {
-        id: (companyEntity as any)._id.toString(),
+        id: mongoId,
         name:
-          (companyEntity as any).businessName ?? (companyEntity as any).name ?? '',
+          (companyEntity as any).businessName ??
+          (companyEntity as any).name ??
+          '',
         email: companyEntity.email,
         calendar_access_token: (companyEntity as any).calendar_access_token,
         description: (companyEntity as any).description,
@@ -355,8 +361,9 @@ export class TelephonyService {
       );
 
       (session as any).services = services.map(s => ({
-        id: (s as any)._id?.toString?.() ?? (s as any).id ?? '',
+        id: (s as any)?._id?.toString?.() || (s as any).id || '',
         name: s.name,
+        /* eslint-disable-next-line @typescript-eslint/no-unnecessary-condition */
         price: s.price ?? null,
         description: s.description,
       }));
