@@ -1,11 +1,15 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import * as bcrypt from 'bcryptjs';
+import { Model, Types } from 'mongoose';
 import { isValidObjectId } from 'mongoose';
+
+import { SALT_ROUNDS } from '@/modules/auth/auth.config';
 
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { User, UserDocument } from './schema/user.schema';
@@ -30,12 +34,52 @@ export class UserService {
     return user;
   }
 
-  async patch(id: string, updateUserDto: UpdateUserDto): Promise<User> {
-    const user = await this.userModel.findByIdAndUpdate(id, updateUserDto, {
-      new: true,
-      runValidators: true,
-    });
-    if (!user) throw new NotFoundException(`User with id ${id} not found`);
+  async patch(id: string, dto: UpdateUserDto): Promise<User> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid user ID format');
+    }
+
+    const updateFields = Object.entries(dto).reduce<Record<string, unknown>>(
+      (acc, [key, value]) => {
+        if (value !== undefined && value !== '') acc[key] = value;
+        return acc;
+      },
+      {},
+    );
+
+    if (typeof updateFields.email === 'string') {
+      const exists = await this.userModel
+        .findOne({ email: updateFields.email, _id: { $ne: id } })
+        .exec();
+      if (exists) {
+        throw new ConflictException(
+          `Email ${updateFields.email} already exists`,
+        );
+      }
+    }
+
+    if (typeof updateFields.password === 'string') {
+      updateFields.password = await bcrypt.hash(
+        updateFields.password,
+        SALT_ROUNDS,
+      );
+    }
+
+    const user = await this.userModel
+      .findByIdAndUpdate(
+        id,
+        { $set: updateFields },
+        {
+          new: true,
+          runValidators: true,
+          context: 'query',
+        },
+      )
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
     return user;
   }
 
