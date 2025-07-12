@@ -7,6 +7,8 @@ import { SessionHelper } from '@/modules/telephony/helpers/session.helper';
 import { CalllogService } from '@/modules/calllog/calllog.service';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
+import { CompanyService } from '@/modules/company/company.service';
+import { ServiceService } from '@/modules/service/service.service';
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 
 /**
@@ -137,6 +139,18 @@ describe('TelephonyService - AI Summary Integration', () => {
           provide: TranscriptChunkService,
           useValue: {
             createMany: jest.fn(),
+          },
+        },
+        {
+          provide: CompanyService,
+          useValue: {
+            findByTwilioPhoneNumber: jest.fn(),
+          },
+        },
+        {
+          provide: ServiceService,
+          useValue: {
+            findByCompanyId: jest.fn(),
           },
         },
       ],
