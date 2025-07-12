@@ -34,6 +34,20 @@ export class ServiceService {
     return service;
   }
 
+  /**
+   * Fetch all non-deleted services that belong to a specific company.
+   * @param companyId Company identifier
+   */
+  async findByCompanyId(companyId: string): Promise<Service[]> {
+    if (!Types.ObjectId.isValid(companyId)) {
+      throw new BadRequestException('Invalid company ID format');
+    }
+
+    return this.serviceModel
+      .find({ companyId, isDeleted: { $ne: true } })
+      .exec();
+  }
+
   async update(id: string, dto: UpdateServiceDto): Promise<Service> {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid service ID format');

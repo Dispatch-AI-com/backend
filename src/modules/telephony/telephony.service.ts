@@ -16,6 +16,8 @@ import {
 } from '@/modules/telephony/utils/twilio-response.util';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
+import { CompanyService } from '@/modules/company/company.service';
+import { ServiceService } from '@/modules/service/service.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
@@ -34,10 +36,20 @@ export class TelephonyService {
     private readonly callLogService: CalllogService,
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
+    private readonly companyService: CompanyService,
+    private readonly serviceService: ServiceService,
   ) {}
-  async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
+  async handleVoice({ CallSid, To }: VoiceGatherBody): Promise<string> {
     const session = await this.sessionHelper.ensureSession(CallSid);
-    //把redis sessinon里面的company services填满
+
+    // Populate company & service context if missing
+    try {
+      await this.populateSessionContext(session, To);
+    } catch (err) {
+      winstonLogger.warn(
+        `[TelephonyService][callSid=${CallSid}][handleVoice] Failed to populate session context: ${(err as Error).message}`,
+      );
+    }
 
     const { services, company } = session;
     const welcome = this.buildWelcomeMessage(company.name, services);
@@ -160,7 +172,9 @@ export class TelephonyService {
       // Step 2: 生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结
       await this.createTranscriptAndChunks(session);
 
-      // Step 3: 如果confirmservice为true，上传service（暂时跳过，按注释保留）
+      // Step 3: 如果confirmBooking为true，则将选定的service信息持久化到Redis
+      await this.uploadConfirmedService(session);
+
       // Step 4: 将summary和sid发送给python完成链路（暂时跳过，按注释保留）
 
       // 清理Redis会话
@@ -290,5 +304,112 @@ export class TelephonyService {
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
     return data;
+  }
+
+  /**
+   * When a new voice session starts, attempt to hydrate Redis session with
+   * company & service data based on the Twilio destination phone number.
+   * Skips if information already present or essential input missing.
+   */
+  private async populateSessionContext(
+    session: CallSkeleton,
+    toPhoneNumber?: string,
+  ): Promise<void> {
+    if (session.company.id && session.services.length > 0) {
+      // Already populated
+      return;
+    }
+
+    if (!toPhoneNumber) {
+      winstonLogger.warn(
+        `[TelephonyService][populateSessionContext] Missing 'To' phone number, cannot resolve company`,
+      );
+      return;
+    }
+
+    try {
+      const companyEntity = await this.companyService.findByTwilioPhoneNumber(
+        toPhoneNumber,
+      );
+
+      if (!companyEntity || !(companyEntity as any)._id || !companyEntity.email) {
+        winstonLogger.warn(
+          `[TelephonyService][populateSessionContext] Incomplete company data for number ${toPhoneNumber}`,
+        );
+        return;
+      }
+
+      // Map company entity to lightweight DTO stored in Redis session
+      session.company = {
+        id: (companyEntity as any)._id.toString(),
+        name:
+          (companyEntity as any).businessName ?? (companyEntity as any).name ?? '',
+        email: companyEntity.email,
+        calendar_access_token: (companyEntity as any).calendar_access_token,
+        description: (companyEntity as any).description,
+      } as any; // Cast to satisfy extended interface
+
+      // Fetch services
+      const services = await this.serviceService.findByCompanyId(
+        session.company.id,
+      );
+
+      (session as any).services = services.map(s => ({
+        id: (s as any)._id?.toString?.() ?? (s as any).id ?? '',
+        name: s.name,
+        price: s.price ?? null,
+        description: s.description,
+      }));
+
+      // Persist updated session to Redis
+      await this.sessions.save(session);
+
+      winstonLogger.log(
+        `[TelephonyService][populateSessionContext] Populated company & services for callSid=${session.callSid}`,
+      );
+    } catch (error) {
+      winstonLogger.error(
+        `[TelephonyService][populateSessionContext] Failed to populate context for callSid=${session.callSid}`,
+        { error: (error as Error).message, stack: (error as Error).stack },
+      );
+    }
+  }
+
+  /**
+   * Conditionally persists the selected Service into Redis based on
+   * confirmBooking flag.
+   * Returns structured result for logging & further processing.
+   */
+  private async uploadConfirmedService(
+    session: CallSkeleton,
+  ): Promise<{ success: boolean; message: string }> {
+    const identifier = `[TelephonyService][uploadConfirmedService][callSid=${session.callSid}]`;
+
+    if (!session.confirmBooking) {
+      const msg = 'confirmBooking flag is false; skipping service upload';
+      winstonLogger.log(`${identifier} ${msg}`);
+      return { success: false, message: msg };
+    }
+
+    if (!session.user.service) {
+      const msg = 'No service selected; nothing to upload';
+      winstonLogger.warn(`${identifier} ${msg}`);
+      return { success: false, message: msg };
+    }
+
+    try {
+      // At this point service has already been written into session object.
+      // Persist entire session to Redis to ensure the latest state is stored.
+      await this.sessions.save(session);
+
+      winstonLogger.log(`${identifier} Service uploaded successfully`);
+      return { success: true, message: 'Uploaded' };
+    } catch (error) {
+      const errMsg = `Failed to upload service: ${(error as Error).message}`;
+      winstonLogger.error(`${identifier} ${errMsg}`, {
+        stack: (error as Error).stack,
+      });
+      return { success: false, message: errMsg };
+    }
   }
 }

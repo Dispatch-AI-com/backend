@@ -203,4 +203,41 @@ export class CompanyService {
       );
     }
   }
+
+  /**
+   * Find company by its unique Twilio phone number
+   * @param twilioPhoneNumber The Twilio number assigned to the company (exact match)
+   * @throws NotFoundException when no company is found
+   * @throws BadRequestException when input is invalid or other db errors occur
+   */
+  async findByTwilioPhoneNumber(twilioPhoneNumber: string): Promise<Company> {
+    try {
+      if (!twilioPhoneNumber || twilioPhoneNumber.trim() === '') {
+        throw new BadRequestException('Twilio phone number is required');
+      }
+
+      const company = await this.companyModel
+        .findOne({ twilioPhoneNumber })
+        .populate('user')
+        .exec();
+
+      if (!company) {
+        throw new NotFoundException(
+          `Company with Twilio number ${twilioPhoneNumber} not found`,
+        );
+      }
+
+      return company;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException(
+        'Failed to fetch company by Twilio number: ' + (error as Error).message,
+      );
+    }
+  }
 }
