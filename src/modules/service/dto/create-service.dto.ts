@@ -83,4 +83,9 @@ export class CreateServiceDto {
   @IsOptional()
   @IsBoolean()
   isAvailable?: boolean;
+
+  @ApiProperty({ description: 'User ID', example: 'userId123' })
+  @IsString()
+  @IsNotEmpty()
+  userId!: string;
 }
