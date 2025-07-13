@@ -9,6 +9,7 @@ async def send_plain_email(to: str, subject: str, body: str) -> None:
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(body, subtype="plain", charset="utf-8")
+    print(f"[DEBUG] Sending email to {to} with subject {subject}")
 
     await aiosmtplib.send(
         msg,
