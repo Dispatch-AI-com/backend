@@ -216,8 +216,13 @@ export class CompanyService {
         throw new BadRequestException('Twilio phone number is required');
       }
 
+      // validate E.164 style phone number (e.g. +61412345678)
+      if (typeof twilioPhoneNumber !== 'string' || !/^\+?\d{6,15}$/.test(twilioPhoneNumber)) {
+        throw new BadRequestException('Invalid Twilio phone number format');
+      }
+
       const company = await this.companyModel
-        .findOne({ twilioPhoneNumber })
+        .findOne({ twilioPhoneNumber: { $eq: twilioPhoneNumber } })
         .populate('user')
         .exec();
 
