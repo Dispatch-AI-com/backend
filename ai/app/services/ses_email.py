@@ -1,23 +1,21 @@
-import email.utils, aiosmtplib, os
-
-SMTP_HOST = os.getenv("SMTP_HOST")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USER = os.getenv("SMTP_USER")
-SMTP_PASS = os.getenv("SMTP_PASS")
-SES_FROM  = os.getenv("SES_FROM")
+import os
+import aiosmtplib
+from email.message import EmailMessage
+import email.utils
 
 async def send_plain_email(to: str, subject: str, body: str) -> None:
-    msg = (
-        f"From: {email.utils.formataddr(('DispatchAI Bot', SES_FROM))}\n"
-        f"To: {to}\n"
-        f"Subject: {subject}\n"
-        f"Content-Type: text/plain; charset=utf-8\n\n{body}"
-    )
+    msg = EmailMessage()
+    msg["From"] = email.utils.formataddr(("DispatchAI Bot", os.getenv("SES_FROM")))
+    msg["To"] = to
+    msg["Subject"] = subject
+    msg.set_content(body, subtype="plain", charset="utf-8")
+
     await aiosmtplib.send(
         msg,
-        hostname=SMTP_HOST,
-        port=SMTP_PORT,
-        username=SMTP_USER,
-        password=SMTP_PASS,
+        hostname=os.getenv("SMTP_HOST"),
+        port=int(os.getenv("SMTP_PORT", 587)),
+        username=os.getenv("SMTP_USER"),
+        password=os.getenv("SMTP_PASS"),
         start_tls=True,
+        timeout=10,
     )

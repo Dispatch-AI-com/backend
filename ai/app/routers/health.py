@@ -8,6 +8,6 @@ router = APIRouter(
 )
 
 
-@router.get("/ping")
+@router.get("/ping", operation_id="health_ping")
 async def ping():
     return {"message": "pong！"}

@@ -1,10 +1,9 @@
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi_mcp.server import FastApiMCP
+from app.routers import routers as all_routers
 
-from .routers import health
-from .routers import ai
-from .routers import email
-app = FastAPI()
+app = FastAPI() 
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,10 +14,13 @@ app.add_middleware(
 )
 
 api_router = APIRouter(prefix="/api")
-
-
-api_router.include_router(health.router)
-api_router.include_router(ai.router)
-api_router.include_router(email.router)
+for r in all_routers:
+    api_router.include_router(r)
 
 app.include_router(api_router)
+
+mcp = FastApiMCP(
+    app,        
+    name="Dispatch AI MCP"
+)
+mcp.mount()
