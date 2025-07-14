@@ -1,5 +1,5 @@
 from typing import Dict, Any, List
-from services.llm import llm_service
+from services.chat_handler import chat_handler
 
 
 def create_summary_prompt(conversation_text: str, service_info: dict) -> str:
@@ -53,7 +53,7 @@ class SummaryService:
         prompt = create_summary_prompt(conversation_text, enhanced_service_info)
 
         # Use LLM service to generate summary
-        summary_response = await llm_service.chat(prompt)
+        summary_response = await chat_handler.chat(prompt)
         
         # Try to parse JSON response, fallback to structured format
         try:

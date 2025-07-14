@@ -6,7 +6,7 @@ from config import get_settings
 settings = get_settings()
 
 
-class LLMService:
+class ChatHandler:
     def __init__(self):
         if settings.llm_provider == "openai":
             self.client = AsyncOpenAI(api_key=settings.openai_api_key)
@@ -43,4 +43,4 @@ class LLMService:
 
 
 
-llm_service = LLMService()
+chat_handler = ChatHandler()

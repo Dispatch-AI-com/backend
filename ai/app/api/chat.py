@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from datetime import datetime
 import time
 from models.chat import ChatRequest, ChatResponse
-from services.llm import llm_service
+from services.chat_handler import chat_handler
 
 router = APIRouter(prefix="/ai", tags=["chat"])
 
@@ -12,7 +12,7 @@ async def chat(request: ChatRequest):
     try:
         start_time = time.time()
 
-        response_text = await llm_service.chat(request.message)
+        response_text = await chat_handler.chat(request.message)
 
         duration = int((time.time() - start_time) * 1000)
 
