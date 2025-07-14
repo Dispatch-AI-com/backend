@@ -1,6 +1,5 @@
 """
-åwB - (åwŒ…©Ÿı
+Utils Package - Utilities and Helper Functions
 
-+Ğ:Í!ŒÁhI(åw
+Contains validators, prompts, and other utility functions.
 """
-# ïå(ÙÌû (åw„üeİ:z©P!WìËüe

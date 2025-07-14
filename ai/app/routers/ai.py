@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from ..models import Message, CallSkeleton
 from ..infrastructure.redis_client import get_call_skeleton
-from ..domain.chatr2v3 import CustomerServiceLangGraph
+from ..services.chatr2v3 import CustomerServiceLangGraph
 from datetime import datetime
 
 router = APIRouter(
