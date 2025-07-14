@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, Any
 from models.call import CallRequest, CallSummary, CallStatus
 from services.llm import llm_service
+from services.call_summary import summary_service
 
 
 class CallHandler:
@@ -51,7 +52,7 @@ class CallHandler:
             ]
         )
 
-        summary_result = await llm_service.summarize_conversation(conversation_text)
+        summary_result = await summary_service.generate_summary(call_id, call_data["conversation"], {})
 
         duration = (datetime.now() - call_data["start_time"]).seconds
 
