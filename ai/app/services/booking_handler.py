@@ -2,7 +2,7 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 from typing import Dict, Any
 from models.booking import BookingRequest, BookingResponse, BookingStatus
-from services.chat_handler import chat_handler
+from services.llm_service import llm_service
 
 
 # TODO: WORK IN PROGRESS
@@ -44,7 +44,7 @@ class BookingHandler:
         # Use LLM to generate confirmation message
         confirmation_prompt = f"Generate a professional booking confirmation message for customer {request.customer_name} for service {request.service_type} on {scheduled_date.strftime('%Y-%m-%d %H:%M')}"
 
-        confirmation_message = await chat_handler.chat(confirmation_prompt)
+        confirmation_message = await llm_service.generate_response(confirmation_prompt)
 
         booking_data = {
             "customer_name": request.customer_name,

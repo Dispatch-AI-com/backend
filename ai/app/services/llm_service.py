@@ -5,14 +5,14 @@ from config import get_settings
 settings = get_settings()
 
 
-class ChatHandler:
+class LLMService:
     def __init__(self):
         if settings.llm_provider == "openai":
             self.client = AsyncOpenAI(api_key=settings.openai_api_key)
         else:
             self.client = None
 
-    async def chat(self, message: str, context: Optional[str] = None) -> str:
+    async def generate_response(self, message: str, context: Optional[str] = None) -> str:
         if settings.llm_provider == "mock":
             return f"Mock response to: {message}"
 
@@ -42,4 +42,4 @@ class ChatHandler:
 
 
 
-chat_handler = ChatHandler()
+llm_service = LLMService()

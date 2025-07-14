@@ -2,7 +2,7 @@ from uuid import uuid4
 from datetime import datetime
 from typing import Dict, Any
 from models.call import CallRequest, CallSummary, CallStatus
-from services.chat_handler import chat_handler
+from services.llm_service import llm_service
 from services.call_summary import summary_service
 
 
@@ -32,7 +32,7 @@ class CallHandler:
 
         # Use LLM to process message
         context = f"Customer call for {call_data.get('purpose', 'general inquiry')}"
-        response = await chat_handler.chat(message, context)
+        response = await llm_service.generate_response(message, context)
 
         call_data["conversation"].append({"ai": response, "timestamp": datetime.now()})
         return response
