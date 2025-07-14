@@ -1,8 +1,8 @@
 from uuid import uuid4
 from datetime import datetime, timedelta
 from typing import Dict, Any
-from ..models.booking import BookingRequest, BookingResponse, BookingStatus
-from .llm import llm_service
+from models.booking import BookingRequest, BookingResponse, BookingStatus
+from services.llm import llm_service
 
 
 # TODO: WORK IN PROGRESS

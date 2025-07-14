@@ -1,7 +1,7 @@
 from openai import AsyncOpenAI
 import json
 from typing import Optional
-from ..config import get_settings
+from config import get_settings
 
 settings = get_settings()
 

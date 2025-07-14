@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from ..models.booking import BookingRequest, BookingResponse
-from ..services.booking_handler import booking_handler
+from models.booking import BookingRequest, BookingResponse
+from services.booking_handler import booking_handler
 
 router = APIRouter(prefix="/booking", tags=["booking"])
 

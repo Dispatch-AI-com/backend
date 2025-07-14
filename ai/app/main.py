@@ -1,7 +1,15 @@
+import sys
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .config import get_settings
-from .api import health, chat, call, booking, summary
+
+# Add the app directory to Python path for absolute imports
+app_dir = Path(__file__).parent
+sys.path.insert(0, str(app_dir))
+
+from config import get_settings  # noqa: E402
+from api import health, chat, call, booking, summary  # noqa: E402
 
 settings = get_settings()
 

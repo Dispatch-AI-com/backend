@@ -1,8 +1,8 @@
 from uuid import uuid4
 from datetime import datetime
 from typing import Dict, Any
-from ..models.call import CallRequest, CallSummary, CallStatus
-from .llm import llm_service
+from models.call import CallRequest, CallSummary, CallStatus
+from services.llm import llm_service
 
 
 class CallHandler:

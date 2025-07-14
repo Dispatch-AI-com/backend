@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
-from ..models.call import CallRequest, CallSummary
-from ..services.call_handler import call_handler
+from models.call import CallRequest, CallSummary
+from services.call_handler import call_handler
 
 router = APIRouter(prefix="/call", tags=["call"])
 

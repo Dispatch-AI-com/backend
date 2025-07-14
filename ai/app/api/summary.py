@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from ..services.call_summary import summary_service
+from services.call_summary import summary_service
 
 router = APIRouter(prefix="/ai", tags=["ai-summary"])
 
