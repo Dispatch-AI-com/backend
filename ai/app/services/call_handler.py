@@ -44,14 +44,6 @@ class CallHandler:
         call_data = self.active_calls[call_id]
         call_data["status"] = CallStatus.COMPLETED
 
-        # Generate conversation summary
-        conversation_text = "\n".join(
-            [
-                f"User: {msg['user']}" if "user" in msg else f"AI: {msg['ai']}"
-                for msg in call_data["conversation"]
-            ]
-        )
-
         summary_result = await summary_service.generate_summary(call_id, call_data["conversation"], {})
 
         duration = (datetime.now() - call_data["start_time"]).seconds

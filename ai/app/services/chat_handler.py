@@ -1,5 +1,4 @@
 from openai import AsyncOpenAI
-import json
 from typing import Optional
 from config import get_settings
 
