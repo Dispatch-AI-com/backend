@@ -205,4 +205,46 @@ export class CompanyService {
       );
     }
   }
+
+  /**
+   * Find company by its unique Twilio phone number
+   * @param twilioPhoneNumber The Twilio number assigned to the company (exact match)
+   * @throws NotFoundException when no company is found
+   * @throws BadRequestException when input is invalid or other db errors occur
+   */
+  async findByTwilioPhoneNumber(twilioPhoneNumber: string): Promise<Company> {
+    try {
+      if (!twilioPhoneNumber || twilioPhoneNumber.trim() === '') {
+        throw new BadRequestException('Twilio phone number is required');
+      }
+
+      // validate E.164 style phone number (e.g. +61412345678)
+      if (typeof twilioPhoneNumber !== 'string' || !/^\+?\d{6,15}$/.test(twilioPhoneNumber)) {
+        throw new BadRequestException('Invalid Twilio phone number format');
+      }
+
+      const company = await this.companyModel
+        .findOne({ twilioPhoneNumber: { $eq: twilioPhoneNumber } })
+        .populate('user')
+        .exec();
+
+      if (!company) {
+        throw new NotFoundException(
+          `Company with Twilio number ${twilioPhoneNumber} not found`,
+        );
+      }
+
+      return company;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException(
+        'Failed to fetch company by Twilio number: ' + (error as Error).message,
+      );
+    }
+  }
 }
