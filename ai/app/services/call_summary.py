@@ -53,9 +53,22 @@ class SummaryService:
         prompt = create_summary_prompt(conversation_text, enhanced_service_info)
 
         # Use LLM service to generate summary
-        summary_result = await llm_service.generate_summary_with_prompt(prompt)
-
-        return summary_result
+        summary_response = await llm_service.chat(prompt)
+        
+        # Try to parse JSON response, fallback to structured format
+        try:
+            import json
+            result = json.loads(summary_response)
+            # Convert keyPoints to key_points for consistency with existing code
+            if "keyPoints" in result and "key_points" not in result:
+                result["key_points"] = result["keyPoints"]
+            return result
+        except json.JSONDecodeError:
+            # Fallback to basic structure if JSON parsing fails
+            return {
+                "summary": summary_response,
+                "key_points": ["Key point extracted from AI response"],
+            }
 
 
 summary_service = SummaryService()
