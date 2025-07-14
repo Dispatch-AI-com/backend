@@ -1,7 +1,7 @@
 [project]
 name = "uv-fastapi-example"
 version = "0.1.0"
-description = "AI Backend Service with DDD Architecture"
+description = "AI Service"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
