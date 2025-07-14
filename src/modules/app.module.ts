@@ -23,6 +23,8 @@ import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 
+import { OnboardingModule } from './onboarding/onboarding.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -50,6 +52,7 @@ import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chu
     SubscriptionModule,
     StripeModule,
     CompanyModule,
+    OnboardingModule,
   ],
 })
 export class AppModule {}

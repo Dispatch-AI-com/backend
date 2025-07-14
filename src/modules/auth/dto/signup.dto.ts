@@ -56,4 +56,13 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(EUserRole, { message: 'Invalid role' })
   role?: EUserRole;
+
+  @ApiPropertyOptional({
+    description: 'User job position/title',
+    example: 'Web Developer',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Position must be a string' })
+  position?: string;
 }

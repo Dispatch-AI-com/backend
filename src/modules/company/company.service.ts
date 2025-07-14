@@ -115,7 +115,7 @@ export class CompanyService {
       ) {
         const existingCompany = await this.companyModel
           .findOne({
-            email: { $eq: updateCompanyDto.email },
+            email: updateCompanyDto.email,
             _id: { $ne: new Types.ObjectId(id) },
           })
           .exec();
@@ -127,15 +127,17 @@ export class CompanyService {
         }
       }
 
-      const updateQuery = Object.entries(updateCompanyDto).reduce(
-        (acc, [key, value]) => ({ ...acc, [key]: { $eq: value } }),
-        {},
-      );
+      const updateFields = Object.entries(updateCompanyDto).reduce<
+        Record<string, unknown>
+      >((acc, [key, value]) => {
+        if (value !== undefined && value !== '') acc[key] = value;
+        return acc;
+      }, {});
 
       const updatedCompany = await this.companyModel
         .findByIdAndUpdate(
           new Types.ObjectId(id),
-          { $set: updateQuery },
+          { $set: updateFields },
           {
             new: true,
             runValidators: true,
