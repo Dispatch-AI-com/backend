@@ -22,7 +22,11 @@ export interface Company {
   id: string;
   name: string;
   email: string;
+<<<<<<< HEAD
   calendar_access_token?: string;
+=======
+  calendar_access_token: string;
+>>>>>>> origin/twilio-ai-v4
   description?: string;
 }
 

@@ -10,8 +10,11 @@ import { InjectConnection } from '@nestjs/mongoose';
 import Redis from 'ioredis';
 import { Connection, STATES as ConnectionStates } from 'mongoose';
 import { firstValueFrom } from 'rxjs';
+<<<<<<< HEAD
 
 import { REDIS_CLIENT } from '@/lib/redis/redis.module';
+=======
+>>>>>>> origin/twilio-ai-v4
 
 @Injectable()
 export class HealthService implements OnModuleInit, OnModuleDestroy {
@@ -21,7 +24,10 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
   constructor(
     @InjectConnection() private readonly mongoConnection: Connection,
     private readonly http: HttpService,
+<<<<<<< HEAD
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
+=======
+>>>>>>> origin/twilio-ai-v4
   ) {}
 
   onModuleInit(): void {
@@ -57,6 +63,7 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     redis: boolean;
     timestamp: Date;
   } {
+<<<<<<< HEAD
     const mongoOK =
       this.mongoConnection.readyState === ConnectionStates.connected;
     const redisOK = this.redis.status === 'ready';
@@ -64,6 +71,13 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
       status: mongoOK && redisOK ? 'ok' : 'error',
       mongo: mongoOK,
       redis: redisOK,
+=======
+    const ok = this.mongoConnection.readyState === ConnectionStates.connected;
+    return {
+      status: ok ? 'ok' : 'error',
+      database: 'MongoDB',
+      connected: ok,
+>>>>>>> origin/twilio-ai-v4
       timestamp: new Date(),
     };
   }

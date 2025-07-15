@@ -21,9 +21,13 @@ import { StripeModule } from '@/modules/stripe/stripe.module';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
+<<<<<<< HEAD
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 
 import { OnboardingModule } from './onboarding/onboarding.module';
+=======
+import { TranscriptChunkModule } from '@/modules/transcript_chunk/transcript_chunk.module';
+>>>>>>> origin/twilio-ai-v4
 
 @Module({
   imports: [

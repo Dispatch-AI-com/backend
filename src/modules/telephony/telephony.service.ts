@@ -2,24 +2,38 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom, retry, timeout } from 'rxjs';
 
+<<<<<<< HEAD
 import { CallLogStatus } from '@/common/constants/calllog.constant';
+=======
+>>>>>>> origin/twilio-ai-v4
 import { SYSTEM_RESPONSES } from '@/common/constants/system-responses.constant';
 import {
   VoiceGatherBody,
   VoiceStatusBody,
+<<<<<<< HEAD
 } from '@/common/interfaces/twilio-voice-webhook.d';
 import { winstonLogger } from '@/logger/winston.logger';
 import { CalllogService } from '@/modules/calllog/calllog.service';
+=======
+} from '@/common/interfaces/twilio-voice-webhook';
+import { winstonLogger } from '@/logger/winston.logger';
+>>>>>>> origin/twilio-ai-v4
 import {
   buildSayResponse,
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
+<<<<<<< HEAD
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
 import { CallSkeleton, Message } from './types/redis-session';
+=======
+
+import { SessionHelper } from './helpers/session.helper';
+import { SessionRepository } from './repositories/session.repository';
+>>>>>>> origin/twilio-ai-v4
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
 const AI_TIMEOUT_MS = 5_000;
@@ -31,6 +45,7 @@ export class TelephonyService {
     private readonly sessions: SessionRepository,
     private readonly http: HttpService,
     private readonly sessionHelper: SessionHelper,
+<<<<<<< HEAD
     private readonly callLogService: CalllogService,
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
@@ -38,6 +53,11 @@ export class TelephonyService {
   async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
     const session = await this.sessionHelper.ensureSession(CallSid);
     //把redis sessinon里面的company services填满
+=======
+  ) {}
+  async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
+    const session = await this.sessionHelper.ensureSession(CallSid);
+>>>>>>> origin/twilio-ai-v4
 
     const { services, company } = session;
     const welcome = this.buildWelcomeMessage(company.name, services);
@@ -78,6 +98,7 @@ export class TelephonyService {
       winstonLogger.log(
         `[TelephonyService][callSid=${CallSid}][handleStatus] status=${CallStatus},timestamp=${Timestamp},callDuration=${CallDuration},caller=${Caller}`,
       );
+<<<<<<< HEAD
 
       //let serviceupload = false;
       //1，如果confirmservice为true，上传service拿到上传service的结果，成功或者失败，失败原因，或者不需要上传
@@ -99,6 +120,11 @@ export class TelephonyService {
           { error: (error as Error).message, stack: (error as Error).stack },
         );
       }
+=======
+      //todo:把这个session里面的hisoty作为calllog,caller,timestamp,callDuration,上传到数据库：mark
+      //todo:如果confirmservice为true，则需要上传servicebooked的数据库：tim
+      await this.sessions.delete(CallSid);
+>>>>>>> origin/twilio-ai-v4
     }
     winstonLogger.log(
       `[TelephonyService][callSid=${CallSid}][handleStatus] status=${CallStatus}`,
@@ -122,9 +148,13 @@ export class TelephonyService {
   private async getAIReply(callSid: string, message: string): Promise<string> {
     const { data } = await firstValueFrom(
       this.http
+<<<<<<< HEAD
         .post<{
           replyText: string;
         }>('/ai/reply', { callSid, message })
+=======
+        .post<{ replyText: string }>('/ai/reply', { callSid, message })
+>>>>>>> origin/twilio-ai-v4
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
     return data.replyText;
@@ -140,6 +170,7 @@ export class TelephonyService {
     }
     return 'Welcome! How can I help you today?';
   }
+<<<<<<< HEAD
 
   private async processCallCompletion(
     callSid: string,
@@ -291,4 +322,6 @@ export class TelephonyService {
     );
     return data;
   }
+=======
+>>>>>>> origin/twilio-ai-v4
 }
