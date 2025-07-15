@@ -1,10 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   NotFoundException,
   Param,
+  Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -37,8 +40,10 @@ export class ServiceBookingController {
     type: [ServiceBooking],
     description: 'Return all service bookings.',
   })
-  async findAllBookings(): Promise<ServiceBooking[]> {
-    return this.bookingService.findAll();
+  async findAllBookings(
+    @Query('userId') userId?: string,
+  ): Promise<ServiceBooking[]> {
+    return this.bookingService.findAll(userId);
   }
 
   @Get(':id')
@@ -55,5 +60,34 @@ export class ServiceBookingController {
       throw new NotFoundException('Booking not found');
     }
     return booking;
+  }
+
+  @Delete(':id')
+  @ApiResponse({
+    status: 200,
+    schema: { example: { message: 'Booking deleted successfully' } },
+    description: 'Booking deleted',
+  })
+  @ApiResponse({ status: 404, description: 'Booking not found.' })
+  async deleteBooking(@Param('id') id: string): Promise<{ message: string }> {
+    const result = await this.bookingService.deleteById(id);
+    if (!result) {
+      throw new NotFoundException('Booking not found');
+    }
+    return { message: 'Booking deleted successfully' };
+  }
+
+  @Patch(':id')
+  @ApiResponse({
+    status: 200,
+    type: ServiceBooking,
+    description: 'Updated booking',
+  })
+  @ApiResponse({ status: 404, description: 'Booking not found.' })
+  async updateBooking(
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateServiceBookingDto>,
+  ): Promise<ServiceBooking | null> {
+    return this.bookingService.updateById(id, dto);
   }
 }
