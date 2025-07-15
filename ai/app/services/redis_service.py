@@ -1,15 +1,15 @@
 import redis
 import json
-from ..models import CallSkeleton, Message
+from ..models.call import CallSkeleton, Message
 from typing import Optional, Dict, Any
 import os
 from datetime import datetime
 
-from ..core.config import settings
+from ..config import settings
 
-REDIS_HOST = settings.REDIS_HOST
-REDIS_PORT = settings.REDIS_PORT
-REDIS_DB = settings.REDIS_DB
+REDIS_HOST = settings.redis_host
+REDIS_PORT = settings.redis_port
+REDIS_DB = settings.redis_db
 
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
 
@@ -17,10 +17,10 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
     data = r.get(f"call:{call_sid}")
     if not data:
         raise ValueError("CallSkeleton not found")
-    return CallSkeleton.parse_raw(data)
+    return CallSkeleton.model_validate_json(data)
 
 def set_call_skeleton(call_sid: str, skeleton: CallSkeleton):
-    r.set(f"call:{call_sid}", skeleton.json())
+    r.set(f"call:{call_sid}", skeleton.model_dump_json())
 
 def get_call_skeleton_dict(call_sid: str) -> Dict[str, Any]:
     """获取CallSkeleton的字典格式"""

@@ -38,11 +38,7 @@ export class Company {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user!: User;
 
-<<<<<<< HEAD
-  @Prop({ unique: true })
-=======
   @Prop({ required: true, unique: true })
->>>>>>> origin/twilio-ai-v4
   twilioPhoneNumber!: string;
 }
 

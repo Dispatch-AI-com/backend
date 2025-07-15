@@ -9,7 +9,7 @@ app_dir = Path(__file__).parent
 sys.path.insert(0, str(app_dir))
 
 from config import get_settings  # noqa: E402
-from api import health, chat, call, booking, summary  # noqa: E402
+from api import health, chat, call, summary  # noqa: E402
 
 settings = get_settings()
 
@@ -32,7 +32,6 @@ app.add_middleware(
 app.include_router(health.router, prefix=settings.api_prefix)
 app.include_router(chat.router, prefix=settings.api_prefix)
 app.include_router(call.router, prefix=settings.api_prefix)
-app.include_router(booking.router, prefix=settings.api_prefix)
 app.include_router(summary.router, prefix=settings.api_prefix)
 
 

@@ -1,7 +1,8 @@
 """
-测试对话流程的完整功能
+测试 LLM 集成的对话流程
 """
-from .models import Message, CallSkeleton, Service, Company, UserState, UserInfo
+import asyncio
+from .models.call import Message, CallSkeleton, Service, Company, UserState, UserInfo
 from .dialog_manager import process_customer_message
 from datetime import datetime
 
@@ -30,9 +31,9 @@ def create_test_skeleton() -> CallSkeleton:
         createdAt=datetime.utcnow().isoformat() + "Z"
     )
 
-def test_conversation_flow():
-    """测试完整的对话流程"""
-    print("=== 开始测试对话流程 ===\n")
+async def test_llm_conversation():
+    """测试 LLM 集成的对话流程"""
+    print("=== 开始测试 LLM 集成对话流程 ===\n")
     
     skeleton = create_test_skeleton()
     
@@ -58,11 +59,11 @@ def test_conversation_flow():
             startedAt=datetime.utcnow().isoformat() + "Z"
         )
         
-        # 处理消息
-        ai_response, updated_skeleton = process_customer_message(skeleton, customer_msg)
+        # 处理消息（调用 LLM）
+        ai_response, updated_skeleton = await process_customer_message(skeleton, customer_msg)
         skeleton = updated_skeleton
         
-        print(f"AI: {ai_response.message}")
+        print(f"AI (LLM): {ai_response.message}")
         print(f"当前状态:")
         print(f"  - 姓名: {skeleton.user.userInfo.name or '未收集'}")
         print(f"  - 电话: {skeleton.user.userInfo.phone or '未收集'}")
@@ -83,4 +84,4 @@ def test_conversation_flow():
     print(f"  - 对话历史长度: {len(skeleton.history)}")
 
 if __name__ == "__main__":
-    test_conversation_flow() 
+    asyncio.run(test_llm_conversation()) 

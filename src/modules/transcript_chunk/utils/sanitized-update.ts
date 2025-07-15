@@ -16,7 +16,8 @@ export async function sanitizedUpdate(
   }
 
   const existing = await chunkModel.findById(id);
-  if (!existing) throw new NotFoundException('Transcript chunk not found');
+  if (existing === null)
+    throw new NotFoundException('Transcript chunk not found');
 
   // Only allow updating specific fields
   const sanitizedData: Partial<UpdateTranscriptChunkDto> = {};
@@ -28,10 +29,11 @@ export async function sanitizedUpdate(
     typeof dto.startAt === 'string' ||
     typeof dto.startAt === 'number'
   )
-    sanitizedData.startAt = new Date(dto.startAt);
+    sanitizedData.startAt = dto.startAt;
   const updated = await chunkModel.findByIdAndUpdate(id, sanitizedData, {
     new: true,
   });
-  if (!updated) throw new NotFoundException('Transcript chunk not found');
+  if (updated === null)
+    throw new NotFoundException('Transcript chunk not found');
   return updated;
 }

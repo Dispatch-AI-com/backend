@@ -17,7 +17,7 @@ import { sanitizedUpdate } from './utils/sanitized-update';
 @Injectable()
 export class TranscriptChunkService {
   constructor(
-    @InjectModel(TranscriptChunk.name)
+    @InjectModel('TranscriptChunk')
     private readonly chunkModel: Model<TranscriptChunkDocument>,
   ) {}
 
@@ -41,7 +41,7 @@ export class TranscriptChunkService {
         { startAt: { $lte: dto.startAt } },
       ],
     });
-    if (overlap) {
+    if (overlap !== null) {
       throw new BadRequestException('Time range overlaps with another chunk.');
     }
     return this.chunkModel.create(dto);
@@ -53,7 +53,8 @@ export class TranscriptChunkService {
 
   async findOne(id: string): Promise<TranscriptChunk> {
     const chunk = await this.chunkModel.findById(id);
-    if (!chunk) throw new NotFoundException('Transcript chunk not found');
+    if (chunk === null)
+      throw new NotFoundException('Transcript chunk not found');
     return chunk;
   }
 
@@ -66,7 +67,8 @@ export class TranscriptChunkService {
 
   async delete(id: string): Promise<TranscriptChunk> {
     const deleted = await this.chunkModel.findByIdAndDelete(id);
-    if (!deleted) throw new NotFoundException('Transcript chunk not found');
+    if (deleted === null)
+      throw new NotFoundException('Transcript chunk not found');
     return deleted;
   }
 

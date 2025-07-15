@@ -38,16 +38,12 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Database connection is healthy' })
   @ApiResponse({ status: 503, description: 'Database connection failed' })
   @Get('db')
-<<<<<<< HEAD
   checkDatabase(): {
     status: string;
     mongo: boolean;
     redis: boolean;
     timestamp: Date;
   } {
-=======
-  checkDatabase(): { status: string } {
->>>>>>> origin/twilio-ai-v4
     return this.healthService.checkDatabase();
   }
 

@@ -4,11 +4,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   VoiceGatherBody,
   VoiceStatusBody,
-<<<<<<< HEAD
-} from '@/common/interfaces/twilio-voice-webhook.d';
-=======
 } from '@/common/interfaces/twilio-voice-webhook';
->>>>>>> origin/twilio-ai-v4
 import { TelephonyService } from '@/modules/telephony/telephony.service';
 
 @ApiTags('telephony')
