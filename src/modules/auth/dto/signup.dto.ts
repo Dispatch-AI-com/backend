@@ -13,20 +13,12 @@ import { EUserRole } from '@/common/constants/user.constant';
 
 export class CreateUserDto {
   @ApiProperty({
-    description: 'First name',
-    example: 'John',
+    description: 'User name',
+    example: 'John Doe',
   })
-  @IsNotEmpty({ message: 'First name cannot be empty' })
-  @IsString({ message: 'First name must be a string' })
-  firstName!: string;
-
-  @ApiProperty({
-    description: 'Last name',
-    example: 'Doe',
-  })
-  @IsNotEmpty({ message: 'Last name cannot be empty' })
-  @IsString({ message: 'Last name must be a string' })
-  lastName!: string;
+  @IsNotEmpty({ message: 'Name cannot be empty' })
+  @IsString({ message: 'Name must be a string' })
+  name!: string;
 
   @ApiProperty({
     description: 'User email',
@@ -64,4 +56,13 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(EUserRole, { message: 'Invalid role' })
   role?: EUserRole;
+
+  @ApiPropertyOptional({
+    description: 'User job position/title',
+    example: 'Web Developer',
+    required: false,
+  })
+  @IsOptional()
+  @IsString({ message: 'Position must be a string' })
+  position?: string;
 }

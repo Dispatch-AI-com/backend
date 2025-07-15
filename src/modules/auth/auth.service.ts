@@ -65,9 +65,10 @@ export class AuthService {
       throw new ConflictException('User already exists');
     }
     const hashedPassword = await bcrypt.hash(userData.password, SALT_ROUNDS);
+    const nameParts = userData.name ? userData.name.split(' ') : [''];
     const secureUserData = {
-      firstName: userData.firstName,
-      lastName: userData.lastName,
+      firstName: nameParts[0] || '',
+      lastName: nameParts.slice(1).join(' ') || '',
       email: userData.email,
       password: hashedPassword,
       role: userData.role ?? EUserRole.user,
