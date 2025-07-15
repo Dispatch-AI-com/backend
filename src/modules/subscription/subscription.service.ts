@@ -322,4 +322,15 @@ export class SubscriptionService {
       { status: 'cancelled' },
     );
   }
+
+  async deleteById(id: string): Promise<void> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid ObjectId format');
+    }
+
+    const deleted = await this.subscriptionModel.findByIdAndDelete(id).exec();
+    if (!deleted) {
+      throw new NotFoundException('Subscription not found');
+    }
+  }
 }

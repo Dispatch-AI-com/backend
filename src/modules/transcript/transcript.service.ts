@@ -103,8 +103,15 @@ export class TranscriptService {
       throw new BadRequestException('Invalid calllogId');
     }
 
+    // First find the CallLog by its ID
+    const calllog = await this.callLogModel.findById(calllogId);
+    if (!calllog) {
+      throw new NotFoundException(`CallLog not found for id: ${calllogId}`);
+    }
+
+    // Then find the Transcript using the CallLog's callSid
     const transcript = await this.transcriptModel.findOne({
-      calllogId: new Types.ObjectId(calllogId),
+      callSid: calllog.callSid,
     });
 
     if (!transcript) {
@@ -121,8 +128,15 @@ export class TranscriptService {
       throw new BadRequestException('Invalid calllog ID');
     }
 
+    // First find the CallLog by its ID
+    const calllog = await this.callLogModel.findById(calllogId);
+    if (!calllog) {
+      throw new NotFoundException(`CallLog not found for id: ${calllogId}`);
+    }
+
+    // Then find the Transcript using the CallLog's callSid
     const transcript = await this.transcriptModel.findOne({
-      calllogId: new Types.ObjectId(calllogId),
+      callSid: calllog.callSid,
     });
     if (!transcript) {
       throw new NotFoundException(

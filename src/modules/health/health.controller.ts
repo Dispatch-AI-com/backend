@@ -38,7 +38,12 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Database connection is healthy' })
   @ApiResponse({ status: 503, description: 'Database connection failed' })
   @Get('db')
-  checkDatabase(): { status: string } {
+  checkDatabase(): {
+    status: string;
+    mongo: boolean;
+    redis: boolean;
+    timestamp: Date;
+  } {
     return this.healthService.checkDatabase();
   }
 
