@@ -24,14 +24,6 @@ from utils.prompts.customer_info_prompts import (
     get_service_extraction_prompt,
     get_time_extraction_prompt
 )
-from utils.validators.customer_validators import (
-    validate_name,
-    validate_phone,
-    validate_address,
-    validate_email,
-    validate_service,
-    validate_time
-)
 
 class CustomerServiceState(TypedDict):
     name: Optional[str]
