@@ -2,7 +2,7 @@ import re
 from ..models.call import Message, CallSkeleton, UserInfo, Service
 from datetime import datetime, timezone
 from typing import Tuple, Optional
-from .llm_service import chain
+from .llm_service import llm_service
 
 def extract_name_from_message(message: str) -> str:
     """Extract customer name from message"""
@@ -133,7 +133,7 @@ async def process_customer_message(skeleton: CallSkeleton, customer_msg: Message
     
     # 3. Call LLM to generate response
     try:
-        llm_response = await chain.ainvoke({"user_input": llm_prompt})
+        llm_response = await llm_service.generate_response(llm_prompt)
         ai_text = llm_response.strip()
     except Exception as e:
         # If LLM call fails, use fallback response
