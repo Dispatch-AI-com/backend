@@ -1,5 +1,5 @@
 import re
-from ..models.call import Message, CallSkeleton, UserInfo, Service
+from models.call import Message, CallSkeleton, UserInfo, Service
 from datetime import datetime, timezone
 from typing import Tuple, Optional
 from .llm_service import llm_service

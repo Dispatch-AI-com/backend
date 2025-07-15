@@ -31,7 +31,7 @@ from .retrieve.customer_info_extractors import (
     extract_time_from_conversation
 )
 
-from ..utils.validators.customer_validators import (
+from utils.validators.customer_validators import (
     validate_name,
     validate_phone,
     validate_address,
@@ -47,8 +47,8 @@ from .redis_service import (
     update_booking_status
 )
 
-from ..models.call import Message
-from ..config import settings
+from models.call import Message
+from config import settings
 
 
 class CustomerServiceState(TypedDict):
