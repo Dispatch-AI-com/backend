@@ -8,9 +8,6 @@ export class ServiceBooking {
   @Prop({ required: true })
   serviceId!: string;
 
-  @Prop({ required: true })
-  companyId!: string;
-
   @Prop({
     type: {
       name: { type: String },

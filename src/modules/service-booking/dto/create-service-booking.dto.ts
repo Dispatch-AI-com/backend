@@ -45,10 +45,6 @@ export class CreateServiceBookingDto {
   @IsNotEmpty()
   serviceId!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  companyId!: string;
-
   @ValidateNested()
   @Type(() => ClientDto)
   client!: ClientDto;
