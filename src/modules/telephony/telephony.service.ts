@@ -10,6 +10,7 @@ import {
 } from '@/common/interfaces/twilio-voice-webhook';
 import { winstonLogger } from '@/logger/winston.logger';
 import { CalllogService } from '@/modules/calllog/calllog.service';
+import { CompanyService } from '@/modules/company/company.service';
 import { ServiceService } from '@/modules/service/service.service';
 import {
   buildSayResponse,
@@ -39,9 +40,10 @@ export class TelephonyService {
     private readonly transcriptChunkService: TranscriptChunkService,
     private readonly userService: UserService,
     private readonly serviceService: ServiceService,
+    private readonly companyService: CompanyService,
   ) {}
   async handleVoice({ CallSid, To }: VoiceGatherBody): Promise<string> {
-    const session = await this.sessionHelper.ensureSession(CallSid);
+    await this.sessionHelper.ensureSession(CallSid);
     const user = await this.userService.findByTwilioPhoneNumber(To);
     if (!user) {
       return this.speakAndLog(CallSid, 'User not found', NextAction.GATHER);
@@ -58,8 +60,12 @@ export class TelephonyService {
 
     await this.sessionHelper.fillCompanyServices(CallSid, telephonyServices);
 
-    const { company } = session;
-    const welcome = this.buildWelcomeMessage(company.name, services);
+    const company = await this.companyService.findByUserId(user._id as string);
+
+    const welcome = this.buildWelcomeMessage(
+      company.businessName,
+      telephonyServices,
+    );
 
     return this.speakAndLog(CallSid, welcome, NextAction.GATHER);
   }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { CalllogModule } from '@/modules/calllog/calllog.module';
+import { CompanyModule } from '@/modules/company/company.module';
 import { ServiceModule } from '@/modules/service/service.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
@@ -18,6 +19,7 @@ import { TelephonyService } from './telephony.service';
     TranscriptChunkModule,
     UserModule,
     ServiceModule,
+    CompanyModule,
   ],
   controllers: [TelephonyController],
   providers: [TelephonyService, SessionRepository, SessionHelper],
