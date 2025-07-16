@@ -88,4 +88,10 @@ export class UserService {
     if (!deleted) throw new NotFoundException(`User with id ${id} not found`);
     return deleted;
   }
+  async findByTwilioPhoneNumber(
+    twilioPhoneNumber: string,
+  ): Promise<User | null> {
+    const user = await this.userModel.findOne({ twilioPhoneNumber }).exec();
+    return user;
+  }
 }

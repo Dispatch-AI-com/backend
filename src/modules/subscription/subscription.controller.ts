@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,9 +9,14 @@ import {
   Patch,
   Post,
   Query,
-  Delete,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags, ApiParam  } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionDocument } from './schema/subscription.schema';
@@ -112,7 +118,10 @@ export class SubscriptionController {
   @Delete('id/:id')
   @ApiOperation({ summary: 'Delete subscription by MongoDB _id' })
   @ApiParam({ name: 'id', description: 'MongoDB ObjectId of the subscription' })
-  @ApiResponse({ status: 200, description: 'Subscription deleted successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription deleted successfully',
+  })
   @ApiResponse({ status: 404, description: 'Subscription not found' })
   async deleteById(@Param('id') id: string): Promise<{ message: string }> {
     await this.subscriptionService.deleteById(id);

@@ -63,4 +63,7 @@ export class ServiceService {
       throw new NotFoundException('Service not found');
     }
   }
+  async findAllByUserId(userId: string): Promise<Service[]> {
+    return this.serviceModel.find({ userId }).exec();
+  }
 }

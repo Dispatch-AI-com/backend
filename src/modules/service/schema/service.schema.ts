@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument } from 'mongoose';
+import { HydratedDocument, Types } from 'mongoose';
 
 export type ServiceDocument = HydratedDocument<Service>;
 
@@ -23,9 +23,6 @@ const NotificationSchema = SchemaFactory.createForClass(Notification);
   timestamps: true,
 })
 export class Service {
-  @Prop({ required: true })
-  companyId!: string;
-
   @Prop({ required: true, trim: true, minlength: 1 })
   name!: string;
 
@@ -46,6 +43,8 @@ export class Service {
 
   @Prop({ required: true })
   userId!: string;
+
+  _id!: Types.ObjectId;
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Service);
