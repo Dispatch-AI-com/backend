@@ -32,11 +32,19 @@ interface Service {
 }
 
 interface Company {
-  name: string;
+  businessName: string;
   email: string;
-  phone: string;
-  address: string;
-  user: string;  // 改为 user，表示 ObjectId
+  abn: string;
+  number: string;
+  address: {
+    unitAptPOBox?: string;
+    streetAddress: string;
+    suburb: string;
+    state: string;
+    postcode: string;
+  };
+  user: string;  // ObjectId reference to User
+  twilioPhoneNumber: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,11 +72,19 @@ const serviceSchema = new Schema({
 }, { timestamps: true });
 
 const companySchema = new Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true },
-  phone: String,
-  address: String,
-  user: { type: String, required: true }  // 改为 user
+  businessName: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  abn: { type: String, required: true, unique: true },
+  number: { type: String, required: true },
+  address: {
+    unitAptPOBox: { type: String },
+    streetAddress: { type: String, required: true },
+    suburb: { type: String, required: true },
+    state: { type: String, required: true },
+    postcode: { type: String, required: true }
+  },
+  user: { type: String, required: true },
+  twilioPhoneNumber: { type: String, required: true, unique: true }
 }, { timestamps: true });
 
 async function seedTelephonyTestData() {
@@ -143,16 +159,23 @@ async function seedTelephonyTestData() {
     const testCompany = await CompanyModel.findOneAndUpdate(
       { user: testUser._id },
       {
-        name: 'ABC Cleaning Services',
+        businessName: 'ABC Cleaning Services',
         email: 'info@abccleaning.com',
-        phone: '+1-555-987-6543',
-        address: '123 Main Street, Sydney NSW 2000',
-        user: testUser._id
+        abn: '12345678901',
+        number: '+15559876543',
+        address: {
+          streetAddress: '123 Main Street',
+          suburb: 'Sydney',
+          state: 'NSW',
+          postcode: '2000'
+        },
+        user: testUser._id,
+        twilioPhoneNumber: '+19787235266'
       },
       { upsert: true, new: true }
     );
     
-    console.log('🏢 Created test company:', testCompany.name);
+    console.log('🏢 Created test company:', testCompany.businessName);
     
     // 创建服务列表
     const services = [
@@ -209,9 +232,9 @@ async function seedTelephonyTestData() {
       })),
       company: {
         id: testCompany._id.toString(),
-        name: testCompany.name,
+        name: testCompany.businessName,
         email: testCompany.email,
-        phone: testCompany.phone
+        phone: testCompany.number
       },
       user: {
         service: null,
