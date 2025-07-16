@@ -36,7 +36,7 @@ interface Company {
   email: string;
   phone: string;
   address: string;
-  userId: string;
+  user: string;  // 改为 user，表示 ObjectId
   createdAt: Date;
   updatedAt: Date;
 }
@@ -68,7 +68,7 @@ const companySchema = new Schema({
   email: { type: String, required: true },
   phone: String,
   address: String,
-  userId: { type: String, required: true }
+  user: { type: String, required: true }  // 改为 user
 }, { timestamps: true });
 
 async function seedTelephonyTestData() {
@@ -106,7 +106,7 @@ async function seedTelephonyTestData() {
       
       // 删除该用户的现有服务和公司数据
       await ServiceModel.deleteMany({ userId: existingUser._id.toString() });
-      await CompanyModel.deleteMany({ userId: existingUser._id.toString() });
+      await CompanyModel.deleteMany({ user: existingUser._id });  // 使用 ObjectId
       console.log('🧹 Cleared existing services and company data for test user');
       
       const testUser = existingUser;
@@ -140,13 +140,17 @@ async function seedTelephonyTestData() {
     }
     
     // 创建公司信息
-    const testCompany = await CompanyModel.create({
-      name: 'ABC Cleaning Services',
-      email: 'info@abccleaning.com',
-      phone: '+1-555-987-6543',
-      address: '123 Main Street, Sydney NSW 2000',
-      userId: testUser._id.toString()
-    });
+    const testCompany = await CompanyModel.findOneAndUpdate(
+      { user: testUser._id },
+      {
+        name: 'ABC Cleaning Services',
+        email: 'info@abccleaning.com',
+        phone: '+1-555-987-6543',
+        address: '123 Main Street, Sydney NSW 2000',
+        user: testUser._id
+      },
+      { upsert: true, new: true }
+    );
     
     console.log('🏢 Created test company:', testCompany.name);
     
