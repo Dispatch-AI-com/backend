@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
+import { Company } from '@/modules/company/schema/company.schema';
+
 import { SessionRepository } from '../repositories/session.repository';
-import { CallSkeleton, Service } from '../types/redis-session';
+import {
+  CallSkeleton,
+  Company as TelephonyCompany,
+  Service as TelephonyService,
+} from '../types/redis-session';
 
 @Injectable()
 export class SessionHelper {
@@ -15,7 +21,7 @@ export class SessionHelper {
 
   async fillCompanyServices(
     callSid: string,
-    services: Service[],
+    services: TelephonyService[],
   ): Promise<void> {
     const session = await this.sessions.load(callSid);
     if (!session) {
@@ -30,6 +36,16 @@ export class SessionHelper {
   async appendAiMessage(callSid: string, message: string): Promise<void> {
     await this.appendMessage(callSid, 'AI', message);
   }
+
+  async fillCompany(callSid: string, company: Company): Promise<void> {
+    const telephonyCompany: TelephonyCompany = {
+      id: company._id.toString(),
+      name: company.businessName,
+      email: company.email,
+    };
+    await this.sessions.appendCompany(callSid, telephonyCompany);
+  }
+
   private async appendMessage(
     callSid: string,
     speaker: 'AI' | 'customer',

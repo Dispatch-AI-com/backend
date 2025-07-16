@@ -23,7 +23,6 @@ export interface Company {
   name: string;
   email: string;
   calendar_access_token?: string;
-  description?: string;
 }
 
 export interface CallSkeleton {

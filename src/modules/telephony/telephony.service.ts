@@ -22,8 +22,7 @@ import { UserService } from '@/modules/user/user.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
-import { CallSkeleton, Message } from './types/redis-session';
-import { Service } from './types/redis-session';
+import { CallSkeleton, Message, Service } from './types/redis-session';
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
 const AI_TIMEOUT_MS = 5_000;
@@ -61,6 +60,7 @@ export class TelephonyService {
     await this.sessionHelper.fillCompanyServices(CallSid, telephonyServices);
 
     const company = await this.companyService.findByUserId(user._id as string);
+    await this.sessionHelper.fillCompany(CallSid, company);
 
     const welcome = this.buildWelcomeMessage(
       company.businessName,

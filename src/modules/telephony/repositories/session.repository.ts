@@ -5,6 +5,7 @@ import Redis from 'ioredis';
 import { REDIS_CLIENT } from '@/lib/redis/redis.module';
 import {
   CallSkeleton,
+  Company,
   Message,
   Service,
 } from '@/modules/telephony/types/redis-session';
@@ -59,6 +60,13 @@ export class SessionRepository {
     const session = await this.load(callSid);
     if (!session) return;
     session.services = services;
+    await this.save(session);
+  }
+
+  async appendCompany(callSid: string, company: Company): Promise<void> {
+    const session = await this.load(callSid);
+    if (!session) return;
+    session.company = company;
     await this.save(session);
   }
 

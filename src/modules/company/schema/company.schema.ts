@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Schema as MongooseSchema, Types } from 'mongoose';
 
 import { User } from '@/modules/user/schema/user.schema';
 
@@ -40,6 +40,8 @@ export class Company {
 
   @Prop({ required: false, unique: true })
   twilioPhoneNumber?: string;
+
+  _id!: Types.ObjectId;
 }
 
 export type CompanyDocument = Company & Document;
