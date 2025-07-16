@@ -115,10 +115,17 @@ export class TelephonyService {
   private async getAIReply(callSid: string, message: string): Promise<string> {
     const { data } = await firstValueFrom(
       this.http
-        .post<{ replyText: string }>('/ai/reply', { callSid, message })
+        .post<{ aiResponse: { message: string } }>('/ai/conversation', { 
+          callSid, 
+          customerMessage: { 
+            speaker: 'customer', 
+            message, 
+            startedAt: new Date().toISOString() 
+          } 
+        })
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
-    return data.replyText;
+    return data.aiResponse.message;
   }
 
   private buildWelcomeMessage(
