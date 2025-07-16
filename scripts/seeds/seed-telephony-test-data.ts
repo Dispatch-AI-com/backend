@@ -11,7 +11,8 @@ interface User {
   lastName: string;
   email: string;
   password: string;
-  fullPhoneNumber: string;
+  wilioPhoneNumber: string;
+  phoneNumber: string;
   receivedAdverts: boolean;
   status: string;
   role: string;
@@ -46,7 +47,8 @@ const userSchema = new Schema({
   lastName: String,
   email: { type: String, required: true, unique: true },
   password: String,
-  fullPhoneNumber: String,
+  wilioPhoneNumber: String,
+  phoneNumber: String,
   receivedAdverts: { type: Boolean, default: true },
   status: { type: String, default: 'active' },
   role: { type: String, default: 'user' },
@@ -93,7 +95,8 @@ async function seedTelephonyTestData() {
           firstName: 'John',
           lastName: 'Doe',
           password: hashedPassword,
-          fullPhoneNumber: '+1-555-123-4567',
+          wilioPhoneNumber: '+19787235265',
+          phoneNumber: '+19787235265',
           receivedAdverts: true,
           status: 'active',
           role: 'user',
@@ -118,7 +121,8 @@ async function seedTelephonyTestData() {
         lastName: 'Doe',
         email: 'john.doe@example.com',
         password: hashedPassword,
-        fullPhoneNumber: '+1-555-123-4567',
+        wilioPhoneNumber: '+19787235265',
+        phoneNumber: '+19787235265',
         receivedAdverts: true,
         status: 'active',
         role: 'user',
@@ -219,7 +223,7 @@ async function seedTelephonyTestData() {
     console.log('\n🎯 Test Credentials:');
     console.log('Email: john.doe@example.com');
     console.log('Password: Admin123!');
-    console.log('Phone: +1-555-123-4567');
+    console.log('Phone: +19787235265');
     
     console.log('\n📋 Available Services for Testing:');
     createdServices.forEach((service, index) => {
