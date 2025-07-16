@@ -239,7 +239,7 @@ async function seedData() {
     console.log('Cleared existing data');
     
     // Create test user
-    const hashedPassword = await bcrypt.hash('password123', SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash('Admin123!', SALT_ROUNDS);
     const testUser = await UserModel.create({
       firstName: 'Test',
       lastName: 'User',
@@ -296,7 +296,7 @@ async function seedData() {
     console.log('Seeding completed successfully!');
     console.log('Test user credentials:');
     console.log('Email: test@example.com');
-    console.log('Password: password123');
+    console.log('Password: Admin123!');
     
   } catch (error) {
     console.error('Error seeding data:', error);
