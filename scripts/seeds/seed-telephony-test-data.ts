@@ -83,8 +83,8 @@ const companySchema = new Schema({
     state: { type: String, required: true },
     postcode: { type: String, required: true }
   },
-  user: { type: String, required: true },
-  twilioPhoneNumber: { type: String, required: true, unique: true }
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  twilioPhoneNumber: { type: String, required: false, unique: true }
 }, { timestamps: true });
 
 async function seedTelephonyTestData() {
