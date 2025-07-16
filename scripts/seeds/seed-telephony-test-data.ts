@@ -11,7 +11,7 @@ interface User {
   lastName: string;
   email: string;
   password: string;
-  wilioPhoneNumber: string;
+  twilioPhoneNumber: string;
   phoneNumber: string;
   receivedAdverts: boolean;
   status: string;
@@ -43,7 +43,7 @@ interface Company {
     state: string;
     postcode: string;
   };
-  user: string;  // ObjectId reference to User
+  user: Types.ObjectId;  // 改为 ObjectId 类型
   twilioPhoneNumber: string;
   createdAt: Date;
   updatedAt: Date;

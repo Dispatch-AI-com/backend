@@ -198,7 +198,7 @@ export class TelephonyService {
   ): Promise<void> {
     const callLogData = {
       callSid: session.callSid,
-      userId: session.company.id,
+      userId: session.company.userId,
       serviceBookedId: session.user.service?.id,
       callerNumber: twilioParams.Caller,
       callerName: session.user.userInfo.name,

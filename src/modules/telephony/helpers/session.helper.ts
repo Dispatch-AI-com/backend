@@ -8,7 +8,6 @@ import {
   CallSkeleton,
   Company as TelephonyCompany,
   Service,
-  Service as TelephonyService,
 } from '../types/redis-session';
 
 @Injectable()
@@ -50,6 +49,7 @@ export class SessionHelper {
       id: company._id.toString(),
       name: company.businessName,
       email: company.email,
+      userId: (company.user as any)._id?.toString() || company.user.toString(),
     };
     await this.sessions.appendCompany(callSid, telephonyCompany);
   }

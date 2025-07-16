@@ -22,6 +22,7 @@ export interface Company {
   id: string;
   name: string;
   email: string;
+  userId: string;
   calendar_access_token?: string;
 }
 
