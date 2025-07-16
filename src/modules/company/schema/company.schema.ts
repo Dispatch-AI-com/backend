@@ -38,8 +38,8 @@ export class Company {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user!: User;
 
-  @Prop({ required: true, unique: true })
-  twilioPhoneNumber!: string;
+  @Prop({ required: false, unique: true })
+  twilioPhoneNumber?: string;
 }
 
 export type CompanyDocument = Company & Document;
