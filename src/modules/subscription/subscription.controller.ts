@@ -118,4 +118,23 @@ export class SubscriptionController {
     await this.subscriptionService.deleteById(id);
     return { message: 'Subscription deleted successfully' };
   }
+
+  @Get(':userId/invoices')
+  @ApiOperation({ summary: 'Get invoice history by user ID' })
+  @ApiResponse({ status: 200, description: 'Invoices retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'User or stripeCustomerId not found' })
+  async getInvoices(@Param('userId') userId: string) {
+    const invoices = await this.subscriptionService.getInvoicesByUser(userId);
+    return invoices;
+  }
+
+  @Get(':userId/refunds')
+  @ApiOperation({ summary: 'Get refund history by user ID' })
+  @ApiResponse({ status: 200, description: 'Refunds retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'User or chargeId not found' })
+  async getRefunds(@Param('userId') userId: string) {
+    const refunds = await this.subscriptionService.getRefundsByUserId(userId);
+    return refunds;
+  }
+
 }
