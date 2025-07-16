@@ -17,7 +17,6 @@ Architecture Description:
 """
 
 import json
-from datetime import datetime, timezone
 from typing import TypedDict, Literal, Optional
 from openai import OpenAI
 
@@ -43,11 +42,9 @@ from utils.validators.customer_validators import (
 from .redis_service import (
     update_user_info_field,
     update_service_selection,
-    update_conversation_history,
     update_booking_status
 )
 
-from models.call import Message
 from config import settings
 
 
@@ -72,9 +69,6 @@ class CustomerServiceState(TypedDict):
     max_attempts: int
     service_max_attempts: int
     
-    # Conversation history
-    conversation_history: list
-    
     # Last user input and LLM response
     last_user_input: Optional[str]
     last_llm_response: Optional[dict]
@@ -89,14 +83,6 @@ class CustomerServiceState(TypedDict):
     conversation_complete: bool
     service_available: bool
     time_available: bool
-    
-    # Timestamps
-    name_timestamp: Optional[str]
-    phone_timestamp: Optional[str]
-    address_timestamp: Optional[str]
-    email_timestamp: Optional[str]
-    service_timestamp: Optional[str]
-    time_timestamp: Optional[str]
 
 
 class CustomerServiceLangGraph:
@@ -116,53 +102,15 @@ class CustomerServiceLangGraph:
         # Create LangGraph workflow - using simplified approach
         self.workflow = None
         
-    # ================== Conversation Management Functions ==================
-    
-    def add_to_conversation(self, state: CustomerServiceState, role: str, content: str, call_sid: Optional[str] = None):
-        """Add conversation record and update to Redis in real-time"""
-        current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
-        
-        # Local state update
-        state["conversation_history"].append({
-            "role": role,
-            "content": content,
-            "timestamp": current_time
-        })
-        
-        # Real-time Redis update
-        if call_sid:
-            # Determine message sender
-            speaker = "customer" if role == "user" else "AI"
-            
-            # Create Message object
-            message = Message(
-                speaker=speaker,
-                message=content,
-                startedAt=current_time
-            )
-            
-            # Update conversation history to Redis in real-time
-            redis_success = update_conversation_history(call_sid, message)
-            
-            if not redis_success:
-                print(f"⚠️ Conversation history Redis update failed, but continuing processing: {speaker} - {content[:50]}...")
-        
-        return state
+
 
     # ================== Information Collection Processing Functions ==================
     
     def process_name_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process name collection step"""
-        # Add user input to conversation history
-        user_input = state["last_user_input"] or ""
-        state = self.add_to_conversation(state, "user", user_input, call_sid)
-        
         # Call LLM to extract name
         result = extract_name_from_conversation(state)
         state["last_llm_response"] = result
-        
-        # Add AI reply to conversation history
-        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
         # Check if name was extracted
         extracted_name = result["info_extracted"].get("name")
@@ -171,11 +119,9 @@ class CustomerServiceLangGraph:
         if is_complete and extracted_name and validate_name(extracted_name):
             # Clean and standardize name
             cleaned_name = extracted_name.strip()
-            current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
             
             # Local state update
             state["name"] = cleaned_name
-            state["name_timestamp"] = current_time
             state["name_complete"] = True
             state["current_step"] = "collect_phone"
             
@@ -184,8 +130,7 @@ class CustomerServiceLangGraph:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="name", 
-                    field_value=cleaned_name,
-                    timestamp=current_time
+                    field_value=cleaned_name
                 )
                 
                 if redis_success:
@@ -208,16 +153,9 @@ class CustomerServiceLangGraph:
 
     def process_phone_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process phone collection step"""
-        # Add user input to conversation history
-        user_input = state["last_user_input"] or ""
-        state = self.add_to_conversation(state, "user", user_input, call_sid)
-        
         # Call LLM to extract phone
         result = extract_phone_from_conversation(state)
         state["last_llm_response"] = result
-        
-        # Add AI reply to conversation history
-        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
         # Check if phone was extracted
         extracted_phone = result["info_extracted"].get("phone")
@@ -226,11 +164,9 @@ class CustomerServiceLangGraph:
         if is_complete and extracted_phone and validate_phone(extracted_phone):
             # Clean and standardize phone
             cleaned_phone = extracted_phone.strip()
-            current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
             
             # Local state update
             state["phone"] = cleaned_phone
-            state["phone_timestamp"] = current_time
             state["phone_complete"] = True
             state["current_step"] = "collect_address"
             
@@ -239,8 +175,7 @@ class CustomerServiceLangGraph:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="phone",
-                    field_value=cleaned_phone,
-                    timestamp=current_time
+                    field_value=cleaned_phone
                 )
                 
                 if redis_success:
@@ -263,16 +198,9 @@ class CustomerServiceLangGraph:
 
     def process_address_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process address collection step"""
-        # Add user input to conversation history
-        user_input = state["last_user_input"] or ""
-        state = self.add_to_conversation(state, "user", user_input, call_sid)
-        
         # Call LLM to extract address
         result = extract_address_from_conversation(state)
         state["last_llm_response"] = result
-        
-        # Add AI reply to conversation history
-        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
         # Check if address was extracted
         extracted_address = result["info_extracted"].get("address")
@@ -281,11 +209,9 @@ class CustomerServiceLangGraph:
         if is_complete and extracted_address and validate_address(extracted_address):
             # Clean and standardize address
             cleaned_address = extracted_address.strip()
-            current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
             
             # Local state update
             state["address"] = cleaned_address
-            state["address_timestamp"] = current_time
             state["address_complete"] = True
             state["current_step"] = "collect_email"
             
@@ -294,8 +220,7 @@ class CustomerServiceLangGraph:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="address",
-                    field_value=cleaned_address,
-                    timestamp=current_time
+                    field_value=cleaned_address
                 )
                 
                 if redis_success:
@@ -318,16 +243,9 @@ class CustomerServiceLangGraph:
 
     def process_email_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process email collection step"""
-        # Add user input to conversation history
-        user_input = state["last_user_input"] or ""
-        state = self.add_to_conversation(state, "user", user_input, call_sid)
-        
         # Call LLM to extract email
         result = extract_email_from_conversation(state)
         state["last_llm_response"] = result
-        
-        # Add AI reply to conversation history
-        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
         # Check if email was extracted
         extracted_email = result["info_extracted"].get("email")
@@ -336,11 +254,9 @@ class CustomerServiceLangGraph:
         if is_complete and extracted_email and validate_email(extracted_email):
             # Clean and standardize email
             cleaned_email = extracted_email.strip()
-            current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
             
             # Local state update
             state["email"] = cleaned_email
-            state["email_timestamp"] = current_time
             state["email_complete"] = True
             state["current_step"] = "collect_service"
             
@@ -349,8 +265,7 @@ class CustomerServiceLangGraph:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="email", 
-                    field_value=cleaned_email,
-                    timestamp=current_time
+                    field_value=cleaned_email
                 )
                 
                 if redis_success:
@@ -373,16 +288,9 @@ class CustomerServiceLangGraph:
 
     def process_service_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process service collection step"""
-        # Add user input to conversation history
-        user_input = state["last_user_input"] or ""
-        state = self.add_to_conversation(state, "user", user_input, call_sid)
-        
         # Call LLM to extract service
         result = extract_service_from_conversation(state)
         state["last_llm_response"] = result
-        
-        # Add AI reply to conversation history
-        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
         # Check if service was extracted
         extracted_service = result["info_extracted"].get("service")
@@ -395,11 +303,9 @@ class CustomerServiceLangGraph:
             if is_valid_input:
                 # Clean and standardize service
                 cleaned_service = extracted_service.strip().lower()
-                current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
                 
                 # Local state update
                 state["service"] = cleaned_service
-                state["service_timestamp"] = current_time
                 state["service_complete"] = True
                 state["service_available"] = service_available
                 state["current_step"] = "collect_time"
@@ -409,7 +315,7 @@ class CustomerServiceLangGraph:
                     redis_success = update_service_selection(
                         call_sid=call_sid,
                         service_name=cleaned_service,
-                        timestamp=current_time
+                        service_time=None
                     )
                     
                     if redis_success:
@@ -436,16 +342,9 @@ class CustomerServiceLangGraph:
 
     def process_time_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process time collection step"""
-        # Add user input to conversation history
-        user_input = state["last_user_input"] or ""
-        state = self.add_to_conversation(state, "user", user_input, call_sid)
-        
         # Call LLM to extract time
         result = extract_time_from_conversation(state)
         state["last_llm_response"] = result
-        
-        # Add AI reply to conversation history
-        state = self.add_to_conversation(state, "assistant", result["response"], call_sid)
         
         # Check if time was extracted
         extracted_time = result["info_extracted"].get("time")
@@ -458,11 +357,9 @@ class CustomerServiceLangGraph:
             if is_valid_input:
                 # Clean and standardize time
                 cleaned_time = extracted_time.strip().lower()
-                current_time = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
                 
                 # Local state update
                 state["service_time"] = cleaned_time
-                state["time_timestamp"] = current_time
                 state["time_complete"] = True
                 state["time_available"] = time_available
                 
@@ -472,8 +369,7 @@ class CustomerServiceLangGraph:
                     redis_success = update_service_selection(
                         call_sid=call_sid,
                         service_name=state.get("service") or "",
-                        service_time=cleaned_time,
-                        timestamp=current_time
+                        service_time=cleaned_time
                     )
                     
                     if redis_success:
@@ -587,7 +483,6 @@ class CustomerServiceLangGraph:
         print(f"⏰ Time: {state.get('service_time', 'Not collected')} {time_status}")
         
         # Conversation statistics
-        print(f"💬 Conversation rounds: {len(state.get('conversation_history', []))}")
         print(f"📊 Current step: {state.get('current_step', 'Unknown')}")
         print(f"✅ Process completed: {'Yes' if state.get('conversation_complete') else 'No'}")
         
@@ -605,15 +500,12 @@ class CustomerServiceLangGraph:
     def save_to_file(self, state: CustomerServiceState, filename: Optional[str] = None):
         """Save conversation to file"""
         if filename is None:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"customer_service_conversation_{timestamp}.json"
+            filename = "customer_service_conversation.json"
         
         # Prepare data to save
         save_data = {
             "metadata": {
-                "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
-                "conversation_complete": state.get("conversation_complete", False),
-                "total_messages": len(state.get("conversation_history", []))
+                "conversation_complete": state.get("conversation_complete", False)
             },
             "customer_info": {
                 "name": state.get("name"),
@@ -631,7 +523,6 @@ class CustomerServiceLangGraph:
                 "service_complete": state.get("service_complete", False),
                 "time_complete": state.get("time_complete", False)
             },
-            "conversation_history": state.get("conversation_history", []),
             "attempts": {
                 "name_attempts": state.get("name_attempts", 0),
                 "phone_attempts": state.get("phone_attempts", 0),
@@ -670,7 +561,6 @@ class CustomerServiceLangGraph:
             "time_attempts": 0,
             "max_attempts": settings.max_attempts,
             "service_max_attempts": settings.service_max_attempts,
-            "conversation_history": [],
             "last_user_input": None,
             "last_llm_response": None,
             "name_complete": False,
@@ -682,12 +572,6 @@ class CustomerServiceLangGraph:
             "conversation_complete": False,
             "service_available": True,
             "time_available": True,
-            "name_timestamp": None,
-            "phone_timestamp": None,
-            "address_timestamp": None,
-            "email_timestamp": None,
-            "service_timestamp": None,
-            "time_timestamp": None,
         }
         
         print("🤖 AI Customer Service Assistant Started")
@@ -696,8 +580,6 @@ class CustomerServiceLangGraph:
         print("💡 Type 'save' to save conversation to file")
         print("-" * 50)
         
-        # Add initial message
-        state = self.add_to_conversation(state, "assistant", initial_message)
         print(f"🤖 AI: {initial_message}")
         
         # Main conversation loop

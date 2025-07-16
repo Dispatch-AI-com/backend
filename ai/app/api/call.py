@@ -61,7 +61,6 @@ async def ai_conversation(data: ConversationInput):
         "time_attempts": 0,
         "max_attempts": 3,
         "service_max_attempts": 3,
-        "conversation_history": [],
         "last_user_input": data.customerMessage.message,
         "last_llm_response": None,
         "name_complete": bool(user_info.name if user_info else None),
@@ -73,28 +72,9 @@ async def ai_conversation(data: ConversationInput):
         "conversation_complete": callskeleton.servicebooked,
         "service_available": True,
         "time_available": True,
-        "name_timestamp": None,
-        "phone_timestamp": None,
-        "address_timestamp": None,
-        "email_timestamp": None,
-        "service_timestamp": None,
-        "time_timestamp": None,
     }
     
-    # 3. Restore conversation history
-    for msg in callskeleton.history:
-        state["conversation_history"].append({
-            "role": "user" if msg.speaker == "customer" else "assistant",
-            "content": msg.message,
-            "timestamp": msg.startedAt
-        })
-    
-    # 4. Add current user input to conversation history
-    state["conversation_history"].append({
-        "role": "user",
-        "content": data.customerMessage.message,
-        "timestamp": data.customerMessage.startedAt
-    })
+    # 3. Set current user input
     state["last_user_input"] = data.customerMessage.message
 
     # 5. Call unified workflow processing - all business logic delegated to call_handler

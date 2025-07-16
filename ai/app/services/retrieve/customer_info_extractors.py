@@ -32,17 +32,14 @@ class CustomerServiceState(TypedDict):
     email: Optional[str]
     service: Optional[str]
     service_time: Optional[str]
-    conversation_history: list
     last_user_input: Optional[str]
 
 def _get_openai_client() -> OpenAI:
     return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 def _build_conversation_context(state: CustomerServiceState) -> str:
-    return "\n".join([
-        f"{'User' if msg['role'] == 'user' else 'Agent'}: {msg['content']}"
-        for msg in state["conversation_history"][-3:]
-    ])
+    # Since we removed conversation history, just return current user input
+    return state.get('last_user_input') or ''
 
 def _call_openai_api(prompt: str, conversation_context: str, user_input: str) -> Dict[str, Any]:
     client = _get_openai_client()
@@ -51,7 +48,7 @@ def _call_openai_api(prompt: str, conversation_context: str, user_input: str) ->
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": prompt},
-            {"role": "user", "content": f"Conversation history: {conversation_context}\n\nCurrent user input: {user_input}"}
+            {"role": "user", "content": f"User input: {user_input}"}
         ],
         temperature=0.3,
         max_tokens=500
