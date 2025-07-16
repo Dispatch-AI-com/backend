@@ -10,16 +10,19 @@ import {
 } from '@/common/interfaces/twilio-voice-webhook';
 import { winstonLogger } from '@/logger/winston.logger';
 import { CalllogService } from '@/modules/calllog/calllog.service';
+import { ServiceService } from '@/modules/service/service.service';
 import {
   buildSayResponse,
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
+import { UserService } from '@/modules/user/user.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
 import { CallSkeleton, Message } from './types/redis-session';
+import { Service } from './types/redis-session';
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
 const AI_TIMEOUT_MS = 5_000;
@@ -34,11 +37,28 @@ export class TelephonyService {
     private readonly callLogService: CalllogService,
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
+    private readonly userService: UserService,
+    private readonly serviceService: ServiceService,
   ) {}
-  async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
+  async handleVoice({ CallSid, To }: VoiceGatherBody): Promise<string> {
     const session = await this.sessionHelper.ensureSession(CallSid);
+    const user = await this.userService.findByTwilioPhoneNumber(To);
+    if (!user) {
+      return this.speakAndLog(CallSid, 'User not found', NextAction.GATHER);
+    }
+    const services = await this.serviceService.findAllByUserId(
+      user._id as string,
+    );
+    const telephonyServices: Service[] = services.map(service => ({
+      id: service._id.toString(),
+      name: service.name,
+      price: service.price,
+      description: service.description,
+    }));
 
-    const { services, company } = session;
+    await this.sessionHelper.fillCompanyServices(CallSid, telephonyServices);
+
+    const { company } = session;
     const welcome = this.buildWelcomeMessage(company.name, services);
 
     return this.speakAndLog(CallSid, welcome, NextAction.GATHER);
@@ -115,13 +135,13 @@ export class TelephonyService {
   private async getAIReply(callSid: string, message: string): Promise<string> {
     const { data } = await firstValueFrom(
       this.http
-        .post<{ aiResponse: { message: string } }>('/ai/conversation', { 
-          callSid, 
-          customerMessage: { 
-            speaker: 'customer', 
-            message, 
-            startedAt: new Date().toISOString() 
-          } 
+        .post<{ aiResponse: { message: string } }>('/ai/conversation', {
+          callSid,
+          customerMessage: {
+            speaker: 'customer',
+            message,
+            startedAt: new Date().toISOString(),
+          },
         })
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
