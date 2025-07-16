@@ -1,60 +1,7 @@
 pipeline {
     agent {
         kubernetes {
-            yaml """
-apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - name: docker
-    image: docker:24.0.6-dind
-    command:
-    - dockerd
-    - --host=unix:///var/run/docker.sock
-    - --storage-driver=overlay2
-    - --insecure-registry=localhost:5000
-    securityContext:
-      privileged: true
-    resources:
-      requests:
-        memory: "512Mi"
-        cpu: "500m"
-      limits:
-        memory: "2Gi"
-        cpu: "1000m"
-    volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run
-    - name: docker-cache
-      mountPath: /var/lib/docker
-  - name: build-tools
-    image: alpine:3.18
-    command: ["sleep"]
-    args: ["99d"]
-    env:
-    - name: DOCKER_HOST
-      value: unix:///var/run/docker.sock
-    - name: AWS_DEFAULT_REGION
-      value: ap-southeast-2
-    - name: DOCKER_BUILDKIT
-      value: "0"
-    resources:
-      requests:
-        memory: "256Mi"
-        cpu: "250m"
-      limits:
-        memory: "1Gi"
-        cpu: "500m"
-    volumeMounts:
-    - name: docker-sock
-      mountPath: /var/run
-  volumes:
-  - name: docker-sock
-    emptyDir: {}
-  - name: docker-cache
-    emptyDir:
-      sizeLimit: 10Gi
-"""
+            yamlFile 'jenkins-agent-uat.yaml'
         }
     }
     
