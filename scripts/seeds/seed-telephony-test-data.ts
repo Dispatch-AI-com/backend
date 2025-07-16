@@ -2,7 +2,7 @@ import { connect, connection, model, Schema, Types } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dispatch-ai';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dispatchai';
 const SALT_ROUNDS = 10;
 
 // 定义接口
@@ -79,28 +79,61 @@ async function seedTelephonyTestData() {
     const ServiceModel = model('Service', serviceSchema);
     const CompanyModel = model('Company', companySchema);
     
-    // 清除现有数据
-    await UserModel.deleteMany({});
-    await ServiceModel.deleteMany({});
-    await CompanyModel.deleteMany({});
+    // 检查是否已存在测试用户
+    const existingUser = await UserModel.findOne({ email: 'john.doe@example.com' });
     
-    console.log('🧹 Cleared existing data');
+    if (existingUser) {
+      console.log('👤 Test user already exists, updating...');
+      
+      // 更新用户信息
+      const hashedPassword = await bcrypt.hash('Admin123!', SALT_ROUNDS);
+      await UserModel.updateOne(
+        { email: 'john.doe@example.com' },
+        {
+          firstName: 'John',
+          lastName: 'Doe',
+          password: hashedPassword,
+          fullPhoneNumber: '+1-555-123-4567',
+          receivedAdverts: true,
+          status: 'active',
+          role: 'user',
+          provider: 'local'
+        }
+      );
+      
+      // 删除该用户的现有服务和公司数据
+      await ServiceModel.deleteMany({ userId: existingUser._id.toString() });
+      await CompanyModel.deleteMany({ userId: existingUser._id.toString() });
+      console.log('🧹 Cleared existing services and company data for test user');
+      
+      const testUser = existingUser;
+      console.log('👤 Updated test user:', testUser.email);
+    } else {
+      console.log('👤 Creating new test user...');
+      
+      // 创建测试用户
+      const hashedPassword = await bcrypt.hash('Admin123!', SALT_ROUNDS);
+      const testUser = await UserModel.create({
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+        password: hashedPassword,
+        fullPhoneNumber: '+1-555-123-4567',
+        receivedAdverts: true,
+        status: 'active',
+        role: 'user',
+        provider: 'local'
+      });
+      
+      console.log('👤 Created test user:', testUser.email);
+    }
     
-    // 创建测试用户
-    const hashedPassword = await bcrypt.hash('Admin123!', SALT_ROUNDS);
-    const testUser = await UserModel.create({
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      password: hashedPassword,
-      fullPhoneNumber: '+1-555-123-4567',
-      receivedAdverts: true,
-      status: 'active',
-      role: 'user',
-      provider: 'local'
-    });
+    // 获取或创建用户（确保我们有正确的用户ID）
+    const testUser = await UserModel.findOne({ email: 'john.doe@example.com' });
     
-    console.log('👤 Created test user:', testUser.email);
+    if (!testUser) {
+      throw new Error('Failed to create or find test user');
+    }
     
     // 创建公司信息
     const testCompany = await CompanyModel.create({
