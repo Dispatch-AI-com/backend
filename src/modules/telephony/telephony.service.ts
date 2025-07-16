@@ -22,7 +22,7 @@ import { UserService } from '@/modules/user/user.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
-import { CallSkeleton, Message, Service } from './types/redis-session';
+import { CallSkeleton, Message } from './types/redis-session';
 
 const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
 const AI_TIMEOUT_MS = 5_000;
@@ -50,22 +50,12 @@ export class TelephonyService {
     const services = await this.serviceService.findAllByUserId(
       user._id as string,
     );
-    const telephonyServices: Service[] = services.map(service => ({
-      id: service._id.toString(),
-      name: service.name,
-      price: service.price,
-      description: service.description,
-    }));
-
-    await this.sessionHelper.fillCompanyServices(CallSid, telephonyServices);
+    await this.sessionHelper.fillCompanyServices(CallSid, services);
 
     const company = await this.companyService.findByUserId(user._id as string);
     await this.sessionHelper.fillCompany(CallSid, company);
 
-    const welcome = this.buildWelcomeMessage(
-      company.businessName,
-      telephonyServices,
-    );
+    const welcome = this.buildWelcomeMessage(company.businessName, services);
 
     return this.speakAndLog(CallSid, welcome, NextAction.GATHER);
   }

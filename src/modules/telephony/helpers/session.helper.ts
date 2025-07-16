@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 
 import { Company } from '@/modules/company/schema/company.schema';
+import { Service as ServiceDocument } from '@/modules/service/schema/service.schema';
 
 import { SessionRepository } from '../repositories/session.repository';
 import {
   CallSkeleton,
   Company as TelephonyCompany,
+  Service,
   Service as TelephonyService,
 } from '../types/redis-session';
 
@@ -21,13 +23,19 @@ export class SessionHelper {
 
   async fillCompanyServices(
     callSid: string,
-    services: TelephonyService[],
+    services: ServiceDocument[],
   ): Promise<void> {
+    const telephonyServices: Service[] = services.map(service => ({
+      id: service._id.toString(),
+      name: service.name,
+      price: service.price,
+      description: service.description,
+    }));
     const session = await this.sessions.load(callSid);
     if (!session) {
       throw new Error('Session not found');
     }
-    await this.sessions.appendServices(callSid, services);
+    await this.sessions.appendServices(callSid, telephonyServices);
   }
 
   async appendUserMessage(callSid: string, message: string): Promise<void> {
