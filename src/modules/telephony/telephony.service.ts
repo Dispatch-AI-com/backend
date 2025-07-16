@@ -221,10 +221,10 @@ export class TelephonyService {
   }
 
   private determineCallLogStatus(session: CallSkeleton): CallLogStatus {
-    if (session.confirmBooking && session.user.service) {
+    if (session.servicebooked && session.user.service) {
       return CallLogStatus.Completed;
     }
-    if (session.user.service && !session.confirmBooking) {
+    if (session.user.service && !session.servicebooked) {
       return CallLogStatus.FollowUp;
     }
     return CallLogStatus.Missed;
@@ -262,7 +262,7 @@ export class TelephonyService {
         session.user.service?.name ??
         (session.services.length > 0 ? session.services[0].name : null) ??
         'general inquiry',
-      booked: Boolean(session.confirmBooking),
+      booked: Boolean(session.servicebooked),
       company: session.company.name,
     };
 

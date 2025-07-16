@@ -36,6 +36,7 @@ export interface CallSkeleton {
     userInfo: Partial<UserInfo>;
   };
   history: Message[];
-  confirmBooking: boolean;
-  confirmEmailSent: boolean;
+  servicebooked: boolean;
+  confirmEmailsent: boolean;
+  createdAt?: string;
 }

@@ -16,7 +16,8 @@ export function createEmptySkeleton(callSid: string): CallSkeleton {
       },
     },
     history: [],
-    confirmBooking: false,
-    confirmEmailSent: false,
+    servicebooked: false,
+    confirmEmailsent: false,
+    createdAt: new Date().toISOString(),
   };
 }
