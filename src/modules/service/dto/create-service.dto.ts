@@ -45,11 +45,6 @@ class NotificationDto {
 }
 
 export class CreateServiceDto {
-  @ApiProperty({ description: 'Company ID', example: 'companyId123' })
-  @IsString()
-  @IsNotEmpty()
-  companyId!: string;
-
   @ApiProperty({ description: 'Service name', example: 'AI Agent Service' })
   @IsString()
   @IsNotEmpty()
