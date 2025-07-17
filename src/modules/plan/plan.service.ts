@@ -69,4 +69,11 @@ export class PlanService {
 
     return updated;
   }
+
+  async deletePlan(id: string): Promise<void> {
+    const result = await this.planModel.findByIdAndDelete(id).exec();
+    if (!result) {
+      throw new NotFoundException('Plan not found');
+    }
+  }
 }

@@ -1,5 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { randomUUID } from 'node:crypto';
+
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { HealthService } from '@/modules/health/health.service';
 
@@ -30,28 +38,85 @@ export class HealthController {
   @ApiResponse({ status: 200, description: 'Database connection is healthy' })
   @ApiResponse({ status: 503, description: 'Database connection failed' })
   @Get('db')
-  async checkDatabase(): Promise<{ status: string }> {
+  checkDatabase(): {
+    status: string;
+    mongo: boolean;
+    redis: boolean;
+    timestamp: Date;
+  } {
     return this.healthService.checkDatabase();
-  }
-  @ApiOperation({
-    summary: 'niubi！',
-    description: 'niubi！',
-  })
-  @ApiResponse({ status: 200, description: 'niubi！' })
-  @Get('niubi')
-  niubi(): { message: string } {
-    return { message: 'niubi！' };
   }
 
   @ApiOperation({
-    summary: 'Hello Endpoint',
-    description: 'Returns a greeting message',
+    summary: 'Test AI chat Endpoint',
+    description: 'Proxy a test message to AI server',
   })
-  @ApiResponse({ status: 200, description: 'Returns Hello message' })
-  @Get('hello')
-  hello(): { message: string } {
-    return {
-      message: 'Hello, DispatchAI!the new one！This is a fucking crazy test！',
-    };
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Hello AI' },
+        callSid: {
+          type: 'string',
+          example: '7e1ef53e-87fc-4169-9c4b-df8ea79906b0',
+          nullable: true,
+        },
+      },
+      required: ['message'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'AI reply',
+    schema: {
+      type: 'object',
+      properties: {
+        status: { type: 'string', example: 'ok' },
+        replyText: { type: 'string', example: '你好！我是一个 AI 助手 …' },
+        timestamp: { type: 'string', format: 'date-time' },
+        duration: { type: 'number', example: 2155 },
+        error: { type: 'string', nullable: true },
+      },
+    },
+  })
+  @Post('test-ai-chat')
+  testAIChat(
+    @Body('message') message: string,
+    @Body('callSid') callSid?: string,
+  ): Promise<{
+    status: string;
+    replyText?: string;
+    timestamp: Date;
+    duration?: number;
+    error?: string;
+  }> {
+    const sid = callSid ?? randomUUID();
+    return this.healthService.testAIChat(message, sid);
+  }
+
+  @ApiOperation({
+    summary: 'Test AI ping',
+    description: 'Returns a test message from AI server',
+  })
+  @ApiResponse({ status: 200, description: 'Returns Test message' })
+  @Get('pingAI')
+  ping(): Promise<{
+    status: string;
+    message?: string;
+    timestamp: Date;
+    duration?: number;
+    error?: string;
+  }> {
+    return this.healthService.pingAI();
+  }
+
+  @ApiOperation({
+    summary: 'Unauthorized Endpoint',
+    description: 'Simulates an unauthorized access attempt',
+  })
+  @ApiResponse({ status: 401, description: 'JWT token is invalid or expired' })
+  @Get('unauthorized')
+  unauthorized(): never {
+    throw new UnauthorizedException('JWT token is invalid or expired');
   }
 }

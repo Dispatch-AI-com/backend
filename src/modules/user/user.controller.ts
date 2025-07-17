@@ -1,5 +1,6 @@
 //src/modules/user/user.controller.ts
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -41,9 +42,9 @@ export class UserController {
   @ApiResponse({ status: 404, description: 'User not found' })
   async patch(
     @Param('id') id: string,
-    updateUserDto: UpdateUserDto,
+    @Body() dto: UpdateUserDto,
   ): Promise<User> {
-    return this.users.patch(id, updateUserDto);
+    return this.users.patch(id, dto);
   }
 
   @Delete(':id')

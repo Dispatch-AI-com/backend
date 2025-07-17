@@ -1,23 +1,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+import { EUserRole } from '@/common/constants/user.constant';
+
 import { UserStatus } from '../enum/userStatus.enum';
 
 @Schema({ timestamps: true })
 export class User extends Document {
-  @Prop({ required: true })
+  @Prop()
   firstName!: string;
 
-  @Prop({ required: true })
+  @Prop()
   lastName!: string;
 
   @Prop({ required: true, unique: true })
   email!: string;
 
-  @Prop({ required: true, select: false })
-  password!: string;
+  @Prop({ required: false, select: false })
+  password?: string;
 
-  @Prop({ required: true })
+  @Prop()
   fullPhoneNumber!: string;
 
   @Prop()
@@ -39,8 +41,20 @@ export class User extends Document {
   @Prop()
   statusReason!: string;
 
-  @Prop({ default: 'user' })
-  role!: string;
+  @Prop()
+  position!: string;
+
+  @Prop({ default: EUserRole.user })
+  role!: EUserRole;
+
+  @Prop()
+  googleId?: string;
+
+  @Prop()
+  avatar?: string;
+
+  @Prop({ default: 'local' })
+  provider!: string;
 }
 
 export type UserDocument = User & Document;

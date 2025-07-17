@@ -9,6 +9,8 @@ services:
       - "4000:4000"
     depends_on:
       - mongodb
+      - redis
+      - ai
     env_file:
       - .env
     environment:
@@ -21,7 +23,7 @@ services:
     volumes:
       - ./:/app
       - /app/node_modules
-
+      
   mongodb:
     image: mongo:latest
     container_name: dispatchai-mongodb
@@ -32,6 +34,48 @@ services:
       - mongodb_data:/data/db
     networks:
       - dispatchai-network
+  ai:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    container_name: dispatchai-ai
+    env_file:
+      - .env
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ai/app:/app/app
+    depends_on:
+      - redis
+      - mongodb
+    networks:
+      - dispatchai-network
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: dispatchai-cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    volumes:
+      - ./cloudflared:/etc/cloudflared
+    networks:
+      - dispatchai-network
+    depends_on:
+      - api
+    profiles:
+      - tunnel
+
+  redis:
+    image: redis:7-alpine
+    container_name: dispatchai-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - dispatchai-network
 
 networks:
   dispatchai-network:
@@ -39,3 +83,4 @@ networks:
 
 volumes:
   mongodb_data:
+  redis_data:
