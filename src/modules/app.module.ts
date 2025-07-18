@@ -17,6 +17,7 @@ import { ServiceModule } from '@/modules/service/service.module';
 import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
 import { ServiceFormFieldModule } from '@/modules/service-form-field/service-form-field.module';
 import { ServiceLocationMappingModule } from '@/modules/service-location-mapping/service-location-mapping.module';
+import { SettingModule } from '@/modules/setting/setting.module';
 import { StripeModule } from '@/modules/stripe/stripe.module';
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TelephonyModule } from '@/modules/telephony/telephony.module';
@@ -53,6 +54,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     StripeModule,
     CompanyModule,
     OnboardingModule,
+    SettingModule,
   ],
 })
 export class AppModule {}
