@@ -17,7 +17,6 @@ import {
   UserProfileDto,
 } from './dto/user-settings.dto';
 import { SettingCategory } from './schema/setting.schema';
-import { UserSetting } from './schema/user-setting.schema';
 import { SettingService } from './setting.service';
 
 @ApiTags('Settings')
@@ -34,6 +33,7 @@ export class SettingController {
     type: UserProfileDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async getUserProfile(
     @Param('userId') userId: string,
   ): Promise<UserProfileDto | null> {
@@ -49,13 +49,13 @@ export class SettingController {
   @ApiResponse({
     status: 200,
     description: 'User profile updated successfully',
-    type: UserSetting,
   })
   @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async updateUserProfile(
     @Param('userId') userId: string,
     @Body() profileDto: UserProfileDto,
-  ): Promise<UserSetting> {
+  ): Promise<any> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.USER_PROFILE,
       settings: profileDto,
@@ -71,6 +71,7 @@ export class SettingController {
     type: CompanyInfoDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   async getCompanyInfo(
     @Param('userId') userId: string,
   ): Promise<CompanyInfoDto | null> {
@@ -86,13 +87,13 @@ export class SettingController {
   @ApiResponse({
     status: 200,
     description: 'Company information updated successfully',
-    type: UserSetting,
   })
   @ApiResponse({ status: 400, description: 'Validation error or invalid ABN' })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   async updateCompanyInfo(
     @Param('userId') userId: string,
     @Body() companyDto: CompanyInfoDto,
-  ): Promise<UserSetting> {
+  ): Promise<any> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.COMPANY_INFO,
       settings: companyDto,
@@ -108,6 +109,7 @@ export class SettingController {
     type: BillingAddressDto,
   })
   @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   async getBillingAddress(
     @Param('userId') userId: string,
   ): Promise<BillingAddressDto | null> {
@@ -123,13 +125,13 @@ export class SettingController {
   @ApiResponse({
     status: 200,
     description: 'Billing address updated successfully',
-    type: UserSetting,
   })
   @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 404, description: 'Company not found' })
   async updateBillingAddress(
     @Param('userId') userId: string,
     @Body() billingDto: BillingAddressDto,
-  ): Promise<UserSetting> {
+  ): Promise<any> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.BILLING_ADDRESS,
       settings: billingDto,
@@ -152,6 +154,7 @@ export class SettingController {
     },
   })
   @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async getAllUserSettings(@Param('userId') userId: string): Promise<{
     userProfile: UserProfileDto | null;
     companyInfo: CompanyInfoDto | null;
@@ -170,6 +173,7 @@ export class SettingController {
   })
   @ApiResponse({ status: 204, description: 'Settings deleted successfully' })
   @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 404, description: 'User or settings not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUserSettingsByCategory(
     @Param('userId') userId: string,
@@ -186,6 +190,7 @@ export class SettingController {
     description: 'All settings deleted successfully',
   })
   @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAllUserSettings(@Param('userId') userId: string): Promise<void> {
     await this.settingService.deleteAllUserSettings(userId);
@@ -194,10 +199,10 @@ export class SettingController {
   @Post('seed')
   @ApiOperation({ summary: 'Initialize default settings' })
   @ApiResponse({
-    status: 204,
+    status: 201,
     description: 'Default settings initialized successfully',
   })
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.CREATED)
   async seedDefaultSettings(): Promise<void> {
     await this.settingService.seedDefaultSettings();
   }
@@ -210,6 +215,8 @@ export class SettingController {
     description: 'User profile settings',
     type: UserProfileDto,
   })
+  @ApiResponse({ status: 400, description: 'Invalid user id' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async getProfileForFrontend(
     @Param('userId') userId: string,
   ): Promise<UserProfileDto | null> {
@@ -227,13 +234,13 @@ export class SettingController {
   @ApiResponse({
     status: 200,
     description: 'User profile updated successfully',
-    type: UserSetting,
   })
   @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async updateProfileForFrontend(
     @Param('userId') userId: string,
     @Body() profileDto: UserProfileDto,
-  ): Promise<UserSetting> {
+  ): Promise<any> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.USER_PROFILE,
       settings: profileDto,

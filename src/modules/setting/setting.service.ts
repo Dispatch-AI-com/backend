@@ -2,6 +2,12 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 
+import {
+  Company,
+  CompanyDocument,
+} from '@/modules/company/schema/company.schema';
+import { User, UserDocument } from '@/modules/user/schema/user.schema';
+
 import { CreateSettingDto } from './dto/create-setting.dto';
 import {
   BillingAddressDto,
@@ -14,15 +20,16 @@ import {
   SettingCategory,
   SettingDocument,
 } from './schema/setting.schema';
-import { UserSetting, UserSettingDocument } from './schema/user-setting.schema';
 
 @Injectable()
 export class SettingService {
   constructor(
     @InjectModel(Setting.name)
     private readonly settingModel: Model<SettingDocument>,
-    @InjectModel(UserSetting.name)
-    private readonly userSettingModel: Model<UserSettingDocument>,
+    @InjectModel(User.name)
+    private readonly userModel: Model<UserDocument>,
+    @InjectModel(Company.name)
+    private readonly companyModel: Model<CompanyDocument>,
   ) {}
 
   async getUserSettingsByCategory<T = any>(
@@ -33,11 +40,16 @@ export class SettingService {
       throw new BadRequestException(`Invalid user id: ${userId}`);
     }
 
-    const userSetting = await this.userSettingModel
-      .findOne({ userId, category })
-      .exec();
-
-    return (userSetting?.settings as T) ?? null;
+    switch (category) {
+      case SettingCategory.USER_PROFILE:
+        return (await this.getUserProfile(userId)) as T;
+      case SettingCategory.COMPANY_INFO:
+        return (await this.getCompanyInfo(userId)) as T;
+      case SettingCategory.BILLING_ADDRESS:
+        return (await this.getBillingAddress(userId)) as T;
+      default:
+        return null;
+    }
   }
 
   async getAllUserSettings(userId: string): Promise<{
@@ -50,46 +62,41 @@ export class SettingService {
     }
 
     const [userProfile, companyInfo, billingAddress] = await Promise.all([
-      this.getUserSettingsByCategory(userId, SettingCategory.USER_PROFILE),
-      this.getUserSettingsByCategory(userId, SettingCategory.COMPANY_INFO),
-      this.getUserSettingsByCategory(userId, SettingCategory.BILLING_ADDRESS),
+      this.getUserProfile(userId),
+      this.getCompanyInfo(userId),
+      this.getBillingAddress(userId),
     ]);
 
     return {
-      userProfile: userProfile as UserProfileDto | null,
-      companyInfo: companyInfo as CompanyInfoDto | null,
-      billingAddress: billingAddress as BillingAddressDto | null,
+      userProfile,
+      companyInfo,
+      billingAddress,
     };
   }
 
   async updateUserSettings(
     userId: string,
     updateDto: UpdateUserSettingsDto,
-  ): Promise<UserSetting> {
+  ): Promise<any> {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException(`Invalid user id: ${userId}`);
     }
 
     const { category, settings } = updateDto;
 
-    if (category === SettingCategory.COMPANY_INFO) {
-      const companyInfo = settings as CompanyInfoDto;
-      if (!this.validateABN(companyInfo.abn)) {
-        throw new BadRequestException('Invalid ABN format');
-      }
+    switch (category) {
+      case SettingCategory.USER_PROFILE:
+        return await this.updateUserProfile(userId, settings as UserProfileDto);
+      case SettingCategory.COMPANY_INFO:
+        return await this.updateCompanyInfo(userId, settings as CompanyInfoDto);
+      case SettingCategory.BILLING_ADDRESS:
+        return await this.updateBillingAddress(
+          userId,
+          settings as BillingAddressDto,
+        );
+      default:
+        throw new BadRequestException('Invalid category');
     }
-
-    const updatedSetting = await this.userSettingModel.findOneAndUpdate(
-      { userId, category },
-      { userId, category, settings },
-      {
-        new: true,
-        upsert: true,
-        runValidators: true,
-      },
-    );
-
-    return updatedSetting;
   }
 
   async deleteUserSettingsByCategory(
@@ -100,7 +107,17 @@ export class SettingService {
       throw new BadRequestException(`Invalid user id: ${userId}`);
     }
 
-    await this.userSettingModel.deleteOne({ userId, category }).exec();
+    switch (category) {
+      case SettingCategory.USER_PROFILE:
+        await this.clearUserProfile(userId);
+        break;
+      case SettingCategory.COMPANY_INFO:
+        await this.clearCompanyInfo(userId);
+        break;
+      case SettingCategory.BILLING_ADDRESS:
+        await this.clearBillingAddress(userId);
+        break;
+    }
   }
 
   async deleteAllUserSettings(userId: string): Promise<void> {
@@ -108,7 +125,11 @@ export class SettingService {
       throw new BadRequestException(`Invalid user id: ${userId}`);
     }
 
-    await this.userSettingModel.deleteMany({ userId }).exec();
+    await Promise.all([
+      this.clearUserProfile(userId),
+      this.clearCompanyInfo(userId),
+      this.clearBillingAddress(userId),
+    ]);
   }
 
   async createDefaultSetting(
@@ -194,6 +215,206 @@ export class SettingService {
         new: true,
       });
     }
+  }
+
+  private async getUserProfile(userId: string): Promise<UserProfileDto | null> {
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) return null;
+
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+
+    return {
+      name: fullName,
+      contact: user.fullPhoneNumber || '',
+      role: user.position || '',
+    };
+  }
+
+  private async getCompanyInfo(userId: string): Promise<CompanyInfoDto | null> {
+    const company = await this.companyModel.findOne({ user: userId }).exec();
+    if (!company) return null;
+
+    return {
+      companyName: company.businessName,
+      abn: company.abn,
+    };
+  }
+
+  private async getBillingAddress(
+    userId: string,
+  ): Promise<BillingAddressDto | null> {
+    const company = await this.companyModel.findOne({ user: userId }).exec();
+    if (!company?.address) return null;
+
+    return {
+      unit: company.address.unitAptPOBox || '',
+      streetAddress: company.address.streetAddress,
+      suburb: company.address.suburb,
+      state: company.address.state,
+      postcode: company.address.postcode,
+    };
+  }
+
+  private async updateUserProfile(
+    userId: string,
+    profileDto: UserProfileDto,
+  ): Promise<UserDocument> {
+    const nameParts = profileDto.name.trim().split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        firstName,
+        lastName,
+        fullPhoneNumber: profileDto.contact,
+        position: profileDto.role,
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedUser) {
+      throw new BadRequestException('User not found');
+    }
+
+    return updatedUser;
+  }
+
+  private async updateCompanyInfo(
+    userId: string,
+    companyDto: CompanyInfoDto,
+  ): Promise<CompanyDocument> {
+    if (!this.validateABN(companyDto.abn)) {
+      throw new BadRequestException(
+        `Invalid ABN format: ${companyDto.abn}. ABN must be 11 digits and pass checksum validation.`,
+      );
+    }
+
+    // 先查找是否存在company记录
+    const existingCompany = await this.companyModel
+      .findOne({ user: userId })
+      .exec();
+
+    if (!existingCompany) {
+      // 如果公司记录不存在，创建新的公司记录
+      const timestamp = Date.now().toString();
+      const newCompany = new this.companyModel({
+        user: userId,
+        businessName: companyDto.companyName,
+        abn: companyDto.abn,
+        email: `company-${userId}-${timestamp}@placeholder.com`,
+        number: `+61${userId.slice(-8).padStart(8, '0')}`,
+        address: {
+          streetAddress: 'To be updated',
+          suburb: 'To be updated',
+          state: 'To be updated',
+          postcode: '0000',
+        },
+      });
+
+      return await newCompany.save();
+    }
+
+    // 更新existing company记录
+    const updatedCompany = await this.companyModel.findOneAndUpdate(
+      { user: userId },
+      {
+        businessName: companyDto.companyName,
+        abn: companyDto.abn,
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedCompany) {
+      throw new BadRequestException(
+        `Failed to update company for user: ${userId}`,
+      );
+    }
+
+    return updatedCompany;
+  }
+
+  private async updateBillingAddress(
+    userId: string,
+    billingDto: BillingAddressDto,
+  ): Promise<CompanyDocument> {
+    const existingCompany = await this.companyModel
+      .findOne({ user: userId })
+      .exec();
+
+    if (!existingCompany) {
+      const timestamp = Date.now().toString();
+      const newCompany = new this.companyModel({
+        user: userId,
+        businessName: 'To be updated',
+        abn: '00000000000',
+        email: `company-${userId}-${timestamp}@placeholder.com`,
+        number: `+61${userId.slice(-8).padStart(8, '0')}`,
+        address: {
+          unitAptPOBox: billingDto.unit,
+          streetAddress: billingDto.streetAddress,
+          suburb: billingDto.suburb,
+          state: billingDto.state,
+          postcode: billingDto.postcode,
+        },
+      });
+
+      return await newCompany.save();
+    }
+
+    // 更新existing company记录的地址
+    const updatedCompany = await this.companyModel.findOneAndUpdate(
+      { user: userId },
+      {
+        'address.unitAptPOBox': billingDto.unit,
+        'address.streetAddress': billingDto.streetAddress,
+        'address.suburb': billingDto.suburb,
+        'address.state': billingDto.state,
+        'address.postcode': billingDto.postcode,
+      },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedCompany) {
+      throw new BadRequestException(
+        `Failed to update billing address for user: ${userId}`,
+      );
+    }
+
+    return updatedCompany;
+  }
+
+  private async clearUserProfile(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(userId, {
+      firstName: '',
+      lastName: '',
+      fullPhoneNumber: '',
+      position: '',
+    });
+  }
+
+  private async clearCompanyInfo(userId: string): Promise<void> {
+    await this.companyModel.findOneAndUpdate(
+      { user: userId },
+      {
+        businessName: '',
+        abn: '',
+      },
+    );
+  }
+
+  private async clearBillingAddress(userId: string): Promise<void> {
+    await this.companyModel.findOneAndUpdate(
+      { user: userId },
+      {
+        'address.unitAptPOBox': '',
+        'address.streetAddress': '',
+        'address.suburb': '',
+        'address.state': '',
+        'address.postcode': '',
+      },
+    );
   }
 
   private validateABN(abn: string): boolean {
