@@ -14,8 +14,15 @@ export interface Service {
 export interface UserInfo {
   name?: string;
   phone?: string;
-  address?: string;
+  address?: Address;
   email?: string;
+}
+
+export interface Address {
+  street: string;
+  suburb: string;
+  state: string;
+  zip: string;
 }
 
 export interface Company {
