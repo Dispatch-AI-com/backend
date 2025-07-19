@@ -1,18 +1,19 @@
 """
-客户信息验证模块
+Customer Information Validation Module
 
-该模块包含所有用于验证客户信息有效性的函数。
-每个验证函数负责检查特定类型的用户输入数据，确保数据格式正确且符合业务规则。
+This module contains all functions for validating customer information validity.
+Each validation function is responsible for checking specific types of user input data, 
+ensuring data format is correct and complies with business rules.
 
-功能：
-- 姓名验证
-- 电话号码验证（澳洲格式）
-- 地址验证（澳洲格式）
-- 电子邮件验证（RFC 5321标准）
-- 服务类型验证
-- 服务时间验证
+Features:
+- Name validation
+- Phone number validation (Australian format)
+- Address validation (Australian format)
+- Email validation (RFC 5321 standard)
+- Service type validation
+- Service time validation
 
-使用方式：
+Usage:
 from app.validate.customer_validators import validate_name, validate_phone
 is_valid = validate_name("John Smith")
 """
@@ -22,19 +23,19 @@ from typing import Tuple
 
 
 def validate_name(name: str) -> bool:
-    """验证姓名的有效性
+    """Validate name validity
     
     Args:
-        name (str): 待验证的姓名
+        name (str): Name to be validated
         
     Returns:
-        bool: 姓名是否有效
+        bool: Whether the name is valid
         
-    验证规则：
-        - 长度在1-50个字符之间
-        - 不包含特殊符号（@, #, $, %, ^, &, *, (, ), =, +, {, }, [, ]）
-        - 不能是纯数字
-        - 不能为空或只包含空格
+    Validation rules:
+        - Length between 1-50 characters
+        - Does not contain special symbols (@, #, $, %, ^, &, *, (, ), =, +, {, }, [, ])
+        - Cannot be pure numbers
+        - Cannot be empty or contain only spaces
     """
     if not name or name.strip() == "":
         return False
@@ -55,15 +56,15 @@ def validate_name(name: str) -> bool:
 
 
 def validate_phone(phone: str) -> bool:
-    """验证电话号码的有效性（仅支持澳洲格式）
+    """Validate phone number validity (Australian format only)
     
     Args:
-        phone (str): 待验证的电话号码
+        phone (str): Phone number to be validated
         
     Returns:
-        bool: 电话号码是否有效
+        bool: Whether the phone number is valid
         
-    支持的澳洲手机号格式：
+    Supported Australian mobile phone formats:
         - 04XXXXXXXX
         - +614XXXXXXXX  
         - 00614XXXXXXXX
@@ -74,7 +75,7 @@ def validate_phone(phone: str) -> bool:
     
     phone = phone.strip()
     
-    # 澳洲手机号格式
+    # Australian mobile phone formats
     australian_patterns = [
         r'^04\d{8}$',  # 04XXXXXXXX
         r'^\+614\d{8}$',  # +614XXXXXXXX
@@ -82,7 +83,7 @@ def validate_phone(phone: str) -> bool:
         r'^614\d{8}$',  # 614XXXXXXXX
     ]
     
-    # 清理电话号码（移除空格、连字符等）
+    # Clean phone number (remove spaces, hyphens, etc.)
     cleaned_phone = re.sub(r'[\s\-\(\)]', '', phone)
     
     for pattern in australian_patterns:
@@ -93,112 +94,112 @@ def validate_phone(phone: str) -> bool:
 
 
 def validate_address(address: str) -> bool:
-    """验证澳大利亚地址的有效性
+    """Validate Australian address validity
     
     Args:
-        address (str): 待验证的地址
+        address (str): Address to be validated
         
     Returns:
-        bool: 地址是否有效
+        bool: Whether the address is valid
         
-    验证规则：
-        - 长度在5-200个字符之间
-        - 必须包含以下组成部分中的至少4个：
-          1. 街道号码（数字）
-          2. 街道名称和类型（Street, St, Road, Rd, Avenue, Ave等）
-          3. 城市/区域名称
-          4. 州/领地（NSW, VIC, QLD, WA, SA, TAS, NT, ACT）
-          5. 邮编（4位数字）
+    Validation rules:
+        - Length between 5-200 characters
+        - Must contain at least 4 of the following components:
+          1. Street number (digits)
+          2. Street name and type (Street, St, Road, Rd, Avenue, Ave, etc.)
+          3. City/suburb name
+          4. State/territory (NSW, VIC, QLD, WA, SA, TAS, NT, ACT)
+          5. Postcode (4 digits)
     """
     if not address or address.strip() == "":
         return False
     
     address = address.strip()
     
-    # 验证基本长度
+    # Validate basic length
     if len(address) < 5 or len(address) > 200:
         return False
     
-    # 验证是否包含必要组成部分
+    # Validate if necessary components are included
     required_components = [
-        r'\d+',  # 街道号码
-        r'[A-Za-z\s]+(Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Lane|Ln|Place|Pl|Way|Parade|Pde|Circuit|Cct|Close|Cl)',  # 扩展街道类型
-        r'[A-Za-z\s]+',  # 城市/区域名称 - 更灵活的匹配
-        r'(NSW|VIC|QLD|WA|SA|TAS|NT|ACT)',  # 州/领地
-        r'\d{4}'  # 邮编
+        r'\d+',  # Street number
+        r'[A-Za-z\s]+(Street|St|Road|Rd|Avenue|Ave|Drive|Dr|Lane|Ln|Place|Pl|Way|Parade|Pde|Circuit|Cct|Close|Cl)',  # Extended street types
+        r'[A-Za-z\s]+',  # City/suburb name - more flexible matching
+        r'(NSW|VIC|QLD|WA|SA|TAS|NT|ACT)',  # State/territory
+        r'\d{4}'  # Postcode
     ]
     
-    # 将地址转换为大写以进行不区分大小写的匹配
+    # Convert address to uppercase for case-insensitive matching
     upper_address = address.upper()
     
-    # 检查每个必要组成部分是否存在
+    # Check if each necessary component exists
     matches = 0
     for pattern in required_components:
         if re.search(pattern, upper_address, re.IGNORECASE):
             matches += 1
     
-    # 如果匹配到至少4个组成部分，则认为地址有效
-    # 这样可以允许一些灵活性，比如街道类型的缩写可能不在我们的列表中
+    # If at least 4 components match, consider address valid
+    # This allows some flexibility, such as street type abbreviations that might not be in our list
     return matches >= 4
 
 
 def validate_email(email: str) -> bool:
-    """验证电子邮件地址的有效性
+    """Validate email address validity
     
     Args:
-        email (str): 待验证的电子邮件地址
+        email (str): Email address to be validated
         
     Returns:
-        bool: 电子邮件地址是否有效
+        bool: Whether the email address is valid
         
-    验证规则（遵循RFC 5321标准）：
-        - 总长度在5-254个字符之间
-        - 包含且仅包含一个@符号
-        - 用户名部分不超过64个字符
-        - 域名部分不超过253个字符且包含至少一个点
-        - 域名不能以点开头或结尾
-        - 不能包含连续的点
-        - 符合标准邮箱格式正则表达式
+    Validation rules (following RFC 5321 standard):
+        - Total length between 5-254 characters
+        - Contains exactly one @ symbol
+        - Username part no more than 64 characters
+        - Domain part no more than 253 characters and contains at least one dot
+        - Domain cannot start or end with a dot
+        - Cannot contain consecutive dots
+        - Conforms to standard email format regex
     """
     if not email or email.strip() == "":
         return False
     
     email = email.strip()
     
-    # 基本长度检查
-    if len(email) < 5 or len(email) > 254:  # RFC 5321 标准
+    # Basic length check
+    if len(email) < 5 or len(email) > 254:  # RFC 5321 standard
         return False
     
-    # 检查是否包含@符号，且只有一个
+    # Check if contains @ symbol, and only one
     if email.count('@') != 1:
         return False
     
-    # 分割用户名和域名部分
+    # Split username and domain parts
     local_part, domain_part = email.split('@')
     
-    # 验证用户名部分（不能为空）
-    if not local_part or len(local_part) > 64:  # RFC 5321 标准
+    # Validate username part (cannot be empty)
+    if not local_part or len(local_part) > 64:  # RFC 5321 standard
         return False
     
-    # 验证域名部分
-    if not domain_part or len(domain_part) > 253:  # RFC 5321 标准
+    # Validate domain part
+    if not domain_part or len(domain_part) > 253:  # RFC 5321 standard
         return False
     
-    # 域名必须包含至少一个点
+    # Domain must contain at least one dot
     if '.' not in domain_part:
         return False
     
-    # 简单的正则表达式验证
+    # Simple regex validation
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     
     if not re.match(email_pattern, email):
         return False
     
-    # 检查域名部分是否以点开头或结尾
+    # Check if domain part starts or ends with a dot
     if domain_part.startswith('.') or domain_part.endswith('.'):
         return False
     
-    # 检查是否有连续的点
+    # Check for consecutive dots
     if '..' in email:
         return False
     
@@ -206,43 +207,43 @@ def validate_email(email: str) -> bool:
 
 
 def validate_service(service: str) -> Tuple[bool, bool]:
-    """验证服务类型的有效性
+    """Validate service type validity
     
     Args:
-        service (str): 待验证的服务类型
+        service (str): Service type to be validated
         
     Returns:
-        Tuple[bool, bool]: (是否有效输入, 服务是否可用)
+        Tuple[bool, bool]: (Is valid input, Is service available)
         
-    支持的服务类型：
-        - clean（清洁）
-        - garden（园艺）  
-        - plumber（水管工）
+    Supported service types:
+        - clean (cleaning)
+        - garden (gardening)  
+        - plumber (plumbing)
     """
     if not service or service.strip() == "":
         return False, False
     
     service = service.strip().lower()
     
-    # 支持的服务类型列表
+    # Supported service types list
     supported_services = ['clean', 'garden', 'plumber']
     
-    # 检查服务是否在支持列表中
+    # Check if service is in supported list
     service_available = service in supported_services
     
     return True, service_available
 
 
 def validate_time(service_time: str) -> Tuple[bool, bool]:
-    """验证服务时间的有效性
+    """Validate service time validity
     
     Args:
-        service_time (str): 待验证的服务时间
+        service_time (str): Service time to be validated
         
     Returns:
-        Tuple[bool, bool]: (是否有效输入, 时间是否可用)
+        Tuple[bool, bool]: (Is valid input, Is time available)
         
-    支持的服务时间：
+    Supported service times:
         - tomorrow morning
         - saturday morning  
         - sunday afternoon
@@ -252,20 +253,20 @@ def validate_time(service_time: str) -> Tuple[bool, bool]:
     
     service_time = service_time.strip().lower()
     
-    # 支持的服务时间列表
+    # Supported service times list
     supported_times = ['tomorrow morning', 'saturday morning', 'sunday afternoon']
     
-    # 检查时间是否在支持列表中
+    # Check if time is in supported list
     time_available = service_time in supported_times
     
     return True, time_available
 
 
-# 验证器管理类 (可选，用于更高级的验证管理)
+# Validator management class (optional, for advanced validation management)
 class CustomerValidators:
-    """客户信息验证器管理类
+    """Customer information validator management class
     
-    提供所有客户信息验证相关功能的统一访问接口
+    Provides unified access interface for all customer information validation related functions
     """
     
     @staticmethod
@@ -294,16 +295,16 @@ class CustomerValidators:
     
     @classmethod
     def validate_all_user_info(cls, name: str, phone: str, address: str, email: str) -> dict:
-        """验证所有用户基本信息
+        """Validate all user basic information
         
         Args:
-            name (str): 姓名
-            phone (str): 电话号码
-            address (str): 地址
-            email (str): 电子邮件
+            name (str): Name
+            phone (str): Phone number
+            address (str): Address
+            email (str): Email
             
         Returns:
-            dict: 包含所有验证结果的字典
+            dict: Dictionary containing all validation results
         """
         return {
             'name_valid': cls.validate_name(name),
@@ -314,14 +315,14 @@ class CustomerValidators:
     
     @classmethod
     def validate_service_info(cls, service: str, service_time: str) -> dict:
-        """验证服务相关信息
+        """Validate service-related information
         
         Args:
-            service (str): 服务类型
-            service_time (str): 服务时间
+            service (str): Service type
+            service_time (str): Service time
             
         Returns:
-            dict: 包含服务验证结果的字典
+            dict: Dictionary containing service validation results
         """
         service_valid, service_available = cls.validate_service(service)
         time_valid, time_available = cls.validate_time(service_time)
