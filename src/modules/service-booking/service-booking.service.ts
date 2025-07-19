@@ -47,7 +47,15 @@ export class ServiceBookingService {
   private sanitizeDto(
     dto: Partial<CreateServiceBookingDto>,
   ): Partial<CreateServiceBookingDto> {
-    const allowedFields = ['client', 'service', 'date', 'status']; // Add all expected fields here
+    const allowedFields = [
+      'client',
+      'serviceFormValues',
+      'status',
+      'note',
+      'serviceId',
+      'bookingTime',
+      'userId',
+    ];
     const sanitizedDto: Partial<CreateServiceBookingDto> = {};
     for (const key of allowedFields) {
       if (key in dto) {

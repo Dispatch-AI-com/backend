@@ -23,6 +23,9 @@ const NotificationSchema = SchemaFactory.createForClass(Notification);
   timestamps: true,
 })
 export class Service {
+  @Prop({ required: true })
+  userId!: string;
+
   @Prop({ required: true, trim: true, minlength: 1 })
   name!: string;
 
@@ -40,11 +43,6 @@ export class Service {
 
   @Prop({ default: false })
   isDeleted?: boolean;
-
-  @Prop({ required: true })
-  userId!: string;
-
-  _id!: Types.ObjectId;
 }
 
 export const ServiceSchema = SchemaFactory.createForClass(Service);
