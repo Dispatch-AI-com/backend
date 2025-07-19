@@ -139,10 +139,11 @@ export class OnboardingService {
     } catch (err: unknown) {
       // handle index uniqueness conflict
       if (
-        err &&
+        err !== null &&
+        err !== undefined &&
         typeof err === 'object' &&
         'code' in err &&
-        (err as any).code === 11000
+        (err as { code: number }).code === 11000
       ) {
         throw new ConflictException('Company email/abn/phone already exists');
       }

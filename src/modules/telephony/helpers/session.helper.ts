@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
+import { Types } from 'mongoose';
 
 import { Company } from '@/modules/company/schema/company.schema';
 import { Service as ServiceDocument } from '@/modules/service/schema/service.schema';
+import { User } from '@/modules/user/schema/user.schema';
 
 import { SessionRepository } from '../repositories/session.repository';
 import {
@@ -25,7 +27,7 @@ export class SessionHelper {
     services: ServiceDocument[],
   ): Promise<void> {
     const telephonyServices: Service[] = services.map(service => ({
-      id: service._id.toString(),
+      id: (service as ServiceDocument & { _id: Types.ObjectId })._id.toString(),
       name: service.name,
       price: service.price,
       description: service.description,
@@ -49,7 +51,10 @@ export class SessionHelper {
       id: company._id.toString(),
       name: company.businessName,
       email: company.email,
-      userId: (company.user as any)._id?.toString() || company.user.toString(),
+      userId:
+        typeof company.user === 'object' && '_id' in company.user
+          ? (company.user as User & { _id: Types.ObjectId })._id.toString()
+          : (company.user as Types.ObjectId).toString(),
     };
     await this.sessions.appendCompany(callSid, telephonyCompany);
   }
