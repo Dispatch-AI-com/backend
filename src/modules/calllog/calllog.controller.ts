@@ -20,6 +20,7 @@ import {
 
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { ICallLog, ICallLogSummary } from '@/common/interfaces/calllog';
+import { RequireOwnership } from '@/modules/auth/decorators/require-ownership.decorator';
 
 import { CalllogService } from './calllog.service';
 import { CreateCallLogDto } from './dto/create-calllog.dto';
@@ -28,6 +29,7 @@ import { CallLog, CallLogDocument } from './schema/calllog.schema';
 
 @ApiTags('calllog')
 @Controller('users/:userId/calllogs')
+@RequireOwnership()
 export class CalllogController {
   constructor(private readonly calllogService: CalllogService) {}
 

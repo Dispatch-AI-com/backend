@@ -7,7 +7,9 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CreateLocationDto } from './dto/create-location.dto';
@@ -17,6 +19,7 @@ import { Location } from './schema/location.schema';
 
 @ApiTags('location')
 @Controller('location')
+@UseGuards(AuthGuard('jwt'))
 export class LocationController {
   constructor(private readonly locationService: LocationService) {}
 

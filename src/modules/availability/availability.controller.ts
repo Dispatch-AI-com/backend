@@ -7,7 +7,9 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { AvailabilityService } from './availability.service';
@@ -16,6 +18,7 @@ import { Availability } from './schema/availability.schema';
 
 @ApiTags('Availability')
 @Controller('availability')
+@UseGuards(AuthGuard('jwt'))
 export class AvailabilityController {
   constructor(private readonly availabilityService: AvailabilityService) {}
 

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -8,9 +9,16 @@ import {
   Patch,
   Post,
   Put,
-  Delete,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
+import { AuthGuard } from '@nestjs/passport';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -19,6 +27,7 @@ import { Plan } from './schema/plan.schema';
 
 @ApiTags('plan')
 @Controller('plan')
+@UseGuards(AuthGuard('jwt'))
 export class PlanController {
   constructor(private readonly planService: PlanService) {}
 

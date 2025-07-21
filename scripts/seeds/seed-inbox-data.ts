@@ -13,8 +13,13 @@ interface User {
   fullPhoneNumber: string;
   receivedAdverts: boolean;
   status: string;
+  statusReason?: string;
+  position?: string;
   role: string;
+  googleId?: string;
+  avatar?: string;
   provider: string;
+  tokenRefreshTime: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -192,9 +197,14 @@ const userSchema = new Schema({
   password: String,
   fullPhoneNumber: String,
   receivedAdverts: { type: Boolean, default: true },
-  status: { type: String, default: 'active' },
-  role: { type: String, default: 'user' },
-  provider: { type: String, default: 'local' }
+  status: { type: String, enum: ['banned', 'active'], default: 'active' },
+  statusReason: String,
+  position: String,
+  role: { type: String, enum: ['admin', 'user'], default: 'user' },
+  googleId: String,
+  avatar: String,
+  provider: { type: String, default: 'local' },
+  tokenRefreshTime: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 const callLogSchema = new Schema({
@@ -239,7 +249,7 @@ async function seedData() {
     console.log('Cleared existing data');
     
     // Create test user
-    const hashedPassword = await bcrypt.hash('password123', SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash('Admin123!', SALT_ROUNDS);
     const testUser = await UserModel.create({
       firstName: 'Test',
       lastName: 'User',
@@ -248,8 +258,10 @@ async function seedData() {
       fullPhoneNumber: '+1-555-999-0000',
       receivedAdverts: true,
       status: 'active',
-      role: 'user',
-      provider: 'local'
+      role: 'admin',
+      provider: 'local',
+      position: 'System Administrator',
+      tokenRefreshTime: new Date()
     });
     
     console.log('Created test user:', testUser.email);
@@ -296,7 +308,9 @@ async function seedData() {
     console.log('Seeding completed successfully!');
     console.log('Test user credentials:');
     console.log('Email: test@example.com');
-    console.log('Password: password123');
+    console.log('Password: Admin123!');
+    console.log('Role: admin');
+    console.log('Position: System Administrator');
     
   } catch (error) {
     console.error('Error seeding data:', error);

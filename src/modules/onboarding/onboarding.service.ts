@@ -136,9 +136,14 @@ export class OnboardingService {
       const dto = plainToInstance(CreateCompanyDto, companyPayload);
       await validateOrReject(dto);
       await this.companyService.create(dto);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // handle index uniqueness conflict
-      if (err.code === 11000) {
+      if (
+        err &&
+        typeof err === 'object' &&
+        'code' in err &&
+        err.code === 11000
+      ) {
         throw new ConflictException('Company email/abn/phone already exists');
       }
       throw err;
@@ -168,7 +173,7 @@ export class OnboardingService {
   /**
    * get all onboarding sessions
    */
-  async getAllSessions() {
+  async getAllSessions(): Promise<OnboardingSessionDocument[]> {
     return this.sessionModel.find().select('-__v').lean().exec();
   }
 }

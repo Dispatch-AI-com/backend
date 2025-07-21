@@ -16,11 +16,18 @@ import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
+import { AuthJwtService } from '@/modules/auth/services/jwt.service';
+import { User } from '@/modules/user/schema/user.schema';
+import { UserService } from '@/modules/user/user.service';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly authJwtService: AuthJwtService,
+    private readonly userService: UserService,
+  ) {}
 
   @ApiOperation({
     summary: 'User Registration',
@@ -80,7 +87,8 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginDto,
   ): Promise<{ user: UserResponseDto; token: string }> {
-    const { user, token } = await this.authService.login(loginDto);
+    const { user } = await this.authService.login(loginDto);
+    const token = this.authJwtService.generateToken(user);
 
     const safeUser: UserResponseDto = {
       _id: String(user._id),
@@ -114,15 +122,95 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthRedirect(@Req() req: Request, @Res() res: Response): void {
-    const { user, token } = req.user as {
-      user: Record<string, unknown>;
-      token: string;
+    const { user } = req.user as {
+      user: {
+        _id: string;
+        email: string;
+        firstName?: string;
+        lastName?: string;
+        role: string;
+      };
+    };
+
+    // 创建一个符合 User 类型的对象
+    const userForToken: Partial<User> = {
+      _id: user._id as any,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role as any,
+      status: 'active' as any,
+      tokenRefreshTime: new Date(),
+      fullPhoneNumber: '',
+      receivedAdverts: true,
+      statusReason: '',
+      position: '',
+      provider: 'google',
+    };
+
+    const token = this.authJwtService.generateToken(userForToken as User);
+
+    const safeUser = {
+      _id: String(user._id),
+      email: String(user.email),
+      firstName:
+        user.firstName !== undefined &&
+        user.firstName !== null &&
+        user.firstName.length > 0
+          ? String(user.firstName)
+          : undefined,
+      lastName:
+        user.lastName !== undefined &&
+        user.lastName !== null &&
+        user.lastName.length > 0
+          ? String(user.lastName)
+          : undefined,
+      role: user.role,
     };
 
     // Redirect to frontend with token
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
-      `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`,
+      `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(safeUser))}`,
     );
+  }
+
+  @ApiOperation({
+    summary: 'User Logout',
+    description: 'Logout user and invalidate tokens',
+  })
+  @ApiResponse({ status: 200, description: 'Logged out successfully' })
+  @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
+  async logout(
+    @Req() req: Request & { user: { userId: string } },
+  ): Promise<{ message: string }> {
+    // 使当前用户的所有token失效
+    await this.userService.invalidateUserTokens(req.user.userId);
+    return { message: 'Logged out successfully' };
+  }
+
+  @ApiOperation({
+    summary: 'Get Current User',
+    description: 'Get current authenticated user information',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user information',
+    type: UserResponseDto,
+  })
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  async getCurrentUser(
+    @Req() req: Request & { user: { userId: string } },
+  ): Promise<UserResponseDto> {
+    const user = await this.userService.findOne(req.user.userId);
+    return {
+      _id: String(user._id),
+      email: String(user.email),
+      firstName: user.firstName ? String(user.firstName) : undefined,
+      lastName: user.lastName ? String(user.lastName) : undefined,
+      role: user.role,
+    };
   }
 }

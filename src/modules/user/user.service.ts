@@ -12,7 +12,9 @@ import { isValidObjectId } from 'mongoose';
 import { SALT_ROUNDS } from '@/modules/auth/auth.config';
 
 import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { UserStatus } from './enum/userStatus.enum';
 import { User, UserDocument } from './schema/user.schema';
+
 @Injectable()
 export class UserService {
   constructor(
@@ -32,6 +34,13 @@ export class UserService {
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException(`User with id ${id} not found`);
     return user;
+  }
+
+  async findById(id: string): Promise<User | null> {
+    if (!isValidObjectId(id)) {
+      return null;
+    }
+    return this.userModel.findById(id).exec();
   }
 
   async patch(id: string, dto: UpdateUserDto): Promise<User> {
@@ -87,5 +96,61 @@ export class UserService {
     const deleted = await this.userModel.findByIdAndDelete(id).exec();
     if (!deleted) throw new NotFoundException(`User with id ${id} not found`);
     return deleted;
+  }
+
+  // Token失效机制
+  async invalidateUserTokens(userId: string): Promise<void> {
+    await this.userModel.findByIdAndUpdate(
+      userId,
+      { tokenRefreshTime: new Date() },
+      { new: true },
+    );
+  }
+
+  // 封禁用户
+  async banUser(userId: string, reason?: string): Promise<User> {
+    await this.invalidateUserTokens(userId);
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        status: UserStatus.banned,
+        statusReason: reason,
+      },
+      { new: true },
+    );
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+    return user;
+  }
+
+  // 激活用户
+  async activateUser(userId: string): Promise<User> {
+    await this.invalidateUserTokens(userId);
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        status: UserStatus.active,
+        statusReason: undefined,
+      },
+      { new: true },
+    );
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${userId} not found`);
+    }
+    return user;
+  }
+
+  // 根据邮箱查找用户
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+
+  // 检查用户是否存在
+  async checkUserExists(email: string): Promise<boolean> {
+    const user = await this.userModel.findOne({ email }).exec();
+    return !!user;
   }
 }

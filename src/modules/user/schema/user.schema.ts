@@ -55,6 +55,9 @@ export class User extends Document {
 
   @Prop({ default: 'local' })
   provider!: string;
+
+  @Prop({ default: Date.now })
+  tokenRefreshTime!: Date;
 }
 
 export type UserDocument = User & Document;

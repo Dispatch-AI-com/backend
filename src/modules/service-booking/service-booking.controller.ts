@@ -8,7 +8,9 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
@@ -17,6 +19,7 @@ import { ServiceBookingService } from '@/modules/service-booking/service-booking
 
 @ApiTags('service-bookings')
 @Controller('bookings')
+@UseGuards(AuthGuard('jwt'))
 export class ServiceBookingController {
   constructor(private readonly bookingService: ServiceBookingService) {}
 

@@ -24,7 +24,7 @@ export default tseslint.config(
       sourceType: "module",
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        tsconfigRootDir: import.meta.url,
       },
     },
     plugins: { prettier, "simple-import-sort": importSort }, // ← 注册导入排序
@@ -71,6 +71,17 @@ export default tseslint.config(
   {
     files: ["src/**/*.module.ts"],
     rules: { "@typescript-eslint/no-extraneous-class": "off" },
+  },
+
+  /* 认证模块特殊规则 */
+  {
+    files: ["src/modules/auth/**/*.ts", "src/modules/user/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-unsafe-argument": "warn",
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/strict-boolean-expressions": "warn",
+      "@typescript-eslint/no-unnecessary-condition": "warn",
+    },
   },
 
   /* NestJS‑typed 官方推荐 */

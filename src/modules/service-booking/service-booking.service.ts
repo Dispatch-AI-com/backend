@@ -37,7 +37,7 @@ export class ServiceBookingService {
     id: string,
     dto: Partial<CreateServiceBookingDto>,
   ): Promise<ServiceBooking | null> {
-    if ('_id' in dto) delete (dto as any)._id;
+    if ('_id' in dto) delete (dto as Record<string, unknown>)._id;
     const sanitizedDto = this.sanitizeDto(dto);
     return this.bookingModel
       .findByIdAndUpdate(id, { $set: sanitizedDto }, { new: true })
@@ -59,7 +59,9 @@ export class ServiceBookingService {
     const sanitizedDto: Partial<CreateServiceBookingDto> = {};
     for (const key of allowedFields) {
       if (key in dto) {
-        (sanitizedDto as any)[key] = (dto as any)[key];
+        (sanitizedDto as Record<string, unknown>)[key] = (
+          dto as Record<string, unknown>
+        )[key];
       }
     }
     return sanitizedDto;

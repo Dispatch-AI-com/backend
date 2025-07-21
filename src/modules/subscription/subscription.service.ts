@@ -345,7 +345,9 @@ export class SubscriptionService {
       throw new NotFoundException('Stripe customer not found for this user');
     }
 
-    return this.stripeService.listInvoicesByCustomerId(subscription.stripeCustomerId);
+    return this.stripeService.listInvoicesByCustomerId(
+      subscription.stripeCustomerId,
+    );
   }
 
   async getRefundsByUserId(userId: string): Promise<Stripe.Refund[]> {
@@ -359,12 +361,12 @@ export class SubscriptionService {
     for (const sub of subscriptions) {
       const chargeId = sub.chargeId;
       if (typeof chargeId === 'string') {
-        const chargeRefunds = await this.stripeService.listRefundsByChargeId(chargeId);
+        const chargeRefunds =
+          await this.stripeService.listRefundsByChargeId(chargeId);
         refunds.push(...chargeRefunds);
       }
     }
 
     return refunds;
   }
-
 }

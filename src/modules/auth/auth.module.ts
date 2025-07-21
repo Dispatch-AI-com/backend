@@ -7,6 +7,9 @@ import { PassportModule } from '@nestjs/passport';
 import { JWT_EXPIRATION_TIME } from '@/modules/auth/auth.config';
 import { AuthController } from '@/modules/auth/auth.controller';
 import { AuthService } from '@/modules/auth/auth.service';
+import { RolesGuard } from '@/modules/auth/guards/roles.guard';
+import { StatusGuard } from '@/modules/auth/guards/status.guard';
+import { AuthJwtService } from '@/modules/auth/services/jwt.service';
 import { GoogleStrategy } from '@/modules/auth/strategies/google.strategy';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { DatabaseModule } from '@/modules/database/database.module';
@@ -29,7 +32,14 @@ import { UserModule } from '@/modules/user/user.module';
     UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
-  exports: [AuthService],
+  providers: [
+    AuthService,
+    AuthJwtService,
+    JwtStrategy,
+    GoogleStrategy,
+    RolesGuard,
+    StatusGuard,
+  ],
+  exports: [AuthService, AuthJwtService, RolesGuard, StatusGuard],
 })
 export class AuthModule {}

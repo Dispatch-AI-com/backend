@@ -6,7 +6,9 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CompanyService } from './company.service';
@@ -16,6 +18,7 @@ import { Company } from './schema/company.schema';
 
 @ApiTags('companies')
 @Controller('companies')
+@UseGuards(AuthGuard('jwt'))
 export class CompanyController {
   constructor(private readonly companyService: CompanyService) {}
 
