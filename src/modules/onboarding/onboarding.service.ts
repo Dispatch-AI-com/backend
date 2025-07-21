@@ -116,6 +116,11 @@ export class OnboardingService {
       throw new BadRequestException('company answers not found in session');
     }
 
+    // Check if address was properly parsed
+    if (!companyAns.address || !companyAns.address.streetAddress) {
+      throw new BadRequestException('company address not properly parsed. Check address format.');
+    }
+
     const companyPayload = {
       businessName: companyAns.businessName,
       address: {
