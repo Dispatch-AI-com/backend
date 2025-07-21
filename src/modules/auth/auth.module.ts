@@ -12,6 +12,7 @@ import { StatusGuard } from '@/modules/auth/guards/status.guard';
 import { AuthJwtService } from '@/modules/auth/services/jwt.service';
 import { GoogleStrategy } from '@/modules/auth/strategies/google.strategy';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
+import { LocalStrategy } from '@/modules/auth/strategies/local.strategy';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { User, userSchema } from '@/modules/user/schema/user.schema';
 import { UserModule } from '@/modules/user/user.module';
@@ -36,6 +37,7 @@ import { UserModule } from '@/modules/user/user.module';
     AuthService,
     AuthJwtService,
     JwtStrategy,
+    LocalStrategy,
     GoogleStrategy,
     RolesGuard,
     StatusGuard,

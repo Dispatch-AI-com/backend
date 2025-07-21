@@ -84,10 +84,11 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Email or password is incorrect' })
   @Post('login')
+  @UseGuards(AuthGuard('local'))
   async login(
-    @Body() loginDto: LoginDto,
+    @Req() req: Request & { user: User },
   ): Promise<{ user: UserResponseDto; token: string }> {
-    const { user } = await this.authService.login(loginDto);
+    const user = req.user;
     const token = this.authJwtService.generateToken(user);
 
     const safeUser: UserResponseDto = {
@@ -122,49 +123,16 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthRedirect(@Req() req: Request, @Res() res: Response): void {
-    const { user } = req.user as {
-      user: {
-        _id: string;
-        email: string;
-        firstName?: string;
-        lastName?: string;
-        role: string;
-      };
+    const { user, token } = req.user as {
+      user: User;
+      token: string;
     };
 
-    // 创建一个符合 User 类型的对象
-    const userForToken: Partial<User> = {
-      _id: user._id as any,
-      email: user.email,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role as any,
-      status: 'active' as any,
-      tokenRefreshTime: new Date(),
-      fullPhoneNumber: '',
-      receivedAdverts: true,
-      statusReason: '',
-      position: '',
-      provider: 'google',
-    };
-
-    const token = this.authJwtService.generateToken(userForToken as User);
-
-    const safeUser = {
+    const safeUser: UserResponseDto = {
       _id: String(user._id),
       email: String(user.email),
-      firstName:
-        user.firstName !== undefined &&
-        user.firstName !== null &&
-        user.firstName.length > 0
-          ? String(user.firstName)
-          : undefined,
-      lastName:
-        user.lastName !== undefined &&
-        user.lastName !== null &&
-        user.lastName.length > 0
-          ? String(user.lastName)
-          : undefined,
+      firstName: user.firstName ? String(user.firstName) : undefined,
+      lastName: user.lastName ? String(user.lastName) : undefined,
       role: user.role,
     };
 

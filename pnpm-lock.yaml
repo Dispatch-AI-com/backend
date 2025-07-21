@@ -95,6 +95,9 @@ importers:
       passport-jwt:
         specifier: ^4.0.1
         version: 4.0.1
+      passport-local:
+        specifier: ^1.0.0
+        version: 1.0.0
       redoc:
         specifier: ^2.5.0
         version: 2.5.0(core-js@3.42.0)(mobx@6.13.7)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)(styled-components@6.1.18(react-dom@19.1.0(react@19.1.0))(react@19.1.0))
@@ -162,6 +165,9 @@ importers:
       '@types/passport-jwt':
         specifier: ^4.0.1
         version: 4.0.1
+      '@types/passport-local':
+        specifier: ^1.0.38
+        version: 1.0.38
       '@types/streamifier':
         specifier: ^0.1.2
         version: 0.1.2
@@ -1073,6 +1079,9 @@ packages:
 
   '@types/passport-jwt@4.0.1':
     resolution: {integrity: sha512-Y0Ykz6nWP4jpxgEUYq8NoVZeCQPo1ZndJLfapI249g1jHChvRfZRO/LS3tqu26YgAS/laI1qx98sYGz0IalRXQ==}
+
+  '@types/passport-local@1.0.38':
+    resolution: {integrity: sha512-nsrW4A963lYE7lNTv9cr5WmiUD1ibYJvWrpE13oxApFsRt77b0RdtZvKbCdNIY4v/QZ6TRQWaDDEwV1kCTmcXg==}
 
   '@types/passport-oauth2@1.8.0':
     resolution: {integrity: sha512-6//z+4orIOy/g3zx17HyQ71GSRK4bs7Sb+zFasRoc2xzlv7ZCJ+vkDBYFci8U6HY+or6Zy7ajf4mz4rK7nsWJQ==}
@@ -3114,6 +3123,10 @@ packages:
   passport-jwt@4.0.1:
     resolution: {integrity: sha512-UCKMDYhNuGOBE9/9Ycuoyh7vP6jpeTp/+sfMJl7nLff/t6dps+iaeE0hhNkKN8/HZHcJ7lCdOyDxHdDoxoSvdQ==}
 
+  passport-local@1.0.0:
+    resolution: {integrity: sha512-9wCE6qKznvf9mQYYbgJ3sVOHmCWoUNMVFoZzNoznmISbhnNNPhN9xfY3sLmScHMetEJeoY7CXwfhCe7argfQow==}
+    engines: {node: '>= 0.4.0'}
+
   passport-oauth2@1.8.0:
     resolution: {integrity: sha512-cjsQbOrXIDE4P8nNb3FQRCCmJJ/utnFKEz2NX209f7KOHPoX18gF7gBzBbLLsj2/je4KrgiwLLGjf0lm9rtTBA==}
     engines: {node: '>= 0.4.0'}
@@ -5126,6 +5139,12 @@ snapshots:
   '@types/passport-jwt@4.0.1':
     dependencies:
       '@types/jsonwebtoken': 9.0.9
+      '@types/passport-strategy': 0.2.38
+
+  '@types/passport-local@1.0.38':
+    dependencies:
+      '@types/express': 5.0.1
+      '@types/passport': 1.0.17
       '@types/passport-strategy': 0.2.38
 
   '@types/passport-oauth2@1.8.0':
@@ -7374,6 +7393,10 @@ snapshots:
   passport-jwt@4.0.1:
     dependencies:
       jsonwebtoken: 9.0.2
+      passport-strategy: 1.0.0
+
+  passport-local@1.0.0:
+    dependencies:
       passport-strategy: 1.0.0
 
   passport-oauth2@1.8.0:
