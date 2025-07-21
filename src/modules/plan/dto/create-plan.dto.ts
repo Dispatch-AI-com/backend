@@ -27,6 +27,10 @@ export class PricingDto {
   @IsNumber({}, { message: 'price must be a valid number' })
   price!: number;
 
+  @ApiProperty({
+    description: 'Stripe Price ID for this billing option',
+    example: 'price_1RkXXXR2XtOFzYzKabc12345',
+  })
   @IsString()
   stripePriceId!: string;
 }

@@ -20,8 +20,9 @@ export class ServiceBookingService {
     return newBooking.save();
   }
 
-  async findAll(): Promise<ServiceBooking[]> {
-    return this.bookingModel.find().exec();
+  async findAll(userId?: string): Promise<ServiceBooking[]> {
+    const filter = userId ? { userId: { $eq: userId } } : {};
+    return this.bookingModel.find(filter).exec();
   }
 
   async findById(id: string): Promise<ServiceBooking | null> {
@@ -41,5 +42,41 @@ export class ServiceBookingService {
       .find(filter)
       .populate('serviceId', 'name description price notifications isAvailable')
       .exec();
+  }
+
+  async deleteById(id: string): Promise<ServiceBooking | null> {
+    return this.bookingModel.findByIdAndDelete(id).exec();
+  }
+
+  async updateById(
+    id: string,
+    dto: Partial<CreateServiceBookingDto>,
+  ): Promise<ServiceBooking | null> {
+    if ('_id' in dto) delete (dto as any)._id;
+    const sanitizedDto = this.sanitizeDto(dto);
+    return this.bookingModel
+      .findByIdAndUpdate(id, { $set: sanitizedDto }, { new: true })
+      .exec();
+  }
+
+  private sanitizeDto(
+    dto: Partial<CreateServiceBookingDto>,
+  ): Partial<CreateServiceBookingDto> {
+    const allowedFields = [
+      'client',
+      'serviceFormValues',
+      'status',
+      'note',
+      'serviceId',
+      'bookingTime',
+      'userId',
+    ];
+    const sanitizedDto: Partial<CreateServiceBookingDto> = {};
+    for (const key of allowedFields) {
+      if (key in dto) {
+        (sanitizedDto as any)[key] = (dto as any)[key];
+      }
+    }
+    return sanitizedDto;
   }
 }

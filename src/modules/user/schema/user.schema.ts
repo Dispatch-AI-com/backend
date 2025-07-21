@@ -41,6 +41,9 @@ export class User extends Document {
   @Prop()
   statusReason!: string;
 
+  @Prop()
+  position!: string;
+
   @Prop({ default: EUserRole.user })
   role!: EUserRole;
 

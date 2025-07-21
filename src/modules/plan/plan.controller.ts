@@ -8,8 +8,9 @@ import {
   Patch,
   Post,
   Put,
+  Delete,
 } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags, ApiParam } from '@nestjs/swagger';
 
 import { CreatePlanDto } from './dto/create-plan.dto';
 import { UpdatePlanDto } from './dto/update-plan.dto';
@@ -127,5 +128,20 @@ export class PlanController {
     @Body() dto: UpdatePlanDto,
   ): Promise<Plan> {
     return this.planService.patchPlan(id, dto);
+  }
+
+  /**
+   * Delete a plan by ID
+   * DELETE /plan/:id
+   */
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a plan by ID' })
+  @ApiParam({ name: 'id', description: 'Plan ID' })
+  @ApiResponse({ status: 200, description: 'Plan deleted successfully' })
+  @ApiResponse({ status: 404, description: 'Plan not found' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  async remove(@Param('id') id: string): Promise<{ message: string }> {
+    await this.planService.deletePlan(id);
+    return { message: 'Plan deleted successfully' };
   }
 }
