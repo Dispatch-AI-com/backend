@@ -5,6 +5,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -39,6 +40,17 @@ export class ServiceBookingController {
   })
   async findAllBookings(): Promise<ServiceBooking[]> {
     return this.bookingService.findAll();
+  }
+
+  @Get('filter')
+  @ApiOperation({ summary: 'Filter service bookings by companyId' })
+  @ApiResponse({
+    status: 200,
+    type: [ServiceBooking],
+    description: 'Return filtered service bookings.',
+  })
+  async filterBookings(@Query('companyId') companyId: string): Promise<any[]> {
+    return this.bookingService.findByFilter({ companyId });
   }
 
   @Get(':id')

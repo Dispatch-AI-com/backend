@@ -1,15 +1,20 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import * as mongoose from 'mongoose';
 
 export type ServiceBookingDocument = ServiceBooking & Document;
 
 @Schema({ timestamps: true })
 export class ServiceBooking {
-  @Prop({ required: true })
-  serviceId!: string;
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service',
+    required: true,
+  })
+  serviceId!: mongoose.Types.ObjectId;
 
-  @Prop({ required: true })
-  companyId!: string;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, required: true })
+  companyId!: mongoose.Types.ObjectId;
 
   @Prop({
     type: {
@@ -37,8 +42,8 @@ export class ServiceBooking {
     answer: string;
   }[];
 
-  @Prop({ enum: ['pending', 'confirmed', 'done'], default: 'pending' })
-  status!: string;
+  @Prop({ enum: ['task', 'completed', 'missed', 'followup'], default: 'task' })
+  status!: 'task' | 'completed' | 'missed' | 'followup';
 
   @Prop()
   note!: string;

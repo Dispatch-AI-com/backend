@@ -27,4 +27,19 @@ export class ServiceBookingService {
   async findById(id: string): Promise<ServiceBooking | null> {
     return this.bookingModel.findById(id).exec();
   }
+
+  async findByFilter({
+    companyId,
+  }: {
+    companyId: string;
+  }): Promise<ServiceBooking[]> {
+    const filter: Partial<ServiceBooking> = {};
+    if (companyId) {
+      filter.companyId = companyId as any;
+    }
+    return this.bookingModel
+      .find(filter)
+      .populate('serviceId', 'name description price notifications isAvailable')
+      .exec();
+  }
 }
