@@ -36,7 +36,7 @@ export class ServiceBookingService {
   }): Promise<ServiceBooking[]> {
     const filter: Partial<ServiceBooking> = {};
     if (companyId) {
-      filter.companyId = companyId as any;
+      filter.companyId = { $eq: companyId } as any;
     }
     return this.bookingModel
       .find(filter)
