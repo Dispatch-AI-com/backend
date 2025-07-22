@@ -155,7 +155,7 @@ pipeline {
                                 echo "Running tests..."
                                 export NODE_ENV=test
                                 export MONGODB_URI=mongodb://localhost:27017/test
-                                pnpm test --passWithNoTests --detectOpenHandles --forceExit
+                                pnpm test --passWithNoTests --detectOpenHandles --testTimeout=10000
                                 
                                 echo "Building NestJS application..."
                                 pnpm run build
