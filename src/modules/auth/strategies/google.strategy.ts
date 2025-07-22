@@ -76,9 +76,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         sub: user._id,
         email: user.email,
         role: user.role,
+        googleAccessToken: accessToken,
+        googleRefreshToken: refreshToken,
       });
 
-      const result = { user: user.toObject() as User, token };
+      const result = { 
+        user: user.toObject() as User, 
+        token, 
+        googleAccessToken: accessToken,
+        googleRefreshToken: refreshToken
+      };
       done(null, result);
     } catch {
       done(new UnauthorizedException('Google authentication failed'), false);

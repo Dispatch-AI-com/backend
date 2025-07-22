@@ -114,15 +114,17 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthRedirect(@Req() req: Request, @Res() res: Response): void {
-    const { user, token } = req.user as {
+    const { user, token, googleAccessToken, googleRefreshToken } = req.user as {
       user: Record<string, unknown>;
       token: string;
+      googleAccessToken: string;
+      googleRefreshToken: string;
     };
 
     // Redirect to frontend with token
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
-      `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`,
+      `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}&googleAccessToken=${googleAccessToken}&googleRefreshToken=${googleRefreshToken}`,
     );
   }
 }
