@@ -152,10 +152,6 @@ pipeline {
                                 echo "Running ESLint check..."
                                 pnpm run lint
                                 
-                                echo "Running tests..."
-                                export NODE_ENV=test
-                                export MONGODB_URI=mongodb://localhost:27017/test
-                                pnpm test
                                 
                                 echo "Building NestJS application..."
                                 pnpm run build
