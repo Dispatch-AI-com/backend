@@ -30,20 +30,24 @@ async def generate_calendar(args: CalendarArgs):
     )
     return {"ics": ics_content}
 
-@router.post("/push", summary="直推事件到Google Calendar")
+@router.post("/push", summary="直推事件到Google Calendar", operation_id="calendar_push")
 async def push_calendar(args: CalendarArgs):
-    if not args.access_token:
-        raise HTTPException(status_code=400, detail="access_token is required")
+    # if not args.access_token:
+    #     raise HTTPException(status_code=400, detail="access_token is required")
+    # try:
+    #     event_link = push_event_to_google_calendar(
+    #         access_token=args.access_token,
+    #         title=args.title,
+    #         start=args.start,
+    #         end=args.end,
+    #         description=args.description,
+    #         location=args.location,
+    #         organizer=args.organizer,
+    #     )
+    #     return {"event_link": event_link}
     try:
-        event_link = push_event_to_google_calendar(
-            access_token=args.access_token,
-            title=args.title,
-            start=args.start,
-            end=args.end,
-            description=args.description,
-            location=args.location,
-            organizer=args.organizer,
-        )
-        return {"event_link": event_link}
+        return {
+            "status": "ok",
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

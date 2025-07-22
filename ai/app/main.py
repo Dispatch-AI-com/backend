@@ -23,6 +23,7 @@ app.include_router(api_router)
 
 mcp = FastApiMCP(
     app,        
-    name="Dispatch AI MCP"
+    name="Dispatch AI MCP",
+    include_operations=["health_ping", "send_email", "calendar_push"]
 )
 mcp.mount()
