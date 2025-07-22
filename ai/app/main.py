@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_mcp.server import FastApiMCP
 from app.routers import routers as all_routers
 
-from .routers import calendar
 
 app = FastAPI() 
 
