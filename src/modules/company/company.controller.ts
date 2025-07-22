@@ -93,16 +93,6 @@ export class CompanyController {
     return this.companyService.remove(id);
   }
 
-  @Get('user/:userId')
-  @ApiOperation({ summary: 'Get a company by userId' })
-  @ApiParam({ name: 'userId', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'Return the company.' })
-  @ApiResponse({ status: 400, description: 'Invalid userId.' })
-  @ApiResponse({ status: 404, description: 'Company not found.' })
-  async findByUserId(@Param('userId') userId: string): Promise<Company> {
-    return this.companyService.findByUserId(userId);
-  }
-
   @Patch('user/:userId/greeting')
   @ApiOperation({ summary: 'Update company greeting message' })
   @ApiParam({ name: 'userId', description: 'User ID' })
@@ -130,6 +120,16 @@ export class CompanyController {
       throw new Error('Greeting not found.');
     }
     return greeting;
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get a company by userId' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Return the company.' })
+  @ApiResponse({ status: 400, description: 'Invalid userId.' })
+  @ApiResponse({ status: 404, description: 'Company not found.' })
+  async findByUserId(@Param('userId') userId: string): Promise<Company> {
+    return this.companyService.findByUserId(userId);
   }
 
 }
