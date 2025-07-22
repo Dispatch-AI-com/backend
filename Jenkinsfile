@@ -153,7 +153,7 @@ pipeline {
                                 pnpm run lint
                                 
                                 echo "Running tests..."
-                                pnpm test --passWithNoTests
+                                pnpm test 
                                 
                                 echo "Building NestJS application..."
                                 pnpm run build
