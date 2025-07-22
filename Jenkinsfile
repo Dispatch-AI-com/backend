@@ -174,14 +174,16 @@ pipeline {
                                 echo "Checking Python environment..."
                                 python3 --version
                                 which uv || { echo "Installing uv..."; curl -LsSf https://astral.sh/uv/install.sh | sh; }
-                                export PATH="$HOME/.cargo/bin:$PATH"
+                                export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
                                 uv --version
                                 
                                 echo "Installing Python dependencies..."
                                 cd ai
+                                export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
                                 uv sync
                                 
                                 echo "Running Python lint checks..."
+                                export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
                                 uv run ruff check . || echo "Ruff check completed (may contain warnings)"
                                 uv run ruff format --check . || echo "Format check completed (may contain warnings)"
                                 
