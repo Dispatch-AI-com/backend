@@ -153,7 +153,9 @@ pipeline {
                                 pnpm run lint
                                 
                                 echo "Running tests..."
-                                pnpm test 
+                                export NODE_ENV=test
+                                export MONGODB_URI=mongodb://localhost:27017/test
+                                pnpm test --passWithNoTests --detectOpenHandles --forceExit
                                 
                                 echo "Building NestJS application..."
                                 pnpm run build
