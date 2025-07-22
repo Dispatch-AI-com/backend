@@ -57,12 +57,49 @@ pipeline {
                         uv --version || echo "uv not pre-installed, will install during build"
                         
                         echo "BuildKit connectivity test:"
-                        timeout 10 sh -c 'until nc -z localhost 1234; do sleep 1; done' && echo "✓ BuildKit reachable" || echo "⚠ BuildKit not ready yet"
+                        timeout 10 sh -c 'until nc -z localhost 1234; do echo "Waiting for BuildKit..."; sleep 1; done' && echo "✓ BuildKit reachable" || echo "⚠ BuildKit not ready yet"
                     '''
                 }
                 
                 script {
                     echo "✅ Environment verification completed"
+                }
+            }
+        }
+
+        stage('Verify credentials and access') {
+            steps {
+                script {
+                    echo "=== Verifying GitHub and AWS credentials ==="
+                }
+                
+                container('dispatchai-jenkins-agent') {
+                    script {
+                        // Test GitHub access
+                        withCredentials([string(credentialsId: "${GIT_CREDENTIALS_ID}", variable: 'GIT_TOKEN')]) {
+                            sh '''
+                                echo "Testing GitHub API access..."
+                                curl -H "Authorization: token $GIT_TOKEN" \
+                                     -s https://api.github.com/user | grep -q '"login"' && \
+                                echo "✓ GitHub access verified" || echo "⚠ GitHub access check failed"
+                            '''
+                        }
+                        
+                        // Test AWS/ECR access
+                        sh '''
+                            echo "Testing AWS ECR access..."
+                            aws sts get-caller-identity > /dev/null 2>&1 && \
+                            echo "✓ AWS access verified" || echo "⚠ AWS access not configured (will be set in build stage)"
+                            
+                            echo "Testing ECR login capability..."
+                            aws ecr get-login-password --region ${AWS_REGION} > /dev/null 2>&1 && \
+                            echo "✓ ECR login capability verified" || echo "⚠ ECR access not yet configured"
+                        '''
+                    }
+                }
+                
+                script {
+                    echo "✅ Credential verification completed"
                 }
             }
         }
@@ -76,16 +113,35 @@ pipeline {
                 
                 container('node') {
                     dir('backend') {
-                        git branch: "${env.BRANCH_NAME}", 
-                            credentialsId: "${GIT_CREDENTIALS_ID}", 
-                            url: 'https://github.com/Dispatch-AI-com/backend.git'
+                        checkout scm: [
+                            $class: 'GitSCM',
+                            branches: [[name: "*/${env.BRANCH_NAME}"]],
+                            userRemoteConfigs: [[
+                                credentialsId: "${GIT_CREDENTIALS_ID}",
+                                url: 'https://github.com/Dispatch-AI-com/backend.git'
+                            ]],
+                            extensions: [
+                                [$class: 'CleanBeforeCheckout'],
+                                [$class: 'CloneOption', depth: 1, noTags: false, shallow: true]
+                            ]
+                        ]
                     }
                 }
+                
                 container('dispatchai-jenkins-agent') {
                     dir('helm') {
-                        git branch: "main", 
-                            credentialsId: "${GIT_CREDENTIALS_ID}", 
-                            url: 'https://github.com/Dispatch-AI-com/helm.git'
+                        checkout scm: [
+                            $class: 'GitSCM',
+                            branches: [[name: "*/main"]],
+                            userRemoteConfigs: [[
+                                credentialsId: "${GIT_CREDENTIALS_ID}",
+                                url: 'https://github.com/Dispatch-AI-com/helm.git'
+                            ]],
+                            extensions: [
+                                [$class: 'CleanBeforeCheckout'],
+                                [$class: 'CloneOption', depth: 1, noTags: false, shallow: true]
+                            ]
+                        ]
                     }
                 }
                 
@@ -228,11 +284,35 @@ pipeline {
                     dir('helm/envs/uat') {
                         script {
                             echo "=== Deploy backend services using Helm ==="
-                            // Deploy API service
-                            sh "bash deploy-backend-api-${ENVIRONMENT}.sh ${IMAGE_TAG}"
                             
-                            // Deploy AI service
-                            sh "bash deploy-backend-ai-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                            // Verify deployment scripts exist
+                            sh '''
+                                echo "Checking deployment scripts..."
+                                ls -la deploy-backend-api-${ENVIRONMENT}.sh || { echo "❌ API deployment script not found"; exit 1; }
+                                ls -la deploy-backend-ai-${ENVIRONMENT}.sh || { echo "❌ AI deployment script not found"; exit 1; }
+                                echo "✓ Deployment scripts found"
+                            '''
+                            
+                            try {
+                                // Deploy API service
+                                echo "🚀 Deploying API service..."
+                                sh "bash deploy-backend-api-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                                echo "✅ API service deployment completed"
+                                
+                                // Deploy AI service  
+                                echo "🚀 Deploying AI service..."
+                                sh "bash deploy-backend-ai-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                                echo "✅ AI service deployment completed"
+                                
+                            } catch (Exception e) {
+                                echo "❌ Deployment failed: ${e.getMessage()}"
+                                sh '''
+                                    echo "=== Deployment troubleshooting information ==="
+                                    kubectl get pods -n dispatchai-uat || echo "Failed to get pods"
+                                    kubectl get events -n dispatchai-uat --sort-by='.lastTimestamp' | tail -10 || echo "Failed to get events"
+                                '''
+                                throw e
+                            }
                         }
                     }
                 }
