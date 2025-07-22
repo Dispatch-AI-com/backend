@@ -45,10 +45,6 @@ export class CreateServiceBookingDto {
   @IsNotEmpty()
   serviceId!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  companyId!: string;
-
   @ValidateNested()
   @Type(() => ClientDto)
   client!: ClientDto;
@@ -60,8 +56,7 @@ export class CreateServiceBookingDto {
   serviceFormValues!: FormValueDto[];
 
   @IsDateString()
-  @Type(() => Date)
-  bookingTime!: Date;
+  bookingTime!: string;
 
   @Type(() => String)
   @IsEnum(ServiceBookingStatus)
@@ -71,4 +66,8 @@ export class CreateServiceBookingDto {
   @IsString()
   @IsOptional()
   note?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  userId!: string;
 }

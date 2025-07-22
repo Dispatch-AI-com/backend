@@ -7,6 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { RRule } from 'rrule';
+import Stripe from 'stripe';
 
 import { Plan, PlanDocument } from '../plan/schema/plan.schema';
 import { StripeService } from '../stripe/stripe.service';
@@ -322,4 +323,48 @@ export class SubscriptionService {
       { status: 'cancelled' },
     );
   }
+
+  async deleteById(id: string): Promise<void> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('Invalid ObjectId format');
+    }
+
+    const deleted = await this.subscriptionModel.findByIdAndDelete(id).exec();
+    if (!deleted) {
+      throw new NotFoundException('Subscription not found');
+    }
+  }
+
+  async getInvoicesByUser(userId: string): Promise<Stripe.Invoice[]> {
+    const subscription = await this.subscriptionModel.findOne({
+      userId: new Types.ObjectId(userId),
+      stripeCustomerId: { $exists: true },
+    });
+
+    if (!subscription?.stripeCustomerId) {
+      throw new NotFoundException('Stripe customer not found for this user');
+    }
+
+    return this.stripeService.listInvoicesByCustomerId(subscription.stripeCustomerId);
+  }
+
+  async getRefundsByUserId(userId: string): Promise<Stripe.Refund[]> {
+    const subscriptions = await this.subscriptionModel.find({
+      userId: new Types.ObjectId(userId),
+      chargeId: { $exists: true, $ne: null },
+    });
+
+    const refunds: Stripe.Refund[] = [];
+
+    for (const sub of subscriptions) {
+      const chargeId = sub.chargeId;
+      if (typeof chargeId === 'string') {
+        const chargeRefunds = await this.stripeService.listRefundsByChargeId(chargeId);
+        refunds.push(...chargeRefunds);
+      }
+    }
+
+    return refunds;
+  }
+
 }

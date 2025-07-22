@@ -68,6 +68,30 @@ export class StripeService {
     return charge?.id ?? null;
   }
 
+  async listInvoicesByCustomerId(
+    stripeCustomerId: string,
+    limit = 10,
+  ): Promise<Stripe.Invoice[]> {
+    const invoices = await this.stripe.invoices.list({
+      customer: stripeCustomerId,
+      limit,
+      expand: ['data.charge'],
+    });
+
+    return invoices.data;
+  }
+
+  async listRefundsByChargeId(
+    chargeId: string,
+  ): Promise<Stripe.Refund[]> {
+    const refundList = await this.stripe.refunds.list({
+      charge: chargeId,
+      limit: 10,
+    });
+
+    return refundList.data;
+  }
+
   constructWebhookEvent(body: Buffer, signature: string): Stripe.Event {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? '';
     return this.stripe.webhooks.constructEvent(body, signature, webhookSecret);
