@@ -102,4 +102,34 @@ export class CompanyController {
   async findByUserId(@Param('userId') userId: string): Promise<Company> {
     return this.companyService.findByUserId(userId);
   }
+
+  @Patch('user/:userId/greeting')
+  @ApiOperation({ summary: 'Update company greeting message' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Greeting updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid userId or greeting data.' })
+  @ApiResponse({ status: 404, description: 'Company not found.' })
+  async updateGreeting(
+    @Param('userId') userId: string,
+    @Body() greeting: { message: string; isCustom: boolean },
+  ): Promise<Company> {
+    return this.companyService.updateGreeting(userId, greeting);
+  }
+
+  @Get('user/:userId/greeting')
+  @ApiOperation({ summary: 'Get company greeting message' })
+  @ApiParam({ name: 'userId', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Greeting retrieved successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid userId.' })
+  @ApiResponse({ status: 404, description: 'Company not found.' })
+  async getGreeting(
+    @Param('userId') userId: string,
+  ): Promise<{ message: string; isCustom: boolean }> {
+    const greeting = await this.companyService.getGreeting(userId);
+    if (!greeting) {
+      throw new Error('Greeting not found.');
+    }
+    return greeting;
+  }
+
 }
