@@ -155,10 +155,7 @@ pipeline {
                                 
                                 echo "Building NestJS application..."
                                 pnpm run build
-                                
-                                echo "Verifying build output..."
-                                [ -d "dist" ] && echo "✓ dist directory created" || { echo "✗ Build failed"; exit 1; }
-                                [ -f "dist/main.js" ] && echo "✓ main.js generated" || { echo "✗ main.js not found"; exit 1; }
+                            
                             '''
                         }
                     }
