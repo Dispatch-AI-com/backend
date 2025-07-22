@@ -6,11 +6,19 @@ export type ServiceBookingDocument = ServiceBooking & Document;
 
 @Schema({ timestamps: true })
 export class ServiceBooking {
-  @Prop({ required: true })
-  serviceId!: string;
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service',
+    required: true,
+  })
+  serviceId!: mongoose.Types.ObjectId;
 
-  @Prop({ required: true })
-  companyId!: string;
+  @Prop({
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Company',
+    required: true,
+  })
+  companyId!: mongoose.Types.ObjectId;
 
   @Prop({
     type: {

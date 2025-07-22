@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
 import {
@@ -36,7 +36,7 @@ export class ServiceBookingService {
   }): Promise<ServiceBooking[]> {
     const filter: Partial<ServiceBooking> = {};
     if (companyId) {
-      filter.companyId = { $eq: companyId } as any;
+      filter.companyId = new Types.ObjectId(companyId) as any;
     }
     return this.bookingModel
       .find(filter)
