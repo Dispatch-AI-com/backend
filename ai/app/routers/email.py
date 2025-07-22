@@ -17,7 +17,7 @@ class SendEmailArgs(BaseModel):
     body: str    = Field(..., description="纯文本正文")
     ics: Optional[str] = Field(None, description="ICS日历内容，可选")
 
-@router.post("/send", summary="Send email via SES SMTP")
+@router.post("/send", summary="Send email via SES SMTP", operation_id="send_email")
 async def send_email(args: SendEmailArgs):
     try:
         await send_plain_email(args.to, args.subject, args.body)
