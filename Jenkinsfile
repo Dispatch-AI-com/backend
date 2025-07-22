@@ -77,7 +77,7 @@ pipeline {
                     dir('helm/envs/uat') {
                         script {
                             // deploy to eks via bash
-                            sh "bash deploy-backend-api-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                            sh "bash deploy-backend-${ENVIRONMENT}.sh ${IMAGE_TAG}"
                         }
                     }
                 }
