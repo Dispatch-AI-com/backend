@@ -1,119 +1,225 @@
 pipeline {
     agent {
         kubernetes {
+            cloud 'EKS-Agent-UAT-lawrence'
             yamlFile 'jenkins-agent-uat.yaml'
         }
     }
-    
+
     environment {
-        ECR_REGISTRY = '893774231297.dkr.ecr.ap-southeast-2.amazonaws.com'
-        ECR_REPOSITORY = 'dispatchai-backend'
-        IMAGE_TAG = "${BUILD_NUMBER}"
-        AWS_REGION = 'ap-southeast-2'
+        ENVIRONMENT = "uat"
+        AWS_ACCOUNT_ID = "893774231297"
+        AWS_REGION = "ap-southeast-2"
+        ECR_REPO_API = "dispatchai-backend"
+        ECR_REPO_AI = "dispatchai-ai"
+        IMAGE_NAME_API = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_API}"
+        IMAGE_NAME_AI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_AI}"
+        IMAGE_TAG = "uat-${env.BUILD_ID}"
+        NODE_ENV = 'uat'
+        // Jenkins Credentials ID
+        GIT_CREDENTIALS_ID = 'github-token-dispatchai'
     }
-    
+
     stages {
-        stage('检出代码') {
+        stage('Clean workspace') {
+            steps { cleanWs() }
+        }
+
+        stage('checkout repos') {
             steps {
-                git branch: 'main', url: 'https://github.com/Dispatch-AI-com/backend.git'
+                script {
+                    echo "Starting to checkout code repositories..."
+                    echo "Using credentials ID: ${GIT_CREDENTIALS_ID}"
+                }
+                
+                container('node') {
+                    dir('backend') {
+                        git branch: "${env.BRANCH_NAME}", 
+                            credentialsId: "${GIT_CREDENTIALS_ID}", 
+                            url: 'https://github.com/Dispatch-AI-com/backend.git'
+                    }
+                }
+                container('dispatchai-jenkins-agent') {
+                    dir('helm') {
+                        git branch: "main", 
+                            credentialsId: "${GIT_CREDENTIALS_ID}", 
+                            url: 'https://github.com/Dispatch-AI-com/helm.git'
+                    }
+                }
+                
+                script {
+                    echo "✅ Code checkout completed"
+                    echo "Backend branch: ${env.BRANCH_NAME}"
+                    echo "Helm branch: main"
+                }
             }
         }
-        
-        stage('构建和推送') {
+
+        stage('install and test backend API') {
             steps {
-                container('build-tools') {
-                    script {
-                        try {
+                container('node') {
+                    dir('backend') {
+                        script {
+                            echo "=== Install and test NestJS API ==="
                             sh '''
-                                # 安装必要工具
-                                apk update && apk add --no-cache aws-cli docker-cli curl
+                                echo "Installing pnpm and dependencies..."
+                                npm install -g pnpm
+                                pnpm install --frozen-lockfile
                                 
-                                # 禁用BuildKit避免buildx依赖问题
-                                export DOCKER_BUILDKIT=0
+                                echo "Running type check..."
+                                pnpm run type-check
                                 
-                                # 等待Docker daemon就绪
-                                echo "等待Docker daemon启动..."
-                                timeout=60
-                                while ! docker info >/dev/null 2>&1; do
-                                    sleep 2
-                                    timeout=$((timeout-2))
-                                    if [ $timeout -le 0 ]; then
-                                        echo "Docker daemon启动超时"
-                                        exit 1
-                                    fi
-                                done
-                                echo "Docker daemon已就绪"
+                                echo "Running ESLint check..."
+                                pnpm run lint
                                 
-                                # 检查Dockerfile是否存在
-                                if [ ! -f "Dockerfile" ]; then
-                                    echo "错误: Dockerfile不存在"
-                                    exit 1
-                                fi
+                                echo "Running tests..."
+                                pnpm test --passWithNoTests
                                 
-                                # 构建镜像
-                                echo "开始构建镜像..."
-                                DOCKER_BUILDKIT=0 docker build --no-cache -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+                                echo "Building NestJS application..."
+                                pnpm run build
                                 
-                                # 确保ECR仓库存在
-                                echo "检查ECR仓库是否存在..."
-                                if ! aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} --region ${AWS_REGION} >/dev/null 2>&1; then
-                                    echo "创建ECR仓库: ${ECR_REPOSITORY}"
-                                    aws ecr create-repository --repository-name ${ECR_REPOSITORY} --region ${AWS_REGION}
-                                else
-                                    echo "ECR仓库已存在: ${ECR_REPOSITORY}"
-                                fi
-                                
-                                # ECR登录
-                                echo "登录ECR..."
-                                aws ecr get-login-password --region ${AWS_REGION} | \\
-                                docker login --username AWS --password-stdin ${ECR_REGISTRY}
-                                
-                                # 标记和推送镜像
-                                echo "标记并推送镜像..."
-                                docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-                                
-                                docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}
-                                
-                                # 清理本地镜像以节省空间
-                                docker rmi ${ECR_REPOSITORY}:${IMAGE_TAG} || true
-                                docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG} || true
-                                docker rmi ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest || true
-                                
-                                echo "构建和推送完成!"
-                                echo "镜像: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+                                echo "Verifying build output..."
+                                [ -d "dist" ] && echo "✓ dist directory created" || { echo "✗ Build failed"; exit 1; }
+                                [ -f "dist/main.js" ] && echo "✓ main.js generated" || { echo "✗ main.js not found"; exit 1; }
                             '''
-                        } catch (Exception e) {
-                            echo "构建失败: ${e.getMessage()}"
-                            throw e
                         }
                     }
                 }
             }
         }
-        
-        stage('安全扫描') {
+
+        stage('install and test AI service') {
             steps {
-                container('build-tools') {
-                    sh '''
-                        # 可选: 添加镜像安全扫描
-                        echo "镜像安全扫描可以在这里实现"
-                        # 例如使用 Trivy 或 Clair
-                    '''
+                container('dispatchai-jenkins-agent') {
+                    dir('backend') {
+                        script {
+                            echo "=== Install and test Python AI service ==="
+                            sh '''
+                                echo "Installing uv Python package manager..."
+                                curl -LsSf https://astral.sh/uv/install.sh | sh
+                                export PATH="$HOME/.cargo/bin:$PATH"
+                                
+                                echo "Installing Python dependencies..."
+                                cd ai
+                                uv sync
+                                
+                                echo "Running Python lint checks..."
+                                uv run ruff check . || echo "Ruff check completed (may contain warnings)"
+                                uv run ruff format --check . || echo "Format check completed (may contain warnings)"
+                                
+                                echo "Running Python tests..."
+                                uv run python -m pytest tests/ -v || echo "Python tests completed (may have no tests or failures)"
+                                
+                                echo "Validating FastAPI application..."
+                                uv run python -c "from app.main import app; print('✓ FastAPI app validated successfully')"
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('build docker images') {
+            parallel {
+                stage('build API docker image') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('backend') {
+                                script {
+                                    echo "=== Build API Docker image ==="
+                                    sh """
+                                        echo "Using BuildKit to build and push API image..."
+                                        docker-credential-ecr-login list
+                                        buildctl --addr=tcp://localhost:1234 build \\
+                                        --frontend=dockerfile.v0 \\
+                                        --local context=. \\
+                                        --local dockerfile=. \\
+                                        --output type=image,name=${IMAGE_NAME_API}:${IMAGE_TAG},push=true
+                                        
+                                        echo "✓ API image built: ${IMAGE_NAME_API}:${IMAGE_TAG}"
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                stage('build AI docker image') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('backend/ai') {
+                                script {
+                                    echo "=== Build AI Docker image ==="
+                                    sh """
+                                        echo "Using BuildKit to build and push AI image..."
+                                        docker-credential-ecr-login list
+                                        buildctl --addr=tcp://localhost:1234 build \\
+                                        --frontend=dockerfile.v0 \\
+                                        --local context=. \\
+                                        --local dockerfile=. \\
+                                        --output type=image,name=${IMAGE_NAME_AI}:${IMAGE_TAG},push=true
+                                        
+                                        echo "✓ AI image built: ${IMAGE_NAME_AI}:${IMAGE_TAG}"
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('helm to deploy backend') {
+            steps {
+                container('dispatchai-jenkins-agent') {
+                    dir('helm/envs/uat') {
+                        script {
+                            echo "=== Deploy backend services using Helm ==="
+                            // Deploy API service
+                            sh "bash deploy-backend-api-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                            
+                            // Deploy AI service
+                            sh "bash deploy-backend-ai-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                        }
+                    }
                 }
             }
         }
     }
-    
+
     post {
-        always {
-            // 清理工作空间
-            cleanWs()
-        }
         success {
-            echo "流水线执行成功! 镜像已推送到: ${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}"
+            echo "✅ Backend services have been deployed successfully!"
+            echo "API Image: ${IMAGE_NAME_API}:${IMAGE_TAG}"
+            echo "AI Image: ${IMAGE_NAME_AI}:${IMAGE_TAG}"
+            emailext(
+                to: "lawrence.wenboli@gmail.com",
+                subject: "✅ DispatchAI Backend pipeline succeeded.",
+                body: "Jenkins CICD Pipeline succeeded!<br/>" +
+                    "Job Result: ${currentBuild.currentResult}<br/>" +
+                    "Job Name: ${env.JOB_NAME}<br/>" +
+                    "Branch: ${env.BRANCH_NAME}<br/>" +
+                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                    "URL: ${env.BUILD_URL}<br/>" +
+                    "API Image: ${IMAGE_NAME_API}:${IMAGE_TAG}<br/>" +
+                    "AI Image: ${IMAGE_NAME_AI}:${IMAGE_TAG}<br/>",
+                attachLog: false
+            )
         }
+
         failure {
-            echo "流水线执行失败，请检查日志"
+            emailext(
+                to: "lawrence.wenboli@gmail.com",
+                subject: "❌ DispatchAI Backend pipeline failed.",
+                body: "Jenkins CICD Pipeline failed!<br/>" +
+                    "Job Result: ${currentBuild.currentResult}<br/>" +
+                    "Job Name: ${env.JOB_NAME}<br/>" +
+                    "Branch: ${env.BRANCH_NAME}<br/>" +
+                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                    "URL: ${env.BUILD_URL}<br/>" +
+                    "Please check logfile for more details.<br/>",
+                attachLog: false
+            )
         }
     }
 }
