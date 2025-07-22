@@ -36,40 +36,40 @@ pipeline {
             }
         }
 
-        // stage('install, test and build') {
-        //     steps {
-        //         container('node') {
-        //             dir('backend') {
-        //                 sh "npm install -g pnpm"
-        //                 sh "pnpm install --frozen-lockfile"
-        //                 sh "pnpm run type-check"
-        //                 sh "pnpm run lint"
-        //                 sh "pnpm run build"
-        //             }
-        //         }
-        //     }
-        // }
+        stage('install, test and build') {
+            steps {
+                container('node') {
+                    dir('backend') {
+                        sh "npm install -g pnpm"
+                        sh "pnpm install --frozen-lockfile"
+                        sh "pnpm run type-check"
+                        sh "pnpm run lint"
+                        sh "pnpm run build"
+                    }
+                }
+            }
+        }
 
-        // stage('build docker image') {
-        //     steps {
-        //         container('dispatchai-jenkins-agent') {
-        //             dir('backend') {
-        //                 script {
-        //                     // Use BuildKit to build docker image and push to ECR
-        //                     sh """
-        //                         docker-credential-ecr-login list
-        //                         buildctl --addr=tcp://localhost:1234 build \\
-        //                         --frontend=dockerfile.v0 \\
-        //                         --local context=. \\
-        //                         --local dockerfile=. \\
-        //                         --opt filename=Dockerfile.uat \\
-        //                         --output type=image,name=${IMAGE_NAME}:${IMAGE_TAG},push=true
-        //                     """
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
+        stage('build docker image') {
+            steps {
+                container('dispatchai-jenkins-agent') {
+                    dir('backend') {
+                        script {
+                            // Use BuildKit to build docker image and push to ECR
+                            sh """
+                                docker-credential-ecr-login list
+                                buildctl --addr=tcp://localhost:1234 build \\
+                                --frontend=dockerfile.v0 \\
+                                --local context=. \\
+                                --local dockerfile=. \\
+                                --opt filename=Dockerfile.uat \\
+                                --output type=image,name=${IMAGE_NAME}:${IMAGE_TAG},push=true
+                            """
+                        }
+                    }
+                }
+            }
+        }
 
         stage('helm to deploy backend') {
             steps {
