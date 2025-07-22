@@ -25,6 +25,48 @@ pipeline {
             steps { cleanWs() }
         }
 
+        stage('Verify environment') {
+            steps {
+                script {
+                    echo "=== Verifying container environment ==="
+                }
+                
+                container('node') {
+                    sh '''
+                        echo "Node.js container verification:"
+                        node --version
+                        npm --version
+                        which pnpm || npm install -g pnpm
+                        pnpm --version
+                    '''
+                }
+                
+                container('dispatchai-jenkins-agent') {
+                    sh '''
+                        echo "DispatchAI Jenkins Agent container verification:"
+                        echo "Python version:"
+                        python3 --version || python --version
+                        
+                        echo "AWS CLI version:"
+                        aws --version
+                        
+                        echo "Docker credential helper:"
+                        docker-credential-ecr-login version || echo "ECR login helper not found"
+                        
+                        echo "uv version:"
+                        uv --version || echo "uv not pre-installed, will install during build"
+                        
+                        echo "BuildKit connectivity test:"
+                        timeout 10 sh -c 'until nc -z localhost 1234; do sleep 1; done' && echo "✓ BuildKit reachable" || echo "⚠ BuildKit not ready yet"
+                    '''
+                }
+                
+                script {
+                    echo "✅ Environment verification completed"
+                }
+            }
+        }
+
         stage('checkout repos') {
             steps {
                 script {
@@ -95,9 +137,12 @@ pipeline {
                         script {
                             echo "=== Install and test Python AI service ==="
                             sh '''
-                                echo "Installing uv Python package manager..."
-                                curl -LsSf https://astral.sh/uv/install.sh | sh
+                                # Verify tools are available
+                                echo "Checking Python environment..."
+                                python3 --version
+                                which uv || { echo "Installing uv..."; curl -LsSf https://astral.sh/uv/install.sh | sh; }
                                 export PATH="$HOME/.cargo/bin:$PATH"
+                                uv --version
                                 
                                 echo "Installing Python dependencies..."
                                 cd ai
@@ -128,15 +173,19 @@ pipeline {
                                 script {
                                     echo "=== Build API Docker image ==="
                                     sh """
+                                        echo "Verifying ECR credentials..."
+                                        docker-credential-ecr-login list || echo "ECR credentials check completed"
+                                        
                                         echo "Using BuildKit to build and push API image..."
-                                        docker-credential-ecr-login list
+                                        echo "BuildKit address: tcp://localhost:1234"
+                                        
                                         buildctl --addr=tcp://localhost:1234 build \\
                                         --frontend=dockerfile.v0 \\
                                         --local context=. \\
                                         --local dockerfile=. \\
                                         --output type=image,name=${IMAGE_NAME_API}:${IMAGE_TAG},push=true
                                         
-                                        echo "✓ API image built: ${IMAGE_NAME_API}:${IMAGE_TAG}"
+                                        echo "✓ API image built successfully: ${IMAGE_NAME_API}:${IMAGE_TAG}"
                                     """
                                 }
                             }
@@ -151,15 +200,19 @@ pipeline {
                                 script {
                                     echo "=== Build AI Docker image ==="
                                     sh """
+                                        echo "Verifying ECR credentials..."
+                                        docker-credential-ecr-login list || echo "ECR credentials check completed"
+                                        
                                         echo "Using BuildKit to build and push AI image..."
-                                        docker-credential-ecr-login list
+                                        echo "BuildKit address: tcp://localhost:1234"
+                                        
                                         buildctl --addr=tcp://localhost:1234 build \\
                                         --frontend=dockerfile.v0 \\
                                         --local context=. \\
                                         --local dockerfile=. \\
                                         --output type=image,name=${IMAGE_NAME_AI}:${IMAGE_TAG},push=true
                                         
-                                        echo "✓ AI image built: ${IMAGE_NAME_AI}:${IMAGE_TAG}"
+                                        echo "✓ AI image built successfully: ${IMAGE_NAME_AI}:${IMAGE_TAG}"
                                     """
                                 }
                             }
