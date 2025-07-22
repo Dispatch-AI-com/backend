@@ -22,7 +22,10 @@ export class ServiceService {
     return createdService.save();
   }
 
-  async findAll(): Promise<Service[]> {
+  async findAll(userId?: string): Promise<Service[]> {
+    if (userId) {
+      return this.serviceModel.find({ userId }).exec();
+    }
     return this.serviceModel.find().exec();
   }
 
