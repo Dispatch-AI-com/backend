@@ -16,8 +16,6 @@ pipeline {
         IMAGE_NAME_AI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_AI}"
         IMAGE_TAG = "uat-${env.BUILD_ID}"
         NODE_ENV = 'uat'
-        // Jenkins Credentials ID
-        GIT_CREDENTIALS_ID = 'github-token-dispatchai'
     }
 
     stages {
@@ -57,7 +55,7 @@ pipeline {
                         uv --version || echo "uv not pre-installed, will install during build"
                         
                         echo "BuildKit connectivity test:"
-                        timeout 10 sh -c 'until nc -z localhost 1234; do echo "Waiting for BuildKit..."; sleep 1; done' && echo "✓ BuildKit reachable" || echo "⚠ BuildKit not ready yet"
+                        timeout 10 bash -c 'until nc -z localhost 1234; do echo "Waiting for BuildKit..."; sleep 1; done' && echo "✓ BuildKit reachable" || echo "⚠ BuildKit not ready yet"
                     '''
                 }
                 
@@ -75,14 +73,32 @@ pipeline {
                 
                 container('dispatchai-jenkins-agent') {
                     script {
-                        // Test GitHub access
-                        withCredentials([string(credentialsId: "${GIT_CREDENTIALS_ID}", variable: 'GIT_TOKEN')]) {
-                            sh '''
-                                echo "Testing GitHub API access..."
-                                curl -H "Authorization: token $GIT_TOKEN" \
-                                     -s https://api.github.com/user | grep -q '"login"' && \
-                                echo "✓ GitHub access verified" || echo "⚠ GitHub access check failed"
-                            '''
+                        // Test GitHub access with more detailed error reporting
+                        try {
+                            withCredentials([string(credentialsId: '2c8f4c5f-0bc2-48ee-b820-f107d08db968', variable: 'GIT_TOKEN')]) {
+                                sh '''
+                                    echo "Testing GitHub API access..."
+                                    
+                                    # Test if token is present
+                                    if [ -z "$GIT_TOKEN" ]; then
+                                        echo "❌ GitHub token is empty"
+                                        exit 1
+                                    fi
+                                    
+                                    # Test GitHub API access
+                                    response=$(curl -s -H "Authorization: token $GIT_TOKEN" https://api.github.com/user)
+                                    if echo "$response" | grep -q '"login"'; then
+                                        echo "✓ GitHub access verified"
+                                        echo "$response" | jq -r '.login' 2>/dev/null || echo "API response received"
+                                    else
+                                        echo "⚠ GitHub access check failed"
+                                        echo "Response: $response"
+                                    fi
+                                '''
+                            }
+                        } catch (Exception e) {
+                            echo "❌ GitHub credential verification failed: ${e.getMessage()}"
+                            echo "Please check that credential '2c8f4c5f-0bc2-48ee-b820-f107d08db968' exists and is a valid GitHub token"
                         }
                         
                         // Test AWS/ECR access
@@ -106,49 +122,15 @@ pipeline {
 
         stage('checkout repos') {
             steps {
-                script {
-                    echo "Starting to checkout code repositories..."
-                    echo "Using credentials ID: ${GIT_CREDENTIALS_ID}"
-                }
-                
                 container('node') {
                     dir('backend') {
-                        checkout scm: [
-                            $class: 'GitSCM',
-                            branches: [[name: "*/${env.BRANCH_NAME}"]],
-                            userRemoteConfigs: [[
-                                credentialsId: "${GIT_CREDENTIALS_ID}",
-                                url: 'https://github.com/Dispatch-AI-com/backend.git'
-                            ]],
-                            extensions: [
-                                [$class: 'CleanBeforeCheckout'],
-                                [$class: 'CloneOption', depth: 1, noTags: false, shallow: true]
-                            ]
-                        ]
+                        git branch: "${env.BRANCH_NAME}", credentialsId: '2c8f4c5f-0bc2-48ee-b820-f107d08db968', url: 'https://github.com/Dispatch-AI-com/backend.git'
                     }
                 }
-                
                 container('dispatchai-jenkins-agent') {
                     dir('helm') {
-                        checkout scm: [
-                            $class: 'GitSCM',
-                            branches: [[name: "*/main"]],
-                            userRemoteConfigs: [[
-                                credentialsId: "${GIT_CREDENTIALS_ID}",
-                                url: 'https://github.com/Dispatch-AI-com/helm.git'
-                            ]],
-                            extensions: [
-                                [$class: 'CleanBeforeCheckout'],
-                                [$class: 'CloneOption', depth: 1, noTags: false, shallow: true]
-                            ]
-                        ]
+                        git branch: "main", credentialsId: '2c8f4c5f-0bc2-48ee-b820-f107d08db968', url: 'https://github.com/Dispatch-AI-com/helm.git'
                     }
-                }
-                
-                script {
-                    echo "✅ Code checkout completed"
-                    echo "Backend branch: ${env.BRANCH_NAME}"
-                    echo "Helm branch: main"
                 }
             }
         }
