@@ -324,7 +324,7 @@ pipeline {
 
         failure {
             emailext(
-                to: "lawrence.wenboli@gmail.com",
+                to: "chaolin1984@gmail.com",
                 subject: "❌ DispatchAI Backend pipeline failed.",
                 body: "Jenkins CICD Pipeline failed!<br/>" +
                     "Job Result: ${currentBuild.currentResult}<br/>" +
