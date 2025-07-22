@@ -173,9 +173,19 @@ pipeline {
                                 # Verify tools are available
                                 echo "Checking Python environment..."
                                 python3 --version
-                                which uv || { echo "Installing uv..."; curl -LsSf https://astral.sh/uv/install.sh | sh; }
+                                which uv || { 
+                                    echo "Installing uv..."; 
+                                    curl -LsSf https://astral.sh/uv/install.sh | sh; 
+                                    source "$HOME/.cargo/env" 2>/dev/null || true;
+                                }
+                                
+                                # Ensure UV is in PATH and verify installation
                                 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
-                                uv --version
+                                echo "Current PATH: $PATH"
+                                echo "Checking UV installation locations:"
+                                ls -la "$HOME/.local/bin/uv" 2>/dev/null || echo "UV not found in .local/bin"
+                                ls -la "$HOME/.cargo/bin/uv" 2>/dev/null || echo "UV not found in .cargo/bin"
+                                which uv && uv --version || echo "UV installation verification failed"
                                 
                                 echo "Installing Python dependencies..."
                                 cd ai
