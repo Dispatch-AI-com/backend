@@ -74,8 +74,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       // Ensure tokenRefreshTime exists for existing Google users
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
-      if (!user.tokenRefreshTime) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unnecessary-condition
+      if (user.tokenRefreshTime == null) {
         user.tokenRefreshTime = new Date();
         await user.save();
       }
