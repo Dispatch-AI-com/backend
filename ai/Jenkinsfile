@@ -38,7 +38,7 @@ pipeline {
 
         stage('install, test and build') {
             steps {
-                container('dispatchai-jenkins-agent') {
+                container('node') {
                     dir('backend/ai') {
                         sh "curl -LsSf https://astral.sh/uv/install.sh | sh"
                         sh "source ~/.bashrc && uv sync --frozen"
