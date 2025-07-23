@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, ValidationError
-from models.call import Message, CallSkeleton
+from models.call import Message, CallSkeleton, Address
 from services.redis_service import get_call_skeleton
 from services.call_handler import CustomerServiceLangGraph, CustomerServiceState
 from datetime import datetime, timezone
@@ -23,6 +23,21 @@ class ReplyInput(BaseModel):
 
 # Global customer service agent
 cs_agent = CustomerServiceLangGraph()
+
+def _is_address_complete(address: Address | None) -> bool:
+    """Check if address object has all required components"""
+    if not address:
+        return False
+    
+    # Check if all required fields are present and not empty
+    required_fields = ['street_number', 'street_name', 'suburb', 'state', 'postcode']
+    
+    for field in required_fields:
+        value = getattr(address, field, None)
+        if not value or (isinstance(value, str) and not value.strip()):
+            return False
+    
+    return True
 
 @router.post("/conversation")
 async def ai_conversation(data: ConversationInput):
@@ -73,7 +88,7 @@ async def ai_conversation(data: ConversationInput):
         "last_llm_response": None,
         "name_complete": bool(user_info.name if user_info else None),
         "phone_complete": bool(user_info.phone if user_info else None),
-        "address_complete": bool(user_info.address if user_info else None),
+        "address_complete": _is_address_complete(user_info.address if user_info else None),
         "email_complete": bool(user_info.email if user_info else None),
         "service_complete": bool(callskeleton.user.service),
         "time_complete": bool(callskeleton.user.serviceBookedTime),
