@@ -43,9 +43,11 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
     Returns:
         bool: Whether update was successful
     """
+    print(f"🔍 Redis update_user_info_field called: call_sid={call_sid}, field_name={field_name}, field_value={field_value}")
     try:
         # Get current CallSkeleton data
         skeleton_dict = get_call_skeleton_dict(call_sid)
+        print(f"🔍 Retrieved skeleton from Redis successfully")
         
         # Update user information field
         if 'user' not in skeleton_dict:
@@ -53,9 +55,24 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
         if 'userInfo' not in skeleton_dict['user']:
             skeleton_dict['user']['userInfo'] = {}
             
-        # Handle Address object serialization
-        if field_name == "address":
-            print(f"🔍 Redis: Processing address field, type: {type(field_value)}")
+        # Handle nested field paths (e.g., "address.street_number")
+        if "." in field_name:
+            path_parts = field_name.split(".")
+            current_dict = skeleton_dict['user']['userInfo']
+            
+            # Navigate to the nested structure
+            for part in path_parts[:-1]:
+                if part not in current_dict:
+                    current_dict[part] = {}
+                current_dict = current_dict[part]
+            
+            # Set the final field
+            final_field = path_parts[-1]
+            current_dict[final_field] = field_value
+            print(f"🔍 Redis: Set nested field {field_name} = {field_value}")
+            
+        elif field_name == "address":
+            print(f"🔍 Redis: Processing complete address field, type: {type(field_value)}")
             if hasattr(field_value, 'model_dump'):
                 # If it's a Pydantic model (Address object), convert to dict
                 address_dict = field_value.model_dump()

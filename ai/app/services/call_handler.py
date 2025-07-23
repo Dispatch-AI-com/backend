@@ -263,7 +263,10 @@ class CustomerServiceLangGraph:
         
         # Validate individual components that were extracted
         if components_updated:
+            print(f"🔍 Components updated, validating. call_sid: {call_sid}")
             self._validate_and_update_address_components(state, call_sid)
+        else:
+            print(f"⚠️ No components updated in this round")
         
         # Determine next collection step based on what we have
         current_step = state["address_collection_step"]
@@ -312,9 +315,9 @@ class CustomerServiceLangGraph:
             state["address_collection_step"] = "complete"
             state["current_step"] = "collect_email"
             
-            # Real-time Redis update - store as Address object
+            # Real-time Redis update - store complete Address object
             if call_sid:
-                print(f"🔍 About to save address to Redis: {address_obj}")
+                print(f"🔍 About to save complete address to Redis: {address_obj}")
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="address",
@@ -324,7 +327,7 @@ class CustomerServiceLangGraph:
                 if redis_success:
                     print(f"✅ Complete address saved successfully to Redis")
                 else:
-                    print(f"❌ Redis save failed for address")
+                    print(f"❌ Redis save failed for complete address")
             
             print(f"🎉 Address collection completed: {complete_address_str}")
             return state
@@ -346,7 +349,9 @@ class CustomerServiceLangGraph:
     
     def _validate_and_update_address_components(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Validate and update individual address components"""
+        print(f"🔍 _validate_and_update_address_components called with call_sid: {call_sid}")
         components = state["address_components"]
+        print(f"🔍 Current components: {components}")
         
         # Validate each component using the dedicated validation function
         for component_type, value in components.items():
@@ -360,8 +365,19 @@ class CustomerServiceLangGraph:
                     print(f"⚠️ Invalid {component_type}: {value}")
                     components[component_type] = None
         
-        # Note: Individual components are not stored separately anymore
-        # Only the complete Address object is stored when all components are collected
+        # Update Redis with individual components if call_sid provided
+        if call_sid:
+            print(f"🔍 About to save components to Redis")
+            for component, value in components.items():
+                if value:
+                    print(f"🔍 Saving address component: {component} = {value}")
+                    success = update_user_info_field(call_sid, f"address.{component}", value)
+                    if success:
+                        print(f"✅ Successfully saved {component}")
+                    else:
+                        print(f"❌ Failed to save {component}")
+        else:
+            print(f"⚠️ No call_sid provided, skipping Redis save")
 
     def process_email_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process email collection step"""
