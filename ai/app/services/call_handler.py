@@ -316,7 +316,7 @@ class CustomerServiceLangGraph:
                     redis_success = update_user_info_field(
                         call_sid=call_sid,
                         field_name="address",
-                        field_value=address_obj.model_dump()
+                        field_value=address_obj
                     )
                     
                     if redis_success:
@@ -355,11 +355,8 @@ class CustomerServiceLangGraph:
                     print(f"⚠️ Invalid {component_type}: {value}")
                     components[component_type] = None
         
-        # Update Redis with individual components if call_sid provided
-        if call_sid:
-            for component, value in components.items():
-                if value:
-                    update_user_info_field(call_sid, f"address_{component}", value)
+        # Note: Individual components are not stored separately anymore
+        # Only the complete Address object is stored when all components are collected
 
     def process_email_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process email collection step"""

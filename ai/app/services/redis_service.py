@@ -46,7 +46,16 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
         if 'userInfo' not in skeleton_dict['user']:
             skeleton_dict['user']['userInfo'] = {}
             
-        skeleton_dict['user']['userInfo'][field_name] = field_value
+        # Handle Address object serialization
+        if field_name == "address" and hasattr(field_value, 'model_dump'):
+            # If it's a Pydantic model (Address object), convert to dict
+            skeleton_dict['user']['userInfo'][field_name] = field_value.model_dump()
+        elif isinstance(field_value, dict):
+            # If it's already a dict (from model_dump()), store directly
+            skeleton_dict['user']['userInfo'][field_name] = field_value
+        else:
+            # For other types (string, etc.), store directly
+            skeleton_dict['user']['userInfo'][field_name] = field_value
         
         # Add timestamp record
         if timestamp:
