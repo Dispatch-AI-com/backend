@@ -220,15 +220,42 @@ class CustomerServiceLangGraph:
 
     def process_address_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process incremental address collection step"""
-        # Initialize address_components if not present
+        
+        # FIRST: Check if address is already complete from Redis
+        if state.get("address") and all([
+            getattr(state["address"], "street_number", ""),
+            getattr(state["address"], "street_name", ""), 
+            getattr(state["address"], "suburb", ""),
+            getattr(state["address"], "state", ""),
+            getattr(state["address"], "postcode", "")
+        ]):
+            print(f"🔍 Address already complete from Redis, skipping collection")
+            state["address_complete"] = True
+            state["current_step"] = "collect_email"
+            return state
+        
+        # Initialize address_components, try to populate from existing address first
         if "address_components" not in state or state["address_components"] is None:
-            state["address_components"] = {
-                "street_number": None,
-                "street_name": None,
-                "suburb": None,
-                "state": None,
-                "postcode": None
-            }
+            # Try to initialize from existing address object
+            if state.get("address"):
+                addr = state["address"]
+                state["address_components"] = {
+                    "street_number": getattr(addr, "street_number", ""),
+                    "street_name": getattr(addr, "street_name", ""),
+                    "suburb": getattr(addr, "suburb", ""),
+                    "state": getattr(addr, "state", ""),
+                    "postcode": getattr(addr, "postcode", "")
+                }
+                print(f"🔍 Initialized address_components from existing address: {state['address_components']}")
+            else:
+                state["address_components"] = {
+                    "street_number": None,
+                    "street_name": None,
+                    "suburb": None,
+                    "state": None,
+                    "postcode": None
+                }
+                print(f"🔍 Initialized empty address_components")
         
         # Initialize address_collection_step if not present
         if "address_collection_step" not in state or state["address_collection_step"] is None:
@@ -588,11 +615,14 @@ class CustomerServiceLangGraph:
             CustomerServiceState: Updated state object
         """
         # Determine current step to execute based on completion status
+        print(f"🔍 Workflow state: name_complete={state['name_complete']}, phone_complete={state['phone_complete']}, address_complete={state['address_complete']}")
+        
         if not state["name_complete"]:
             state = self.process_name_collection(state, call_sid)
         elif not state["phone_complete"]:
             state = self.process_phone_collection(state, call_sid)
         elif not state["address_complete"]:
+            print(f"🔍 Address not complete, starting address collection")
             state = self.process_address_collection(state, call_sid)
         elif not state["email_complete"]:
             state = self.process_email_collection(state, call_sid)

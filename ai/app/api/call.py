@@ -26,7 +26,11 @@ cs_agent = CustomerServiceLangGraph()
 
 def _is_address_complete(address: Address | None) -> bool:
     """Check if address object has all required components"""
+    print(f"🔍 _is_address_complete called with: {address}")
+    print(f"🔍 Address type: {type(address)}")
+    
     if not address:
+        print(f"🔍 Address is None or empty")
         return False
     
     # Check if all required fields are present and not empty
@@ -34,9 +38,12 @@ def _is_address_complete(address: Address | None) -> bool:
     
     for field in required_fields:
         value = getattr(address, field, None)
+        print(f"🔍 Field {field}: '{value}' (type: {type(value)})")
         if not value or (isinstance(value, str) and not value.strip()):
+            print(f"🔍 Field {field} is empty or invalid")
             return False
     
+    print(f"🔍 All address fields are complete")
     return True
 
 @router.post("/conversation")
@@ -68,6 +75,11 @@ async def ai_conversation(data: ConversationInput):
     # 2. Construct AI workflow state
     user_info = callskeleton.user.userInfo if callskeleton.user.userInfo else None
     
+    # Debug address information
+    address_complete_status = _is_address_complete(user_info.address if user_info else None)
+    print(f"🔍 Address from Redis: {user_info.address if user_info else 'None'}")
+    print(f"🔍 Address complete status: {address_complete_status}")
+    
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
@@ -88,7 +100,7 @@ async def ai_conversation(data: ConversationInput):
         "last_llm_response": None,
         "name_complete": bool(user_info.name if user_info else None),
         "phone_complete": bool(user_info.phone if user_info else None),
-        "address_complete": _is_address_complete(user_info.address if user_info else None),
+        "address_complete": address_complete_status,
         "email_complete": bool(user_info.email if user_info else None),
         "service_complete": bool(callskeleton.user.service),
         "time_complete": bool(callskeleton.user.serviceBookedTime),

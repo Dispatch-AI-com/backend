@@ -19,9 +19,25 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
     try:
         skeleton = CallSkeleton.model_validate_json(data)
         print(f"🔍 Redis: Successfully parsed CallSkeleton")
+        
+        # Debug address specifically
+        if skeleton.user and skeleton.user.userInfo and skeleton.user.userInfo.address:
+            addr = skeleton.user.userInfo.address
+            print(f"🔍 Redis: Address from skeleton: {addr}")
+            print(f"🔍 Redis: Address fields: street_number='{addr.street_number}', street_name='{addr.street_name}', suburb='{addr.suburb}', state='{addr.state}', postcode='{addr.postcode}'")
+        else:
+            print(f"🔍 Redis: No address found in skeleton")
+            
         return skeleton
     except Exception as e:
         print(f"❌ Redis: Failed to parse CallSkeleton: {str(e)}")
+        # Print raw data for debugging
+        import json
+        try:
+            raw_dict = json.loads(data)
+            print(f"🔍 Redis: Raw address data: {raw_dict.get('user', {}).get('userInfo', {}).get('address', 'Not found')}")
+        except:
+            pass
         raise
 
 def get_call_skeleton_dict(call_sid: str) -> Dict[str, Any]:
