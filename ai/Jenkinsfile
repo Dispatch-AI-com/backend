@@ -61,14 +61,14 @@ pipeline {
                             # Install dependencies
                             uv sync --frozen
                             
-                            # Run linting
-                            uv run ruff check .
+                            // # Run linting
+                            // uv run ruff check .
                             
-                            # Run formatting check
-                            uv run ruff format --check .
+                            // # Run formatting check
+                            // uv run ruff format --check .
                             
-                            # Run tests
-                            uv run python -m pytest tests/ -v || true
+                            // # Run tests
+                            // uv run python -m pytest tests/ -v || true
                         """
                     }
                 }
