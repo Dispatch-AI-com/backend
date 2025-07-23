@@ -59,25 +59,25 @@ pipeline {
                 }
                 stage('AI Service - Python') {
                     steps {
-                        container('node') {
+                        container('python') {
                             dir('backend/ai') {
                                 sh """
-                                    # Check if we're on Alpine (apk) or Debian/Ubuntu (apt-get)
-                                    if command -v apk > /dev/null; then
-                                        apk update && apk add curl
-                                    elif command -v apt-get > /dev/null; then
-                                        apt-get update && apt-get install -y curl
-                                    elif command -v yum > /dev/null; then
-                                        yum install -y curl
-                                    else
-                                        echo "Package manager not found, assuming curl is already installed"
-                                    fi
+                                    // # Check if we're on Alpine (apk) or Debian/Ubuntu (apt-get)
+                                    // if command -v apk > /dev/null; then
+                                    //     apk update && apk add curl
+                                    // elif command -v apt-get > /dev/null; then
+                                    //     apt-get update && apt-get install -y curl
+                                    // elif command -v yum > /dev/null; then
+                                    //     yum install -y curl
+                                    // else
+                                    //     echo "Package manager not found, assuming curl is already installed"
+                                    // fi
                                     
-                                    # Install uv
-                                    curl -LsSf https://astral.sh/uv/install.sh | sh
+                                    // # Install uv
+                                    // curl -LsSf https://astral.sh/uv/install.sh | sh
                                     
-                                    # Add uv to PATH
-                                    export PATH="\$HOME/.local/bin:\$PATH"
+                                    // # Add uv to PATH
+                                    // export PATH="\$HOME/.local/bin:\$PATH"
                                     
                                     # Install dependencies
                                     uv sync --frozen
