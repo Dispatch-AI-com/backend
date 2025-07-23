@@ -1,6 +1,6 @@
 import redis
 import json
-from models.call import CallSkeleton, Message
+from models.call import CallSkeleton
 from typing import Optional, Dict, Any
 
 from config import settings
@@ -16,9 +16,6 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
     if not data:
         raise ValueError("CallSkeleton not found")
     return CallSkeleton.model_validate_json(data)
-
-def set_call_skeleton(call_sid: str, skeleton: CallSkeleton):
-    r.set(f"call:{call_sid}", skeleton.model_dump_json())
 
 def get_call_skeleton_dict(call_sid: str) -> Dict[str, Any]:
     """Get CallSkeleton in dictionary format"""
@@ -118,41 +115,6 @@ def update_service_selection(call_sid: str, service_name: str, service_time: Opt
         print(f"❌ Redis service update failed: {str(e)}")
         return False
 
-def update_conversation_history(call_sid: str, message: Message) -> bool:
-    """Update conversation history in real-time
-    
-    Args:
-        call_sid: Call ID
-        message: New message object
-        
-    Returns:
-        bool: Whether update was successful
-    """
-    try:
-        # Get current CallSkeleton data
-        skeleton_dict = get_call_skeleton_dict(call_sid)
-        
-        # Ensure history field exists
-        if 'history' not in skeleton_dict:
-            skeleton_dict['history'] = []
-            
-        # Add new message
-        message_dict = {
-            "speaker": message.speaker,
-            "message": message.message,
-            "startedAt": message.startedAt
-        }
-        skeleton_dict['history'].append(message_dict)
-        
-        # Save back to Redis
-        r.set(f"call:{call_sid}", json.dumps(skeleton_dict))
-        
-        print(f"✅ Redis conversation history update successful: {message.speaker} - {message.message[:50]}...")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Redis conversation history update failed: {str(e)}")
-        return False
 
 def update_booking_status(call_sid: str, is_booked: bool, email_sent: bool = False) -> bool:
     """Update booking status
