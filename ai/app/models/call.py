@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Literal
 from enum import Enum
 
@@ -40,11 +40,11 @@ class Service(BaseModel):
 
 
 class Address(BaseModel):
-    street_number: str
-    street_name: str
-    suburb: str
-    state: str
-    postcode: str
+    street_number: str = Field(default="", description="Street number")
+    street_name: str = Field(default="", description="Street name")  
+    suburb: str = Field(default="", description="Suburb")
+    state: str = Field(default="", description="State")
+    postcode: str = Field(default="", description="Postcode")
 
 
 class UserInfo(BaseModel):

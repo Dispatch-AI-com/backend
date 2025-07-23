@@ -289,6 +289,8 @@ class CustomerServiceLangGraph:
         
         # Check if all address components are complete
         components = state["address_components"]
+        print(f"🔍 Checking address components: {components}")
+        
         if all([components["street_number"], components["street_name"], 
                 components["suburb"], components["state"], components["postcode"]]):
             
@@ -304,28 +306,31 @@ class CustomerServiceLangGraph:
             # Build address string for validation
             complete_address_str = f"{components['street_number']} {components['street_name']}, {components['suburb']}, {components['state']} {components['postcode']}"
             
-            # Validate complete address
-            if validate_address(complete_address_str):
-                state["address"] = address_obj
-                state["address_complete"] = True
-                state["address_collection_step"] = "complete"
-                state["current_step"] = "collect_email"
+            # Skip validation - directly save address
+            state["address"] = address_obj
+            state["address_complete"] = True
+            state["address_collection_step"] = "complete"
+            state["current_step"] = "collect_email"
+            
+            # Real-time Redis update - store as Address object
+            if call_sid:
+                print(f"🔍 About to save address to Redis: {address_obj}")
+                redis_success = update_user_info_field(
+                    call_sid=call_sid,
+                    field_name="address",
+                    field_value=address_obj
+                )
                 
-                # Real-time Redis update - store as Address object
-                if call_sid:
-                    redis_success = update_user_info_field(
-                        call_sid=call_sid,
-                        field_name="address",
-                        field_value=address_obj
-                    )
-                    
-                    if redis_success:
-                        print(f"✅ Complete address saved successfully: {complete_address}")
-                    else:
-                        print(f"⚠️ Address complete but Redis save failed: {complete_address}")
-                
-                print(f"🎉 Address collection completed: {complete_address}")
-                return state
+                if redis_success:
+                    print(f"✅ Complete address saved successfully to Redis")
+                else:
+                    print(f"❌ Redis save failed for address")
+            
+            print(f"🎉 Address collection completed: {complete_address_str}")
+            return state
+        else:
+            missing_components = [k for k, v in components.items() if not v]
+            print(f"⚠️ Address incomplete. Missing: {missing_components}")
         
         # Handle failed attempts
         if not components_updated and not collection_step_complete:

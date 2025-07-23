@@ -15,7 +15,14 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
     data = r.get(f"call:{call_sid}")
     if not data:
         raise ValueError("CallSkeleton not found")
-    return CallSkeleton.model_validate_json(data)
+    print(f"🔍 Redis: Retrieved raw data for {call_sid}")
+    try:
+        skeleton = CallSkeleton.model_validate_json(data)
+        print(f"🔍 Redis: Successfully parsed CallSkeleton")
+        return skeleton
+    except Exception as e:
+        print(f"❌ Redis: Failed to parse CallSkeleton: {str(e)}")
+        raise
 
 def get_call_skeleton_dict(call_sid: str) -> Dict[str, Any]:
     """Get CallSkeleton in dictionary format"""
@@ -47,12 +54,20 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
             skeleton_dict['user']['userInfo'] = {}
             
         # Handle Address object serialization
-        if field_name == "address" and hasattr(field_value, 'model_dump'):
-            # If it's a Pydantic model (Address object), convert to dict
-            skeleton_dict['user']['userInfo'][field_name] = field_value.model_dump()
-        elif isinstance(field_value, dict):
-            # If it's already a dict (from model_dump()), store directly
-            skeleton_dict['user']['userInfo'][field_name] = field_value
+        if field_name == "address":
+            print(f"🔍 Redis: Processing address field, type: {type(field_value)}")
+            if hasattr(field_value, 'model_dump'):
+                # If it's a Pydantic model (Address object), convert to dict
+                address_dict = field_value.model_dump()
+                print(f"🔍 Redis: Address converted to dict: {address_dict}")
+                skeleton_dict['user']['userInfo'][field_name] = address_dict
+            elif isinstance(field_value, dict):
+                # If it's already a dict (from model_dump()), store directly
+                print(f"🔍 Redis: Address already dict: {field_value}")
+                skeleton_dict['user']['userInfo'][field_name] = field_value
+            else:
+                print(f"🔍 Redis: Address unexpected type: {type(field_value)}")
+                skeleton_dict['user']['userInfo'][field_name] = field_value
         else:
             # For other types (string, etc.), store directly
             skeleton_dict['user']['userInfo'][field_name] = field_value
@@ -63,10 +78,16 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
             skeleton_dict['user']['userInfo'][timestamp_field] = timestamp
         
         # Save back to Redis
-        r.set(f"call:{call_sid}", json.dumps(skeleton_dict))
-        
-        print(f"✅ Redis update successful: {field_name} = {field_value}")
-        return True
+        try:
+            json_data = json.dumps(skeleton_dict)
+            r.set(f"call:{call_sid}", json_data)
+            print(f"✅ Redis update successful: {field_name}")
+            if field_name == "address":
+                print(f"🔍 Redis: Final skeleton userInfo: {skeleton_dict.get('user', {}).get('userInfo', {})}")
+            return True
+        except Exception as json_error:
+            print(f"❌ Redis JSON serialization failed: {str(json_error)}")
+            return False
         
     except Exception as e:
         print(f"❌ Redis update failed ({field_name}): {str(e)}")
