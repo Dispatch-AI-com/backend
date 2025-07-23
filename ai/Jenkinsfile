@@ -41,8 +41,16 @@ pipeline {
                 container('node') {
                     dir('backend/ai') {
                         sh """
-                            # Update package list and install curl if not present
-                            apt-get update && apt-get install -y curl
+                            # Check if we're on Alpine (apk) or Debian/Ubuntu (apt-get)
+                            if command -v apk > /dev/null; then
+                                apk update && apk add curl
+                            elif command -v apt-get > /dev/null; then
+                                apt-get update && apt-get install -y curl
+                            elif command -v yum > /dev/null; then
+                                yum install -y curl
+                            else
+                                echo "Package manager not found, assuming curl is already installed"
+                            fi
                             
                             # Install uv
                             curl -LsSf https://astral.sh/uv/install.sh | sh
