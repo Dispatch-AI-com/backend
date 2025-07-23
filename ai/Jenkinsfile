@@ -40,7 +40,7 @@ pipeline {
             steps {
                 container('dispatchai-jenkins-agent') {
                     dir('backend/ai') {
-                        h "curl -LsSf https://astral.sh/uv/install.sh | sh"
+                        sh "curl -LsSf https://astral.sh/uv/install.sh | sh"
                         sh "source ~/.bashrc && uv sync --frozen"
                         sh "source ~/.bashrc && uv run ruff check ."
                         sh "source ~/.bashrc && uv run python -m pytest tests/ || true"
