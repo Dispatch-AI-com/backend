@@ -35,14 +35,22 @@ class Message(BaseModel):
 class Service(BaseModel):
     id: str
     name: str
-    price: Optional[float]
+    price: Optional[float] = None
     description: Optional[str] = None
+
+
+class Address(BaseModel):
+    street_number: str
+    street_name: str
+    suburb: str
+    state: str
+    postcode: str
 
 
 class UserInfo(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
-    address: Optional[str] = None
+    address: Optional[Address] = None
     email: Optional[str] = None
 
 
@@ -50,13 +58,14 @@ class Company(BaseModel):
     id: str
     name: str
     email: str
-    phone: Optional[str] = None
+    userId: str
+    calendar_access_token: Optional[str] = None
 
 
 class UserState(BaseModel):
     service: Optional[Service] = None
     serviceBookedTime: Optional[str] = None
-    userInfo: Optional[UserInfo] = UserInfo()
+    userInfo: UserInfo
 
 
 class CallSkeleton(BaseModel):
@@ -67,4 +76,4 @@ class CallSkeleton(BaseModel):
     history: List[Message]
     servicebooked: bool
     confirmEmailsent: bool
-    createdAt: str
+    createdAt: Optional[str] = None

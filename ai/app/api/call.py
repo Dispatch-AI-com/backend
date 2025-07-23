@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 from models.call import Message, CallSkeleton
 from services.redis_service import get_call_skeleton
 from services.call_handler import CustomerServiceLangGraph, CustomerServiceState
@@ -40,15 +40,29 @@ async def ai_conversation(data: ConversationInput):
     try:
         callskeleton_dict = get_call_skeleton(data.callSid)
         callskeleton = CallSkeleton.model_validate(callskeleton_dict)
-    except Exception:
-        raise HTTPException(status_code=404, detail="CallSkeleton not found")
+    except ValueError as e:
+        # Redis中没找到CallSkeleton - 业务逻辑错误，不是资源不存在
+        raise HTTPException(status_code=422, detail="CallSkeleton not found")
+    except ValidationError as e:
+        # 数据格式错误
+        raise HTTPException(status_code=400, detail=f"Invalid CallSkeleton data format: {str(e)}")
+    except Exception as e:
+        # 其他服务器错误
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
     # 2. Construct AI workflow state
     user_info = callskeleton.user.userInfo if callskeleton.user.userInfo else None
+    
+    # Handle address conversion from Address object to string
+    address_str = None
+    if user_info and user_info.address:
+        address_obj = user_info.address
+        address_str = f"{address_obj.street_number} {address_obj.street_name}, {address_obj.suburb}, {address_obj.state} {address_obj.postcode}"
+    
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
-        "address": user_info.address if user_info else None,
+        "address": address_str,
         "email": user_info.email if user_info else None,
         "service": callskeleton.user.service.name if callskeleton.user.service else None,
         "service_time": callskeleton.user.serviceBookedTime,
@@ -65,7 +79,7 @@ async def ai_conversation(data: ConversationInput):
         "last_llm_response": None,
         "name_complete": bool(user_info.name if user_info else None),
         "phone_complete": bool(user_info.phone if user_info else None),
-        "address_complete": bool(user_info.address if user_info else None),
+        "address_complete": bool(address_str),
         "email_complete": bool(user_info.email if user_info else None),
         "service_complete": bool(callskeleton.user.service),
         "time_complete": bool(callskeleton.user.serviceBookedTime),
