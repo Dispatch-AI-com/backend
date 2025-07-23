@@ -62,11 +62,11 @@ pipeline {
                         container('python') {
                             dir('backend/ai') {
                                 sh """
+                                    # Install dependencies using uv
+                                    uv sync --frozen
                                     # Run linting and formatting
                                     make lint
                                     make format
-                                    # Install dependencies using uv
-                                    uv sync --frozen
                                 """
                             }
                         }
