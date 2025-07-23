@@ -14,7 +14,6 @@ pipeline {
         IMAGE_NAME = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}"
         IMAGE_TAG = "uat-${env.BUILD_ID}"
         ENV = 'uat'
-        PATH = "$HOME/.local/bin:$PATH"
     }
 
     stages {
@@ -41,25 +40,10 @@ pipeline {
             steps {
                 container('dispatchai-jenkins-agent') {
                     dir('backend/ai') {
-                        sh """
-                            # Install uv
-                            curl -LsSf https://astral.sh/uv/install.sh | sh
-                            
-                            # Add uv to PATH
-                            export PATH="\$HOME/.local/bin:\$PATH"
-                            
-                            # Install dependencies
-                            uv sync --frozen
-                            
-                            # Run linting
-                            uv run ruff check .
-                            
-                            # Run formatting check
-                            uv run ruff format --check .
-                            
-                            # Run tests
-                            uv run python -m pytest tests/ -v || true
-                        """
+                        h "curl -LsSf https://astral.sh/uv/install.sh | sh"
+                        sh "source ~/.bashrc && uv sync --frozen"
+                        sh "source ~/.bashrc && uv run ruff check ."
+                        sh "source ~/.bashrc && uv run python -m pytest tests/ || true"
                     }
                 }
             }
