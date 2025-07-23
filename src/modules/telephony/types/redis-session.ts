@@ -14,7 +14,7 @@ export interface Service {
 export interface UserInfo {
   name?: string;
   phone?: string;
-  address?: Address;
+  address?: Partial<Address>;
   email?: string;
 }
 
