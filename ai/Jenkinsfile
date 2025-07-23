@@ -40,10 +40,28 @@ pipeline {
             steps {
                 container('node') {
                     dir('backend/ai') {
-                        sh "curl -LsSf https://astral.sh/uv/install.sh | sh"
-                        sh "source ~/.bashrc && uv sync --frozen"
-                        sh "source ~/.bashrc && uv run ruff check ."
-                        sh "source ~/.bashrc && uv run python -m pytest tests/ || true"
+                        sh """
+                            # Update package list and install curl if not present
+                            apt-get update && apt-get install -y curl
+                            
+                            # Install uv
+                            curl -LsSf https://astral.sh/uv/install.sh | sh
+                            
+                            # Add uv to PATH
+                            export PATH="\$HOME/.local/bin:\$PATH"
+                            
+                            # Install dependencies
+                            uv sync --frozen
+                            
+                            # Run linting
+                            uv run ruff check .
+                            
+                            # Run formatting check
+                            uv run ruff format --check .
+                            
+                            # Run tests
+                            uv run python -m pytest tests/ -v || true
+                        """
                     }
                 }
             }
