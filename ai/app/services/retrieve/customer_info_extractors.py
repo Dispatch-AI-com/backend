@@ -33,6 +33,8 @@ class CustomerServiceState(TypedDict):
     service: Optional[str]
     service_time: Optional[str]
     last_user_input: Optional[str]
+    address_components: Optional[Dict[str, Optional[str]]]
+    address_collection_step: Optional[str]
 
 def _get_openai_client() -> OpenAI:
     return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -67,6 +69,21 @@ def _default_result(response: str, key: str, error: str) -> Dict[str, Any]:
         "analysis": error
     }
 
+def _default_address_result(response: str, error: str) -> Dict[str, Any]:
+    return {
+        "response": response,
+        "info_extracted": {
+            "street_number": None,
+            "street_name": None,
+            "suburb": None,
+            "state": None,
+            "postcode": None
+        },
+        "info_complete": False,
+        "collection_step_complete": False,
+        "analysis": error
+    }
+
 def extract_name_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
@@ -94,14 +111,19 @@ def extract_phone_from_conversation(state: CustomerServiceState) -> Dict[str, An
 def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
-        prompt = get_address_extraction_prompt()
+        # Get address components and collection step from state
+        address_components = state.get('address_components', {})
+        collection_step = state.get('address_collection_step', 'street')
+        
+        # Get the updated prompt with context
+        prompt = get_address_extraction_prompt(address_components, collection_step)
         result = _call_openai_api(prompt, context, state.get('last_user_input') or "")
         if result:
             return result
         else:
-            return _default_result("Sorry, there was a problem processing your address. Please tell me your address again.", "address", "Parse error")
+            return _default_address_result("Sorry, there was a problem processing your address. Please tell me your address information again.", "Parse error")
     except Exception as e:
-        return _default_result("Sorry, the system is temporarily unavailable. Please tell me your address again.", "address", f"API error: {str(e)}")
+        return _default_address_result("Sorry, the system is temporarily unavailable. Please tell me your address information again.", f"API error: {str(e)}")
 
 def extract_email_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     try:

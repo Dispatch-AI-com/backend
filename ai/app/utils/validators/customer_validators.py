@@ -262,6 +262,55 @@ def validate_time(service_time: str) -> Tuple[bool, bool]:
     return True, time_available
 
 
+def validate_address_component(component_type: str, component_value: str) -> bool:
+    """Validate individual address component
+    
+    Args:
+        component_type (str): Type of component ('street_number', 'street_name', 'suburb', 'state', 'postcode')
+        component_value (str): Value to be validated
+        
+    Returns:
+        bool: Whether the component is valid
+    """
+    if not component_value or component_value.strip() == "":
+        return False
+    
+    component_value = component_value.strip()
+    
+    if component_type == "street_number":
+        # Street number should contain digits, may include letters (e.g., "123A")
+        return bool(re.search(r'\d+', component_value)) and len(component_value) <= 10
+    
+    elif component_type == "street_name":
+        # Street name should be reasonable text, not empty, reasonable length
+        valid_street_types = [
+            'street', 'st', 'road', 'rd', 'avenue', 'ave', 'drive', 'dr', 
+            'lane', 'ln', 'place', 'pl', 'way', 'parade', 'pde', 'circuit', 
+            'cct', 'close', 'cl', 'crescent', 'cres', 'court', 'ct'
+        ]
+        # Check if it's reasonable length and contains some valid street type
+        if len(component_value) < 2 or len(component_value) > 100:
+            return False
+        # Convert to lowercase for checking
+        lower_value = component_value.lower()
+        return any(street_type in lower_value for street_type in valid_street_types)
+    
+    elif component_type == "suburb":
+        # Suburb should be reasonable text, 2-50 characters
+        return 2 <= len(component_value) <= 50 and component_value.replace(' ', '').replace('-', '').isalpha()
+    
+    elif component_type == "state":
+        # State must be one of Australian states/territories
+        valid_states = ["NSW", "VIC", "QLD", "WA", "SA", "TAS", "NT", "ACT"]
+        return component_value.upper() in valid_states
+    
+    elif component_type == "postcode":
+        # Postcode must be 4 digits
+        return component_value.isdigit() and len(component_value) == 4
+    
+    return False
+
+
 # Validator management class (optional, for advanced validation management)
 class CustomerValidators:
     """Customer information validator management class
@@ -292,6 +341,10 @@ class CustomerValidators:
     @staticmethod
     def validate_time(service_time: str) -> Tuple[bool, bool]:
         return validate_time(service_time)
+    
+    @staticmethod
+    def validate_address_component(component_type: str, component_value: str) -> bool:
+        return validate_address_component(component_type, component_value)
     
     @classmethod
     def validate_all_user_info(cls, name: str, phone: str, address: str, email: str) -> dict:

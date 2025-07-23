@@ -77,36 +77,76 @@ Rules:
 - Strictly validate phone number format, only Australian formats are considered valid"""
 
 
-def get_address_extraction_prompt():
-    """Get address extraction system prompt
+def get_address_extraction_prompt(address_components=None, collection_step="street"):
+    """Get address extraction system prompt for incremental collection
+    
+    Args:
+        address_components: Dict of previously collected address components
+        collection_step: Current step in address collection process
     
     Returns:
         str: System prompt for address collection
     """
-    return """You are a professional customer service assistant. Your tasks are:
+    # Build context of previously collected components
+    context = ""
+    if address_components:
+        collected_parts = []
+        if address_components.get("street_number"):
+            collected_parts.append(f"Street number: {address_components['street_number']}")
+        if address_components.get("street_name"):
+            collected_parts.append(f"Street name: {address_components['street_name']}")
+        if address_components.get("suburb"):
+            collected_parts.append(f"Suburb: {address_components['suburb']}")
+        if address_components.get("state"):
+            collected_parts.append(f"State: {address_components['state']}")
+        if address_components.get("postcode"):
+            collected_parts.append(f"Postcode: {address_components['postcode']}")
+        
+        if collected_parts:
+            context = f"Previously collected address components: {', '.join(collected_parts)}\n"
+    
+    # Determine what to ask for based on collection step
+    step_guidance = {
+        "street": "Focus on collecting street number and street name (e.g., '123 George Street')",
+        "suburb": "Focus on collecting the suburb/city name",
+        "state": "Focus on collecting the state/territory and postcode",
+        "postcode": "Focus on collecting the postcode if not already provided",
+        "complete": "All components should be collected, verify completeness"
+    }
+    
+    current_guidance = step_guidance.get(collection_step, "Collect any missing address components")
+    
+    return f"""You are a professional customer service assistant collecting Australian address information incrementally. Your tasks are:
 1. Engage in natural and friendly conversation with users
-2. Collect user's Australian address information
+2. Extract address components from user input based on current collection step
 3. Return results strictly in JSON format
 
+{context}Current collection focus: {current_guidance}
+
 Please respond strictly in the following JSON format, do not add any other content:
-{
+{{
   "response": "What you want to say to the user",
-  "info_extracted": {
-    "address": "Extracted complete address, null if not extracted"
-  },
+  "info_extracted": {{
+    "street_number": "Extracted street number, null if not found",
+    "street_name": "Extracted street name, null if not found",
+    "suburb": "Extracted suburb/city, null if not found", 
+    "state": "Extracted state/territory, null if not found",
+    "postcode": "Extracted postcode, null if not found"
+  }},
   "info_complete": true/false,
-  "analysis": "Brief analysis of whether user input contains valid Australian address"
-}
+  "collection_step_complete": true/false,
+  "analysis": "Brief analysis of what was extracted from user input"
+}}
 
 Rules:
-- Address must include: street number, street name, city/suburb, state/territory, postcode
-- Only accept Australian address formats
-- Postcode must be a valid Australian postcode (4 digits)
+- Extract any address components mentioned in user input, even if not the current focus
 - State/territory must be one of: NSW, VIC, QLD, WA, SA, TAS, NT, ACT
-- If user provides a complete Australian format address, set info_complete to true
-- If address information is incomplete or doesn't match Australian format, set info_complete to false
-- Response field should be natural and friendly, guiding users to provide complete address information
-- Analyze user input to check if it contains all necessary address components"""
+- Postcode must be 4 digits for Australian addresses
+- Set collection_step_complete to true if the current step's required components are found
+- Set info_complete to true only if ALL address components are collected (street number, street name, suburb, state, postcode)
+- Response should guide the user to provide missing components for current step
+- Be flexible - users might provide multiple components at once
+- If user provides corrections to previously collected components, extract the corrections"""
 
 
 def get_email_extraction_prompt():

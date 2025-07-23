@@ -17,7 +17,7 @@ Architecture Description:
 """
 
 import json
-from typing import TypedDict, Literal, Optional
+from typing import TypedDict, Literal, Optional, Dict
 from openai import OpenAI
 
 # Import decoupled modules
@@ -36,7 +36,8 @@ from utils.validators.customer_validators import (
     validate_address,
     validate_email,
     validate_service,
-    validate_time
+    validate_time,
+    validate_address_component
 )
 
 from .redis_service import (
@@ -57,6 +58,10 @@ class CustomerServiceState(TypedDict):
     email: Optional[str]
     service: Optional[str]
     service_time: Optional[str]
+    
+    # Address component tracking for incremental collection
+    address_components: Dict[str, Optional[str]]  # {"street_number": None, "street_name": None, "suburb": None, "state": None, "postcode": None}
+    address_collection_step: Literal["street", "suburb", "state", "postcode", "complete"]
     
     # Process control
     current_step: Literal["collect_name", "collect_phone", "collect_address", "collect_email", "collect_service", "collect_time", "completed"]
@@ -197,40 +202,99 @@ class CustomerServiceLangGraph:
         return state
 
     def process_address_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Process address collection step"""
-        # Call LLM to extract address
+        """Process incremental address collection step"""
+        # Call LLM to extract address components
         result = extract_address_from_conversation(state)
         state["last_llm_response"] = result
         
-        # Check if address was extracted
-        extracted_address = result["info_extracted"].get("address")
-        is_complete = result["info_complete"]
+        # Get extracted address components
+        extracted_components = result["info_extracted"]
+        is_complete = result.get("info_complete", False)
+        collection_step_complete = result.get("collection_step_complete", False)
         
-        if is_complete and extracted_address and validate_address(extracted_address):
-            # Clean and standardize address
-            cleaned_address = extracted_address.strip()
+        # Initialize address_components if not present
+        if "address_components" not in state:
+            state["address_components"] = {
+                "street_number": None,
+                "street_name": None,
+                "suburb": None,
+                "state": None,
+                "postcode": None
+            }
+        
+        # Initialize address_collection_step if not present
+        if "address_collection_step" not in state:
+            state["address_collection_step"] = "street"
+        
+        # Merge newly extracted components with existing ones
+        components_updated = False
+        for component, value in extracted_components.items():
+            if value and value.strip():  # Only update if we have a valid value
+                old_value = state["address_components"].get(component)
+                state["address_components"][component] = value.strip()
+                if old_value != value.strip():
+                    components_updated = True
+                    print(f"📝 Updated {component}: {value.strip()}")
+        
+        # Validate individual components that were extracted
+        if components_updated:
+            self._validate_and_update_address_components(state, call_sid)
+        
+        # Determine next collection step based on what we have
+        current_step = state["address_collection_step"]
+        
+        if current_step == "street":
+            if state["address_components"]["street_number"] and state["address_components"]["street_name"]:
+                state["address_collection_step"] = "suburb"
+                print("✅ Street information collected, now collecting suburb")
+            elif collection_step_complete:
+                state["address_collection_step"] = "suburb"
+        elif current_step == "suburb":
+            if state["address_components"]["suburb"]:
+                state["address_collection_step"] = "state"
+                print("✅ Suburb collected, now collecting state and postcode")
+            elif collection_step_complete:
+                state["address_collection_step"] = "state"
+        elif current_step == "state":
+            if state["address_components"]["state"] and state["address_components"]["postcode"]:
+                state["address_collection_step"] = "complete"
+                print("✅ State and postcode collected")
+            elif collection_step_complete:
+                state["address_collection_step"] = "complete"
+        
+        # Check if all address components are complete
+        components = state["address_components"]
+        if all([components["street_number"], components["street_name"], 
+                components["suburb"], components["state"], components["postcode"]]):
             
-            # Local state update
-            state["address"] = cleaned_address
-            state["address_complete"] = True
-            state["current_step"] = "collect_email"
+            # Build complete address string
+            complete_address = f"{components['street_number']} {components['street_name']}, {components['suburb']}, {components['state']} {components['postcode']}"
             
-            # Real-time Redis update
-            if call_sid:
-                redis_success = update_user_info_field(
-                    call_sid=call_sid,
-                    field_name="address",
-                    field_value=cleaned_address
-                )
+            # Validate complete address
+            if validate_address(complete_address):
+                state["address"] = complete_address
+                state["address_complete"] = True
+                state["address_collection_step"] = "complete"
+                state["current_step"] = "collect_email"
                 
-                if redis_success:
-                    print(f"✅ Address extracted and saved successfully: {cleaned_address}")
-                else:
-                    print(f"⚠️ Address extracted successfully but Redis save failed: {cleaned_address}")
-            
-            print(f"✅ Address collection completed: {cleaned_address}")
-        else:
-            # Increment attempt count
+                # Real-time Redis update
+                if call_sid:
+                    redis_success = update_user_info_field(
+                        call_sid=call_sid,
+                        field_name="address",
+                        field_value=complete_address
+                    )
+                    
+                    if redis_success:
+                        print(f"✅ Complete address saved successfully: {complete_address}")
+                    else:
+                        print(f"⚠️ Address complete but Redis save failed: {complete_address}")
+                
+                print(f"🎉 Address collection completed: {complete_address}")
+                return state
+        
+        # Handle failed attempts
+        if not components_updated and not collection_step_complete:
             state["address_attempts"] += 1
             
             if state["address_attempts"] >= state["max_attempts"]:
@@ -240,6 +304,28 @@ class CustomerServiceLangGraph:
                 print(f"⚠️ Address extraction failed, attempt: {state['address_attempts']}/{state['max_attempts']}")
         
         return state
+    
+    def _validate_and_update_address_components(self, state: CustomerServiceState, call_sid: Optional[str] = None):
+        """Validate and update individual address components"""
+        components = state["address_components"]
+        
+        # Validate each component using the dedicated validation function
+        for component_type, value in components.items():
+            if value:
+                if validate_address_component(component_type, value):
+                    # Normalize state to uppercase
+                    if component_type == "state":
+                        components[component_type] = value.upper()
+                    print(f"✅ Valid {component_type}: {components[component_type]}")
+                else:
+                    print(f"⚠️ Invalid {component_type}: {value}")
+                    components[component_type] = None
+        
+        # Update Redis with individual components if call_sid provided
+        if call_sid:
+            for component, value in components.items():
+                if value:
+                    update_user_info_field(call_sid, f"address_{component}", value)
 
     def process_email_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process email collection step"""
@@ -457,7 +543,28 @@ class CustomerServiceLangGraph:
         # Basic information
         print(f"👤 Name: {state.get('name', 'Not collected')} {'✅' if state.get('name_complete') else '❌'}")
         print(f"📞 Phone: {state.get('phone', 'Not collected')} {'✅' if state.get('phone_complete') else '❌'}")
-        print(f"🏠 Address: {state.get('address', 'Not collected')} {'✅' if state.get('address_complete') else '❌'}")
+        # Address with component breakdown
+        address_status = "✅" if state.get('address_complete') else "❌"
+        address_display = state.get('address', 'Not collected')
+        
+        if not state.get('address_complete') and state.get('address_components'):
+            components = state['address_components']
+            partial_info = []
+            if components.get('street_number'):
+                partial_info.append(f"Street #: {components['street_number']}")
+            if components.get('street_name'):
+                partial_info.append(f"Street: {components['street_name']}")
+            if components.get('suburb'):
+                partial_info.append(f"Suburb: {components['suburb']}")
+            if components.get('state'):
+                partial_info.append(f"State: {components['state']}")
+            if components.get('postcode'):
+                partial_info.append(f"Postcode: {components['postcode']}")
+            
+            if partial_info:
+                address_display = f"Partial - {'; '.join(partial_info)} (Step: {state.get('address_collection_step', 'unknown')})"
+        
+        print(f"🏠 Address: {address_display} {address_status}")
         print(f"📧 Email: {state.get('email', 'Not collected')} {'✅' if state.get('email_complete') else '❌'}")
         
         # Service information
@@ -552,6 +659,14 @@ class CustomerServiceLangGraph:
             "email": None,
             "service": None,
             "service_time": None,
+            "address_components": {
+                "street_number": None,
+                "street_name": None,
+                "suburb": None,
+                "state": None,
+                "postcode": None
+            },
+            "address_collection_step": "street",
             "current_step": "collect_name",
             "name_attempts": 0,
             "phone_attempts": 0,
