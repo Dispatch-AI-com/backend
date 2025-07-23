@@ -58,10 +58,11 @@ export class SettingController {
     @Param('userId') userId: string,
     @Body() profileDto: UserProfileDto,
   ): Promise<UserDocument> {
-    return await this.settingService.updateUserSettings(userId, {
+    const result = await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.USER_PROFILE,
       settings: profileDto,
     });
+    return result as UserDocument;
   }
 
   @Get('user/:userId/company')
@@ -96,10 +97,11 @@ export class SettingController {
     @Param('userId') userId: string,
     @Body() companyDto: CompanyInfoDto,
   ): Promise<CompanyDocument> {
-    return await this.settingService.updateUserSettings(userId, {
+    const result = await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.COMPANY_INFO,
       settings: companyDto,
     });
+    return result as CompanyDocument;
   }
 
   @Get('user/:userId/billing')
@@ -134,10 +136,11 @@ export class SettingController {
     @Param('userId') userId: string,
     @Body() billingDto: BillingAddressDto,
   ): Promise<CompanyDocument> {
-    return await this.settingService.updateUserSettings(userId, {
+    const result = await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.BILLING_ADDRESS,
       settings: billingDto,
     });
+    return result as CompanyDocument;
   }
 
   @Get('user/:userId/all')
@@ -243,9 +246,10 @@ export class SettingController {
     @Param('userId') userId: string,
     @Body() profileDto: UserProfileDto,
   ): Promise<UserDocument> {
-    return await this.settingService.updateUserSettings(userId, {
+    const result = await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.USER_PROFILE,
       settings: profileDto,
     });
+    return result as UserDocument;
   }
 }
