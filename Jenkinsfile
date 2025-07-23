@@ -10,10 +10,16 @@ pipeline {
         ENVIRONMENT = "uat"
         AWS_ACCOUNT_ID = "893774231297"
         AWS_REGION = "ap-southeast-2"
-        ECR_REPO = "dispatchai-backend"
-        IMAGE_NAME = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}"
+        // Backend environment variables
+        ECR_REPO_BACKEND = "dispatchai-backend"
+        IMAGE_NAME_BACKEND = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_BACKEND}"
+        // AI service environment variables
+        ECR_REPO_AI = "dispatchai-backend-ai"
+        IMAGE_NAME_AI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_AI}"
+        
         IMAGE_TAG = "uat-${env.BUILD_ID}"
         NODE_ENV = 'uat'
+        ENV = 'uat'
     }
 
     stages {
@@ -37,34 +43,91 @@ pipeline {
         }
 
         stage('install, test and build') {
-            steps {
-                container('node') {
-                    dir('backend') {
-                        sh "npm install -g pnpm"
-                        sh "pnpm install --frozen-lockfile"
-                        sh "pnpm run type-check"
-                        sh "pnpm run lint"
-                        sh "pnpm run build"
+            parallel {
+                stage('Backend - Node.js') {
+                    steps {
+                        container('node') {
+                            dir('backend') {
+                                sh "npm install -g pnpm"
+                                sh "pnpm install --frozen-lockfile"
+                                sh "pnpm run type-check"
+                                sh "pnpm run lint"
+                                sh "pnpm run build"
+                            }
+                        }
+                    }
+                }
+                stage('AI Service - Python') {
+                    steps {
+                        container('node') {
+                            dir('backend/ai') {
+                                sh """
+                                    # Check if we're on Alpine (apk) or Debian/Ubuntu (apt-get)
+                                    if command -v apk > /dev/null; then
+                                        apk update && apk add curl
+                                    elif command -v apt-get > /dev/null; then
+                                        apt-get update && apt-get install -y curl
+                                    elif command -v yum > /dev/null; then
+                                        yum install -y curl
+                                    else
+                                        echo "Package manager not found, assuming curl is already installed"
+                                    fi
+                                    
+                                    # Install uv
+                                    curl -LsSf https://astral.sh/uv/install.sh | sh
+                                    
+                                    # Add uv to PATH
+                                    export PATH="\$HOME/.local/bin:\$PATH"
+                                    
+                                    # Install dependencies
+                                    uv sync --frozen
+                                """
+                            }
+                        }
                     }
                 }
             }
         }
 
         stage('build docker image') {
-            steps {
-                container('dispatchai-jenkins-agent') {
-                    dir('backend') {
-                        script {
-                            // Use BuildKit to build docker image and push to ECR
-                            sh """
-                                docker-credential-ecr-login list
-                                buildctl --addr=tcp://localhost:1234 build \\
-                                --frontend=dockerfile.v0 \\
-                                --local context=. \\
-                                --local dockerfile=. \\
-                                --opt filename=Dockerfile.uat \\
-                                --output type=image,name=${IMAGE_NAME}:${IMAGE_TAG},push=true
-                            """
+            parallel {
+                stage('Backend Docker Image') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('backend') {
+                                script {
+                                    // Use BuildKit to build backend docker image and push to ECR
+                                    sh """
+                                        docker-credential-ecr-login list
+                                        buildctl --addr=tcp://localhost:1234 build \\
+                                        --frontend=dockerfile.v0 \\
+                                        --local context=. \\
+                                        --local dockerfile=. \\
+                                        --opt filename=Dockerfile.uat \\
+                                        --output type=image,name=${IMAGE_NAME_BACKEND}:${IMAGE_TAG},push=true
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('AI Service Docker Image') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('backend/ai') {
+                                script {
+                                    // Use BuildKit to build AI service docker image and push to ECR
+                                    sh """
+                                        docker-credential-ecr-login list
+                                        buildctl --addr=tcp://localhost:1234 build \\
+                                        --frontend=dockerfile.v0 \\
+                                        --local context=. \\
+                                        --local dockerfile=. \\
+                                        --opt filename=Dockerfile.uat \\
+                                        --output type=image,name=${IMAGE_NAME_AI}:${IMAGE_TAG},push=true
+                                    """
+                                }
+                            }
                         }
                     }
                 }
@@ -72,12 +135,28 @@ pipeline {
         }
 
         stage('helm to deploy backend') {
-            steps {
-                container('dispatchai-jenkins-agent') {
-                    dir('helm/envs/uat') {
-                        script {
-                            // deploy to eks via bash
-                            sh "bash deploy-backend-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+            parallel {
+                stage('Deploy Backend') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('helm/envs/uat') {
+                                script {
+                                    // deploy backend to eks via bash
+                                    sh "bash deploy-backend-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Deploy AI Service') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('helm/envs/uat') {
+                                script {
+                                    // deploy AI service to eks via bash
+                                    sh "bash deploy-backend-ai-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                                }
+                            }
                         }
                     }
                 }
@@ -87,17 +166,20 @@ pipeline {
 
     post {
         success {
-            echo "✅ Backend has been deployed successfully with image: ${IMAGE_NAME}:${IMAGE_TAG}"
+            echo "✅ Backend and AI service have been deployed successfully"
+            echo "Backend image: ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}"
+            echo "AI service image: ${IMAGE_NAME_AI}:${IMAGE_TAG}"
             emailext(
                 to: "lin.lu.devoops@gmail.com",
-                subject: "✅ DispatchAI Backend pipeline succeeded.",
+                subject: "✅ DispatchAI Backend & AI Service pipeline succeeded.",
                 body: "Jenkins CICD Pipeline succeeded!<br/>" +
                     "Job Result: ${currentBuild.currentResult}<br/>" +
                     "Job Name: ${env.JOB_NAME}<br/>" +
                     "Branch: ${env.BRANCH_NAME}<br/>" +
                     "Build Number: ${env.BUILD_NUMBER}<br/>" +
                     "URL: ${env.BUILD_URL}<br/>" +
-                    "Image: ${IMAGE_NAME}:${IMAGE_TAG}<br/>",
+                    "Backend Image: ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}<br/>" +
+                    "AI Service Image: ${IMAGE_NAME_AI}:${IMAGE_TAG}<br/>",
                 attachLog: false
             )
         }
@@ -105,7 +187,7 @@ pipeline {
         failure {
             emailext(
                 to: "lin.lu.devoops@gmail.com",
-                subject: "❌ DispatchAI Backend pipeline failed.",
+                subject: "❌ DispatchAI Backend & AI Service pipeline failed.",
                 body: "Jenkins CICD Pipeline failed!<br/>" +
                     "Job Result: ${currentBuild.currentResult}<br/>" +
                     "Job Name: ${env.JOB_NAME}<br/>" +
