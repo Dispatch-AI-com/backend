@@ -66,7 +66,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
           tokenRefreshTime: new Date(),
         });
         await user.save();
-      } else if (!user.googleId) {
+      } else if (user.googleId == null || user.googleId === '') {
         user.googleId = googleUser.googleId;
         user.avatar = googleUser.avatar;
         user.provider = 'google';
@@ -74,7 +74,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       // Ensure tokenRefreshTime exists for existing Google users
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unnecessary-condition
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (user.tokenRefreshTime == null) {
         user.tokenRefreshTime = new Date();
         await user.save();

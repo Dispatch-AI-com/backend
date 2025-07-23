@@ -342,11 +342,8 @@ export class SubscriptionService {
     });
 
     if (
-      subscription === null ||
-      subscription === undefined ||
-      subscription.stripeCustomerId === null ||
-      subscription.stripeCustomerId === undefined ||
-      subscription.stripeCustomerId.trim() === ''
+      subscription?.stripeCustomerId == null ||
+      subscription.stripeCustomerId.trim().length === 0
     ) {
       throw new NotFoundException('Stripe customer not found for this user');
     }
