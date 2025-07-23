@@ -44,10 +44,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
 
       const googleUser = {
         googleId: id,
-        email: emails[0].value,
+        email: emails[0]?.value ?? '',
         firstName: name.givenName,
         lastName: name.familyName,
-        avatar: photos[0].value,
+        avatar: photos[0]?.value ?? '',
       };
 
       let user = await this.userModel.findOne({
@@ -66,7 +66,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
           tokenRefreshTime: new Date(),
         });
         await user.save();
-      } else if (user.googleId == null) {
+      } else if (!user.googleId) {
         user.googleId = googleUser.googleId;
         user.avatar = googleUser.avatar;
         user.provider = 'google';
@@ -74,7 +74,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       // Ensure tokenRefreshTime exists for existing Google users
-      if (user.tokenRefreshTime == null) {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
+      if (!user.tokenRefreshTime) {
         user.tokenRefreshTime = new Date();
         await user.save();
       }

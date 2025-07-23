@@ -341,7 +341,13 @@ export class SubscriptionService {
       stripeCustomerId: { $exists: true },
     });
 
-    if (!subscription?.stripeCustomerId) {
+    if (
+      subscription === null ||
+      subscription === undefined ||
+      subscription.stripeCustomerId === null ||
+      subscription.stripeCustomerId === undefined ||
+      subscription.stripeCustomerId.trim() === ''
+    ) {
       throw new NotFoundException('Stripe customer not found for this user');
     }
 
@@ -360,7 +366,8 @@ export class SubscriptionService {
 
     for (const sub of subscriptions) {
       const chargeId = sub.chargeId;
-      if (typeof chargeId === 'string') {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (chargeId && typeof chargeId === 'string' && chargeId.trim() !== '') {
         const chargeRefunds =
           await this.stripeService.listRefundsByChargeId(chargeId);
         refunds.push(...chargeRefunds);

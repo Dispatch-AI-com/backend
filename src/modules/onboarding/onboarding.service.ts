@@ -117,8 +117,11 @@ export class OnboardingService {
     }
 
     // Check if address was properly parsed
-    if (!companyAns.address || !companyAns.address.streetAddress) {
-      throw new BadRequestException('company address not properly parsed. Check address format.');
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!companyAns.address?.streetAddress) {
+      throw new BadRequestException(
+        'company address not properly parsed. Check address format.',
+      );
     }
 
     const companyPayload = {
@@ -144,10 +147,11 @@ export class OnboardingService {
     } catch (err: unknown) {
       // handle index uniqueness conflict
       if (
-        err &&
+        err !== null &&
+        err !== undefined &&
         typeof err === 'object' &&
         'code' in err &&
-        err.code === 11000
+        (err as { code: number }).code === 11000
       ) {
         throw new ConflictException('Company email/abn/phone already exists');
       }

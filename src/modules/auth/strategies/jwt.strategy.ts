@@ -25,7 +25,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload): Promise<JwtUserDto> {
     const user = await this.userService.findOne(payload.sub);
 
-    if (user === null || user === undefined) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
+    if (!user) {
       throw new UnauthorizedException('User account no longer exists');
     }
 
@@ -33,6 +34,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User account is banned');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (user.status !== UserStatus.active) {
       throw new UnauthorizedException('User account is not active');
     }

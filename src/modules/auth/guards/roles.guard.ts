@@ -13,7 +13,8 @@ export class RolesGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    if (requiredRoles === undefined || requiredRoles === null) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition, @typescript-eslint/strict-boolean-expressions
+    if (!requiredRoles || requiredRoles.length === 0) {
       return true;
     }
 

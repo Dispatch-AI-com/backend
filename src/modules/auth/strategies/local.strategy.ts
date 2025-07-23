@@ -9,7 +9,7 @@ import { User } from '@/modules/user/schema/user.schema';
 export class LocalStrategy extends PassportStrategy(Strategy, 'local') {
   constructor(private readonly authService: AuthService) {
     super({
-      usernameField: 'email', 
+      usernameField: 'email',
       passwordField: 'password',
     });
   }

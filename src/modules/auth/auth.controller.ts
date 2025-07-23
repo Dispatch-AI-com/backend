@@ -85,6 +85,7 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Email or password is incorrect' })
   @Post('login')
   @UseGuards(AuthGuard('local'))
+  // eslint-disable-next-line @typescript-eslint/require-await
   async login(
     @Req() req: Request & { user: User },
   ): Promise<{ user: UserResponseDto; token: string }> {

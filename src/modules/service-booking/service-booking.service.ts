@@ -21,7 +21,10 @@ export class ServiceBookingService {
   }
 
   async findAll(userId?: string): Promise<ServiceBooking[]> {
-    const filter = userId ? { userId: { $eq: userId } } : {};
+    const filter =
+      userId !== undefined && userId !== null && userId.trim() !== ''
+        ? { userId: { $eq: userId } }
+        : {};
     return this.bookingModel.find(filter).exec();
   }
 
