@@ -64,10 +64,13 @@ pipeline {
                                 sh """
                                     # Install dependencies using uv
                                     uv sync --frozen
-                                    # Run linting and formatting
-                                    make lint
-                                    make format
                                 """
+                                
+                                // 🔍 Python Lint (Ruff)
+                                sh "make lint"
+                                
+                                // 🎨 Python Format Check
+                                sh "make format"
                             }
                         }
                     }
