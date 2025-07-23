@@ -24,7 +24,7 @@ def get_call_skeleton_dict(call_sid: str) -> Dict[str, Any]:
         raise ValueError("CallSkeleton not found")
     return json.loads(data)
 
-def update_user_info_field(call_sid: str, field_name: str, field_value: str, timestamp: Optional[str] = None) -> bool:
+def update_user_info_field(call_sid: str, field_name: str, field_value, timestamp: Optional[str] = None) -> bool:
     """Update specific user information field in real-time
     
     Args:

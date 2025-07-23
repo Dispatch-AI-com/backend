@@ -53,16 +53,10 @@ async def ai_conversation(data: ConversationInput):
     # 2. Construct AI workflow state
     user_info = callskeleton.user.userInfo if callskeleton.user.userInfo else None
     
-    # Handle address conversion from Address object to string
-    address_str = None
-    if user_info and user_info.address:
-        address_obj = user_info.address
-        address_str = f"{address_obj.street_number} {address_obj.street_name}, {address_obj.suburb}, {address_obj.state} {address_obj.postcode}"
-    
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
-        "address": address_str,
+        "address": user_info.address if user_info else None,
         "email": user_info.email if user_info else None,
         "service": callskeleton.user.service.name if callskeleton.user.service else None,
         "service_time": callskeleton.user.serviceBookedTime,
@@ -79,13 +73,22 @@ async def ai_conversation(data: ConversationInput):
         "last_llm_response": None,
         "name_complete": bool(user_info.name if user_info else None),
         "phone_complete": bool(user_info.phone if user_info else None),
-        "address_complete": bool(address_str),
+        "address_complete": bool(user_info.address if user_info else None),
         "email_complete": bool(user_info.email if user_info else None),
         "service_complete": bool(callskeleton.user.service),
         "time_complete": bool(callskeleton.user.serviceBookedTime),
         "conversation_complete": callskeleton.servicebooked,
         "service_available": True,
         "time_available": True,
+        # Address collection fields
+        "address_components": {
+            "street_number": None,
+            "street_name": None,
+            "suburb": None,
+            "state": None,
+            "postcode": None
+        },
+        "address_collection_step": "street",
     }
     
     # 3. Set current user input

@@ -19,6 +19,7 @@ Architecture Description:
 import json
 from typing import TypedDict, Literal, Optional, Dict
 from openai import OpenAI
+from models.call import Address
 
 # Import decoupled modules
 from .retrieve.customer_info_extractors import (
@@ -54,7 +55,7 @@ class CustomerServiceState(TypedDict):
     # User information
     name: Optional[str]
     phone: Optional[str]
-    address: Optional[str]
+    address: Optional[Address]
     email: Optional[str]
     service: Optional[str]
     service_time: Optional[str]
@@ -113,6 +114,14 @@ class CustomerServiceLangGraph:
     
     def process_name_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process name collection step"""
+        # Initialize attempts counter if not present
+        if "name_attempts" not in state or state["name_attempts"] is None:
+            state["name_attempts"] = 0
+        
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+        
         # Call LLM to extract name
         result = extract_name_from_conversation(state)
         state["last_llm_response"] = result
@@ -158,6 +167,14 @@ class CustomerServiceLangGraph:
 
     def process_phone_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process phone collection step"""
+        # Initialize attempts counter if not present
+        if "phone_attempts" not in state or state["phone_attempts"] is None:
+            state["phone_attempts"] = 0
+        
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+        
         # Call LLM to extract phone
         result = extract_phone_from_conversation(state)
         state["last_llm_response"] = result
@@ -203,17 +220,8 @@ class CustomerServiceLangGraph:
 
     def process_address_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process incremental address collection step"""
-        # Call LLM to extract address components
-        result = extract_address_from_conversation(state)
-        state["last_llm_response"] = result
-        
-        # Get extracted address components
-        extracted_components = result["info_extracted"]
-        is_complete = result.get("info_complete", False)
-        collection_step_complete = result.get("collection_step_complete", False)
-        
         # Initialize address_components if not present
-        if "address_components" not in state:
+        if "address_components" not in state or state["address_components"] is None:
             state["address_components"] = {
                 "street_number": None,
                 "street_name": None,
@@ -223,8 +231,25 @@ class CustomerServiceLangGraph:
             }
         
         # Initialize address_collection_step if not present
-        if "address_collection_step" not in state:
+        if "address_collection_step" not in state or state["address_collection_step"] is None:
             state["address_collection_step"] = "street"
+        
+        # Initialize attempts counter if not present
+        if "address_attempts" not in state or state["address_attempts"] is None:
+            state["address_attempts"] = 0
+        
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+        
+        # Call LLM to extract address components
+        result = extract_address_from_conversation(state)
+        state["last_llm_response"] = result
+        
+        # Get extracted address components
+        extracted_components = result["info_extracted"]
+        is_complete = result.get("info_complete", False)
+        collection_step_complete = result.get("collection_step_complete", False)
         
         # Merge newly extracted components with existing ones
         components_updated = False
@@ -267,22 +292,31 @@ class CustomerServiceLangGraph:
         if all([components["street_number"], components["street_name"], 
                 components["suburb"], components["state"], components["postcode"]]):
             
-            # Build complete address string
-            complete_address = f"{components['street_number']} {components['street_name']}, {components['suburb']}, {components['state']} {components['postcode']}"
+            # Build complete Address object
+            address_obj = Address(
+                street_number=components['street_number'],
+                street_name=components['street_name'],
+                suburb=components['suburb'],
+                state=components['state'],
+                postcode=components['postcode']
+            )
+            
+            # Build address string for validation
+            complete_address_str = f"{components['street_number']} {components['street_name']}, {components['suburb']}, {components['state']} {components['postcode']}"
             
             # Validate complete address
-            if validate_address(complete_address):
-                state["address"] = complete_address
+            if validate_address(complete_address_str):
+                state["address"] = address_obj
                 state["address_complete"] = True
                 state["address_collection_step"] = "complete"
                 state["current_step"] = "collect_email"
                 
-                # Real-time Redis update
+                # Real-time Redis update - store as Address object
                 if call_sid:
                     redis_success = update_user_info_field(
                         call_sid=call_sid,
                         field_name="address",
-                        field_value=complete_address
+                        field_value=address_obj.model_dump()
                     )
                     
                     if redis_success:
@@ -329,6 +363,14 @@ class CustomerServiceLangGraph:
 
     def process_email_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process email collection step"""
+        # Initialize attempts counter if not present
+        if "email_attempts" not in state or state["email_attempts"] is None:
+            state["email_attempts"] = 0
+        
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+        
         # Call LLM to extract email
         result = extract_email_from_conversation(state)
         state["last_llm_response"] = result
@@ -374,6 +416,14 @@ class CustomerServiceLangGraph:
 
     def process_service_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process service collection step"""
+        # Initialize attempts counter if not present
+        if "service_attempts" not in state or state["service_attempts"] is None:
+            state["service_attempts"] = 0
+        
+        # Initialize service_max_attempts if not present
+        if "service_max_attempts" not in state or state["service_max_attempts"] is None:
+            state["service_max_attempts"] = settings.service_max_attempts
+        
         # Call LLM to extract service
         result = extract_service_from_conversation(state)
         state["last_llm_response"] = result
@@ -428,6 +478,14 @@ class CustomerServiceLangGraph:
 
     def process_time_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process time collection step"""
+        # Initialize attempts counter if not present
+        if "time_attempts" not in state or state["time_attempts"] is None:
+            state["time_attempts"] = 0
+        
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+        
         # Call LLM to extract time
         result = extract_time_from_conversation(state)
         state["last_llm_response"] = result

@@ -15,6 +15,7 @@ import json
 import os
 from typing import TypedDict, Optional, Dict, Any
 from openai import OpenAI
+from models.call import Address
 
 from utils.prompts.customer_info_prompts import (
     get_name_extraction_prompt,
@@ -28,7 +29,7 @@ from utils.prompts.customer_info_prompts import (
 class CustomerServiceState(TypedDict):
     name: Optional[str]
     phone: Optional[str]
-    address: Optional[str]
+    address: Optional[Address]
     email: Optional[str]
     service: Optional[str]
     service_time: Optional[str]
