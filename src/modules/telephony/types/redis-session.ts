@@ -19,10 +19,11 @@ export interface UserInfo {
 }
 
 export interface Address {
-  street: string;
+  street_number: string;
+  street_name: string;
   suburb: string;
   state: string;
-  zip: string;
+  postcode: string;
 }
 
 export interface Company {
