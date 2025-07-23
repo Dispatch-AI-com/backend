@@ -62,9 +62,18 @@ pipeline {
                         container('python') {
                             dir('backend/ai') {
                                 sh """
+                                    # Install make (required for Alpine)
+                                    apk add --no-cache make
+                                    
                                     # Install dependencies using uv
                                     uv sync --frozen
                                 """
+                                
+                                // 🔍 Python Lint (Ruff)
+                                sh "make lint"
+                                
+                                // 🎨 Python Format Check
+                                sh "make format"
                             }
                         }
                     }
