@@ -69,10 +69,10 @@ pipeline {
                                     uv sync --frozen
                                 """
                                 
-                                // 🔍 Python Lint (Ruff)
+                                // Python Lint (Ruff)
                                 sh "make lint"
                                 
-                                // 🎨 Python Format Check
+                                // Python Format Check
                                 sh "make format"
                             }
                         }
