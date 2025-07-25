@@ -39,7 +39,7 @@ from .redis_service import (
     update_booking_status
 )
 
-from app.config import settings
+from config import settings
 
 
 class CustomerServiceState(TypedDict):
