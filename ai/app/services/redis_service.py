@@ -1,9 +1,9 @@
 import redis
 import json
-from app.models.call import CallSkeleton
+from models.call import CallSkeleton
 from typing import Optional, Dict, Any
 
-from app.config import settings
+from config import settings
 
 REDIS_HOST = settings.redis_host
 REDIS_PORT = settings.redis_port

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, ValidationError
-from app.models.call import Message, CallSkeleton, Address
-from app.services.redis_service import get_call_skeleton
-from app.services.call_handler import CustomerServiceLangGraph, CustomerServiceState
+from models.call import Message, CallSkeleton, Address
+from services.redis_service import get_call_skeleton
+from services.call_handler import CustomerServiceLangGraph, CustomerServiceState
 from datetime import datetime, timezone
 
 router = APIRouter(

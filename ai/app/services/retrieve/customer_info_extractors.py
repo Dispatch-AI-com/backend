@@ -15,9 +15,9 @@ import json
 import os
 from typing import TypedDict, Optional, Dict, Any, List
 from openai import OpenAI
-from app.models.call import Address
+from models.call import Address
 
-from app.utils.prompts.customer_info_prompts import (
+from utils.prompts.customer_info_prompts import (
     get_name_extraction_prompt,
     get_phone_extraction_prompt,
     get_street_extraction_prompt,
