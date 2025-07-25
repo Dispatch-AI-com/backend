@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, ValidationError
-from models.call import Message, CallSkeleton, Address
-from services.redis_service import get_call_skeleton
-from services.call_handler import CustomerServiceLangGraph, CustomerServiceState
+from app.models.call import Message, CallSkeleton, Address
+from app.services.redis_service import get_call_skeleton
+from app.services.call_handler import CustomerServiceLangGraph, CustomerServiceState
 from datetime import datetime, timezone
 
 router = APIRouter(
@@ -24,31 +24,43 @@ class ReplyInput(BaseModel):
 # Global customer service agent
 cs_agent = CustomerServiceLangGraph()
 
-def _is_address_complete(address: Address | None) -> bool:
-    """Check if address object has all required components"""
-    print(f"🔍 _is_address_complete called with: {address}")
-    print(f"🔍 Address type: {type(address)}")
+def _extract_address_components_from_redis(user_info) -> dict:
+    """Extract address components from Redis UserInfo - Updated for 8-step workflow"""
+    address_components = {
+        "street": None,
+        "suburb": None, 
+        "state": None,
+        "postcode": None
+    }
     
-    if not address:
-        print(f"🔍 Address is None or empty")
-        return False
+    if user_info and user_info.address:
+        address = user_info.address
+        # Combine street number and name
+        if hasattr(address, 'street_number') and hasattr(address, 'street_name'):
+            if address.street_number and address.street_name:
+                address_components["street"] = f"{address.street_number} {address.street_name}".strip()
+        
+        if hasattr(address, 'suburb') and address.suburb:
+            address_components["suburb"] = address.suburb
+        if hasattr(address, 'state') and address.state:
+            address_components["state"] = address.state
+        if hasattr(address, 'postcode') and address.postcode:
+            address_components["postcode"] = address.postcode
     
-    # Check if all required fields are present and not empty
-    required_fields = ['street_number', 'street_name', 'suburb', 'state', 'postcode']
-    
-    for field in required_fields:
-        value = getattr(address, field, None)
-        print(f"🔍 Field {field}: '{value}' (type: {type(value)})")
-        if not value or (isinstance(value, str) and not value.strip()):
-            print(f"🔍 Field {field} is empty or invalid")
-            return False
-    
-    print(f"🔍 All address fields are complete")
-    return True
+    return address_components
+
+def _check_address_completion_status(address_components: dict) -> dict:
+    """Check completion status for each address component - Updated for 8-step workflow"""
+    return {
+        "street_complete": bool(address_components.get("street")),
+        "suburb_complete": bool(address_components.get("suburb")),
+        "state_complete": bool(address_components.get("state")),
+        "postcode_complete": bool(address_components.get("postcode"))
+    }
 
 @router.post("/conversation")
 async def ai_conversation(data: ConversationInput):
-    """AI conversation dispatch endpoint
+    """AI conversation dispatch endpoint - Updated for 8-step workflow
     
     Pure API endpoint responsible for:
     1. Receiving frontend requests
@@ -72,25 +84,33 @@ async def ai_conversation(data: ConversationInput):
         # 其他服务器错误
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
     
-    # 2. Construct AI workflow state
+    # 2. Construct AI workflow state - Updated for 8-step workflow
     user_info = callskeleton.user.userInfo if callskeleton.user.userInfo else None
     
-    # Debug address information
-    address_complete_status = _is_address_complete(user_info.address if user_info else None)
-    print(f"🔍 Address from Redis: {user_info.address if user_info else 'None'}")
-    print(f"🔍 Address complete status: {address_complete_status}")
+    # Extract address components from Redis
+    address_components = _extract_address_components_from_redis(user_info)
+    address_completion_status = _check_address_completion_status(address_components)
+    
+    print(f"🔍 Address components from Redis: {address_components}")
+    print(f"🔍 Address completion status: {address_completion_status}")
     
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
-        "address": user_info.address if user_info else None,
+        "street": address_components.get("street"),
+        "suburb": address_components.get("suburb"),
+        "state": address_components.get("state"),
+        "postcode": address_components.get("postcode"),
         "email": user_info.email if user_info else None,
         "service": callskeleton.user.service.name if callskeleton.user.service else None,
         "service_time": callskeleton.user.serviceBookedTime,
         "current_step": "collect_name",
         "name_attempts": 0,
         "phone_attempts": 0,
-        "address_attempts": 0,
+        "street_attempts": 0,
+        "suburb_attempts": 0,
+        "state_attempts": 0,
+        "postcode_attempts": 0,
         "email_attempts": 0,
         "service_attempts": 0,
         "time_attempts": 0,
@@ -100,31 +120,25 @@ async def ai_conversation(data: ConversationInput):
         "last_llm_response": None,
         "name_complete": bool(user_info.name if user_info else None),
         "phone_complete": bool(user_info.phone if user_info else None),
-        "address_complete": address_complete_status,
+        "street_complete": address_completion_status["street_complete"],
+        "suburb_complete": address_completion_status["suburb_complete"],
+        "state_complete": address_completion_status["state_complete"],
+        "postcode_complete": address_completion_status["postcode_complete"],
         "email_complete": bool(user_info.email if user_info else None),
         "service_complete": bool(callskeleton.user.service),
         "time_complete": bool(callskeleton.user.serviceBookedTime),
         "conversation_complete": callskeleton.servicebooked,
         "service_available": True,
         "time_available": True,
-        # Address collection fields
-        "address_components": {
-            "street_number": None,
-            "street_name": None,
-            "suburb": None,
-            "state": None,
-            "postcode": None
-        },
-        "address_collection_step": "street",
     }
     
     # 3. Set current user input
     state["last_user_input"] = data.customerMessage.message
 
-    # 5. Call unified workflow processing - all business logic delegated to call_handler
+    # 4. Call unified workflow processing - all business logic delegated to call_handler
     updated_state = cs_agent.process_customer_workflow(state, call_sid=data.callSid)
 
-    # 6. Generate AI response
+    # 5. Generate AI response
     ai_message = updated_state["last_llm_response"]["response"] if updated_state["last_llm_response"] else "Sorry, system is busy, please try again later."
     ai_response = {
         "speaker": "AI",
@@ -132,7 +146,7 @@ async def ai_conversation(data: ConversationInput):
         "startedAt": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
     }
 
-    # 7. Return AI response
+    # 6. Return AI response
     # Note: Customer information and conversation history are updated in Redis in real-time through workflow
     return {
         "aiResponse": ai_response
@@ -140,7 +154,7 @@ async def ai_conversation(data: ConversationInput):
 
 @router.post("/reply")
 async def ai_reply(data: ReplyInput):
-    """Simple AI reply endpoint for telephony service
+    """Simple AI reply endpoint for telephony service - Updated for 8-step workflow
     
     This endpoint provides a simplified interface that matches 
     what the telephony service expects:
