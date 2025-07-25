@@ -1,39 +1,42 @@
-import { Controller, Post, Body, Req, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, BadRequestException, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { AuthGuard } from '@nestjs/passport';
 import { Request } from 'express';
 import { PushCalendarDto } from './dto/push-calendar.dto';
-console.log(PushCalendarDto);
+import { ApiTags, ApiOkResponse, ApiBadRequestResponse } from '@nestjs/swagger';
 
+@ApiTags('calendar')
 @Controller('calendar')
 export class CalendarController {
+  private readonly logger = new Logger(CalendarController.name);
+
   @UseGuards(AuthGuard('jwt'))
   @Post('push')
-  async pushEvent(@Body() body: PushCalendarDto, @Req() req: Request) {
-    console.log('收到前端请求体:', body);
-    console.log('收到前端请求体:', req.user);
-    console.log('DTO类型:', Object.keys(body));
+  @ApiOkResponse({ description: 'push calendar event success' })
+  @ApiBadRequestResponse({ description: 'no google access token' })
+  async pushEvent(
+    @Body() body: PushCalendarDto,
+    @Req() req: Request & { user?: { googleAccessToken?: string } }
+  ): Promise<any> {
     try {
-        console.log('收到前端请求体:', body);
-        const googleAccessToken = (req.user as any).googleAccessToken;
-        if (!googleAccessToken) {
-          console.error('No google access token found for user');
-          throw new BadRequestException('No google access token found for user');
-        }
-    
-        const params = {
-          ...body,
-          access_token: googleAccessToken,
-        };
-    
-        const aiApiUrl = process.env.AI_URL + '/calendar/push';
-        const res = await axios.post(aiApiUrl, params);
-        console.log('AI后端返回:', res.data);
-    
-        return res.data;
-      } catch (err) {
-        console.error('推送日历事件出错:', err);
-        throw err;
+      const googleAccessToken = req.user?.googleAccessToken;
+      if (typeof googleAccessToken !== 'string' || !googleAccessToken) {
+        this.logger.error('No google access token found for user');
+        throw new BadRequestException('No google access token found for user');
       }
+
+      const params = { ...JSON.parse(JSON.stringify(body)), access_token: googleAccessToken };
+
+      const aiApiUrl = `${process.env.AI_URL ?? ''}/calendar/push`;
+      if (!process.env.AI_URL) {
+        throw new BadRequestException('AI_URL is not set');
+      }
+      const res = await axios.post(aiApiUrl, params);
+
+      return res.data;
+    } catch (err) {
+      this.logger.error('push calendar event error: ' + (err instanceof Error ? err.message : String(err)));
+      throw err;
+    }
   }
 }
