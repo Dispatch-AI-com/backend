@@ -24,7 +24,10 @@ export class ServiceService {
 
   async findAll(userId?: string): Promise<Service[]> {
     if (userId) {
-      return this.serviceModel.find({ userId }).exec();
+      if (!Types.ObjectId.isValid(userId)) {
+        throw new BadRequestException('Invalid user ID format');
+      }
+      return this.serviceModel.find({ userId: { $eq: userId } }).exec();
     }
     return this.serviceModel.find().exec();
   }
