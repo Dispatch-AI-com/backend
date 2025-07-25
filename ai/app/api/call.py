@@ -91,8 +91,22 @@ async def ai_conversation(data: ConversationInput):
     address_components = _extract_address_components_from_redis(user_info)
     address_completion_status = _check_address_completion_status(address_components)
     
+    # Extract service information from CallSkeleton
+    current_service = callskeleton.user.service
+    available_services = [
+        {
+            "id": svc.id,
+            "name": svc.name,
+            "price": svc.price,
+            "description": svc.description
+        }
+        for svc in callskeleton.services
+    ]
+    
     print(f"🔍 Address components from Redis: {address_components}")
     print(f"🔍 Address completion status: {address_completion_status}")
+    print(f"🔍 Available services: {len(available_services)} services")
+    print(f"🔍 Current selected service: {current_service.name if current_service else 'None'}")
     
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
@@ -102,7 +116,11 @@ async def ai_conversation(data: ConversationInput):
         "state": address_components.get("state"),
         "postcode": address_components.get("postcode"),
         "email": user_info.email if user_info else None,
-        "service": callskeleton.user.service.name if callskeleton.user.service else None,
+        "service": current_service.name if current_service else None,
+        "service_id": current_service.id if current_service else None,
+        "service_price": current_service.price if current_service else None,
+        "service_description": current_service.description if current_service else None,
+        "available_services": available_services,
         "service_time": callskeleton.user.serviceBookedTime,
         "current_step": "collect_name",
         "name_attempts": 0,

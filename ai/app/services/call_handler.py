@@ -17,7 +17,7 @@ Architecture Description:
 """
 
 import json
-from typing import TypedDict, Literal, Optional, Dict
+from typing import TypedDict, Literal, Optional, Dict, List
 from openai import OpenAI
 from app.models.call import Address
 
@@ -54,6 +54,10 @@ class CustomerServiceState(TypedDict):
     postcode: Optional[str]    # New: postcode
     email: Optional[str]
     service: Optional[str]
+    service_id: Optional[str]        # New: service ID
+    service_price: Optional[float]   # New: service price
+    service_description: Optional[str] # New: service description
+    available_services: Optional[List[Dict]] # New: all available services
     service_time: Optional[str]
     
     # Process control - Updated for 8-step workflow
@@ -95,6 +99,47 @@ class CustomerServiceLangGraph:
     Main responsibility is to manage the entire customer information collection process
     and coordinate interactions between various components.
     """
+    
+    def _replace_service_placeholders(self, response_text: str, state: CustomerServiceState) -> str:
+        """Replace service-related placeholders in LLM response with actual values"""
+        if not response_text:
+            return response_text
+        
+        # Get available services
+        available_services = state.get("available_services", [])
+        
+        # Replace {{services_list}} placeholder
+        if "{{services_list}}" in response_text:
+            services_list = ""
+            for service in available_services:
+                price_text = f"${service['price']}" if service.get('price') else "Price on request"
+                desc_text = f" - {service['description']}" if service.get('description') else ""
+                services_list += f"• {service['name']}: {price_text}{desc_text}\n"
+            
+            response_text = response_text.replace("{{services_list}}", services_list.strip())
+        
+        # Replace selected service placeholders
+        if "{{selected_service_name}}" in response_text or "{{selected_service_price}}" in response_text:
+            # Try to find the selected service from available services
+            extracted_service = state.get("service")
+            selected_service = None
+            
+            if extracted_service:
+                for service in available_services:
+                    if service["name"].lower() == extracted_service.lower():
+                        selected_service = service
+                        break
+            
+            if selected_service:
+                response_text = response_text.replace("{{selected_service_name}}", selected_service["name"])
+                price_text = f"{selected_service['price']}" if selected_service.get('price') else "Price on request"
+                response_text = response_text.replace("{{selected_service_price}}", price_text)
+            else:
+                # Fallback if service not found
+                response_text = response_text.replace("{{selected_service_name}}", extracted_service or "the selected service")
+                response_text = response_text.replace("{{selected_service_price}}", "Price on request")
+        
+        return response_text
     
     def __init__(self, api_key=None):
         """Initialize customer service system"""
@@ -521,6 +566,11 @@ class CustomerServiceLangGraph:
         
         # Call LLM to extract service
         result = extract_service_from_conversation(state)
+        
+        # Replace placeholders in the response with actual service information
+        if result and "response" in result:
+            result["response"] = self._replace_service_placeholders(result["response"], state)
+        
         state["last_llm_response"] = result
         
         # Check if service was extracted
@@ -529,10 +579,27 @@ class CustomerServiceLangGraph:
         
         if is_complete and extracted_service:
             # Clean and standardize service
-            cleaned_service = extracted_service.strip().lower()
+            cleaned_service = extracted_service.strip()
             
-            # Local state update
+            # Match extracted service with available services to get full details
+            available_services = state.get("available_services", [])
+            matched_service = None
+            
+            for service in available_services:
+                if service["name"].lower() == cleaned_service.lower():
+                    matched_service = service
+                    break
+            
+            # Local state update with full service information
             state["service"] = cleaned_service
+            if matched_service:
+                state["service_id"] = matched_service.get("id")
+                state["service_price"] = matched_service.get("price")
+                state["service_description"] = matched_service.get("description")
+                print(f"🎯 Matched service: {matched_service['name']} (ID: {matched_service.get('id')}, Price: ${matched_service.get('price', 'N/A')})")
+            else:
+                print(f"⚠️ Could not match extracted service '{cleaned_service}' with available services")
+            
             state["service_complete"] = True
             state["service_available"] = True  # Assume available for now
             state["current_step"] = "collect_time"

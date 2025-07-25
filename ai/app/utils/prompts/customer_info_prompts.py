@@ -265,36 +265,61 @@ Response Templates:
 """
 
 
-def get_service_extraction_prompt():
+def get_service_extraction_prompt(available_services=None):
     """Get service extraction system prompt
+    
+    Args:
+        available_services: List of available services with name, price, and description
     
     Returns:
         str: System prompt for service collection
     """
-    return """You are a professional customer service assistant. Your tasks are:
+    # Build available services text
+    services_text = ""
+    if available_services:
+        services_text = "\n\nAvailable Services:\n"
+        for service in available_services:
+            price_text = f"${service['price']}" if service.get('price') else "Price on request"
+            desc_text = f" - {service['description']}" if service.get('description') else ""
+            services_text += f"• {service['name']}: {price_text}{desc_text}\n"
+    
+    return f"""You are a professional customer service assistant. Your tasks are:
 1. Engage in natural and friendly conversation with users
-2. Collect service type information
-3. Return results strictly in JSON format
+2. Collect service type information from our available services
+3. Present available services with prices to help customer choose
+4. Return results strictly in JSON format
 
+{services_text}
 Please respond strictly in the following JSON format, do not add any other content:
-{
+{{
   "response": "What you want to say to the user",
-  "info_extracted": {
+  "info_extracted": {{
     "service": "Extracted service type, null if not extracted"
-  },
+  }},
   "info_complete": true/false,
   "analysis": "Brief analysis of whether user input contains valid service request"
-}
+}}
 
 Rules:
-- Extract service types like "cleaning", "maintenance", "repair", "consultation", etc.
-- Accept various service descriptions and standardize them
-- Set info_complete to true if a clear service type is identified
+- Only accept services from the available services list above
+- Set info_complete to true only if user selects a service from our available list
 - Response field should be natural and friendly, matching customer service tone
+- IMPORTANT: Use the placeholder templates provided below, do not make up your own placeholders
 
-Response Templates:
-- If you successfully extract valid service information, respond with: "Perfect! You need [service] service. Finally, when would you like to schedule this service? Could you please provide your preferred date and time?"
-- If you cannot extract valid service information, respond with: "I'd like to help you with the right service. Could you please tell me what type of service you need? For example: cleaning, maintenance, repair, etc."
+Response Templates with Dynamic Placeholders:
+1. If user selected a valid service (info_complete=true):
+   - Use template: "Excellent! You've selected {{selected_service_name}} service at ${{selected_service_price}}. Finally, when would you like to schedule this service? Could you please provide your preferred date and time?"
+   - The system will replace {{selected_service_name}} and {{selected_service_price}} with actual values
+   
+2. If user hasn't selected a service or needs to see options (info_complete=false):
+   - Use template: "Great! I have your contact information. Now let me show you our available services:\n\n{{services_list}}\n\nWhich service would you like to book?"
+   - The system will replace {{services_list}} with formatted service options
+
+Available Placeholder Variables:
+- {{selected_service_name}} - Name of the service user selected
+- {{selected_service_price}} - Price of the selected service  
+- {{services_list}} - Formatted list of all available services with prices
+- Use these placeholders in your response field, and the system will substitute actual values
 """
 
 

@@ -13,7 +13,7 @@ Key Features:
 
 import json
 import os
-from typing import TypedDict, Optional, Dict, Any
+from typing import TypedDict, Optional, Dict, Any, List
 from openai import OpenAI
 from app.models.call import Address
 
@@ -38,6 +38,10 @@ class CustomerServiceState(TypedDict):
     postcode: Optional[str]
     email: Optional[str]
     service: Optional[str]
+    service_id: Optional[str]
+    service_price: Optional[float]
+    service_description: Optional[str]
+    available_services: Optional[List[Dict]]
     service_time: Optional[str]
     last_user_input: Optional[str]
 
@@ -176,7 +180,9 @@ def extract_email_from_conversation(state: CustomerServiceState) -> Dict[str, An
 def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
-        prompt = get_service_extraction_prompt()
+        # Get available services from state if available
+        available_services = state.get('available_services', None)
+        prompt = get_service_extraction_prompt(available_services)
         result = _call_openai_api(prompt, context, state.get('last_user_input') or "")
         if result:
             return result
