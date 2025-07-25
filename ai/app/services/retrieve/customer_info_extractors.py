@@ -24,7 +24,6 @@ from app.utils.prompts.customer_info_prompts import (
     get_suburb_extraction_prompt,
     get_state_extraction_prompt,
     get_postcode_extraction_prompt,
-    get_email_extraction_prompt,
     get_service_extraction_prompt,
     get_time_extraction_prompt
 )
@@ -36,7 +35,6 @@ class CustomerServiceState(TypedDict):
     suburb: Optional[str]
     state: Optional[str]
     postcode: Optional[str]
-    email: Optional[str]
     service: Optional[str]
     service_id: Optional[str]
     service_price: Optional[float]
@@ -165,17 +163,6 @@ def extract_postcode_from_conversation(state: CustomerServiceState) -> Dict[str,
     except Exception as e:
         return _default_result("Sorry, the system is temporarily unavailable. Please tell me your postcode again.", "postcode", f"API error: {str(e)}")
 
-def extract_email_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
-    try:
-        context = _build_conversation_context(state)
-        prompt = get_email_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get('last_user_input') or "")
-        if result:
-            return result
-        else:
-            return _default_result("Sorry, there was a problem processing your email. Please tell me your email again.", "email", "Parse error")
-    except Exception as e:
-        return _default_result("Sorry, the system is temporarily unavailable. Please tell me your email again.", "email", f"API error: {str(e)}")
 
 def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     try:
