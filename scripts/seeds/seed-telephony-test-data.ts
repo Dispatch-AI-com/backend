@@ -44,7 +44,6 @@ interface Company {
     postcode: string;
   };
   user: Types.ObjectId;  // 改为 ObjectId 类型
-  twilioPhoneNumber: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -83,8 +82,7 @@ const companySchema = new Schema({
     state: { type: String, required: true },
     postcode: { type: String, required: true }
   },
-  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  twilioPhoneNumber: { type: String, required: false, unique: true }
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
 async function seedTelephonyTestData() {
@@ -169,8 +167,7 @@ async function seedTelephonyTestData() {
           state: 'NSW',
           postcode: '2000'
         },
-        user: testUser._id,
-        twilioPhoneNumber: '+19787235266'
+        user: testUser._id
       },
       { upsert: true, new: true }
     );
