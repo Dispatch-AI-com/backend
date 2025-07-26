@@ -261,13 +261,13 @@ export class TelephonyService {
   }
 
   private determineCallLogStatus(session: CallSkeleton): CallLogStatus {
-    if (session.servicebooked && session.user.service) {
-      return CallLogStatus.Completed;
+    if (session.confirmBooking && session.user.service) {
+      return CallLogStatus.Done;
     }
-    if (session.user.service && !session.servicebooked) {
-      return CallLogStatus.FollowUp;
+    if (session.user.service && !session.confirmBooking) {
+      return CallLogStatus.Confirmed;
     }
-    return CallLogStatus.Missed;
+    return CallLogStatus.Cancelled;
   }
 
   private convertMessagesToChunks(messages: Message[]): {
