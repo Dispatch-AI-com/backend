@@ -12,11 +12,16 @@ interface User {
   email: string;
   password: string;
   twilioPhoneNumber: string;
-  phoneNumber: string;
+  fullPhoneNumber: string;
   receivedAdverts: boolean;
   status: string;
+  statusReason?: string;
+  position?: string;
   role: string;
+  googleId?: string;
+  avatar?: string;
   provider: string;
+  tokenRefreshTime?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -55,11 +60,16 @@ const userSchema = new Schema({
   email: { type: String, required: true, unique: true },
   password: String,
   twilioPhoneNumber: String,
-  phoneNumber: String,
+  fullPhoneNumber: String,
   receivedAdverts: { type: Boolean, default: true },
   status: { type: String, default: 'active' },
+  statusReason: String,
+  position: String,
   role: { type: String, default: 'user' },
-  provider: { type: String, default: 'local' }
+  googleId: String,
+  avatar: String,
+  provider: { type: String, default: 'local' },
+  tokenRefreshTime: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 const serviceSchema = new Schema({
@@ -110,11 +120,16 @@ async function seedTelephonyTestData() {
           lastName: 'Doe',
           password: hashedPassword,
           twilioPhoneNumber: '+19787235265',
-          phoneNumber: '+19787235265',
+          fullPhoneNumber: '+19787235265',
           receivedAdverts: true,
           status: 'active',
+          statusReason: '',
+          position: 'Business Owner',
           role: 'user',
-          provider: 'local'
+          googleId: null,
+          avatar: null,
+          provider: 'local',
+          tokenRefreshTime: new Date()
         }
       );
       
@@ -136,11 +151,16 @@ async function seedTelephonyTestData() {
         email: 'john.doe@example.com',
         password: hashedPassword,
         twilioPhoneNumber: '+19787235265',
-        phoneNumber: '+19787235265',
+        fullPhoneNumber: '+19787235265',
         receivedAdverts: true,
         status: 'active',
+        statusReason: '',
+        position: 'Business Owner',
         role: 'user',
-        provider: 'local'
+        googleId: null,
+        avatar: null,
+        provider: 'local',
+        tokenRefreshTime: new Date()
       });
       
       console.log('👤 Created test user:', testUser.email);
