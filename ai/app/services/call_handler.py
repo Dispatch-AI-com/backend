@@ -19,7 +19,6 @@ Architecture Description:
 import json
 from typing import TypedDict, Literal, Optional, Dict, List
 from openai import OpenAI
-from models.call import Address
 
 # Import decoupled modules
 from .retrieve.customer_info_extractors import (
