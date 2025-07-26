@@ -296,7 +296,7 @@ class CustomerServiceLangGraph:
                     field_name="address.street_name",
                     field_value=street_name
                 )
-                
+
                 if street_number_success and street_name_success:
                     print(f"✅ Street extracted and saved successfully: {full_street}")
                 else:
@@ -346,7 +346,6 @@ class CustomerServiceLangGraph:
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="address.suburb",
                     field_name="address.suburb",
                     field_value=cleaned_suburb
                 )
@@ -453,7 +452,6 @@ class CustomerServiceLangGraph:
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="address.postcode",
                     field_name="address.postcode",
                     field_value=cleaned_postcode
                 )
