@@ -261,10 +261,10 @@ export class TelephonyService {
   }
 
   private determineCallLogStatus(session: CallSkeleton): CallLogStatus {
-    if (session.confirmBooking && session.user.service) {
+    if (session.servicebooked && session.user.service) {
       return CallLogStatus.Done;
     }
-    if (session.user.service && !session.confirmBooking) {
+    if (session.user.service && !session.servicebooked) {
       return CallLogStatus.Confirmed;
     }
     return CallLogStatus.Cancelled;
