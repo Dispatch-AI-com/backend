@@ -94,7 +94,9 @@ export class UserService {
     if (typeof twilioPhoneNumber !== 'string') {
       return null;
     }
-    const user = await this.userModel.findOne({ twilioPhoneNumber: { $eq: twilioPhoneNumber } }).exec();
+    const user = await this.userModel
+      .findOne({ twilioPhoneNumber: { $eq: twilioPhoneNumber } })
+      .exec();
     return user;
   }
 }

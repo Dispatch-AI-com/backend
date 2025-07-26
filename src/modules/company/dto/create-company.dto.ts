@@ -106,12 +106,4 @@ export class CreateCompanyDto {
   @IsString({ message: 'User ID must be a string' })
   @IsNotEmpty({ message: 'User ID cannot be empty' })
   user!: string;
-
-  @ApiPropertyOptional({
-    description: 'Twilio phone number',
-    example: '+61 2 1234 5678',
-  })
-  @IsOptional()
-  @IsString({ message: 'Twilio phone number must be a string' })
-  twilioPhoneNumber?: string;
 }

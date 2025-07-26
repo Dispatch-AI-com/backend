@@ -128,7 +128,6 @@ export class OnboardingService {
       email: companyAns.email,
       abn: companyAns.abn,
       number: companyAns.number,
-      twilioPhoneNumber: companyAns.number,
       user: userId,
     };
 
