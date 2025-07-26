@@ -27,7 +27,8 @@ cs_agent = CustomerServiceLangGraph()
 def _extract_address_components_from_redis(user_info) -> dict:
     """Extract address components from Redis UserInfo - Updated for 8-step workflow"""
     address_components = {
-        "street": None,
+        'street_number': None,
+        "street_name": None,
         "suburb": None, 
         "state": None,
         "postcode": None
@@ -35,11 +36,10 @@ def _extract_address_components_from_redis(user_info) -> dict:
     
     if user_info and user_info.address:
         address = user_info.address
-        # Combine street number and name
-        if hasattr(address, 'street_number') and hasattr(address, 'street_name'):
-            if address.street_number and address.street_name:
-                address_components["street"] = f"{address.street_number} {address.street_name}".strip()
-        
+        if hasattr(address, 'street_number'):
+            address_components['street_number'] = address.street_number
+        if hasattr(address, 'street_name'):
+            address_components['street_name'] = address.street_name
         if hasattr(address, 'suburb') and address.suburb:
             address_components["suburb"] = address.suburb
         if hasattr(address, 'state') and address.state:
@@ -52,7 +52,7 @@ def _extract_address_components_from_redis(user_info) -> dict:
 def _check_address_completion_status(address_components: dict) -> dict:
     """Check completion status for each address component - Updated for 8-step workflow"""
     return {
-        "street_complete": bool(address_components.get("street")),
+        "street_complete": bool(address_components.get("street_number")) and bool(address_components.get("street_name")),
         "suburb_complete": bool(address_components.get("suburb")),
         "state_complete": bool(address_components.get("state")),
         "postcode_complete": bool(address_components.get("postcode"))
@@ -111,7 +111,8 @@ async def ai_conversation(data: ConversationInput):
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
-        "street": address_components.get("street"),
+        "street_number": address_components.get("street_number"),
+        "street_name": address_components.get("street_name"),
         "suburb": address_components.get("suburb"),
         "state": address_components.get("state"),
         "postcode": address_components.get("postcode"),
