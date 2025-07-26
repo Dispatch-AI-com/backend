@@ -128,7 +128,6 @@ export class OnboardingService {
       email: companyAns.email,
       abn: companyAns.abn,
       number: companyAns.number,
-      twilioPhoneNumber: companyAns.number,
       user: userId,
     };
 
@@ -136,9 +135,15 @@ export class OnboardingService {
       const dto = plainToInstance(CreateCompanyDto, companyPayload);
       await validateOrReject(dto);
       await this.companyService.create(dto);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // handle index uniqueness conflict
-      if (err.code === 11000) {
+      if (
+        err !== null &&
+        err !== undefined &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as { code: number }).code === 11000
+      ) {
         throw new ConflictException('Company email/abn/phone already exists');
       }
       throw err;
@@ -168,7 +173,7 @@ export class OnboardingService {
   /**
    * get all onboarding sessions
    */
-  async getAllSessions() {
+  async getAllSessions(): Promise<OnboardingSession[]> {
     return this.sessionModel.find().select('-__v').lean().exec();
   }
 }

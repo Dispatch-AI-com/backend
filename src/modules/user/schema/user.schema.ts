@@ -20,7 +20,10 @@ export class User extends Document {
   password?: string;
 
   @Prop()
-  fullPhoneNumber!: string;
+  twilioPhoneNumber!: string;
+
+  @Prop()
+  phoneNumber!: string;
 
   @Prop()
   readonly createdAt!: Date;

@@ -32,7 +32,7 @@ export class SettingService {
     private readonly companyModel: Model<CompanyDocument>,
   ) {}
 
-  async getUserSettingsByCategory<T = any>(
+  async getUserSettingsByCategory<T = unknown>(
     userId: string,
     category: SettingCategory,
   ): Promise<T | null> {
@@ -77,7 +77,7 @@ export class SettingService {
   async updateUserSettings(
     userId: string,
     updateDto: UpdateUserSettingsDto,
-  ): Promise<any> {
+  ): Promise<unknown> {
     if (!isValidObjectId(userId)) {
       throw new BadRequestException(`Invalid user id: ${userId}`);
     }
@@ -225,7 +225,7 @@ export class SettingService {
 
     return {
       name: fullName,
-      contact: user.fullPhoneNumber || '',
+      contact: user.phoneNumber || '',
       role: user.position || '',
     };
   }
@@ -247,7 +247,7 @@ export class SettingService {
     if (!company?.address) return null;
 
     return {
-      unit: company.address.unitAptPOBox || '',
+      unit: company.address.unitAptPOBox ?? '',
       streetAddress: company.address.streetAddress,
       suburb: company.address.suburb,
       state: company.address.state,
