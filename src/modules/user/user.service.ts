@@ -91,7 +91,10 @@ export class UserService {
   async findByTwilioPhoneNumber(
     twilioPhoneNumber: string,
   ): Promise<User | null> {
-    const user = await this.userModel.findOne({ twilioPhoneNumber }).exec();
+    if (typeof twilioPhoneNumber !== 'string') {
+      return null;
+    }
+    const user = await this.userModel.findOne({ twilioPhoneNumber: { $eq: twilioPhoneNumber } }).exec();
     return user;
   }
 }
