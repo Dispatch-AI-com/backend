@@ -29,18 +29,18 @@ export class CalendarController {
         throw new BadRequestException('User not authenticated');
       }
 
-      // 从数据库获取 Google 授权信息
+      // get google calendar auth by user id from database
       const googleAuth = await this.googleCalendarAuthService.getAuthByUserId(userId);
       if (!googleAuth || !googleAuth.accessToken) {
         throw new BadRequestException('Google Calendar not authorized');
       }
 
-      // 检查 token 是否过期
+      // check if token is expired
       if (googleAuth.tokenExpiresAt && new Date() > googleAuth.tokenExpiresAt) {
         throw new BadRequestException('Google access token expired');
       }
 
-      // 调用 AI 后端
+      // call AI backend
       const params = {
         ...body,
         access_token: googleAuth.accessToken,
