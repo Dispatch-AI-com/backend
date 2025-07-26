@@ -276,7 +276,7 @@ class CustomerServiceLangGraph:
         is_complete = result["info_complete"]
         
         if is_complete and street_number and street_name:
-            # Combine street number and name
+            # Combine street number and name for local state
             full_street = f"{street_number} {street_name}".strip()
             
             # Local state update
@@ -284,7 +284,7 @@ class CustomerServiceLangGraph:
             state["street_complete"] = True
             state["current_step"] = "collect_suburb"
             
-            # Real-time Redis update
+            # Real-time Redis update - save as nested address structure
             if call_sid:
                 street_number_success = update_user_info_field(
                     call_sid=call_sid,
@@ -342,10 +342,11 @@ class CustomerServiceLangGraph:
             state["suburb_complete"] = True
             state["current_step"] = "collect_state"
             
-            # Real-time Redis update
+            # Real-time Redis update - save as nested address structure
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
+                    field_name="address.suburb",
                     field_name="address.suburb",
                     field_value=cleaned_suburb
                 )
@@ -395,7 +396,7 @@ class CustomerServiceLangGraph:
             state["state_complete"] = True
             state["current_step"] = "collect_postcode"
             
-            # Real-time Redis update
+            # Real-time Redis update - save as nested address structure
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
@@ -448,10 +449,11 @@ class CustomerServiceLangGraph:
             state["postcode_complete"] = True
             state["current_step"] = "collect_service"
             
-            # Real-time Redis update
+            # Real-time Redis update - save as nested address structure
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
+                    field_name="address.postcode",
                     field_name="address.postcode",
                     field_value=cleaned_postcode
                 )
@@ -558,6 +560,9 @@ class CustomerServiceLangGraph:
                 redis_success = update_service_selection(
                     call_sid=call_sid,
                     service_name=cleaned_service,
+                    service_id=state.get("service_id"),
+                    service_price=state.get("service_price"),
+                    service_description=state.get("service_description"),
                     service_time=None
                 )
                 
@@ -608,10 +613,13 @@ class CustomerServiceLangGraph:
             
             # Real-time Redis update
             if call_sid:
-                # Update service time
+                # Update service time with complete service information
                 redis_success = update_service_selection(
                     call_sid=call_sid,
                     service_name=state.get("service") or "",
+                    service_id=state.get("service_id"),
+                    service_price=state.get("service_price"),
+                    service_description=state.get("service_description"),
                     service_time=cleaned_time
                 )
                 

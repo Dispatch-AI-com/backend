@@ -55,6 +55,7 @@ export class SessionHelper {
         typeof company.user === 'object' && '_id' in company.user
           ? (company.user as User & { _id: Types.ObjectId })._id.toString()
           : (company.user as Types.ObjectId).toString(),
+      calendar_access_token: undefined, // Optional field not available in Company schema
     };
     await this.sessions.appendCompany(callSid, telephonyCompany);
   }

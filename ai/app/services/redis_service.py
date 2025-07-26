@@ -76,7 +76,7 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
             path_parts = field_name.split(".")
             current_dict = skeleton_dict['user']['userInfo']
             
-            # Navigate to the nested structure
+            # Navigate to the nested structure and ensure it exists
             for part in path_parts[:-1]:
                 if part not in current_dict:
                     current_dict[part] = {}
@@ -86,6 +86,11 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
             final_field = path_parts[-1]
             current_dict[final_field] = field_value
             print(f"🔍 Redis: Set nested field {field_name} = {field_value}")
+            
+            # For address fields, log the complete address structure
+            if path_parts[0] == "address":
+                address_obj = skeleton_dict['user']['userInfo'].get('address', {})
+                print(f"🔍 Redis: Current address structure: {address_obj}")
             
         elif field_name == "address":
             print(f"🔍 Redis: Processing complete address field, type: {type(field_value)}")
@@ -126,12 +131,15 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
         print(f"❌ Redis update failed ({field_name}): {str(e)}")
         return False
 
-def update_service_selection(call_sid: str, service_name: str, service_time: Optional[str] = None, timestamp: Optional[str] = None) -> bool:
+def update_service_selection(call_sid: str, service_name: str, service_id: Optional[str] = None, service_price: Optional[float] = None, service_description: Optional[str] = None, service_time: Optional[str] = None, timestamp: Optional[str] = None) -> bool:
     """Update service selection information in real-time
     
     Args:
         call_sid: Call ID
         service_name: Service name
+        service_id: Service ID (optional)
+        service_price: Service price (optional)
+        service_description: Service description (optional)
         service_time: Service time (optional)
         timestamp: Update timestamp
         
@@ -146,12 +154,12 @@ def update_service_selection(call_sid: str, service_name: str, service_time: Opt
         if 'user' not in skeleton_dict:
             skeleton_dict['user'] = {'userInfo': {}, 'service': None, 'serviceBookedTime': None}
             
-        # Build service object
+        # Build service object with provided or default values
         service_obj = {
-            "id": f"service_{service_name.lower()}",
+            "id": service_id or f"service_{service_name.lower()}",
             "name": service_name,
-            "price": None,
-            "description": f"{service_name} service"
+            "price": service_price,  # float | None to match TypeScript number | null
+            "description": service_description or f"{service_name} service"
         }
         
         skeleton_dict['user']['service'] = service_obj
@@ -171,7 +179,12 @@ def update_service_selection(call_sid: str, service_name: str, service_time: Opt
         # Save back to Redis
         r.set(f"call:{call_sid}", json.dumps(skeleton_dict))
         
-        print(f"✅ Redis service update successful: {service_name}" + (f", time: {service_time}" if service_time else ""))
+        service_info = f"name: {service_name}"
+        if service_price is not None:
+            service_info += f", price: ${service_price}"
+        if service_time:
+            service_info += f", time: {service_time}"
+        print(f"✅ Redis service update successful: {service_info}")
         return True
         
     except Exception as e:
