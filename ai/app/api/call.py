@@ -80,7 +80,7 @@ async def ai_conversation(data: ConversationInput):
     try:
         callskeleton_dict = get_call_skeleton(data.callSid)
         callskeleton = CallSkeleton.model_validate(callskeleton_dict)
-    except ValueError as e:
+    except ValueError:
         # Redis中没找到CallSkeleton - 业务逻辑错误，不是资源不存在
         raise HTTPException(status_code=422, detail="CallSkeleton not found")
     except ValidationError as e:

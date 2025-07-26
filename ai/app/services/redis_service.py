@@ -18,7 +18,7 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
     print(f"🔍 Redis: Retrieved raw data for {call_sid}")
     try:
         skeleton = CallSkeleton.model_validate_json(data)
-        print(f"🔍 Redis: Successfully parsed CallSkeleton")
+        print("🔍 Redis: Successfully parsed CallSkeleton")
         
         # Debug address specifically
         if skeleton.user and skeleton.user.userInfo and skeleton.user.userInfo.address:
@@ -26,7 +26,7 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
             print(f"🔍 Redis: Address from skeleton: {addr}")
             print(f"🔍 Redis: Address fields: street_number='{addr.street_number}', street_name='{addr.street_name}', suburb='{addr.suburb}', state='{addr.state}', postcode='{addr.postcode}'")
         else:
-            print(f"🔍 Redis: No address found in skeleton")
+            print("🔍 Redis: No address found in skeleton")
             
         return skeleton
     except Exception as e:
@@ -36,7 +36,7 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
         try:
             raw_dict = json.loads(data)
             print(f"🔍 Redis: Raw address data: {raw_dict.get('user', {}).get('userInfo', {}).get('address', 'Not found')}")
-        except:
+        except json.JSONDecodeError:
             pass
         raise
 
@@ -63,7 +63,7 @@ def update_user_info_field(call_sid: str, field_name: str, field_value, timestam
     try:
         # Get current CallSkeleton data
         skeleton_dict = get_call_skeleton_dict(call_sid)
-        print(f"🔍 Retrieved skeleton from Redis successfully")
+        print("🔍 Retrieved skeleton from Redis successfully")
         
         # Update user information field
         if 'user' not in skeleton_dict:

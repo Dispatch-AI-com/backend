@@ -661,7 +661,7 @@ class CustomerServiceLangGraph:
         if redis_success:
             print(f"✅ Booking completed successfully: {state.get('service')} at {state.get('service_time')}")
         else:
-            print(f"⚠️ Booking info extracted but Redis save failed")
+            print("⚠️ Booking info extracted but Redis save failed")
         
         # Mark conversation complete
         state["conversation_complete"] = True
