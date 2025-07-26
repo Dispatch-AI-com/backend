@@ -44,10 +44,10 @@ export class TelephonyService {
   async handleVoice({ CallSid, To }: VoiceGatherBody): Promise<string> {
     await this.sessionHelper.ensureSession(CallSid);
     const user = await this.userService.findByTwilioPhoneNumber(To);
-    if (!user) {
+    if (user == null) {
       return this.speakAndLog(CallSid, 'User not found', NextAction.GATHER);
     }
-    const services = await this.serviceService.findAllByUserId(
+    const services = await this.serviceService.findAllActiveByUserId(
       user._id as string,
     );
     await this.sessionHelper.fillCompanyServices(CallSid, services);

@@ -69,4 +69,8 @@ export class ServiceService {
   async findAllByUserId(userId: string): Promise<Service[]> {
     return this.serviceModel.find({ userId }).exec();
   }
+
+  async findAllActiveByUserId(userId: string): Promise<Service[]> {
+    return this.serviceModel.find({ userId, isAvailable: true }).exec();
+  }
 }
