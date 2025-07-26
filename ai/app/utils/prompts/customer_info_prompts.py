@@ -8,7 +8,6 @@ Features:
 - Name collection prompts
 - Phone number collection prompts
 - Individual address component collection prompts (street, suburb, state, postcode)
-- Email collection prompts
 - Service type collection prompts
 - Service time collection prompts
 
@@ -227,7 +226,7 @@ Rules:
 - Response field should be natural and friendly, matching customer service tone
 
 Response Templates:
-- If you successfully extract valid postcode information, respond with: "Perfect! I have your complete address now. Thank you for providing all the details. Now, could you please tell me your email address?"
+- If you successfully extract valid postcode information, respond with: "Perfect! I have your complete address now. Thank you for providing all the details. Now, could you please tell me which service you would like to book?"
 - If you cannot extract valid postcode information, respond with: "I need your 4-digit postcode. Could you please provide your postcode? For example: 3000, 2000, etc."
 """
 
@@ -248,7 +247,7 @@ def get_service_extraction_prompt(available_services=None):
         services_text = "\n\nAvailable Services:\n"
         for service in available_services:
             price_text = f"${service['price']}" if service.get('price') else "Price on request"
-            services_text += f"• {service['name']}: {price_text}{desc_text}\n"
+            services_text += f"• {service['name']}: {price_text}\n"
     
     return f"""You are a professional customer service assistant. Your tasks are:
 1. Engage in natural and friendly conversation with users
@@ -275,12 +274,10 @@ Rules:
 
 Response Templates with Dynamic Placeholders:
 1. If user selected a valid service (info_complete=true):
-   - Use template: "Excellent! You've selected {{selected_service_name}} service at ${{selected_service_price}}. Finally, when would you like to schedule this service? Could you please provide your preferred date and time?"
-   - The system will replace {{selected_service_name}} and {{selected_service_price}} with actual values
+   - Use template: "Excellent! You've selected service. Finally, when would you like to schedule this service? Could you please provide your preferred date and time?"
    
 2. If user hasn't selected a service or needs to see options (info_complete=false):
-   - Use template: "Great! I have your contact information. Now let me show you our available services:\n\n{{services_list}}\n\nWhich service would you like to book?"
-   - The system will replace {{services_list}} with formatted service options
+   - Use template: "Great! I have your contact information. Which service would you like to book?"
 
 Available Placeholder Variables:
 - {{selected_service_name}} - Name of the service user selected

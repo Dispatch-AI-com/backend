@@ -53,6 +53,7 @@ class CustomerServiceState(TypedDict):
     service: Optional[str]
     service_id: Optional[str]        # New: service ID
     service_price: Optional[float]   # New: service price
+    service_description: Optional[str] # New: service description
     available_services: Optional[List[Dict]] # New: all available services
     service_time: Optional[str]
     
@@ -277,7 +278,7 @@ class CustomerServiceLangGraph:
             full_street = f"{street_number} {street_name}".strip()
             
             # Local state update
-            #state["street"] = full_street
+            state["street"] = full_street
             state["street_complete"] = True
             state["current_step"] = "collect_suburb"
             
@@ -741,7 +742,6 @@ class CustomerServiceLangGraph:
         print(f"  • Suburb: {state.get('suburb_attempts', 0)}/{state.get('max_attempts', 3)}")
         print(f"  • State: {state.get('state_attempts', 0)}/{state.get('max_attempts', 3)}")
         print(f"  • Postcode: {state.get('postcode_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • Email: {state.get('email_attempts', 0)}/{state.get('max_attempts', 3)}")
         print(f"  • Service: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}")
         print(f"  • Time: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}")
         

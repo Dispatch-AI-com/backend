@@ -150,9 +150,9 @@ export class TelephonyService {
   ): string {
     if (companyName !== undefined && services && services.length > 0) {
       const serviceList = services.map(s => s.name).join(', ');
-      return `Welcome! We are ${companyName}. We provide ${serviceList}. How can I help you today?`;
+      return `Welcome! We are ${companyName}. We provide ${serviceList}. May I get your name please?`;
     }
-    return 'Welcome! How can I help you today?';
+    return 'Welcome! How can I help you today? May I get your name please?';
   }
 
   private async processCallCompletion(
