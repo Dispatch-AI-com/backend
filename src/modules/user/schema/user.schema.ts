@@ -23,7 +23,7 @@ export class User extends Document {
   twilioPhoneNumber!: string;
 
   @Prop()
-  phoneNumber!: string;
+  fullPhoneNumber!: string;
 
   @Prop()
   readonly createdAt!: Date;
