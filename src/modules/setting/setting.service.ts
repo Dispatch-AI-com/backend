@@ -225,7 +225,7 @@ export class SettingService {
 
     return {
       name: fullName,
-      contact: user.fullPhoneNumber || '',
+      contact: user.phoneNumber || '',
       role: user.position || '',
     };
   }
