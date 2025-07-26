@@ -172,7 +172,7 @@ export class CalllogService {
       this.callLogModel.countDocuments({
         userId,
         startAt: { $gte: today },
-        status: CallLogStatus.FollowUp,
+        status: CallLogStatus.Confirmed,
       }),
     ]);
 
@@ -302,15 +302,15 @@ export class CalllogService {
       this.callLogModel.countDocuments(query),
       this.callLogModel.countDocuments({
         ...query,
-        status: CallLogStatus.Completed,
+        status: CallLogStatus.Done,
       }),
       this.callLogModel.countDocuments({
         ...query,
-        status: CallLogStatus.Missed,
+        status: CallLogStatus.Cancelled,
       }),
       this.callLogModel.countDocuments({
         ...query,
-        status: CallLogStatus.FollowUp,
+        status: CallLogStatus.Confirmed,
       }),
       this.callLogModel.aggregate([
         { $match: query },
