@@ -731,9 +731,19 @@ class CustomerServiceLangGraph:
         elif not state["time_complete"]:
             state = self.process_time_collection(state, call_sid)
         else:
-            # All information collection completed
+            # All information collection completed - fallback path
+            print("⚠️ Unexpected workflow completion path - all info complete but no specific handler")
             state["conversation_complete"] = True
             state["current_step"] = "completed"
+            
+            # Generate appropriate closing message for this fallback case
+            closing_message = self._generate_closing_message(state)
+            state["last_llm_response"] = {
+                "response": closing_message,
+                "info_extracted": {},
+                "info_complete": True,
+                "analysis": "Conversation completed via fallback path"
+            }
             print("✅ All customer information collection completed")
         
         return state
