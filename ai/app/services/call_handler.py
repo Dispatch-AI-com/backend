@@ -753,7 +753,7 @@ class CustomerServiceLangGraph:
         print("="*50)
 
     def save_to_file(self, state: CustomerServiceState, filename: Optional[str] = None):
-        """Save conversation to file - Updated for 7-step workflow (removed email)"""
+        """Save conversation to file - Updated for nested address structure"""
         if filename is None:
             filename = "customer_service_conversation.json"
         
@@ -765,30 +765,41 @@ class CustomerServiceLangGraph:
             "customer_info": {
                 "name": state.get("name"),
                 "phone": state.get("phone"),
-                "street": state.get("street"),
-                "suburb": state.get("suburb"),
-                "state": state.get("state"),
-                "postcode": state.get("postcode"),
+                "address": {
+                    "street_number": state.get("street_number"),
+                    "street_name": state.get("street_name"),
+                    "suburb": state.get("suburb"),
+                    "state": state.get("state"),
+                    "postcode": state.get("postcode")
+                },
                 "service": state.get("service"),
                 "service_time": state.get("service_time")
             },
             "collection_status": {
                 "name_complete": state.get("name_complete", False),
                 "phone_complete": state.get("phone_complete", False),
-                "street_complete": state.get("street_complete", False),
-                "suburb_complete": state.get("suburb_complete", False),
-                "state_complete": state.get("state_complete", False),
-                "postcode_complete": state.get("postcode_complete", False),
+                "address_complete": {
+                    "street_number_complete": state.get("street_number_complete", False),
+                    "street_name_complete": state.get("street_name_complete", False),
+                    "street_complete": state.get("street_complete", False),
+                    "suburb_complete": state.get("suburb_complete", False),
+                    "state_complete": state.get("state_complete", False),
+                    "postcode_complete": state.get("postcode_complete", False)
+                },
                 "service_complete": state.get("service_complete", False),
                 "time_complete": state.get("time_complete", False)
             },
             "attempts": {
                 "name_attempts": state.get("name_attempts", 0),
                 "phone_attempts": state.get("phone_attempts", 0),
-                "street_attempts": state.get("street_attempts", 0),
-                "suburb_attempts": state.get("suburb_attempts", 0),
-                "state_attempts": state.get("state_attempts", 0),
-                "postcode_attempts": state.get("postcode_attempts", 0),
+                "address_attempts": {
+                    "street_number_attempts": state.get("street_number_attempts", 0),
+                    "street_name_attempts": state.get("street_name_attempts", 0),
+                    "street_attempts": state.get("street_attempts", 0),
+                    "suburb_attempts": state.get("suburb_attempts", 0),
+                    "state_attempts": state.get("state_attempts", 0),
+                    "postcode_attempts": state.get("postcode_attempts", 0)
+                },
                 "service_attempts": state.get("service_attempts", 0),
                 "time_attempts": state.get("time_attempts", 0)
             }
