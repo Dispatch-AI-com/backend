@@ -12,6 +12,7 @@ import {
 
 import { EUserRole } from '@/common/constants/user.constant';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
+import { GoogleCalendarAuth, GoogleCalendarAuthDocument } from '@/modules/user/schema/google-calendar-auth.schema';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -19,6 +20,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(GoogleCalendarAuth.name) private readonly googleCalendarAuthModel: Model<GoogleCalendarAuthDocument>
   ) {
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID') ?? '',
@@ -76,15 +78,21 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         sub: user._id,
         email: user.email,
         role: user.role,
-        googleAccessToken: accessToken,
-        googleRefreshToken: refreshToken,
       });
+
+      await this.googleCalendarAuthModel.findOneAndUpdate(
+        { userId: user._id },
+        { 
+          accessToken, 
+          refreshToken, 
+          tokenExpiresAt: new Date(Date.now() + 3600 * 1000) // 1小时后过期
+        },
+        { upsert: true, new: true }
+      );
 
       const result = { 
         user: user.toObject() as User, 
-        token, 
-        googleAccessToken: accessToken,
-        googleRefreshToken: refreshToken
+        token
       };
       done(null, result);
     } catch {
