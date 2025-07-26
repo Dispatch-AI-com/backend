@@ -53,7 +53,6 @@ class CustomerServiceState(TypedDict):
     service: Optional[str]
     service_id: Optional[str]        # New: service ID
     service_price: Optional[float]   # New: service price
-    service_description: Optional[str] # New: service description
     available_services: Optional[List[Dict]] # New: all available services
     service_time: Optional[str]
     
@@ -108,8 +107,7 @@ class CustomerServiceLangGraph:
             services_list = ""
             for service in available_services:
                 price_text = f"${service['price']}" if service.get('price') else "Price on request"
-                desc_text = f" - {service['description']}" if service.get('description') else ""
-                services_list += f"• {service['name']}: {price_text}{desc_text}\n"
+                services_list += f"• {service['name']}: {price_text}\n"
             
             response_text = response_text.replace("{{services_list}}", services_list.strip())
         
@@ -543,7 +541,6 @@ class CustomerServiceLangGraph:
             if matched_service:
                 state["service_id"] = matched_service.get("id")
                 state["service_price"] = matched_service.get("price")
-                state["service_description"] = matched_service.get("description")
                 print(f"🎯 Matched service: {matched_service['name']} (ID: {matched_service.get('id')}, Price: ${matched_service.get('price', 'N/A')})")
             else:
                 print(f"⚠️ Could not match extracted service '{cleaned_service}' with available services")
@@ -559,7 +556,6 @@ class CustomerServiceLangGraph:
                     service_name=cleaned_service,
                     service_id=state.get("service_id"),
                     service_price=state.get("service_price"),
-                    service_description=state.get("service_description"),
                     service_time=None
                 )
                 
@@ -616,7 +612,6 @@ class CustomerServiceLangGraph:
                     service_name=state.get("service") or "",
                     service_id=state.get("service_id"),
                     service_price=state.get("service_price"),
-                    service_description=state.get("service_description"),
                     service_time=cleaned_time
                 )
                 

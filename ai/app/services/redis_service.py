@@ -139,7 +139,7 @@ def update_service_selection(call_sid: str, service_name: str, service_id: Optio
         service_name: Service name
         service_id: Service ID (optional)
         service_price: Service price (optional)
-        service_description: Service description (optional)
+        service_description: Service description (optional, for data completeness)
         service_time: Service time (optional)
         timestamp: Update timestamp
         
@@ -159,12 +159,12 @@ def update_service_selection(call_sid: str, service_name: str, service_id: Optio
             "id": service_id or f"service_{service_name.lower()}",
             "name": service_name,
             "price": service_price,  # float | None to match TypeScript number | null
-            "description": service_description or f"{service_name} service"
+            "description": service_description  # Keep for data completeness but don't display to user
         }
         
         skeleton_dict['user']['service'] = service_obj
         
-        # Update service time
+        # Update service time if provided
         if service_time:
             skeleton_dict['user']['serviceBookedTime'] = service_time
             

@@ -248,7 +248,6 @@ def get_service_extraction_prompt(available_services=None):
         services_text = "\n\nAvailable Services:\n"
         for service in available_services:
             price_text = f"${service['price']}" if service.get('price') else "Price on request"
-            desc_text = f" - {service['description']}" if service.get('description') else ""
             services_text += f"• {service['name']}: {price_text}{desc_text}\n"
     
     return f"""You are a professional customer service assistant. Your tasks are:
