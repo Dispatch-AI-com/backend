@@ -24,7 +24,7 @@ export class ServiceService {
 
   async findAll(userId?: string): Promise<Service[]> {
     if (userId) {
-      return this.serviceModel.find({ userId }).exec();
+      return this.serviceModel.find({ userId: { $eq: userId } }).exec();
     }
     return this.serviceModel.find().exec();
   }
