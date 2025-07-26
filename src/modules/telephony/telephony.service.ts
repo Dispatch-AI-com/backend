@@ -231,12 +231,12 @@ export class TelephonyService {
 
   private determineCallLogStatus(session: CallSkeleton): CallLogStatus {
     if (session.confirmBooking && session.user.service) {
-      return CallLogStatus.Completed;
+      return CallLogStatus.Done;
     }
     if (session.user.service && !session.confirmBooking) {
-      return CallLogStatus.FollowUp;
+      return CallLogStatus.Confirmed;
     }
-    return CallLogStatus.Missed;
+    return CallLogStatus.Cancelled;
   }
 
   private convertMessagesToChunks(messages: Message[]): {

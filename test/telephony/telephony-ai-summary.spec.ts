@@ -266,7 +266,7 @@ describe('TelephonyService - AI Summary Integration', () => {
         serviceBookedId: 'service-plumbing',
         callerNumber: '+61412345678',
         callerName: 'Sarah Johnson',
-        status: CallLogStatus.Completed,
+        status: CallLogStatus.Done,
         startAt: new Date('2024-03-21T10:02:00Z')
       });
 

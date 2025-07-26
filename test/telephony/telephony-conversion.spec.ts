@@ -116,19 +116,19 @@ describe('TelephonyService - Session Conversion', () => {
       const session = { ...mockSession, confirmBooking: true };
       // Test private method through reflection
       const status = (service as any).determineCallLogStatus(session);
-      expect(status).toBe(CallLogStatus.Completed);
+      expect(status).toBe(CallLogStatus.Done);
     });
 
-    it('should return FollowUp when service exists but booking is not confirmed', () => {
+    it('should return Confirmed when service exists but booking is not confirmed', () => {
       const session = { ...mockSession, confirmBooking: false };
       const status = (service as any).determineCallLogStatus(session);
-      expect(status).toBe(CallLogStatus.FollowUp);
+      expect(status).toBe(CallLogStatus.Confirmed);
     });
 
-    it('should return Missed when no service is selected', () => {
+    it('should return Cancelled when no service is selected', () => {
       const session = { ...mockSession, user: { ...mockSession.user, service: undefined } };
       const status = (service as any).determineCallLogStatus(session);
-      expect(status).toBe(CallLogStatus.Missed);
+      expect(status).toBe(CallLogStatus.Cancelled);
     });
   });
 
@@ -175,7 +175,7 @@ describe('TelephonyService - Session Conversion', () => {
         serviceBookedId: 'service-1',
         callerNumber: '+61400123456',
         callerName: 'John Test',
-        status: CallLogStatus.Completed,
+        status: CallLogStatus.Done,
         startAt: new Date('2024-03-21T09:03:00Z')
       });
     });
