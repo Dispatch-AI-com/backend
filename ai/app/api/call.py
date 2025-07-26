@@ -11,18 +11,22 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 # AI conversation input model
 class ConversationInput(BaseModel):
     callSid: str = Field(..., description="Twilio CallSid – unique call ID")
     customerMessage: Message = Field(..., description="Customer message object")
+
 
 # Simple reply input model (for telephony service)
 class ReplyInput(BaseModel):
     callSid: str = Field(..., description="Twilio CallSid – unique call ID")
     message: str = Field(..., description="User message text")
 
+
 # Global customer service agent
 cs_agent = CustomerServiceLangGraph()
+
 
 def _extract_address_components_from_redis(user_info) -> dict:
     """Extract address components from Redis UserInfo - Updated for 8-step workflow"""
@@ -33,7 +37,7 @@ def _extract_address_components_from_redis(user_info) -> dict:
         "state": None,
         "postcode": None
     }
-    
+
     if user_info and user_info.address:
         address = user_info.address
         if hasattr(address, 'street_number'):
@@ -46,8 +50,9 @@ def _extract_address_components_from_redis(user_info) -> dict:
             address_components["state"] = address.state
         if hasattr(address, 'postcode') and address.postcode:
             address_components["postcode"] = address.postcode
-    
+
     return address_components
+
 
 def _check_address_completion_status(address_components: dict) -> dict:
     """Check completion status for each address component - Updated for 8-step workflow"""
@@ -57,6 +62,7 @@ def _check_address_completion_status(address_components: dict) -> dict:
         "state_complete": bool(address_components.get("state")),
         "postcode_complete": bool(address_components.get("postcode"))
     }
+
 
 @router.post("/conversation")
 async def ai_conversation(data: ConversationInput):
@@ -162,11 +168,18 @@ async def ai_conversation(data: ConversationInput):
         "startedAt": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
     }
 
-    # 6. Return AI response
-    # Note: Customer information and conversation history are updated in Redis in real-time through workflow
-    return {
+    # 6. Check if conversation is complete to signal hangup
+    should_hangup = updated_state.get("conversation_complete", False)
+    
+    # 7. Return AI response with hangup signal if conversation is complete
+    response_data = {
         "aiResponse": ai_response
     }
+    
+    if should_hangup:
+        response_data["shouldHangup"] = True
+    
+    return response_data
 
 @router.post("/reply")
 async def ai_reply(data: ReplyInput):

@@ -56,6 +56,7 @@ class CustomerServiceState(TypedDict):
     service_description: Optional[str] # New: service description
     available_services: Optional[List[Dict]] # New: all available services
     service_time: Optional[str]
+    service_time_mongodb: Optional[str]  # MongoDB datetime format
     
     # Process control - Updated for 7-step workflow (removed email)
     current_step: Literal["collect_name", "collect_phone", "collect_street", "collect_suburb", "collect_state", "collect_postcode", "collect_service", "collect_time", "completed"]
@@ -134,6 +135,24 @@ class CustomerServiceLangGraph:
                 response_text = response_text.replace("{{selected_service_price}}", "Price on request")
         
         return response_text
+    
+    def _generate_closing_message(self, state: CustomerServiceState, booking_failed: bool = False) -> str:
+        """Generate closing message when conversation is completed"""
+        # Extract booking information
+        customer_name = state.get("name", "")
+        service_name = state.get("service", "")
+        service_time = state.get("service_time", "")
+        
+        if booking_failed:
+            # Message for failed booking (usually due to time collection failure)
+            return f"Thank you {customer_name}! I have your contact information and service preference for {service_name}. " \
+                   f"Our team will contact you shortly to confirm the booking details and schedule. " \
+                   f"Thank you for calling us today. Have a great day and goodbye!"
+        else:
+            # Message for successful booking
+            return f"Perfect! Thank you {customer_name}. I have successfully recorded your booking for {service_name} " \
+                   f"on {service_time}. Your booking is confirmed and we will send you a confirmation shortly. " \
+                   f"Thank you for choosing our service today. Have a great day and goodbye!"
     
     def __init__(self, api_key=None):
         """Initialize customer service system"""
@@ -579,72 +598,102 @@ class CustomerServiceLangGraph:
         return state
 
     def process_time_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Process time collection step"""
-        # Initialize attempts counter if not present
+        """Process time collection step - Simplified with AI direct MongoDB output"""
+        # Initialize attempts counter
         if "time_attempts" not in state or state["time_attempts"] is None:
             state["time_attempts"] = 0
-        
-        # Initialize max_attempts if not present
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
         
-        # Call LLM to extract time
+        # Call AI to extract and convert time in one step
         result = extract_time_from_conversation(state)
         state["last_llm_response"] = result
         
-        # Check if time was extracted
+        # Extract AI results
         extracted_time = result["info_extracted"].get("time")
+        mongodb_time = result["info_extracted"].get("time_mongodb")
         is_complete = result["info_complete"]
         
         if is_complete and extracted_time:
-            # Clean and standardize time
-            cleaned_time = extracted_time.strip().lower()
+            # AI successfully extracted and converted time
+            cleaned_time = extracted_time.strip()
             
-            # Local state update
+            # Use AI MongoDB format or fallback
+            if mongodb_time and mongodb_time != "null":
+                final_mongodb_time = mongodb_time
+                print(f"✨ AI extracted time with MongoDB format: {cleaned_time} -> {final_mongodb_time}")
+            else:
+                # Quick fallback for edge cases
+                from app.utils.hybrid_time_converter import convert_service_time_to_mongodb_hybrid
+                final_mongodb_time = convert_service_time_to_mongodb_hybrid(cleaned_time)
+                print(f"🔄 AI extraction with fallback conversion: {cleaned_time} -> {final_mongodb_time}")
+            
+            # Update state
             state["service_time"] = cleaned_time
+            state["service_time_mongodb"] = final_mongodb_time
             state["time_complete"] = True
-            state["time_available"] = True  # Assume available for now
+            state["time_available"] = True
             
-            # Real-time Redis update
+            # Complete booking process
             if call_sid:
-                # Update service time with complete service information
-                redis_success = update_service_selection(
-                    call_sid=call_sid,
-                    service_name=state.get("service") or "",
-                    service_id=state.get("service_id"),
-                    service_price=state.get("service_price"),
-                    service_time=cleaned_time
-                )
-                
-                if redis_success:
-                    print(f"✅ Service time extracted and saved successfully: {cleaned_time}")
-                else:
-                    print(f"⚠️ Service time extracted successfully but Redis save failed: {cleaned_time}")
-                
-                # Mark booking as completed
-                state["conversation_complete"] = True
-                state["current_step"] = "completed"
-                update_booking_status(call_sid, is_booked=True, email_sent=False)
-                print("✅ Booking completed, all information collected successfully")
-            
-            print(f"✅ Time collection completed: {cleaned_time}")
+                self._complete_booking(state, call_sid, final_mongodb_time or cleaned_time)
         else:
-            # Increment attempt count
+            # Handle failed extraction
             state["time_attempts"] += 1
-            
             if state["time_attempts"] >= state["max_attempts"]:
-                print(f"❌ Time collection failed, reached maximum attempts ({state['max_attempts']})")
-                state["conversation_complete"] = True
-                state["current_step"] = "completed"
-                
-                # Even if time collection fails, mark as completed
-                if call_sid:
-                    update_booking_status(call_sid, is_booked=False, email_sent=False)
-                    print("⚠️ Time collection failed, but process is completed")
+                self._complete_booking_failed(state, call_sid)
             else:
                 print(f"⚠️ Time extraction failed, attempt: {state['time_attempts']}/{state['max_attempts']}")
         
         return state
+    
+    def _complete_booking(self, state: CustomerServiceState, call_sid: str, time_for_storage: str):
+        """Complete successful booking"""
+        # Update Redis with service and time
+        redis_success = update_service_selection(
+            call_sid=call_sid,
+            service_name=state.get("service") or "",
+            service_id=state.get("service_id"),
+            service_price=state.get("service_price"),
+            service_time=time_for_storage
+        )
+        
+        if redis_success:
+            print(f"✅ Booking completed successfully: {state.get('service')} at {state.get('service_time')}")
+        else:
+            print(f"⚠️ Booking info extracted but Redis save failed")
+        
+        # Mark conversation complete
+        state["conversation_complete"] = True
+        state["current_step"] = "completed"
+        update_booking_status(call_sid, is_booked=True, email_sent=False)
+        
+        # Generate closing message
+        closing_message = self._generate_closing_message(state)
+        state["last_llm_response"] = {
+            "response": closing_message,
+            "info_extracted": {},
+            "info_complete": True,
+            "analysis": "Conversation completed successfully"
+        }
+        print("✅ All information collected, booking completed")
+    
+    def _complete_booking_failed(self, state: CustomerServiceState, call_sid: Optional[str]):
+        """Complete booking when time collection failed"""
+        print(f"❌ Time collection failed after {state['max_attempts']} attempts")
+        state["conversation_complete"] = True
+        state["current_step"] = "completed"
+        
+        if call_sid:
+            update_booking_status(call_sid, is_booked=False, email_sent=False)
+            closing_message = self._generate_closing_message(state, booking_failed=True)
+            state["last_llm_response"] = {
+                "response": closing_message,
+                "info_extracted": {},
+                "info_complete": False,
+                "analysis": "Conversation completed with failed time collection"
+            }
+            print("⚠️ Partial booking completed, time collection failed")
 
     # ================== Unified Workflow Entry Function ==================
     

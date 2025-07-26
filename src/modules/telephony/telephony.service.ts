@@ -69,8 +69,16 @@ export class TelephonyService {
     if (SpeechResult) {
       try {
         await this.sessionHelper.appendUserMessage(CallSid, SpeechResult);
-        const aiReply = await this.getAIReply(CallSid, SpeechResult);
-        reply = aiReply.trim() || SYSTEM_RESPONSES.fallback;
+        const aiReplyData = await this.getAIReply(CallSid, SpeechResult);
+        reply = aiReplyData.message.trim() || SYSTEM_RESPONSES.fallback;
+
+        // Check if AI indicates conversation should end
+        if (aiReplyData.shouldHangup === true) {
+          winstonLogger.log(
+            `[TelephonyService][callSid=${CallSid}][handleGather] AI indicates conversation complete, hanging up`,
+          );
+          return await this.speakAndLog(CallSid, reply, NextAction.HANGUP);
+        }
       } catch (err) {
         winstonLogger.error(
           `[TelephonyService][callSid=${CallSid}][handleGather] AI call failed`,
@@ -128,20 +136,29 @@ export class TelephonyService {
       publicUrl: PUBLIC_URL,
     });
   }
-  private async getAIReply(callSid: string, message: string): Promise<string> {
+  private async getAIReply(
+    callSid: string,
+    message: string,
+  ): Promise<{ message: string; shouldHangup?: boolean }> {
     const { data } = await firstValueFrom(
       this.http
-        .post<{ aiResponse: { message: string } }>('/ai/conversation', {
-          callSid,
-          customerMessage: {
-            speaker: 'customer',
-            message,
-            startedAt: new Date().toISOString(),
+        .post<{ aiResponse: { message: string }; shouldHangup?: boolean }>(
+          '/ai/conversation',
+          {
+            callSid,
+            customerMessage: {
+              speaker: 'customer',
+              message,
+              startedAt: new Date().toISOString(),
+            },
           },
-        })
+        )
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
-    return data.aiResponse.message;
+    return {
+      message: data.aiResponse.message,
+      shouldHangup: data.shouldHangup,
+    };
   }
 
   private buildWelcomeMessage(

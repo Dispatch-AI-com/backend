@@ -82,7 +82,7 @@ Rules:
 
 Response Templates:
 - If you successfully extract a valid phone number, respond with: "Perfect! I've got your phone number [phone]. Now I need your address. Could you please tell me your street number and street name?"
-- If you cannot extract a valid phone number, respond with: "I need a valid Australian phone number. Could you please provide your phone number in the format 04XXXXXXXX?"
+- If you cannot extract a valid phone number, respond with: "I need a valid Australian phone number. Could you please provide your 10 digits phone number starting with 0"
 """
 
 
@@ -288,33 +288,52 @@ Available Placeholder Variables:
 
 
 def get_time_extraction_prompt():
-    """Get time extraction system prompt
+    """Get time extraction system prompt with MongoDB format constraint
     
     Returns:
         str: System prompt for service time collection
     """
-    return """You are a professional customer service assistant. Your tasks are:
+    from datetime import datetime, timezone
+    
+    # Get current time for context
+    current_time = datetime.now(timezone.utc)
+    current_str = current_time.strftime("%A, %B %d, %Y at %I:%M %p UTC")
+    
+    return f"""You are a professional customer service assistant. Your tasks are:
 1. Engage in natural and friendly conversation with users
-2. Collect preferred service time information
+2. Collect preferred service time information and convert to standard format
 3. Return results strictly in JSON format
 
+CURRENT TIME: {current_str}
+
 Please respond strictly in the following JSON format, do not add any other content:
-{
+{{
   "response": "What you want to say to the user",
-  "info_extracted": {
-    "time": "Extracted preferred time, null if not extracted"
-  },
+  "info_extracted": {{
+    "time": "Original user time expression",
+    "time_mongodb": "ISO format: YYYY-MM-DDTHH:MM:SSZ (UTC timezone)"
+  }},
   "info_complete": true/false,
   "analysis": "Brief analysis of whether user input contains valid time preference"
-}
+}}
 
 Rules:
 - Extract date and time preferences in various formats
+- Convert to MongoDB-compatible ISO format: YYYY-MM-DDTHH:MM:SSZ
+- Always use UTC timezone (Z suffix)
+- Must be a future time relative to current time
 - Accept formats like "Monday 2pm", "next Tuesday morning", "this Friday at 10am", etc.
-- Set info_complete to true if a reasonable time preference is provided
-- Response field should be natural and friendly, matching customer service tone
+- For ambiguous times, choose the nearest future occurrence
+- For relative terms: "morning" = 9:00, "afternoon" = 14:00, "evening" = 18:00
+- Set info_complete to true only if you can convert to valid MongoDB format
+- If cannot parse time, set "time_mongodb" to null
+
+Time Conversion Examples:
+- "Monday 2pm" → "2025-07-28T14:00:00Z" (next Monday at 2 PM UTC)
+- "tomorrow morning" → "2025-07-27T09:00:00Z" (tomorrow at 9 AM UTC)
+- "next Friday at 3:30pm" → "2025-08-01T15:30:00Z" (next Friday 3:30 PM UTC)
 
 Response Templates:
-- If you successfully extract valid time information, respond with: "Excellent! I have all your information now. You've requested [service] service for [time]. Thank you for providing all the details. We'll process your booking and get back to you soon!"
-- If you cannot extract valid time information, respond with: "I need to know when you'd prefer the service. Could you please tell me your preferred date and time? For example: Monday at 2pm, next Tuesday morning, etc."
+- If you successfully extract and convert time, respond with: "Excellent! I have all your information now. You've requested [service] service for [time]. Thank you for providing all the details. We'll process your booking and get back to you soon!"
+- If you cannot extract or convert time, respond with: "I need to know when you'd prefer the service. Could you please tell me your preferred date and time? For example: Monday at 2pm, next Tuesday morning, etc."
 """
