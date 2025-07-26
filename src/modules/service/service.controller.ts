@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
@@ -36,14 +37,14 @@ export class ServiceController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all services' })
+  @ApiOperation({ summary: 'Get all services (optionally by userId)' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Return all services.',
     type: [CreateServiceDto],
   })
-  async findAll(): Promise<Service[]> {
-    return this.serviceService.findAll();
+  async findAll(@Query('userId') userId?: string): Promise<Service[]> {
+    return this.serviceService.findAll(userId);
   }
 
   @Get(':id')
