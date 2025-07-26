@@ -280,19 +280,24 @@ class CustomerServiceLangGraph:
             full_street = f"{street_number} {street_name}".strip()
             
             # Local state update
-            state["street"] = full_street
+            #state["street"] = full_street
             state["street_complete"] = True
             state["current_step"] = "collect_suburb"
             
             # Real-time Redis update
             if call_sid:
-                redis_success = update_user_info_field(
+                street_number_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="street",
-                    field_value=full_street
+                    field_name="address.street_number",
+                    field_value=street_number
+                )
+                street_name_success = update_user_info_field(
+                    call_sid=call_sid,
+                    field_name="address.street_name",
+                    field_value=street_name
                 )
                 
-                if redis_success:
+                if street_number_success and street_name_success:
                     print(f"✅ Street extracted and saved successfully: {full_street}")
                 else:
                     print(f"⚠️ Street extracted successfully but Redis save failed: {full_street}")
@@ -341,7 +346,7 @@ class CustomerServiceLangGraph:
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="suburb",
+                    field_name="address.suburb",
                     field_value=cleaned_suburb
                 )
                 
@@ -394,7 +399,7 @@ class CustomerServiceLangGraph:
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="state",
+                    field_name="address.state",
                     field_value=cleaned_state
                 )
                 
@@ -447,7 +452,7 @@ class CustomerServiceLangGraph:
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="postcode",
+                    field_name="address.postcode",
                     field_value=cleaned_postcode
                 )
                 
@@ -457,7 +462,7 @@ class CustomerServiceLangGraph:
                     print(f"⚠️ Postcode extracted successfully but Redis save failed: {cleaned_postcode}")
             
             # After postcode is complete, build complete Address object and save to Redis
-            if all([state.get("street"), state.get("suburb"), state.get("state"), state.get("postcode")]):
+            '''if all([state.get("street"), state.get("suburb"), state.get("state"), state.get("postcode")]):
                 # Parse street into number and name
                 street_parts = state["street"].split(" ", 1)
                 street_number = street_parts[0] if len(street_parts) > 0 else ""
@@ -483,7 +488,7 @@ class CustomerServiceLangGraph:
                         print(f"✅ Complete address saved to Redis: {state['street']}, {state['suburb']}, {state['state']} {state['postcode']}")
                     else:
                         print(f"⚠️ Failed to save complete address to Redis")
-            
+            '''
             print(f"✅ Postcode collection completed: {cleaned_postcode}")
         else:
             # Increment attempt count
