@@ -1,11 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model } from 'mongoose';
+import { isValidObjectId, Model, Types } from 'mongoose';
 
 import {
   Company,
   CompanyDocument,
 } from '@/modules/company/schema/company.schema';
+import {
+  Verification,
+  VerificationDocument,
+} from '@/modules/setting/schema/verification.schema';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
 
 import { CreateSettingDto } from './dto/create-setting.dto';
@@ -30,6 +34,8 @@ export class SettingService {
     private readonly userModel: Model<UserDocument>,
     @InjectModel(Company.name)
     private readonly companyModel: Model<CompanyDocument>,
+    @InjectModel(Verification.name)
+    private readonly verificationModel: Model<VerificationDocument>,
   ) {}
 
   async getUserSettingsByCategory<T = unknown>(
@@ -277,6 +283,17 @@ export class SettingService {
     if (!updatedUser) {
       throw new BadRequestException('User not found');
     }
+
+    // Also update verification record if phone number changed
+    await this.verificationModel.findOneAndUpdate(
+      { userId: new Types.ObjectId(userId) },
+      {
+        mobile: profileDto.contact,
+        // Reset mobile verification if phone number changed
+        mobileVerified: false
+      },
+      { upsert: false }
+    );
 
     return updatedUser;
   }
