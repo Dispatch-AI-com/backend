@@ -31,10 +31,18 @@ export class VerificationService {
     userId: string,
     updateData: UpdateVerificationDto,
   ): Promise<Verification> {
+    // Only allow whitelisted fields to be updated
+    const allowedFields = ['type', 'mobile', 'email', 'marketingPromotions'];
+    const sanitizedUpdate: Partial<UpdateVerificationDto> = {};
+    for (const key of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(updateData, key)) {
+        sanitizedUpdate[key] = updateData[key];
+      }
+    }
     const verification = await this.verificationModel
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
-        { ...updateData },
+        { $set: sanitizedUpdate },
         { new: true, upsert: true },
       )
       .exec();
