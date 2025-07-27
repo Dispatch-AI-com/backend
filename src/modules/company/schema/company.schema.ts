@@ -1,7 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 
 import { User } from '@/modules/user/schema/user.schema';
+
+const DEFAULT_GREETING_MESSAGE = `Hello! I'm an Dispatch AI assistant working for you.
+
+Your team is not available to take the call right now.
+
+I can take a message for you, or help you book an appointment with your team. What can I do for you today?
+
+你也可以和我说普通话。`;
 
 @Schema({ timestamps: true })
 export class Company {
@@ -45,24 +53,11 @@ export class Company {
     type: {
       message: {
         type: String,
-        default: `Hello! I'm an Dispatch AI assistant working for you.
-
-Your team is not available to take the call right now.
-
-I can take a message for you, or help you book an appointment with your team. What can I do for you today?
-
-你也可以和我说普通话。`
       },
       isCustom: { type: Boolean, default: false },
     },
     default: () => ({
-      message: `Hello! I'm an Dispatch AI assistant working for you.
-
-Your team is not available to take the call right now.
-
-I can take a message for you, or help you book an appointment with your team. What can I do for you today?
-
-你也可以和我说普通话。`,
+      message: DEFAULT_GREETING_MESSAGE,
       isCustom: false
     }),
   })
