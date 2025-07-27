@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document, Schema as MongooseSchema, Types } from 'mongoose';
 
 import { User } from '@/modules/user/schema/user.schema';
 
@@ -65,6 +65,7 @@ export class Company {
     message: string;
     isCustom: boolean;
   };
+  _id!: Types.ObjectId;
 }
 
 export type CompanyDocument = Company & Document;
