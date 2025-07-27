@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -54,6 +54,9 @@ export class VerificationService {
   ): Promise<Verification> {
     // If mobile number is being updated, also update User model
     if (updateData.mobile !== undefined) {
+      if (typeof updateData.mobile !== 'string') {
+        throw new BadRequestException('Mobile number must be a string');
+      }
       await this.userModel.findByIdAndUpdate(
         userId,
         { fullPhoneNumber: updateData.mobile },
