@@ -20,6 +20,9 @@ export class User extends Document {
   password?: string;
 
   @Prop()
+  twilioPhoneNumber!: string;
+
+  @Prop()
   fullPhoneNumber!: string;
 
   @Prop()

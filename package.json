@@ -48,7 +48,9 @@
     "type-check": "tsc --noEmit",
     "test": "jest --config jest.config.json",
     "lint": "prettier --write \"src/**/*.ts\" && eslint --fix \"src/**/*.ts\"",
-    "seed": "ts-node -r tsconfig-paths/register scripts/seeds/index.ts"
+    "seed": "ts-node -r tsconfig-paths/register scripts/seeds/index.ts",
+    "seed:calllog": "ts-node -r tsconfig-paths/register scripts/seeds/run-calllog-seed.ts",
+    "seed:telephony": "ts-node -r tsconfig-paths/register scripts/seeds/run-telephony-seed.ts"
   },
   "devDependencies": {
     "@darraghor/eslint-plugin-nestjs-typed": "^6.4.12",

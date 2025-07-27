@@ -7,15 +7,18 @@ import { SYSTEM_RESPONSES } from '@/common/constants/system-responses.constant';
 import {
   VoiceGatherBody,
   VoiceStatusBody,
-} from '@/common/interfaces/twilio-voice-webhook.d';
+} from '@/common/interfaces/twilio-voice-webhook';
 import { winstonLogger } from '@/logger/winston.logger';
 import { CalllogService } from '@/modules/calllog/calllog.service';
+import { CompanyService } from '@/modules/company/company.service';
+import { ServiceService } from '@/modules/service/service.service';
 import {
   buildSayResponse,
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
+import { UserService } from '@/modules/user/user.service';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
@@ -34,13 +37,25 @@ export class TelephonyService {
     private readonly callLogService: CalllogService,
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
+    private readonly userService: UserService,
+    private readonly serviceService: ServiceService,
+    private readonly companyService: CompanyService,
   ) {}
-  async handleVoice({ CallSid }: VoiceGatherBody): Promise<string> {
-    const session = await this.sessionHelper.ensureSession(CallSid);
-    //把redis sessinon里面的company services填满
+  async handleVoice({ CallSid, To }: VoiceGatherBody): Promise<string> {
+    await this.sessionHelper.ensureSession(CallSid);
+    const user = await this.userService.findByTwilioPhoneNumber(To);
+    if (user == null) {
+      return this.speakAndLog(CallSid, 'User not found', NextAction.GATHER);
+    }
+    const services = await this.serviceService.findAllActiveByUserId(
+      user._id as string,
+    );
+    await this.sessionHelper.fillCompanyServices(CallSid, services);
 
-    const { services, company } = session;
-    const welcome = this.buildWelcomeMessage(company.name, services);
+    const company = await this.companyService.findByUserId(user._id as string);
+    await this.sessionHelper.fillCompany(CallSid, company);
+
+    const welcome = this.buildWelcomeMessage(company.businessName, services);
 
     return this.speakAndLog(CallSid, welcome, NextAction.GATHER);
   }
@@ -54,8 +69,16 @@ export class TelephonyService {
     if (SpeechResult) {
       try {
         await this.sessionHelper.appendUserMessage(CallSid, SpeechResult);
-        const aiReply = await this.getAIReply(CallSid, SpeechResult);
-        reply = aiReply.trim() || SYSTEM_RESPONSES.fallback;
+        const aiReplyData = await this.getAIReply(CallSid, SpeechResult);
+        reply = aiReplyData.message.trim() || SYSTEM_RESPONSES.fallback;
+
+        // Check if AI indicates conversation should end
+        if (aiReplyData.shouldHangup === true) {
+          winstonLogger.log(
+            `[TelephonyService][callSid=${CallSid}][handleGather] AI indicates conversation complete, hanging up`,
+          );
+          return await this.speakAndLog(CallSid, reply, NextAction.HANGUP);
+        }
       } catch (err) {
         winstonLogger.error(
           `[TelephonyService][callSid=${CallSid}][handleGather] AI call failed`,
@@ -78,12 +101,6 @@ export class TelephonyService {
       winstonLogger.log(
         `[TelephonyService][callSid=${CallSid}][handleStatus] status=${CallStatus},timestamp=${Timestamp},callDuration=${CallDuration},caller=${Caller}`,
       );
-
-      //let serviceupload = false;
-      //1，如果confirmservice为true，上传service拿到上传service的结果，成功或者失败，失败原因，或者不需要上传
-      //2，生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结，通过调用ai接口（ai/summary）
-      //3，把这个session里面的hisoty作为calllog,caller,timestamp,callDuration,上传到数据库：mark
-      //4，将summary 和sid 发送给python 完成链路（调用callender-mcp，发送邮件-mcp）
 
       try {
         await this.processCallCompletion(CallSid, {
@@ -119,15 +136,29 @@ export class TelephonyService {
       publicUrl: PUBLIC_URL,
     });
   }
-  private async getAIReply(callSid: string, message: string): Promise<string> {
+  private async getAIReply(
+    callSid: string,
+    message: string,
+  ): Promise<{ message: string; shouldHangup?: boolean }> {
     const { data } = await firstValueFrom(
       this.http
-        .post<{
-          replyText: string;
-        }>('/ai/reply', { callSid, message })
+        .post<{ aiResponse: { message: string }; shouldHangup?: boolean }>(
+          '/ai/conversation',
+          {
+            callSid,
+            customerMessage: {
+              speaker: 'customer',
+              message,
+              startedAt: new Date().toISOString(),
+            },
+          },
+        )
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
-    return data.replyText;
+    return {
+      message: data.aiResponse.message,
+      shouldHangup: data.shouldHangup,
+    };
   }
 
   private buildWelcomeMessage(
@@ -136,9 +167,9 @@ export class TelephonyService {
   ): string {
     if (companyName !== undefined && services && services.length > 0) {
       const serviceList = services.map(s => s.name).join(', ');
-      return `Welcome! We are ${companyName}. We provide ${serviceList}. How can I help you today?`;
+      return `Welcome! We are ${companyName}. We provide ${serviceList}. May I get your name please?`;
     }
-    return 'Welcome! How can I help you today?';
+    return 'Welcome! How can I help you today? May I get your name please?';
   }
 
   private async processCallCompletion(
@@ -184,7 +215,7 @@ export class TelephonyService {
   ): Promise<void> {
     const callLogData = {
       callSid: session.callSid,
-      userId: session.company.id,
+      userId: session.company.userId,
       serviceBookedId: session.user.service?.id,
       callerNumber: twilioParams.Caller,
       callerName: session.user.userInfo.name,
@@ -230,13 +261,13 @@ export class TelephonyService {
   }
 
   private determineCallLogStatus(session: CallSkeleton): CallLogStatus {
-    if (session.confirmBooking && session.user.service) {
-      return CallLogStatus.Completed;
+    if (session.servicebooked && session.user.service) {
+      return CallLogStatus.Done;
     }
-    if (session.user.service && !session.confirmBooking) {
-      return CallLogStatus.FollowUp;
+    if (session.user.service && !session.servicebooked) {
+      return CallLogStatus.Confirmed;
     }
-    return CallLogStatus.Missed;
+    return CallLogStatus.Cancelled;
   }
 
   private convertMessagesToChunks(messages: Message[]): {
@@ -271,7 +302,7 @@ export class TelephonyService {
         session.user.service?.name ??
         (session.services.length > 0 ? session.services[0].name : null) ??
         'general inquiry',
-      booked: Boolean(session.confirmBooking),
+      booked: Boolean(session.servicebooked),
       company: session.company.name,
     };
 

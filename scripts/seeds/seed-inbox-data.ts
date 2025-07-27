@@ -10,11 +10,17 @@ interface User {
   lastName: string;
   email: string;
   password: string;
+  twilioPhoneNumber: string;
   fullPhoneNumber: string;
   receivedAdverts: boolean;
   status: string;
+  statusReason?: string;
+  position?: string;
   role: string;
+  googleId?: string;
+  avatar?: string;
   provider: string;
+  tokenRefreshTime?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -190,11 +196,17 @@ const userSchema = new Schema({
   lastName: String,
   email: { type: String, required: true, unique: true },
   password: String,
+  twilioPhoneNumber: String,
   fullPhoneNumber: String,
   receivedAdverts: { type: Boolean, default: true },
   status: { type: String, default: 'active' },
+  statusReason: String,
+  position: String,
   role: { type: String, default: 'user' },
-  provider: { type: String, default: 'local' }
+  googleId: String,
+  avatar: String,
+  provider: { type: String, default: 'local' },
+  tokenRefreshTime: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 const callLogSchema = new Schema({
@@ -239,17 +251,23 @@ async function seedData() {
     console.log('Cleared existing data');
     
     // Create test user
-    const hashedPassword = await bcrypt.hash('password123', SALT_ROUNDS);
+    const hashedPassword = await bcrypt.hash('Admin123!', SALT_ROUNDS);
     const testUser = await UserModel.create({
       firstName: 'Test',
       lastName: 'User',
       email: 'test@example.com',
       password: hashedPassword,
+      twilioPhoneNumber: '+1-555-999-0000',
       fullPhoneNumber: '+1-555-999-0000',
       receivedAdverts: true,
       status: 'active',
+      statusReason: '',
+      position: 'Customer Service Manager',
       role: 'user',
-      provider: 'local'
+      googleId: null,
+      avatar: null,
+      provider: 'local',
+      tokenRefreshTime: new Date()
     });
     
     console.log('Created test user:', testUser.email);
@@ -296,7 +314,7 @@ async function seedData() {
     console.log('Seeding completed successfully!');
     console.log('Test user credentials:');
     console.log('Email: test@example.com');
-    console.log('Password: password123');
+    console.log('Password: Admin123!');
     
   } catch (error) {
     console.error('Error seeding data:', error);

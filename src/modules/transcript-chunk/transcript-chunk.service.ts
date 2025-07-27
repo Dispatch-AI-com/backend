@@ -26,9 +26,9 @@ interface TranscriptChunkFilter {
 @Injectable()
 export class TranscriptChunkService {
   constructor(
-    @InjectModel(TranscriptChunk.name)
+    @InjectModel('TranscriptChunk')
     private readonly transcriptChunkModel: Model<TranscriptChunk>,
-    @InjectModel(Transcript.name)
+    @InjectModel('Transcript')
     private readonly transcriptModel: Model<Transcript>,
   ) {}
 

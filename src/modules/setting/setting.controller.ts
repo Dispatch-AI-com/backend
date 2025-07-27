@@ -55,7 +55,7 @@ export class SettingController {
   async updateUserProfile(
     @Param('userId') userId: string,
     @Body() profileDto: UserProfileDto,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.USER_PROFILE,
       settings: profileDto,
@@ -93,7 +93,7 @@ export class SettingController {
   async updateCompanyInfo(
     @Param('userId') userId: string,
     @Body() companyDto: CompanyInfoDto,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.COMPANY_INFO,
       settings: companyDto,
@@ -131,7 +131,7 @@ export class SettingController {
   async updateBillingAddress(
     @Param('userId') userId: string,
     @Body() billingDto: BillingAddressDto,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.BILLING_ADDRESS,
       settings: billingDto,
@@ -240,7 +240,7 @@ export class SettingController {
   async updateProfileForFrontend(
     @Param('userId') userId: string,
     @Body() profileDto: UserProfileDto,
-  ): Promise<any> {
+  ): Promise<unknown> {
     return await this.settingService.updateUserSettings(userId, {
       category: SettingCategory.USER_PROFILE,
       settings: profileDto,
