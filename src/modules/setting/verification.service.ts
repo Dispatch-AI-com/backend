@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -6,12 +6,15 @@ import {
   Verification,
   VerificationDocument,
 } from '@/modules/setting/schema/verification.schema';
+import { User, UserDocument } from '@/modules/user/schema/user.schema';
 
 export interface UpdateVerificationDto {
   type: 'SMS' | 'Email' | 'Both';
   mobile?: string;
   email?: string;
   marketingPromotions?: boolean;
+  mobileVerified?: boolean;
+  emailVerified?: boolean;
 }
 
 @Injectable()
@@ -19,30 +22,52 @@ export class VerificationService {
   constructor(
     @InjectModel(Verification.name)
     private verificationModel: Model<VerificationDocument>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   async getVerification(userId: string): Promise<Verification | null> {
-    return this.verificationModel
+    const verification = await this.verificationModel
       .findOne({ userId: new Types.ObjectId(userId) })
       .exec();
+    // If no verification record exists, return default with User data
+    if (!verification) {
+      const user = await this.userModel.findById(userId).exec();
+      if (user) {
+        return {
+          userId: new Types.ObjectId(userId),
+          type: 'Both',
+          mobile: user.fullPhoneNumber || '',
+          email: user.email || '',
+          mobileVerified: false,
+          emailVerified: false,
+          marketingPromotions: false,
+        } as Verification;
+      }
+    }
+    return verification;
   }
 
   async updateVerification(
     userId: string,
     updateData: UpdateVerificationDto,
   ): Promise<Verification> {
-    // Only allow whitelisted fields to be updated
-    const allowedFields = ['type', 'mobile', 'email', 'marketingPromotions'];
-    const sanitizedUpdate: Record<string, string | boolean | undefined> = {};
-    for (const key of allowedFields) {
-      if (Object.prototype.hasOwnProperty.call(updateData, key)) {
-        sanitizedUpdate[key] = updateData[key as keyof UpdateVerificationDto];
+    // If mobile number is being updated, also update User model
+    if (updateData.mobile !== undefined) {
+      if (typeof updateData.mobile !== 'string') {
+        throw new BadRequestException('Mobile number must be a string');
       }
+      await this.userModel.findByIdAndUpdate(
+        userId,
+        { fullPhoneNumber: updateData.mobile },
+        { new: true }
+      );
     }
+
     const verification = await this.verificationModel
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
-        { $set: sanitizedUpdate },
+        { ...updateData },
         { new: true, upsert: true },
       )
       .exec();
