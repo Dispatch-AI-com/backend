@@ -1,10 +1,10 @@
 export enum CallLogStatus {
-  Missed = 'Missed',
-  Completed = 'Completed',
-  FollowUp = 'Follow-up',
+  Cancelled = 'Cancelled',
+  Done = 'Done',
+  Confirmed = 'Confirmed',
 }
 
-export const DEFAULT_CALLLOG_STATUS = CallLogStatus.Completed;
+export const DEFAULT_CALLLOG_STATUS = CallLogStatus.Done;
 
 export const CALLLOG_SORT_OPTIONS = {
   NEWEST: 'newest',

@@ -128,11 +128,11 @@ describe('CallLogController (e2e)', () => {
 
     it('should filter logs by status', async () => {
       const response = await request(app.getHttpServer())
-        .get(`${baseUrl}?status=${CallLogStatus.Completed}`);
+        .get(`${baseUrl}?status=${CallLogStatus.Done}`);
 
       expect(response.status).toBe(200);
       response.body.data.forEach((log: ICallLog) => {
-        expect(log.status).toBe(CallLogStatus.Completed);
+        expect(log.status).toBe(CallLogStatus.Done);
       });
     });
 
@@ -203,17 +203,17 @@ describe('CallLogController (e2e)', () => {
     it('should update call log status', async () => {
       const response = await request(app.getHttpServer())
         .patch(`${baseUrl}/${createdCallLogId}`)
-        .send({ status: CallLogStatus.Missed });
+        .send({ status: CallLogStatus.Cancelled });
 
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe(CallLogStatus.Missed);
+      expect(response.body.status).toBe(CallLogStatus.Cancelled);
       expect(response.body._id).toBe(createdCallLogId);
     });
 
     it('should return 404 for non-existent call log', async () => {
       const response = await request(app.getHttpServer())
         .patch(`${baseUrl}/non-existent-id`)
-        .send({ status: CallLogStatus.Missed });
+        .send({ status: CallLogStatus.Cancelled });
 
       expect(response.status).toBe(404);
     });

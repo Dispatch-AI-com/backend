@@ -4,19 +4,31 @@ export function createEmptySkeleton(callSid: string): CallSkeleton {
   return {
     callSid,
     services: [],
-    company: { id: '', name: '', email: '', calendar_access_token: '' },
+    company: {
+      id: '',
+      name: '',
+      email: '',
+      userId: '',
+      calendar_access_token: '',
+    },
     user: {
       service: undefined,
       serviceBookedTime: undefined,
       userInfo: {
-        email: '',
         name: '',
         phone: '',
-        address: '',
+        address: {
+          street_number: '',
+          street_name: '',
+          suburb: '',
+          state: '',
+          postcode: '',
+        },
       },
     },
     history: [],
-    confirmBooking: false,
-    confirmEmailSent: false,
+    servicebooked: false,
+    confirmEmailsent: false,
+    createdAt: new Date().toISOString(),
   };
 }

@@ -22,7 +22,10 @@ export class ServiceService {
     return createdService.save();
   }
 
-  async findAll(): Promise<Service[]> {
+  async findAll(userId?: string): Promise<Service[]> {
+    if (userId != null && userId !== '') {
+      return this.serviceModel.find({ userId: { $eq: userId } }).exec();
+    }
     return this.serviceModel.find().exec();
   }
 
@@ -62,5 +65,12 @@ export class ServiceService {
     if (!result) {
       throw new NotFoundException('Service not found');
     }
+  }
+  async findAllByUserId(userId: string): Promise<Service[]> {
+    return this.serviceModel.find({ userId }).exec();
+  }
+
+  async findAllActiveByUserId(userId: string): Promise<Service[]> {
+    return this.serviceModel.find({ userId, isAvailable: true }).exec();
   }
 }
