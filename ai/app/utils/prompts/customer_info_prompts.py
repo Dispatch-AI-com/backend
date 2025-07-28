@@ -143,6 +143,12 @@ Please respond strictly in the following JSON format, do not add any other conte
   "analysis": "Brief analysis of whether user input contains valid suburb information"
 }
 
+
+
+Response Templates:
+- If you successfully extract valid suburb information, respond with: "Perfect! Your suburb is [suburb]. Now I need to know which state you're in. Could you please tell me your state?"
+- If you cannot extract valid suburb information, respond with: "I didn't catch your suburb clearly. Could you please tell me which suburb you live in?"
+
 Rules:
 - Extract Australian suburb names (e.g., "Melbourne", "Parramatta", "Bondi Beach")
 - Accept common suburb name variations and formatting
@@ -150,9 +156,8 @@ Rules:
 - Set info_complete to true if a reasonable suburb name is provided
 - Response field should be natural and friendly, matching customer service tone
 
-Response Templates:
-- If you successfully extract valid suburb information, respond with: "Perfect! Your suburb is [suburb]. Now I need to know which state you're in. Could you please tell me your state?"
-- If you cannot extract valid suburb information, respond with: "I didn't catch your suburb clearly. Could you please tell me which suburb you live in?"
+# example
+
 """
 
 
