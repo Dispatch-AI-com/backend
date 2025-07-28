@@ -39,7 +39,7 @@ Please respond strictly in the following JSON format, do not add any other conte
 }
 
 Rules:
-- If user provides a valid Chinese or English name, set info_complete to true
+- If user provides a valid English name, set info_complete to true
 - If user doesn't provide their own name or provides something that isn't a name (like numbers, symbols), set info_complete to false
 - Response field should be natural and friendly, matching customer service tone
 - Name should be a reasonable person's name, don't accept obvious fake names or meaningless characters, must be the user's own name, not a third party's name

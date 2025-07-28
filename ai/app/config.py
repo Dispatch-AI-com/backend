@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     llm_provider: LLMProvider = Field(default=LLMProvider.OPENAI)
     openai_api_key: Optional[str] = Field(default=None)
-    openai_model: str = Field(default="gpt-4o-mini")
+    openai_model: str = Field(default="gpt-4.1-mini")
     openai_max_tokens: int = Field(default=2500)
     openai_temperature: float = Field(default=0.0)
 
