@@ -54,9 +54,6 @@ export class VerificationService {
   ): Promise<Verification> {
     // If mobile number is being updated, also update User model
     if (updateData.mobile !== undefined) {
-      if (typeof updateData.mobile !== 'string') {
-        throw new BadRequestException('Mobile number must be a string');
-      }
       await this.userModel.findByIdAndUpdate(
         userId,
         { fullPhoneNumber: updateData.mobile },
