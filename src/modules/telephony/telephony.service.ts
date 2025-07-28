@@ -19,6 +19,8 @@ import {
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
 import { UserService } from '@/modules/user/user.service';
+import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
+import { CreateServiceBookingDto, ServiceBookingStatus } from '@/modules/service-booking/dto/create-service-booking.dto';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
@@ -40,6 +42,7 @@ export class TelephonyService {
     private readonly userService: UserService,
     private readonly serviceService: ServiceService,
     private readonly companyService: CompanyService,
+    private readonly serviceBookingService: ServiceBookingService,
   ) {}
   async handleVoice({ CallSid, To }: VoiceGatherBody): Promise<string> {
     await this.sessionHelper.ensureSession(CallSid);
@@ -191,7 +194,11 @@ export class TelephonyService {
       // Step 2: 生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结
       await this.createTranscriptAndChunks(session);
 
-      // Step 3: 如果confirmservice为true，上传service（暂时跳过，按注释保留）
+      // Step 3: 如果confirmservice为true，上传service booking到数据库
+      if (session.servicebooked && session.user.service) {
+        await this.createServiceBookingRecord(session);
+      }
+
       // Step 4: 将summary和sid发送给python完成链路（暂时跳过，按注释保留）
 
       // 清理Redis会话
@@ -321,5 +328,69 @@ export class TelephonyService {
         .pipe(timeout(AI_TIMEOUT_MS), retry(AI_RETRY)),
     );
     return data;
+  }
+
+  private async createServiceBookingRecord(session: CallSkeleton): Promise<void> {
+    if (!session.user.service || !session.user.serviceBookedTime) {
+      winstonLogger.warn(
+        `[TelephonyService][createServiceBookingRecord] Missing service or booking time for ${session.callSid}`,
+      );
+      return;
+    }
+
+    // 构建客户地址字符串
+    const userInfo = session.user.userInfo;
+    const address = userInfo.address;
+    let addressString = 'Address not provided';
+    
+    if (address) {
+      const addressParts = [
+        address.street_number && address.street_name ? `${address.street_number} ${address.street_name}` : null,
+        address.suburb,
+        address.state,
+        address.postcode,
+      ].filter(Boolean);
+      
+      if (addressParts.length > 0) {
+        addressString = addressParts.join(', ');
+      }
+    }
+
+    // 构建service booking数据
+    const serviceBookingData: CreateServiceBookingDto = {
+      serviceId: session.user.service.id,
+      client: {
+        name: userInfo.name || 'Name not provided',
+        phoneNumber: userInfo.phone || 'Phone not provided',
+        address: addressString,
+      },
+      serviceFormValues: [
+        {
+          serviceFieldId: 'booking_source',
+          answer: 'Phone Call',
+        },
+        {
+          serviceFieldId: 'call_sid',
+          answer: session.callSid,
+        },
+      ],
+      bookingTime: session.user.serviceBookedTime,
+      status: ServiceBookingStatus.Confirmed,
+      note: `Service booked via phone call. CallSid: ${session.callSid}`,
+      userId: session.company.userId,
+    };
+
+    try {
+      const serviceBooking = await this.serviceBookingService.create(serviceBookingData) as any;
+      winstonLogger.log(
+        `[TelephonyService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${serviceBooking.id}`,
+      );
+    } catch (error) {
+      winstonLogger.error(
+        `[TelephonyService][createServiceBookingRecord] Failed to create service booking for ${session.callSid}`,
+        { error: (error as Error).message, stack: (error as Error).stack },
+      );
+      throw error;
+    }
   }
 }
