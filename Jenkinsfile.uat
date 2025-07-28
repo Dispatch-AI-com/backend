@@ -162,7 +162,7 @@ pipeline {
             echo "Backend image: ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}"
             echo "AI service image: ${IMAGE_NAME_AI}:${IMAGE_TAG}"
             emailext(
-                to: "lin.lu.devoops@gmail.com",
+                to: "lin.lu.devops@gmail.com",
                 subject: "✅ DispatchAI Backend & AI Service pipeline succeeded.",
                 body: "Jenkins CICD Pipeline succeeded!<br/>" +
                     "Job Result: ${currentBuild.currentResult}<br/>" +
@@ -178,7 +178,7 @@ pipeline {
 
         failure {
             emailext(
-                to: "lin.lu.devoops@gmail.com",
+                to: "lin.lu.devops@gmail.com",
                 subject: "❌ DispatchAI Backend & AI Service pipeline failed.",
                 body: "Jenkins CICD Pipeline failed!<br/>" +
                     "Job Result: ${currentBuild.currentResult}<br/>" +
