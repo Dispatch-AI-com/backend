@@ -40,9 +40,6 @@ export class Company {
   @Prop({ required: true, unique: true })
   abn!: string;
 
-  @Prop({ required: true })
-  number!: string;
-
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user!: User;
 
@@ -58,7 +55,7 @@ export class Company {
     },
     default: () => ({
       message: DEFAULT_GREETING_MESSAGE,
-      isCustom: false
+      isCustom: false,
     }),
   })
   greeting!: {

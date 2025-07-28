@@ -116,6 +116,9 @@ export class OnboardingService {
       throw new BadRequestException('company answers not found in session');
     }
 
+    const user = await this.userService.findOne(userId);
+    const email = user.email;
+
     const companyPayload = {
       businessName: companyAns.businessName,
       address: {
@@ -125,9 +128,8 @@ export class OnboardingService {
         state: companyAns.address.state,
         postcode: companyAns.address.postcode,
       },
-      email: companyAns.email,
+      email: email,
       abn: companyAns.abn,
-      number: companyAns.number,
       user: userId,
     };
 
