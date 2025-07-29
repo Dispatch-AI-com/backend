@@ -13,14 +13,17 @@ import { CalllogService } from '@/modules/calllog/calllog.service';
 import { CompanyService } from '@/modules/company/company.service';
 import { ServiceService } from '@/modules/service/service.service';
 import {
+  CreateServiceBookingDto,
+  ServiceBookingStatus,
+} from '@/modules/service-booking/dto/create-service-booking.dto';
+import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
+import {
   buildSayResponse,
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
 import { UserService } from '@/modules/user/user.service';
-import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
-import { CreateServiceBookingDto, ServiceBookingStatus } from '@/modules/service-booking/dto/create-service-booking.dto';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
@@ -330,8 +333,10 @@ export class TelephonyService {
     return data;
   }
 
-  private async createServiceBookingRecord(session: CallSkeleton): Promise<void> {
-    if (!session.user.service || !session.user.serviceBookedTime) {
+  private async createServiceBookingRecord(
+    session: CallSkeleton,
+  ): Promise<void> {
+    if (session.user.service == null || session.user.serviceBookedTime == null) {
       winstonLogger.warn(
         `[TelephonyService][createServiceBookingRecord] Missing service or booking time for ${session.callSid}`,
       );
@@ -342,15 +347,17 @@ export class TelephonyService {
     const userInfo = session.user.userInfo;
     const address = userInfo.address;
     let addressString = 'Address not provided';
-    
-    if (address) {
+
+    if (address != null) {
       const addressParts = [
-        address.street_number && address.street_name ? `${address.street_number} ${address.street_name}` : null,
+        address.street_number != null && address.street_name != null
+          ? `${address.street_number} ${address.street_name}`
+          : null,
         address.suburb,
         address.state,
         address.postcode,
       ].filter(Boolean);
-      
+
       if (addressParts.length > 0) {
         addressString = addressParts.join(', ');
       }
@@ -360,8 +367,8 @@ export class TelephonyService {
     const serviceBookingData: CreateServiceBookingDto = {
       serviceId: session.user.service.id,
       client: {
-        name: userInfo.name || 'Name not provided',
-        phoneNumber: userInfo.phone || 'Phone not provided',
+        name: userInfo.name ?? 'Name not provided',
+        phoneNumber: userInfo.phone ?? 'Phone not provided',
         address: addressString,
       },
       serviceFormValues: [
@@ -381,9 +388,10 @@ export class TelephonyService {
     };
 
     try {
-      const serviceBooking = await this.serviceBookingService.create(serviceBookingData) as any;
+      const serviceBooking =
+        await this.serviceBookingService.create(serviceBookingData);
       winstonLogger.log(
-        `[TelephonyService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${serviceBooking.id}`,
+        `[TelephonyService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${String((serviceBooking as any)._id)}`,
       );
     } catch (error) {
       winstonLogger.error(
