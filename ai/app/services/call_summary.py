@@ -86,7 +86,7 @@ class SummaryService:
                 result["key_points"] = []
                 
             return result
-        except (json.JSONDecodeError, AttributeError) as e:
+        except (json.JSONDecodeError, AttributeError):
             # Fallback to basic structure if JSON parsing fails
             return {
                 "summary": summary_response if summary_response else "Call summary not available",
