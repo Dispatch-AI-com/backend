@@ -25,13 +25,44 @@ interface User {
   updatedAt: Date;
 }
 
+interface Service {
+  userId: string;
+  name: string;
+  description?: string;
+  price: number;
+  isAvailable: boolean;
+  isDeleted?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface CallLog {
   callSid: string;
   userId: string;
+  serviceBookedId?: string;
   callerNumber: string;
   callerName?: string;
-  status: string;
   startAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ServiceBooking {
+  serviceId: string;
+  client: {
+    name: string;
+    phoneNumber: string;
+    address: string;
+  };
+  serviceFormValues: {
+    serviceFieldId: string;
+    answer: string;
+  }[];
+  status: string;
+  note?: string;
+  bookingTime: Date;
+  userId: string;
+  callSid?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +83,32 @@ interface TranscriptChunk {
   createdAt: Date;
   updatedAt: Date;
 }
+
+const sampleServices = [
+  { name: 'Plumbing Service', description: 'Professional plumbing repair and installation', price: 120 },
+  { name: 'Electrical Work', description: 'Electrical repairs and installations', price: 150 },
+  { name: 'HVAC Maintenance', description: 'Heating, ventilation, and air conditioning services', price: 200 },
+  { name: 'Cleaning Service', description: 'Residential and commercial cleaning', price: 80 },
+  { name: 'Landscaping', description: 'Garden maintenance and landscaping services', price: 100 },
+  { name: 'Carpentry', description: 'Custom woodwork and repairs', price: 130 },
+  { name: 'Roofing', description: 'Roof repair and installation', price: 300 },
+  { name: 'Painting', description: 'Interior and exterior painting services', price: 90 },
+  { name: 'Appliance Repair', description: 'Home appliance repair and maintenance', price: 110 },
+  { name: 'Security Installation', description: 'Security system installation and maintenance', price: 250 }
+];
+
+const sampleAddresses = [
+  '123 Main St, Sydney NSW 2000',
+  '456 Park Ave, Melbourne VIC 3000',
+  '789 Queen St, Brisbane QLD 4000',
+  '321 Collins St, Perth WA 6000',
+  '654 Adelaide St, Adelaide SA 5000',
+  '987 George St, Hobart TAS 7000',
+  '147 Flinders St, Darwin NT 0800',
+  '258 Hay St, Canberra ACT 2600',
+  '369 Murray St, Gold Coast QLD 4215',
+  '741 Bourke St, Newcastle NSW 2300'
+];
 
 const sampleSummaries = [
   'Customer called regarding billing inquiry for recent service. Issue resolved with account adjustment.',
@@ -209,13 +266,40 @@ const userSchema = new Schema({
   tokenRefreshTime: { type: Date, default: Date.now }
 }, { timestamps: true });
 
+const serviceSchema = new Schema({
+  userId: { type: String, required: true },
+  name: { type: String, required: true },
+  description: String,
+  price: { type: Number, required: true },
+  isAvailable: { type: Boolean, default: true },
+  isDeleted: { type: Boolean, default: false }
+}, { timestamps: true });
+
 const callLogSchema = new Schema({
   callSid: { type: String, required: true, unique: true },
   userId: { type: String, required: true },
+  serviceBookedId: String,
   callerNumber: { type: String, required: true },
   callerName: String,
-  status: { type: String, required: true },
   startAt: { type: Date, required: true }
+}, { timestamps: true });
+
+const serviceBookingSchema = new Schema({
+  serviceId: { type: String, required: true },
+  client: {
+    name: { type: String, required: true },
+    phoneNumber: { type: String, required: true },
+    address: { type: String, required: true }
+  },
+  serviceFormValues: [{
+    serviceFieldId: { type: String, required: true },
+    answer: { type: String, required: true }
+  }],
+  status: { type: String, enum: ['Cancelled', 'Confirmed', 'Done'], default: 'Confirmed' },
+  note: String,
+  bookingTime: { type: Date, required: true },
+  userId: { type: String, required: true },
+  callSid: String
 }, { timestamps: true });
 
 const transcriptSchema = new Schema({
@@ -238,13 +322,17 @@ async function seedData() {
     
     // Create models
     const UserModel = model('User', userSchema);
+    const ServiceModel = model('Service', serviceSchema);
     const CallLogModel = model('CallLog', callLogSchema);
+    const ServiceBookingModel = model('ServiceBooking', serviceBookingSchema);
     const TranscriptModel = model('Transcript', transcriptSchema);
     const TranscriptChunkModel = model('TranscriptChunk', transcriptChunkSchema);
     
     // Clear existing data
     await UserModel.deleteMany({});
+    await ServiceModel.deleteMany({});
     await CallLogModel.deleteMany({});
+    await ServiceBookingModel.deleteMany({});
     await TranscriptModel.deleteMany({});
     await TranscriptChunkModel.deleteMany({});
     
@@ -272,20 +360,65 @@ async function seedData() {
     
     console.log('Created test user:', testUser.email);
     
-    // Create 30 call logs with associated transcripts and chunks
-    console.log('Creating call logs, transcripts, and chunks...');
+    // Create sample services
+    console.log('Creating sample services...');
+    const services = [];
+    for (const serviceData of sampleServices) {
+      const service = await ServiceModel.create({
+        userId: testUser._id.toString(),
+        ...serviceData
+      });
+      services.push(service);
+    }
+    console.log(`Created ${services.length} services`);
+    
+    // Create 30 call logs with associated service bookings, transcripts and chunks
+    console.log('Creating call logs, service bookings, transcripts, and chunks...');
     
     for (let i = 0; i < 30; i++) {
       const callSid = generateCallSid();
       const startDate = generateRandomDate(30); // Within last 30 days
+      const service = getRandomElement(services);
+      const callerName = getRandomElement(callerNames);
+      const callerPhone = generatePhoneNumber();
+      const address = getRandomElement(sampleAddresses);
+      
+      // Create service booking for this call
+      const serviceBooking = await ServiceBookingModel.create({
+        serviceId: service._id.toString(),
+        client: {
+          name: callerName,
+          phoneNumber: callerPhone,
+          address: address
+        },
+        serviceFormValues: [
+          {
+            serviceFieldId: 'booking_source',
+            answer: 'Phone Call'
+          },
+          {
+            serviceFieldId: 'call_sid',
+            answer: callSid
+          },
+          {
+            serviceFieldId: 'service_type',
+            answer: service.name
+          }
+        ],
+        status: getRandomElement(['Confirmed', 'Done', 'Cancelled']),
+        note: `Service booking created from phone call. CallSid: ${callSid}`,
+        bookingTime: startDate,
+        userId: testUser._id.toString(),
+        callSid: callSid
+      });
       
       // Create call log
       const callLog = await CallLogModel.create({
         callSid,
         userId: testUser._id.toString(),
-        callerNumber: generatePhoneNumber(),
-        callerName: getRandomElement(callerNames),
-        status: getRandomElement(['Completed', 'Missed', 'Follow-up']),
+        serviceBookedId: serviceBooking._id.toString(),
+        callerNumber: callerPhone,
+        callerName: callerName,
         startAt: startDate
       });
       
@@ -305,11 +438,11 @@ async function seedData() {
       }
       
       if ((i + 1) % 10 === 0) {
-        console.log(`Created ${i + 1} call logs with transcripts and chunks`);
+        console.log(`Created ${i + 1} call logs with service bookings, transcripts and chunks`);
       }
     }
     
-    console.log('Created 30 call logs with associated transcripts and chunks');
+    console.log('Created 30 call logs with associated service bookings, transcripts and chunks');
     
     console.log('Seeding completed successfully!');
     console.log('Test user credentials:');
