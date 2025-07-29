@@ -2,7 +2,6 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom, retry, timeout } from 'rxjs';
 
-import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { SYSTEM_RESPONSES } from '@/common/constants/system-responses.constant';
 import { ICallLog } from '@/common/interfaces/calllog';
 import {
@@ -239,7 +238,6 @@ export class TelephonyService {
       serviceBookedId: session.user.service?.id,
       callerNumber: twilioParams.Caller,
       callerName: session.user.userInfo.name,
-      status: this.determineCallLogStatus(session),
       startAt: new Date(twilioParams.Timestamp),
     };
 
@@ -269,13 +267,18 @@ export class TelephonyService {
     // 生成AI摘要
     try {
       const aiSummary = await this.generateAISummary(session.callSid, session);
-      
+
       // 验证和清理AI返回的数据
       const cleanedSummary = {
-        summary: typeof aiSummary.summary === 'string' ? aiSummary.summary : 'Call summary not available',
-        keyPoints: Array.isArray(aiSummary.keyPoints) ? aiSummary.keyPoints : []
+        summary:
+          typeof aiSummary.summary === 'string'
+            ? aiSummary.summary
+            : 'Call summary not available',
+        keyPoints: Array.isArray(aiSummary.keyPoints)
+          ? aiSummary.keyPoints
+          : [],
       };
-      
+
       await this.transcriptService.update(transcript._id, cleanedSummary);
       winstonLogger.log(
         `[TelephonyService][createTranscriptAndChunks] Generated AI summary for ${session.callSid}`,
@@ -285,12 +288,12 @@ export class TelephonyService {
         `[TelephonyService][createTranscriptAndChunks] Failed to generate AI summary for ${session.callSid}`,
         { error: (error as Error).message },
       );
-      
+
       // 提供fallback summary
       try {
         await this.transcriptService.update(transcript._id, {
           summary: 'Call summary generation failed',
-          keyPoints: ['Summary could not be generated']
+          keyPoints: ['Summary could not be generated'],
         });
       } catch (fallbackError) {
         winstonLogger.error(
@@ -299,16 +302,6 @@ export class TelephonyService {
         );
       }
     }
-  }
-
-  private determineCallLogStatus(session: CallSkeleton): CallLogStatus {
-    if (session.servicebooked && session.user.service) {
-      return CallLogStatus.Done;
-    }
-    if (session.user.service && !session.servicebooked) {
-      return CallLogStatus.Confirmed;
-    }
-    return CallLogStatus.Cancelled;
   }
 
   private convertMessagesToChunks(messages: Message[]): {
