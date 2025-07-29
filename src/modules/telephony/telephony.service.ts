@@ -269,7 +269,14 @@ export class TelephonyService {
     // 生成AI摘要
     try {
       const aiSummary = await this.generateAISummary(session.callSid, session);
-      await this.transcriptService.update(transcript._id, aiSummary);
+      
+      // 验证和清理AI返回的数据
+      const cleanedSummary = {
+        summary: typeof aiSummary.summary === 'string' ? aiSummary.summary : 'Call summary not available',
+        keyPoints: Array.isArray(aiSummary.keyPoints) ? aiSummary.keyPoints : []
+      };
+      
+      await this.transcriptService.update(transcript._id, cleanedSummary);
       winstonLogger.log(
         `[TelephonyService][createTranscriptAndChunks] Generated AI summary for ${session.callSid}`,
       );
@@ -278,6 +285,19 @@ export class TelephonyService {
         `[TelephonyService][createTranscriptAndChunks] Failed to generate AI summary for ${session.callSid}`,
         { error: (error as Error).message },
       );
+      
+      // 提供fallback summary
+      try {
+        await this.transcriptService.update(transcript._id, {
+          summary: 'Call summary generation failed',
+          keyPoints: ['Summary could not be generated']
+        });
+      } catch (fallbackError) {
+        winstonLogger.error(
+          `[TelephonyService][createTranscriptAndChunks] Failed to update transcript with fallback summary for ${session.callSid}`,
+          { error: (fallbackError as Error).message },
+        );
+      }
     }
   }
 
