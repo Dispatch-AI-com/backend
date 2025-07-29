@@ -23,6 +23,41 @@ export class OnboardingService {
   AU_ADDR_REGEX =
     /^(?<street>[^,]+),\s*(?<suburb>[^,]+),\s*(?<state>[A-Z]{2,3})\s+(?<postcode>\d{4})$/;
 
+  fieldValidators: Partial<
+    Record<
+      string,
+      (
+        this: OnboardingService,
+        answer: string,
+        update: UpdateQuery<OnboardingSessionDocument>,
+      ) => void | Promise<void>
+    >
+  > = {
+    'company.address.full': function (answer, update) {
+      const match = this.AU_ADDR_REGEX.exec(answer.trim());
+      if (!match?.groups) {
+        throw new BadRequestException(
+          'Unable to parse address; please check the format.',
+        );
+      }
+      update.$set['answers.company.address.streetAddress'] =
+        match.groups.street.trim();
+      update.$set['answers.company.address.suburb'] =
+        match.groups.suburb.trim();
+      update.$set['answers.company.address.state'] = match.groups.state;
+      update.$set['answers.company.address.postcode'] = match.groups.postcode;
+      update.$set['answers.company.address.full'] = answer; // raw string
+    },
+
+    'company.abn': async function (answer, update) {
+      const exists = await this.companyService.existsByAbn(answer.trim());
+      if (exists) {
+        throw new ConflictException('Company with this ABN already exists.');
+      }
+      update.$set['answers.company.abn'] = answer.trim();
+    },
+  };
+
   constructor(
     @InjectModel(OnboardingSession.name)
     private readonly sessionModel: Model<OnboardingSessionDocument>,
@@ -48,29 +83,18 @@ export class OnboardingService {
       $setOnInsert: { createdAt: new Date() },
     };
 
-    if (field === 'company.address.full') {
-      const match = this.AU_ADDR_REGEX.exec(answer.trim());
-      if (!match?.groups) {
-        throw new BadRequestException(
-          'Unable to parse address; please check the format.',
-        );
-      }
-
-      update.$set['answers.company.address.streetAddress'] =
-        match.groups.street.trim();
-      update.$set['answers.company.address.suburb'] =
-        match.groups.suburb.trim();
-      update.$set['answers.company.address.state'] = match.groups.state;
-      update.$set['answers.company.address.postcode'] = match.groups.postcode;
-      update.$set['answers.company.address.full'] = answer; // keep the raw string
+    const validator = this.fieldValidators[field];
+    if (validator) {
+      await validator.call(this, answer, update);
     } else if (field.trim()) {
-      update.$set[`answers.${field}`] = answer;
+      update.$set[`answers.${field}`] = answer.trim();
     }
 
     await this.sessionModel.updateOne({ userId }, update, { upsert: true });
+
     if (field.startsWith('user.')) {
       const [, key] = field.split('.');
-      await this.userService.patch(userId, { [key]: answer });
+      await this.userService.patch(userId, { [key]: answer.trim() });
     }
 
     return {

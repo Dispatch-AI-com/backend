@@ -44,7 +44,7 @@ export class Company {
   user!: User;
 
   @Prop({ unique: true })
-  twilioPhoneNumber!: string;
+  twilioPhoneNumber?: string;
 
   @Prop({
     type: {
