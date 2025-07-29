@@ -1,6 +1,6 @@
 import { connect, connection, model, Schema, Types } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomInt } from 'crypto';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dispatch-ai';
 const SALT_ROUNDS = 10;
@@ -204,9 +204,9 @@ const callerNames = [
 ];
 
 const generatePhoneNumber = (): string => {
-  const areaCode = Math.floor(Math.random() * 800) + 200;
-  const exchange = Math.floor(Math.random() * 800) + 200;
-  const number = Math.floor(Math.random() * 10000);
+  const areaCode = randomInt(200, 1000); // 200-999 inclusive
+  const exchange = randomInt(200, 1000); // 200-999 inclusive
+  const number = randomInt(0, 10000);    // 0-9999 inclusive
   return `${areaCode}-${exchange}-${number.toString().padStart(4, '0')}`;
 };
 
