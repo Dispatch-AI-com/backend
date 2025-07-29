@@ -4,6 +4,7 @@ import { firstValueFrom, retry, timeout } from 'rxjs';
 
 import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { SYSTEM_RESPONSES } from '@/common/constants/system-responses.constant';
+import { ICallLog } from '@/common/interfaces/calllog';
 import {
   VoiceGatherBody,
   VoiceStatusBody,
@@ -16,6 +17,7 @@ import {
   CreateServiceBookingDto,
   ServiceBookingStatus,
 } from '@/modules/service-booking/dto/create-service-booking.dto';
+import { ServiceBookingDocument } from '@/modules/service-booking/schema/service-booking.schema';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
 import {
   buildSayResponse,
@@ -192,14 +194,22 @@ export class TelephonyService {
 
     try {
       // Step 1: 把这个session里面的history作为calllog,caller,timestamp,callDuration,上传到数据库
-      await this.createCallLogRecord(session, twilioParams);
+      const callLog = await this.createCallLogRecord(session, twilioParams);
 
       // Step 2: 生成summary 关于service的booking成功没成功还是不需要预定service，calllog的总结
       await this.createTranscriptAndChunks(session);
 
       // Step 3: 如果confirmservice为true，上传service booking到数据库
       if (session.servicebooked && session.user.service) {
-        await this.createServiceBookingRecord(session);
+        const serviceBooking = await this.createServiceBookingRecord(session);
+        // Step 4: 更新calllog的serviceBookedId为实际的booking ID
+        if (callLog._id != null) {
+          await this.updateCallLogWithBookingId(
+            callLog._id,
+            String((serviceBooking as any)._id),
+            session.company.userId,
+          );
+        }
       }
 
       // Step 4: 将summary和sid发送给python完成链路（暂时跳过，按注释保留）
@@ -222,7 +232,7 @@ export class TelephonyService {
   private async createCallLogRecord(
     session: CallSkeleton,
     twilioParams: VoiceStatusBody,
-  ): Promise<void> {
+  ): Promise<ICallLog> {
     const callLogData = {
       callSid: session.callSid,
       userId: session.company.userId,
@@ -233,10 +243,11 @@ export class TelephonyService {
       startAt: new Date(twilioParams.Timestamp),
     };
 
-    await this.callLogService.create(callLogData);
+    const callLog = await this.callLogService.create(callLogData);
     winstonLogger.log(
       `[TelephonyService][createCallLogRecord] Created CallLog for ${session.callSid}`,
     );
+    return callLog;
   }
 
   private async createTranscriptAndChunks(
@@ -335,12 +346,15 @@ export class TelephonyService {
 
   private async createServiceBookingRecord(
     session: CallSkeleton,
-  ): Promise<void> {
-    if (session.user.service == null || session.user.serviceBookedTime == null) {
+  ): Promise<ServiceBookingDocument> {
+    if (
+      session.user.service == null ||
+      session.user.serviceBookedTime == null
+    ) {
       winstonLogger.warn(
         `[TelephonyService][createServiceBookingRecord] Missing service or booking time for ${session.callSid}`,
       );
-      return;
+      return {} as ServiceBookingDocument;
     }
 
     // 构建客户地址字符串
@@ -385,6 +399,7 @@ export class TelephonyService {
       status: ServiceBookingStatus.Confirmed,
       note: `Service booked via phone call. CallSid: ${session.callSid}`,
       userId: session.company.userId,
+      callSid: session.callSid,
     };
 
     try {
@@ -393,12 +408,34 @@ export class TelephonyService {
       winstonLogger.log(
         `[TelephonyService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${String((serviceBooking as any)._id)}`,
       );
+      return serviceBooking as ServiceBookingDocument;
     } catch (error) {
       winstonLogger.error(
         `[TelephonyService][createServiceBookingRecord] Failed to create service booking for ${session.callSid}`,
         { error: (error as Error).message, stack: (error as Error).stack },
       );
       throw error;
+    }
+  }
+
+  private async updateCallLogWithBookingId(
+    callLogId: string,
+    serviceBookingId: string,
+    userId: string,
+  ): Promise<void> {
+    try {
+      await this.callLogService.update(userId, callLogId, {
+        serviceBookedId: serviceBookingId,
+      });
+      winstonLogger.log(
+        `[TelephonyService][updateCallLogWithBookingId] Updated CallLog ${callLogId} with ServiceBooking ID ${serviceBookingId}`,
+      );
+    } catch (error) {
+      winstonLogger.error(
+        `[TelephonyService][updateCallLogWithBookingId] Failed to update CallLog ${callLogId}`,
+        { error: (error as Error).message, stack: (error as Error).stack },
+      );
+      // Don't throw - this is not critical enough to fail the whole process
     }
   }
 }

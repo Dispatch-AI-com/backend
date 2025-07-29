@@ -45,6 +45,9 @@ export class ServiceBooking {
 
   @Prop({ required: true })
   userId!: string;
+
+  @Prop()
+  callSid?: string;
 }
 
 export const ServiceBookingSchema =
