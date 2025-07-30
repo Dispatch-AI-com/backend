@@ -410,7 +410,7 @@ export class TelephonyService {
       ],
       bookingTime: session.user.serviceBookedTime,
       status: ServiceBookingStatus.Confirmed,
-      note: `Service booked via phone call. CallSid: ${session.callSid}`,
+      note: `Service booked via phone call.`,
       userId: session.company.userId,
       callSid: session.callSid,
     };
