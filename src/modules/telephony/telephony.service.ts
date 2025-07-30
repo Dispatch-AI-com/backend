@@ -390,7 +390,7 @@ export class TelephonyService {
       }
     }
 
-    // 构建service booking数据
+    // create service booking data
     const serviceBookingData: CreateServiceBookingDto = {
       serviceId: session.user.service.id,
       client: {
