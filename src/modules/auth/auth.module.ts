@@ -24,7 +24,9 @@ import { UserModule } from '@/modules/user/user.module';
         signOptions: { expiresIn: JWT_EXPIRATION_TIME },
       }),
     }),
-    MongooseModule.forFeature([{ name: User.name, schema: userSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: userSchema }
+    ]),
     DatabaseModule,
     UserModule,
   ],

@@ -13,11 +13,14 @@ import { SALT_ROUNDS } from '@/modules/auth/auth.config';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
+import { GoogleCalendarAuthService } from '@/modules/user/google-calendar-auth.service';
+
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly jwtService: JwtService,
+    private readonly googleCalendarAuthService: GoogleCalendarAuthService,
   ) {}
 
   async validateUser(email: string, password: string): Promise<User> {
@@ -126,5 +129,106 @@ export class AuthService {
     });
 
     return { user: user.toObject() as User, token };
+  }
+
+  async handleGoogleCallback(code: string, userId: string) {
+    const tokenResponse = await this.exchangeCodeForTokens(code);
+    
+    await this.googleCalendarAuthService.upsertAuth(
+      userId,
+      tokenResponse.access_token,
+      tokenResponse.refresh_token,
+      new Date(Date.now() + tokenResponse.expires_in * 1000)
+    );
+    
+    return { success: true };
+  }
+
+  async generateGoogleAuthUrl(userId?: string): Promise<string> {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    const scope = 'https://www.googleapis.com/auth/calendar';
+    
+    let authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${redirectUri}&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `response_type=code&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+    
+    if (userId) {
+      authUrl += `&state=${userId}`;
+    }
+    
+    return authUrl;
+  }
+
+  async refreshGoogleToken(userId: string) {
+    const auth = await this.googleCalendarAuthService.getAuthByUserId(userId);
+    if (!auth || !auth.refreshToken) {
+      throw new UnauthorizedException('No refresh token found');
+    }
+
+    const tokenResponse = await this.refreshAccessToken(auth.refreshToken);
+    
+    await this.googleCalendarAuthService.upsertAuth(
+      userId,
+      tokenResponse.access_token,
+      auth.refreshToken,
+      new Date(Date.now() + tokenResponse.expires_in * 1000)
+    );
+    
+    return { success: true, expiresIn: tokenResponse.expires_in };
+  }
+
+  private async exchangeCodeForTokens(code: string) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: clientId!,
+        client_secret: clientSecret!,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: redirectUri!,
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new UnauthorizedException('Failed to exchange code for tokens');
+    }
+    
+    return response.json();
+  }
+
+  private async refreshAccessToken(refreshToken: string) {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: clientId!,
+        client_secret: clientSecret!,
+        refresh_token: refreshToken,
+        grant_type: 'refresh_token',
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new UnauthorizedException('Failed to refresh access token');
+    }
+    
+    return response.json();
   }
 }

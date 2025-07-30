@@ -42,6 +42,12 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: VerifyCallback,
   ): Promise<void> {
     try {
+      console.log('Google OAuth callback received:', { 
+        accessToken: accessToken ? 'present' : 'missing',
+        refreshToken: refreshToken ? 'present' : 'missing',
+        profileId: profile.id 
+      });
+
       const { id, name, emails, photos } = profile;
 
       const googleUser = {
@@ -52,11 +58,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         avatar: photos[0].value,
       };
 
+      console.log('Processing Google user:', googleUser.email);
+
       let user = await this.userModel.findOne({
         $or: [{ email: googleUser.email }, { googleId: googleUser.googleId }],
       });
 
       if (!user) {
+        console.log('Creating new user');
         user = new this.userModel({
           email: googleUser.email,
           firstName: googleUser.firstName,
@@ -68,6 +77,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         });
         await user.save();
       } else if (user.googleId == null) {
+        console.log('Updating existing user with Google ID');
         user.googleId = googleUser.googleId;
         user.avatar = googleUser.avatar;
         user.provider = 'google';
@@ -80,6 +90,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         role: user.role,
       });
 
+      console.log('Saving Google Calendar auth tokens');
       await this.googleCalendarAuthModel.findOneAndUpdate(
         { userId: user._id },
         { 
@@ -94,8 +105,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         user: user.toObject() as User, 
         token
       };
+      console.log('Google OAuth completed successfully');
       done(null, result);
-    } catch {
+    } catch (error) {
+      console.error('Google OAuth error:', error);
       done(new UnauthorizedException('Google authentication failed'), false);
     }
   }

@@ -6,6 +6,7 @@ import {
   Req,
   Res,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -126,5 +127,79 @@ export class AuthController {
     res.redirect(
       `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}&googleAccessToken=${googleAccessToken}&googleRefreshToken=${googleRefreshToken}`,
     );
+  }
+
+  @ApiOperation({
+    summary: 'Generate Google OAuth URL',
+    description: 'Generate OAuth authorization URL for Google Calendar',
+  })
+  @ApiResponse({ status: 200, description: 'OAuth URL generated' })
+  @Post('google/authorize')
+  async generateGoogleAuthUrl(): Promise<{ authUrl: string }> {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    const scope = 'https://www.googleapis.com/auth/calendar';
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${redirectUri}&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `response_type=code&` +
+      `access_type=offline&` +
+      `prompt=consent`;
+    
+    return { authUrl };
+  }
+
+  @ApiOperation({
+    summary: 'Handle Google OAuth Callback',
+    description: 'Process OAuth callback and save tokens',
+  })
+  @ApiResponse({ status: 200, description: 'OAuth callback processed' })
+  @Post('google/callback')
+  async handleGoogleCallback(@Body() body: { code: string; userId?: string }) {
+    try {
+      // 如果没有提供 userId，尝试从 JWT 中获取
+      let userId = body.userId;
+      
+      if (!userId) {
+        // 这里需要从当前用户的 JWT 中获取 userId
+        // 或者通过其他方式确定用户身份
+        throw new BadRequestException('userId is required');
+      }
+      
+      // 调用 service 处理授权码
+      const result = await this.authService.handleGoogleCallback(body.code, userId);
+      return result;
+    } catch (error) {
+      throw new BadRequestException(`Failed to process Google callback: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Link Google Account',
+    description: 'Link existing user account with Google',
+  })
+  @ApiResponse({ status: 200, description: 'Google account linked' })
+  @UseGuards(AuthGuard('jwt'))
+  @Post('link-google-account')
+  async linkGoogleAccount(@Req() req: Request) {
+    const userId = (req.user as any).userId;
+    // 生成授权 URL 并返回
+    const authUrl = await this.authService.generateGoogleAuthUrl(userId);
+    return { authUrl };
+  }
+
+  @ApiOperation({
+    summary: 'Refresh Google Access Token',
+    description: 'Refresh expired access token using refresh token',
+  })
+  @ApiResponse({ status: 200, description: 'Token refreshed' })
+  @UseGuards(AuthGuard('jwt'))
+  @Post('google/refresh-token')
+  async refreshGoogleToken(@Req() req: Request) {
+    const userId = (req.user as any).userId;
+    const result = await this.authService.refreshGoogleToken(userId);
+    return result;
   }
 }
