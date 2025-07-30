@@ -105,14 +105,6 @@ export class CreateCompanyDto {
   email!: string;
 
   @ApiProperty({
-    description: 'Company phone number',
-    example: '+61 2 1234 5678',
-  })
-  @IsString({ message: 'Phone number must be a string' })
-  @IsNotEmpty({ message: 'Phone number cannot be empty' })
-  number!: string;
-
-  @ApiProperty({
     description: 'Company ABN',
     example: '12345678901',
   })

@@ -14,8 +14,6 @@ export interface AddressAnswers {
 export interface CompanyAnswers {
   businessName: string;
   abn: string;
-  number: string;
-  email: string;
   address: AddressAnswers;
 }
 
