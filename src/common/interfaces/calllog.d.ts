@@ -1,12 +1,9 @@
-import type { CallLogStatus } from '../constants/calllog.constant';
-
 export interface ICallLog {
   _id?: string;
   userId: string;
   serviceBookedId?: string;
   callerNumber: string;
   callerName?: string;
-  status: CallLogStatus;
   startAt: Date;
   endAt?: Date;
   audioId?: string;
@@ -32,20 +29,15 @@ export interface ICallLogResponse {
 
 export interface ICallLogMetrics {
   totalCalls: number;
-  liveCalls: number;
 }
 
 export interface ICallLogSummary {
   totalCalls: number;
-  completedCalls: number;
-  missedCalls: number;
-  followUpCalls: number;
   averageCallDuration: number;
 }
 
 export interface FindAllOptions {
   userId: string;
-  status?: CallLogStatus;
   search?: string;
   startAtFrom?: string;
   startAtTo?: string;

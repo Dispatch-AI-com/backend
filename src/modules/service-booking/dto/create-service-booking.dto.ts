@@ -70,4 +70,8 @@ export class CreateServiceBookingDto {
   @IsString()
   @IsNotEmpty()
   userId!: string;
+
+  @IsString()
+  @IsOptional()
+  callSid?: string;
 }

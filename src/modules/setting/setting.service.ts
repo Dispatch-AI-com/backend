@@ -290,9 +290,9 @@ export class SettingService {
       {
         mobile: profileDto.contact,
         // Reset mobile verification if phone number changed
-        mobileVerified: false
+        mobileVerified: false,
       },
-      { upsert: false }
+      { upsert: false },
     );
 
     return updatedUser;
