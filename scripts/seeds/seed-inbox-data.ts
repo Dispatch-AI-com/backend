@@ -1,6 +1,8 @@
-import { connect, connection, model, Schema, Types } from 'mongoose';
-import * as bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { randomUUID, randomInt } from 'crypto';
+
+const { connect, connection, model, Schema, Types } = mongoose;
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dispatch-ai';
 const SALT_ROUNDS = 10;

@@ -71,7 +71,17 @@ export class TranscriptChunkService {
   async findAll(
     transcriptId: string,
     query: QueryTranscriptChunkDto,
-  ): Promise<ITranscriptChunk[]> {
+  ): Promise<{
+    data: ITranscriptChunk[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }> {
     if (!Types.ObjectId.isValid(transcriptId)) {
       throw new BadRequestException('Invalid transcript ID');
     }
@@ -97,8 +107,12 @@ export class TranscriptChunkService {
     }
 
     const page = query.page ?? 1;
-    const limit = query.limit ?? 10;
+    const limit = query.limit ?? 20; // 改为默认20个
     const skip = (page - 1) * limit;
+
+    // Get total count for pagination
+    const total = await this.transcriptChunkModel.countDocuments(filter);
+    const totalPages = Math.ceil(total / limit);
 
     const chunks = await this.transcriptChunkModel
       .find(filter)
@@ -107,7 +121,17 @@ export class TranscriptChunkService {
       .limit(limit)
       .exec();
 
-    return chunks.map(chunk => this.convertToITranscriptChunk(chunk));
+    return {
+      data: chunks.map(chunk => this.convertToITranscriptChunk(chunk)),
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   }
 
   async findOne(transcriptId: string, id: string): Promise<ITranscriptChunk> {

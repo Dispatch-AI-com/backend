@@ -32,5 +32,5 @@ export class QueryTranscriptChunkDto {
   @IsNumber()
   @Min(1)
   @Type(() => Number)
-  limit?: number = 10;
+  limit?: number = 20;
 }

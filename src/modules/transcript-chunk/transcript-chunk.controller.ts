@@ -65,7 +65,17 @@ export class TranscriptChunkController {
   findAll(
     @Param('transcriptId') transcriptId: string,
     @Query() query: QueryTranscriptChunkDto,
-  ): Promise<ITranscriptChunk[]> {
+  ): Promise<{
+    data: ITranscriptChunk[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }> {
     return this.transcriptChunkService.findAll(transcriptId, query);
   }
 
