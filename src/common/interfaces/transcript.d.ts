@@ -21,11 +21,3 @@ export interface ITranscriptChunk {
   createdAt?: Date;
   updatedAt?: Date;
 }
-
-export interface ISanitizedUpdate {
-  speakerType?: SpeakerType;
-  text?: string;
-  startAt?: number;
-  endAt?: number;
-  transcriptId?: Types.ObjectId;
-}
