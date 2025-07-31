@@ -18,7 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
+import { ITranscriptChunk } from '@/common/interfaces/transcript';
 
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';
@@ -65,7 +65,17 @@ export class TranscriptChunkController {
   findAll(
     @Param('transcriptId') transcriptId: string,
     @Query() query: QueryTranscriptChunkDto,
-  ): Promise<ITranscriptChunk[]> {
+  ): Promise<{
+    data: ITranscriptChunk[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+      hasNextPage: boolean;
+      hasPrevPage: boolean;
+    };
+  }> {
     return this.transcriptChunkService.findAll(transcriptId, query);
   }
 
