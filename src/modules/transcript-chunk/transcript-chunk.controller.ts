@@ -18,7 +18,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
+import { ITranscriptChunk } from '@/common/interfaces/transcript';
 
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
 import { QueryTranscriptChunkDto } from './dto/query-transcript-chunk.dto';

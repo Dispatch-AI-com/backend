@@ -6,7 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { ITranscriptChunk } from '@/common/interfaces/transcript-chunk';
+import { ITranscriptChunk } from '@/common/interfaces/transcript';
 
 import { Transcript } from '../transcript/schema/transcript.schema';
 import { CreateTranscriptChunkDto } from './dto/create-transcript-chunk.dto';
