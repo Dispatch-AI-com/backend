@@ -370,25 +370,9 @@ export class TelephonyService {
       return {} as ServiceBookingDocument;
     }
 
-    // 构建客户地址字符串
+    // 获取客户地址字符串 (simplified address structure)
     const userInfo = session.user.userInfo;
-    const address = userInfo.address;
-    let addressString = 'Address not provided';
-
-    if (address != null) {
-      const addressParts = [
-        address.street_number != null && address.street_name != null
-          ? `${address.street_number} ${address.street_name}`
-          : null,
-        address.suburb,
-        address.state,
-        address.postcode,
-      ].filter(Boolean);
-
-      if (addressParts.length > 0) {
-        addressString = addressParts.join(', ');
-      }
-    }
+    const addressString = userInfo.address || 'Address not provided';
 
     // create service booking data
     const serviceBookingData: CreateServiceBookingDto = {
