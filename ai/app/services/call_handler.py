@@ -24,10 +24,10 @@ from openai import OpenAI
 from .retrieve.customer_info_extractors import (
     extract_name_from_conversation,
     extract_phone_from_conversation,
-    extract_street_from_conversation,
-    extract_suburb_from_conversation,
-    extract_state_from_conversation,
-    extract_postcode_from_conversation,
+    extract_address_from_conversation,
+    #extract_suburb_from_conversation,
+    #extract_state_from_conversation,
+    #extract_postcode_from_conversation,
     extract_service_from_conversation,
     extract_time_from_conversation
 )
@@ -42,14 +42,14 @@ from config import settings
 
 
 class CustomerServiceState(TypedDict):
-    """Customer service system state definition - Updated for 8-step workflow"""
+    """Customer service system state definition - Updated for 5-step workflow"""
     # User information
     name: Optional[str]
     phone: Optional[str]
-    street: Optional[str]      # New: street number and name
-    suburb: Optional[str]      # New: suburb
-    state: Optional[str]       # New: state/territory
-    postcode: Optional[str]    # New: postcode
+    address: Optional[str]      # New: only address is required. 
+    #suburb: Optional[str]      # remove: suburb
+    #state: Optional[str]       # remove: state/territory
+    #postcode: Optional[str]    # remove: postcode
     service: Optional[str]
     service_id: Optional[str]        # New: service ID
     service_price: Optional[float]   # New: service price
@@ -58,14 +58,14 @@ class CustomerServiceState(TypedDict):
     service_time: Optional[str]
     service_time_mongodb: Optional[str]  # MongoDB datetime format
     
-    # Process control - Updated for 7-step workflow (removed email)
-    current_step: Literal["collect_name", "collect_phone", "collect_street", "collect_suburb", "collect_state", "collect_postcode", "collect_service", "collect_time", "completed"]
+    # Process control - Updated for 5-step workflow (removed email)
+    current_step: Literal["collect_name", "collect_phone", "collect_address", "collect_service", "collect_time", "completed"]
     name_attempts: int
     phone_attempts: int
-    street_attempts: int       # New
-    suburb_attempts: int       # New
-    state_attempts: int        # New
-    postcode_attempts: int     # New
+    address_attempts: int       # New: only address is required.
+    #suburb_attempts: int       # remove
+    #state_attempts: int        # remove
+    #postcode_attempts: int     # remove
     service_attempts: int
     time_attempts: int
     max_attempts: int
@@ -78,10 +78,10 @@ class CustomerServiceState(TypedDict):
     # Status flags - Updated for 7-step workflow (removed email)
     name_complete: bool
     phone_complete: bool
-    street_complete: bool      # New
-    suburb_complete: bool      # New
-    state_complete: bool       # New
-    postcode_complete: bool    # New
+    address_complete: bool      # New:only address is requried. 
+    #suburb_complete: bool      # New
+    #state_complete: bool       # New
+    #postcode_complete: bool    # New
     service_complete: bool
     time_complete: bool
     conversation_complete: bool
@@ -244,7 +244,7 @@ class CustomerServiceLangGraph:
             # Local state update
             state["phone"] = cleaned_phone
             state["phone_complete"] = True
-            state["current_step"] = "collect_street"
+            state["current_step"] = "collect_address"
             
             # Real-time Redis update
             if call_sid:
@@ -266,72 +266,72 @@ class CustomerServiceLangGraph:
             
             if state["phone_attempts"] >= state["max_attempts"]:
                 print(f"❌ Phone collection failed, reached maximum attempts ({state['max_attempts']})")
-                state["current_step"] = "collect_street"  # Skip to next step
+                state["current_step"] = "collect_address"  # Skip to next step
             else:
                 print(f"⚠️ Phone extraction failed, attempt: {state['phone_attempts']}/{state['max_attempts']}")
         
         return state
 
-    def process_street_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
+    def process_address_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process street collection step"""
         # Initialize attempts counter if not present
-        if "street_attempts" not in state or state["street_attempts"] is None:
-            state["street_attempts"] = 0
+        if "address_attempts" not in state or state["address_attempts"] is None:
+            state["address_attempts"] = 0
         
         # Initialize max_attempts if not present
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
         
         # Call LLM to extract street
-        result = extract_street_from_conversation(state)
+        result = extract_address_from_conversation(state)
         state["last_llm_response"] = result
         
         # Check if street was extracted
-        extracted_info = result["info_extracted"]
-        street_number = extracted_info.get("street_number")
-        street_name = extracted_info.get("street_name")
+        extracted_address = result["info_extracted"].get("address")
+        #address = extracted_info.get("address")
+        #street_name = extracted_info.get("street_name")
         is_complete = result["info_complete"]
         
-        if is_complete and street_number and street_name:
+        if is_complete and extracted_address:
             # Combine street number and name for local state
-            full_street = f"{street_number} {street_name}".strip()
-            
+            #full_street = f"{street_number} {street_name}".strip()
+            cleaned_address=extracted_address.strip()
             # Local state update
-            state["street"] = full_street
-            state["street_complete"] = True
-            state["current_step"] = "collect_suburb"
+            state["address"] = cleaned_address
+            state["address_complete"] = True
+            state["current_step"] = "collect_service"
             
             # Real-time Redis update - save as nested address structure
             if call_sid:
-                street_number_success = update_user_info_field(
+                redis_success = update_user_info_field(
                     call_sid=call_sid,
-                    field_name="address.street_number",
-                    field_value=street_number
+                    field_name="address",
+                    field_value=cleaned_address
                 )
-                street_name_success = update_user_info_field(
+                '''street_name_success = update_user_info_field(
                     call_sid=call_sid,
                     field_name="address.street_name",
                     field_value=street_name
                 )
-
-                if street_number_success and street_name_success:
-                    print(f"✅ Street extracted and saved successfully: {full_street}")
+                '''
+                if redis_success:
+                    print(f"✅ Street extracted and saved successfully: {cleaned_address}")
                 else:
-                    print(f"⚠️ Street extracted successfully but Redis save failed: {full_street}")
+                    print(f"⚠️ Street extracted successfully but Redis save failed: {cleaned_address}")
             
-            print(f"✅ Street collection completed: {full_street}")
+            print(f"✅ Street collection completed: {cleaned_address}")
         else:
             # Increment attempt count
-            state["street_attempts"] += 1
+            state["address_attempts"] += 1
             
-            if state["street_attempts"] >= state["max_attempts"]:
-                print(f"❌ Street collection failed, reached maximum attempts ({state['max_attempts']})")
-                state["current_step"] = "collect_suburb"  # Skip to next step
+            if state["address_attempts"] >= state["max_attempts"]:
+                print(f"❌ Address collection failed, reached maximum attempts ({state['max_attempts']})")
+                state["current_step"] = "collect_service"  # Skip to next step
             else:
-                print(f"⚠️ Street extraction failed, attempt: {state['street_attempts']}/{state['max_attempts']}")
+                print(f"⚠️ Address extraction failed, attempt: {state['address_attempts']}/{state['max_attempts']}")
         
         return state
-
+    '''
     def process_suburb_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process suburb collection step"""
         # Initialize attempts counter if not present
@@ -437,89 +437,7 @@ class CustomerServiceLangGraph:
                 print(f"⚠️ State extraction failed, attempt: {state['state_attempts']}/{state['max_attempts']}")
         
         return state
-
-    def process_postcode_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Process postcode collection step"""
-        # Initialize attempts counter if not present
-        if "postcode_attempts" not in state or state["postcode_attempts"] is None:
-            state["postcode_attempts"] = 0
-        
-        # Initialize max_attempts if not present
-        if "max_attempts" not in state or state["max_attempts"] is None:
-            state["max_attempts"] = settings.max_attempts
-        
-        # Call LLM to extract postcode
-        result = extract_postcode_from_conversation(state)
-        state["last_llm_response"] = result
-        
-        # Check if postcode was extracted
-        extracted_postcode = result["info_extracted"].get("postcode")
-        is_complete = result["info_complete"]
-        
-        if is_complete and extracted_postcode:
-            # Clean and standardize postcode
-            cleaned_postcode = extracted_postcode.strip()
-            
-            # Local state update
-            state["postcode"] = cleaned_postcode
-            state["postcode_complete"] = True
-            state["current_step"] = "collect_service"
-            
-            # Real-time Redis update - save as nested address structure
-            if call_sid:
-                redis_success = update_user_info_field(
-                    call_sid=call_sid,
-                    field_name="address.postcode",
-                    field_value=cleaned_postcode
-                )
-                
-                if redis_success:
-                    print(f"✅ Postcode extracted and saved successfully: {cleaned_postcode}")
-                else:
-                    print(f"⚠️ Postcode extracted successfully but Redis save failed: {cleaned_postcode}")
-            
-            # After postcode is complete, build complete Address object and save to Redis
-            '''if all([state.get("street"), state.get("suburb"), state.get("state"), state.get("postcode")]):
-                # Parse street into number and name
-                street_parts = state["street"].split(" ", 1)
-                street_number = street_parts[0] if len(street_parts) > 0 else ""
-                street_name = street_parts[1] if len(street_parts) > 1 else ""
-                
-                address_obj = Address(
-                    street_number=street_number,
-                    street_name=street_name,
-                    suburb=state["suburb"],
-                    state=state["state"],
-                    postcode=state["postcode"]
-                )
-                
-                # Save complete address to Redis
-                if call_sid:
-                    redis_success = update_user_info_field(
-                        call_sid=call_sid,
-                        field_name="address",
-                        field_value=address_obj
-                    )
-                    
-                    if redis_success:
-                        print(f"✅ Complete address saved to Redis: {state['street']}, {state['suburb']}, {state['state']} {state['postcode']}")
-                    else:
-                        print(f"⚠️ Failed to save complete address to Redis")
-            '''
-            print(f"✅ Postcode collection completed: {cleaned_postcode}")
-        else:
-            # Increment attempt count
-            state["postcode_attempts"] += 1
-            
-            if state["postcode_attempts"] >= state["max_attempts"]:
-                print(f"❌ Postcode collection failed, reached maximum attempts ({state['max_attempts']})")
-                state["current_step"] = "collect_service"  # Skip to next step
-            else:
-                print(f"⚠️ Postcode extraction failed, attempt: {state['postcode_attempts']}/{state['max_attempts']}")
-        
-        return state
-
-
+    '''
     def process_service_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Process service collection step"""
         # Initialize attempts counter if not present
@@ -712,20 +630,22 @@ class CustomerServiceLangGraph:
             CustomerServiceState: Updated state object
         """
         # Determine current step to execute based on completion status
-        print(f"🔍 Workflow state: name={state['name_complete']}, phone={state['phone_complete']}, street={state.get('street_complete', False)}, suburb={state.get('suburb_complete', False)}, state={state.get('state_complete', False)}, postcode={state.get('postcode_complete', False)}")
+        print(f"🔍 Workflow state: name={state['name_complete']}, phone={state['phone_complete']}, address={state['address_complete']}")
         
         if not state["name_complete"]:
             state = self.process_name_collection(state, call_sid)
         elif not state["phone_complete"]:
             state = self.process_phone_collection(state, call_sid)
-        elif not state.get("street_complete", False):
-            state = self.process_street_collection(state, call_sid)
-        elif not state.get("suburb_complete", False):
-            state = self.process_suburb_collection(state, call_sid)
-        elif not state.get("state_complete", False):
-            state = self.process_state_collection(state, call_sid)
-        elif not state.get("postcode_complete", False):
-            state = self.process_postcode_collection(state, call_sid)
+        elif not state["address_complete"]:
+            state = self.process_address_collection(state, call_sid)
+        #elif not state.get("street_complete", False):
+         #   state = self.process_street_collection(state, call_sid)
+        #elif not state.get("suburb_complete", False):
+         #   state = self.process_suburb_collection(state, call_sid)
+        #elif not state.get("state_complete", False):
+         #   state = self.process_state_collection(state, call_sid)
+        #elif not state.get("postcode_complete", False):
+         #   state = self.process_postcode_collection(state, call_sid)
         elif not state["service_complete"]:
             state = self.process_service_collection(state, call_sid)
         elif not state["time_complete"]:
@@ -759,12 +679,13 @@ class CustomerServiceLangGraph:
         # Basic information
         print(f"👤 Name: {state.get('name', 'Not collected')} {'✅' if state.get('name_complete') else '❌'}")
         print(f"📞 Phone: {state.get('phone', 'Not collected')} {'✅' if state.get('phone_complete') else '❌'}")
+        print(f"📞 Phone: {state.get('address', 'Not collected')} {'✅' if state.get('address_complete') else '❌'}")
         
         # Address components
-        print(f"🏠 Street: {state.get('street', 'Not collected')} {'✅' if state.get('street_complete') else '❌'}")
-        print(f"🏘️ Suburb: {state.get('suburb', 'Not collected')} {'✅' if state.get('suburb_complete') else '❌'}")
-        print(f"🗺️ State: {state.get('state', 'Not collected')} {'✅' if state.get('state_complete') else '❌'}")
-        print(f"📮 Postcode: {state.get('postcode', 'Not collected')} {'✅' if state.get('postcode_complete') else '❌'}")
+        #print(f"🏠 Street: {state.get('street', 'Not collected')} {'✅' if state.get('street_complete') else '❌'}")
+        #print(f"🏘️ Suburb: {state.get('suburb', 'Not collected')} {'✅' if state.get('suburb_complete') else '❌'}")
+        #print(f"🗺️ State: {state.get('state', 'Not collected')} {'✅' if state.get('state_complete') else '❌'}")
+        #print(f"📮 Postcode: {state.get('postcode', 'Not collected')} {'✅' if state.get('postcode_complete') else '❌'}")
         
         
         # Service information
@@ -797,10 +718,10 @@ class CustomerServiceLangGraph:
         print("\n📈 Attempt Count Statistics:")
         print(f"  • Name: {state.get('name_attempts', 0)}/{state.get('max_attempts', 3)}")
         print(f"  • Phone: {state.get('phone_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • Street: {state.get('street_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • Suburb: {state.get('suburb_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • State: {state.get('state_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • Postcode: {state.get('postcode_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • Address: {state.get('address_attempts', 0)}/{state.get('max_attempts', 3)}")
+        #print(f"  • Suburb: {state.get('suburb_attempts', 0)}/{state.get('max_attempts', 3)}")
+        #print(f"  • State: {state.get('state_attempts', 0)}/{state.get('max_attempts', 3)}")
+        #print(f"  • Postcode: {state.get('postcode_attempts', 0)}/{state.get('max_attempts', 3)}")
         print(f"  • Service: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}")
         print(f"  • Time: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}")
         
@@ -819,41 +740,44 @@ class CustomerServiceLangGraph:
             "customer_info": {
                 "name": state.get("name"),
                 "phone": state.get("phone"),
-                "address": {
+                "address": state.get("address"),
+                '''"address": {
                     "street_number": state.get("street_number"),
                     "street_name": state.get("street_name"),
                     "suburb": state.get("suburb"),
                     "state": state.get("state"),
                     "postcode": state.get("postcode")
-                },
+                },'''
                 "service": state.get("service"),
                 "service_time": state.get("service_time")
             },
             "collection_status": {
                 "name_complete": state.get("name_complete", False),
                 "phone_complete": state.get("phone_complete", False),
-                "address_complete": {
+                "address_complete": state.get("address_complete", False),
+                '''"address_complete": {
                     "street_number_complete": state.get("street_number_complete", False),
                     "street_name_complete": state.get("street_name_complete", False),
                     "street_complete": state.get("street_complete", False),
                     "suburb_complete": state.get("suburb_complete", False),
                     "state_complete": state.get("state_complete", False),
                     "postcode_complete": state.get("postcode_complete", False)
-                },
+                },'''
                 "service_complete": state.get("service_complete", False),
                 "time_complete": state.get("time_complete", False)
             },
             "attempts": {
                 "name_attempts": state.get("name_attempts", 0),
                 "phone_attempts": state.get("phone_attempts", 0),
-                "address_attempts": {
+                "address_attempts": state.get("address_attempts", 0),
+                '''"address_attempts": {
                     "street_number_attempts": state.get("street_number_attempts", 0),
                     "street_name_attempts": state.get("street_name_attempts", 0),
                     "street_attempts": state.get("street_attempts", 0),
                     "suburb_attempts": state.get("suburb_attempts", 0),
                     "state_attempts": state.get("state_attempts", 0),
                     "postcode_attempts": state.get("postcode_attempts", 0)
-                },
+                },'''
                 "service_attempts": state.get("service_attempts", 0),
                 "time_attempts": state.get("time_attempts", 0)
             }
@@ -874,10 +798,10 @@ class CustomerServiceLangGraph:
         state: CustomerServiceState = {
             "name": None,
             "phone": None,
-            "street": None,
-            "suburb": None,
-            "state": None,
-            "postcode": None,
+            "address": None,
+            #"suburb": None,
+            #"state": None,
+            #"postcode": None,
             "service": None,
             "service_time": None,
             "current_step": "collect_name",
@@ -895,10 +819,10 @@ class CustomerServiceLangGraph:
             "last_llm_response": None,
             "name_complete": False,
             "phone_complete": False,
-            "street_complete": False,
-            "suburb_complete": False,
-            "state_complete": False,
-            "postcode_complete": False,
+            "address_complete": False,
+            #"suburb_complete": False,
+            #"state_complete": False,
+            #"postcode_complete": False,
             "service_complete": False,
             "time_complete": False,
             "conversation_complete": False,

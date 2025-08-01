@@ -40,7 +40,7 @@ class Service(BaseModel):
 
 
 class Address(BaseModel):
-    street_number: str = Field(default="", description="Street number")
+    street_number: str = Field(default="", description="Street number")         #any hanlding on this?
     street_name: str = Field(default="", description="Street name")
     suburb: str = Field(default="", description="Suburb")
     state: str = Field(default="", description="State")

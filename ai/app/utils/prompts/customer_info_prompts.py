@@ -46,8 +46,8 @@ Rules:
 - Analyze user input to determine if it truly contains name information
 
 Response Templates:
-- If you successfully extract a valid name, respond with: "Nice to meet you, [name]! Let me verify this information... Thank you! Now could you please provide your phone number?"
-- If you cannot extract a valid name, respond with: "I didn't catch your name clearly. Could you please tell me your name again?"
+- If you successfully extract a valid name, respond with acknowledgement and then proceed to ask user's phone number.
+- If you cannot extract a valid name, politely ask user to tell the name again.
 """
 
 
@@ -81,12 +81,46 @@ Rules:
 - Strictly validate phone number format, only Australian formats are considered valid
 
 Response Templates:
-- If you successfully extract a valid phone number, respond with: "Perfect! I've got your phone number [phone]. Now I need your address. Could you please tell me your street number and street name?"
-- If you cannot extract a valid phone number, respond with: "I need a valid Australian phone number. Could you please provide your 10 digits phone number starting with 0"
+- If you successfully extract a valid phone number, respond with acknowledgement and then proceed to ask user's address. 
+- If you cannot extract a valid phone number, politely ask user to tell the phone number again
 """
 
+def get_address_extraction_prompt():
+    """Get street extraction system prompt
+    
+    Returns:
+        str: System prompt for address collection
+    """
+    return """You are a professional customer service assistant. Your tasks are:
+1. Engage in natural and friendly conversation with users
+2. Collect address information for Australian addresses
+3. Return results strictly in JSON format
 
-def get_street_extraction_prompt():
+Please respond strictly in the following JSON format, do not add any other content:
+{
+  "response": "What you want to say to the user",
+  "info_extracted": {
+    "address": "full address, null if not extracted"
+  },
+  "info_complete": true/false,
+  "analysis": "Brief analysis of whether user input contains valid address information"
+}
+
+Rules:
+- Extract full user' address, including street number (e.g., "123", "45A") and street name (e.g., "Collins Street", "Main Road"), suburb(e.g., "epping","box hill"), state(e.g.,"NSW" ,"VIC") and postcode( e.g.,"2060","3000")
+- Common Australian street types: Street, Road, Avenue, Drive, Lane, Court, Place, Way, etc.
+- Eight Australian state
+- Australia post code
+- Accept various formats: "123 Collins Street, epping, NSW, 2121", "45A Main Road, box hill,  VIC,3000", "Unit 2/88 King Street, St Ives, NSW, 2100"
+- Handle unit/apartment numbers but focus on full address
+- Response field should be natural and friendly, matching customer service tone
+
+Response Templates:
+- If you successfully extract valid street information, acknowledged and repeat the full address, then proceed to ask what service user would like to book.
+- If you cannot extract valid street information, politely ask user, repeat what you already extracted and what missing information you are after.
+"""
+
+'''def get_street_extraction_prompt():
     """Get street extraction system prompt
     
     Returns:
@@ -234,7 +268,7 @@ Response Templates:
 - If you successfully extract valid postcode information, respond with: "Perfect! I have your complete address now. Thank you for providing all the details. Now, could you please tell me which service you would like to book?"
 - If you cannot extract valid postcode information, respond with: "I need your 4-digit postcode. Could you please provide your postcode? For example: 3000, 2000, etc."
 """
-
+'''
 
 
 def get_service_extraction_prompt(available_services=None):
@@ -279,10 +313,10 @@ Rules:
 
 Response Templates with Dynamic Placeholders:
 1. If user selected a valid service (info_complete=true):
-   - Use template: "Excellent! You've selected service. Finally, when would you like to schedule this service? Could you please provide your preferred date and time?"
+   - acknowledge the service user selected and proceed to ask user's preferred time to deliver service.
    
 2. If user hasn't selected a service or needs to see options (info_complete=false):
-   - Use template: "Great! I have your contact information. Which service would you like to book?"
+   - politely ask what service user would like to book again.
 
 Available Placeholder Variables:
 - {{selected_service_name}} - Name of the service user selected
@@ -339,6 +373,6 @@ Time Conversion Examples:
 - "next Friday at 3:30pm" → "2025-08-01T15:30:00Z" (next Friday 3:30 PM UTC)
 
 Response Templates:
-- If you successfully extract and convert time, respond with: "Excellent! I have all your information now. You've requested [service] service for [time]. Thank you for providing all the details. We'll process your booking and get back to you soon!"
-- If you cannot extract or convert time, respond with: "I need to know when you'd prefer the service. Could you please tell me your preferred date and time? For example: Monday at 2pm, next Tuesday morning, etc."
+- If you successfully extract and convert time, acknowledge and useing friendly tongue to close the call.
+- If you cannot extract or convert time, politely ask user to provide the preferred time again.
 """

@@ -27,7 +27,7 @@ class ReplyInput(BaseModel):
 # Global customer service agent
 cs_agent = CustomerServiceLangGraph()
 
-
+'''
 def _extract_address_components_from_redis(user_info) -> dict:
     """Extract address components from Redis UserInfo - Updated for 8-step workflow"""
     address_components = {
@@ -62,7 +62,7 @@ def _check_address_completion_status(address_components: dict) -> dict:
         "state_complete": bool(address_components.get("state")),
         "postcode_complete": bool(address_components.get("postcode"))
     }
-
+'''
 
 @router.post("/conversation")
 async def ai_conversation(data: ConversationInput):
@@ -94,8 +94,8 @@ async def ai_conversation(data: ConversationInput):
     user_info = callskeleton.user.userInfo if callskeleton.user.userInfo else None
     
     # Extract address components from Redis
-    address_components = _extract_address_components_from_redis(user_info)
-    address_completion_status = _check_address_completion_status(address_components)
+    #address_components = _extract_address_components_from_redis(user_info)                 ???????????what this for????????
+    #address_completion_status = _check_address_completion_status(address_components)       ???????????what this for????????
     
     # Extract service information from CallSkeleton
     current_service = callskeleton.user.service
@@ -109,19 +109,20 @@ async def ai_conversation(data: ConversationInput):
         for svc in callskeleton.services
     ]
     
-    print(f"🔍 Address components from Redis: {address_components}")
-    print(f"🔍 Address completion status: {address_completion_status}")
+    #print(f"🔍 Address components from Redis: {address_components}")
+    #print(f"🔍 Address completion status: {address_completion_status}")
     print(f"🔍 Available services: {len(available_services)} services")
     print(f"🔍 Current selected service: {current_service.name if current_service else 'None'}")
     
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
-        "street_number": address_components.get("street_number"),
-        "street_name": address_components.get("street_name"),
-        "suburb": address_components.get("suburb"),
-        "state": address_components.get("state"),
-        "postcode": address_components.get("postcode"),
+        "address": user_info.address if user_info else None,
+        #"street_number": address_components.get("street_number"),
+        #"street_name": address_components.get("street_name"),
+        #"suburb": address_components.get("suburb"),
+        #"state": address_components.get("state"),
+        #"postcode": address_components.get("postcode"),
         "service": current_service.name if current_service else None,
         "service_id": current_service.id if current_service else None,
         "service_price": current_service.price if current_service else None,
@@ -131,10 +132,10 @@ async def ai_conversation(data: ConversationInput):
         "current_step": "collect_name",
         "name_attempts": 0,
         "phone_attempts": 0,
-        "street_attempts": 0,
-        "suburb_attempts": 0,
-        "state_attempts": 0,
-        "postcode_attempts": 0,
+        "address_attempts": 0,
+        #"suburb_attempts": 0,
+        #"state_attempts": 0,
+        #"postcode_attempts": 0,
         "service_attempts": 0,
         "time_attempts": 0,
         "max_attempts": 3,
@@ -143,10 +144,11 @@ async def ai_conversation(data: ConversationInput):
         "last_llm_response": None,
         "name_complete": bool(user_info.name if user_info else None),
         "phone_complete": bool(user_info.phone if user_info else None),
-        "street_complete": address_completion_status["street_complete"],
-        "suburb_complete": address_completion_status["suburb_complete"],
-        "state_complete": address_completion_status["state_complete"],
-        "postcode_complete": address_completion_status["postcode_complete"],
+        "address_complete": bool(user_info.address if user_info else None),
+        #"street_complete": address_completion_status["street_complete"],
+        #"suburb_complete": address_completion_status["suburb_complete"],
+        #"state_complete": address_completion_status["state_complete"],
+        #"postcode_complete": address_completion_status["postcode_complete"],
         "service_complete": bool(callskeleton.user.service),
         "time_complete": bool(callskeleton.user.serviceBookedTime),
         "conversation_complete": callskeleton.servicebooked,

@@ -19,10 +19,7 @@ from openai import OpenAI
 from utils.prompts.customer_info_prompts import (
     get_name_extraction_prompt,
     get_phone_extraction_prompt,
-    get_street_extraction_prompt,
-    get_suburb_extraction_prompt,
-    get_state_extraction_prompt,
-    get_postcode_extraction_prompt,
+    get_address_extraction_prompt,
     get_service_extraction_prompt,
     get_time_extraction_prompt
 )
@@ -30,10 +27,10 @@ from utils.prompts.customer_info_prompts import (
 class CustomerServiceState(TypedDict):
     name: Optional[str]
     phone: Optional[str]
-    street: Optional[str]
-    suburb: Optional[str]
-    state: Optional[str]
-    postcode: Optional[str]
+    address: Optional[str]
+    #suburb: Optional[str]
+    #state: Optional[str]
+    #postcode: Optional[str]
     service: Optional[str]
     service_id: Optional[str]
     service_price: Optional[float]
@@ -74,7 +71,7 @@ def _default_result(response: str, key: str, error: str) -> Dict[str, Any]:
         "info_complete": False,
         "analysis": error
     }
-
+'''
 def _default_street_result(response: str, error: str) -> Dict[str, Any]:
     return {
         "response": response,
@@ -85,7 +82,7 @@ def _default_street_result(response: str, error: str) -> Dict[str, Any]:
         "info_complete": False,
         "analysis": error
     }
-
+'''
 def extract_name_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
@@ -110,19 +107,20 @@ def extract_phone_from_conversation(state: CustomerServiceState) -> Dict[str, An
     except Exception as e:
         return _default_result("Sorry, the system is temporarily unavailable. Please tell me your phone number again.", "phone", f"API error: {str(e)}")
 
-def extract_street_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
-    """Extract street number and street name from conversation"""
+def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
+    """Extract address from conversation"""
     try:
         context = _build_conversation_context(state)
-        prompt = get_street_extraction_prompt()
+        prompt = get_address_extraction_prompt()
         result = _call_openai_api(prompt, context, state.get('last_user_input') or "")
         if result:
             return result
         else:
-            return _default_street_result("Sorry, there was a problem processing your street address. Please tell me your street number and name again.", "Parse error")
+            return _default_result("Sorry, there was a problem processing your address. Please tell me your address again.", "address", "Parse error")
     except Exception as e:
-        return _default_street_result("Sorry, the system is temporarily unavailable. Please tell me your street address again.", f"API error: {str(e)}")
+        return _default_result("Sorry, the system is temporarily unavailable. Please tell me your street address again.", "address", f"API error: {str(e)}")
 
+'''
 def extract_suburb_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     """Extract suburb information from conversation"""
     try:
@@ -161,7 +159,7 @@ def extract_postcode_from_conversation(state: CustomerServiceState) -> Dict[str,
             return _default_result("Sorry, there was a problem processing your postcode. Please tell me your postcode again.", "postcode", "Parse error")
     except Exception as e:
         return _default_result("Sorry, the system is temporarily unavailable. Please tell me your postcode again.", "postcode", f"API error: {str(e)}")
-
+'''
 
 def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
     try:
