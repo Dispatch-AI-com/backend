@@ -23,7 +23,7 @@ from utils.prompts.customer_info_prompts import (
     get_service_extraction_prompt,
     get_time_extraction_prompt
 )
-
+'''
 class CustomerServiceState(TypedDict):
     name: Optional[str]
     phone: Optional[str]
@@ -38,7 +38,7 @@ class CustomerServiceState(TypedDict):
     available_services: Optional[List[Dict]]
     service_time: Optional[str]
     last_user_input: Optional[str]
-
+'''
 def _get_openai_client() -> OpenAI:
     return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
