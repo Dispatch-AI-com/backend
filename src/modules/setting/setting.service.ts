@@ -285,19 +285,14 @@ export class SettingService {
     }
 
     // Also update verification record if phone number changed
-    // Validate that contact is a string
-    if (typeof profileDto.contact !== 'string') {
-      throw new BadRequestException('Invalid contact format');
-    }
-
     await this.verificationModel.findOneAndUpdate(
       { userId: new Types.ObjectId(userId) },
       {
-        mobile: { $eq: profileDto.contact },
+        mobile: profileDto.contact,
         // Reset mobile verification if phone number changed
-        mobileVerified: false
+        mobileVerified: false,
       },
-      { upsert: false }
+      { upsert: false },
     );
 
     return updatedUser;

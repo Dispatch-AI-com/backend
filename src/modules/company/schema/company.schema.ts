@@ -58,7 +58,7 @@ export class Company {
     },
     default: () => ({
       message: DEFAULT_GREETING_MESSAGE,
-      isCustom: false
+      isCustom: false,
     }),
   })
   greeting!: {

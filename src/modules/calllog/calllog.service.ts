@@ -9,7 +9,6 @@ import { Error as MongooseError, Model, Types } from 'mongoose';
 
 import {
   CALLLOG_SORT_OPTIONS,
-  CallLogStatus,
   DEFAULT_LIMIT,
   DEFAULT_PAGE,
 } from '@/common/constants/calllog.constant';
@@ -29,7 +28,6 @@ import { CallLog, CallLogDocument } from './schema/calllog.schema';
 
 interface CallLogQuery {
   userId: string;
-  status?: { $eq: CallLogStatus };
   startAt?: {
     $gte?: Date;
     $lte?: Date;
@@ -63,7 +61,6 @@ export class CalllogService {
 
   async findAll({
     userId,
-    status,
     search,
     startAtFrom,
     startAtTo,
@@ -73,13 +70,6 @@ export class CalllogService {
     fields,
   }: FindAllOptions): Promise<ICallLogResponse> {
     const query: CallLogQuery = { userId };
-
-    if (status !== undefined) {
-      if (!Object.values(CallLogStatus).includes(status)) {
-        throw new BadRequestException(`Invalid status value: ${status}`);
-      }
-      query.status = { $eq: status };
-    }
 
     if (search !== undefined && search !== '') {
       // Remove any non-alphanumeric characters from search term
@@ -164,21 +154,13 @@ export class CalllogService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [totalCalls, liveCalls] = await Promise.all([
-      this.callLogModel.countDocuments({
-        userId,
-        startAt: { $gte: today },
-      }),
-      this.callLogModel.countDocuments({
-        userId,
-        startAt: { $gte: today },
-        status: CallLogStatus.Confirmed,
-      }),
-    ]);
+    const totalCalls = await this.callLogModel.countDocuments({
+      userId,
+      startAt: { $gte: today },
+    });
 
     return {
       totalCalls,
-      liveCalls,
     };
   }
 
@@ -292,26 +274,8 @@ export class CalllogService {
       }
     }
 
-    const [
-      totalCalls,
-      completedCalls,
-      missedCalls,
-      followUpCalls,
-      callDurations,
-    ] = await Promise.all([
+    const [totalCalls, callDurations] = await Promise.all([
       this.callLogModel.countDocuments(query),
-      this.callLogModel.countDocuments({
-        ...query,
-        status: CallLogStatus.Done,
-      }),
-      this.callLogModel.countDocuments({
-        ...query,
-        status: CallLogStatus.Cancelled,
-      }),
-      this.callLogModel.countDocuments({
-        ...query,
-        status: CallLogStatus.Confirmed,
-      }),
       this.callLogModel.aggregate([
         { $match: query },
         { $match: { endAt: { $exists: true } } },
@@ -334,9 +298,6 @@ export class CalllogService {
 
     return {
       totalCalls,
-      completedCalls,
-      missedCalls,
-      followUpCalls,
       averageCallDuration,
     };
   }

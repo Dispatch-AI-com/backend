@@ -131,5 +131,4 @@ export class CompanyController {
   async findByUserId(@Param('userId') userId: string): Promise<Company> {
     return this.companyService.findByUserId(userId);
   }
-
 }

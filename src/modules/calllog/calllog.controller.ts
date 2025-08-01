@@ -18,7 +18,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { CallLogStatus } from '@/common/constants/calllog.constant';
 import { ICallLog, ICallLogSummary } from '@/common/interfaces/calllog';
 
 import { CalllogService } from './calllog.service';
@@ -47,19 +46,16 @@ export class CalllogController {
   @ApiResponse({ status: 200, description: "Return today's call metrics" })
   async getTodayMetrics(@Param('userId') userId: string): Promise<{
     totalCalls: number;
-    liveCalls: number;
   }> {
     const metrics = await this.calllogService.getTodayMetrics(userId);
     return {
       totalCalls:
         typeof metrics.totalCalls === 'number' ? metrics.totalCalls : 0,
-      liveCalls: typeof metrics.liveCalls === 'number' ? metrics.liveCalls : 0,
     };
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all call logs for a user' })
-  @ApiQuery({ name: 'status', required: false, enum: CallLogStatus })
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'startAtFrom', required: false, type: String })
   @ApiQuery({ name: 'startAtTo', required: false, type: String })
@@ -85,7 +81,6 @@ export class CalllogController {
   @ApiResponse({ status: 200, description: 'Return paginated call logs' })
   async findAll(
     @Param('userId') userId: string,
-    @Query('status') status?: CallLogStatus,
     @Query('search') search?: string,
     @Query('startAtFrom') startAtFrom?: string,
     @Query('startAtTo') startAtTo?: string,
@@ -120,7 +115,6 @@ export class CalllogController {
 
     return this.calllogService.findAll({
       userId,
-      status,
       search,
       startAtFrom,
       startAtTo,

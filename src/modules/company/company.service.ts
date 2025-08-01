@@ -237,5 +237,4 @@ export class CompanyService {
 
     return company.greeting;
   }
-
 }

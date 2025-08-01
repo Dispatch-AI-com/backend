@@ -16,6 +16,6 @@ import { ServiceBookingService } from '@/modules/service-booking/service-booking
   ],
   providers: [ServiceBookingService],
   controllers: [ServiceBookingController],
-  exports: [MongooseModule],
+  exports: [ServiceBookingService, MongooseModule],
 })
 export class ServiceBookingModule {}

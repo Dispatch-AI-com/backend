@@ -18,7 +18,7 @@ import { Verification } from './schema/verification.schema';
 @ApiTags('verification')
 @Controller('api/settings/user')
 export class VerificationController {
-  constructor(private readonly verificationService: VerificationService) { }
+  constructor(private readonly verificationService: VerificationService) {}
 
   @Get(':userId/verification')
   @ApiOperation({ summary: 'Get user verification settings' })

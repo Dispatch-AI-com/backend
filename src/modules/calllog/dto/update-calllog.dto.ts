@@ -1,8 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
-import { IsDate, IsEnum, IsOptional, IsString } from 'class-validator';
-
-import { CallLogStatus } from '@/common/constants/calllog.constant';
+import { IsDate, IsOptional, IsString } from 'class-validator';
 
 export class UpdateCallLogDto {
   @ApiPropertyOptional()
@@ -16,14 +14,6 @@ export class UpdateCallLogDto {
   @IsOptional()
   @Transform(({ value }: { value: string | undefined }) => value ?? undefined)
   callerNumber?: string;
-
-  @ApiPropertyOptional({ enum: CallLogStatus })
-  @IsEnum(CallLogStatus)
-  @IsOptional()
-  @Transform(
-    ({ value }: { value: CallLogStatus | undefined }) => value ?? undefined,
-  )
-  status?: CallLogStatus;
 
   @ApiPropertyOptional()
   @IsDate()
