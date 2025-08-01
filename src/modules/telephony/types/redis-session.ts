@@ -14,9 +14,10 @@ export interface Service {
 export interface UserInfo {
   name?: string;
   phone?: string;
-  address?: Partial<Address>;
+  address?: string; // Simplified to single address string
 }
 
+// Legacy Address interface for backward compatibility (deprecated)
 export interface Address {
   street_number: string;
   street_name: string;

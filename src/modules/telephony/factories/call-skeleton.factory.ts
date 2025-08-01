@@ -17,13 +17,7 @@ export function createEmptySkeleton(callSid: string): CallSkeleton {
       userInfo: {
         name: '',
         phone: '',
-        address: {
-          street_number: '',
-          street_name: '',
-          suburb: '',
-          state: '',
-          postcode: '',
-        },
+        address: '', // Simplified to single address string
       },
     },
     history: [],
