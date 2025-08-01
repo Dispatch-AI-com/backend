@@ -120,7 +120,7 @@ export class AuthController {
     };
 
     // Redirect to frontend with token
-    const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const frontendUrl = process.env.CALLBACK_FRONTEND_URL ?? process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
       `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`,
     );

@@ -25,7 +25,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? '*',
+    origin: process.env.CALLBACK_FRONTEND_URL ?? process.env.CORS_ORIGIN ?? '*',
   });
 
   app.useGlobalFilters(new GlobalExceptionFilter());

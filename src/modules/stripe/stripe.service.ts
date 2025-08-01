@@ -15,7 +15,7 @@ export class StripeService {
     planId: string;
     stripeCustomerId?: string;
   }): Promise<Stripe.Checkout.Session> {
-    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const appUrl = process.env.CALLBACK_FRONTEND_URL ?? process.env.APP_URL ?? 'http://localhost:3000';
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -52,7 +52,7 @@ export class StripeService {
   async createBillingPortalSession(stripeCustomerId: string): Promise<string> {
     const session = await this.client.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: process.env.APP_URL ?? 'http://localhost:3000',
+      return_url: process.env.CALLBACK_FRONTEND_URL ?? process.env.APP_URL ?? 'http://localhost:3000',
     });
 
     return session.url;
