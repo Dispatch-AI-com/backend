@@ -61,7 +61,7 @@ def _call_openai_api(
     print(f"🔍 [OPENAI_API] Total messages sent to OpenAI: {len(messages)}")
     
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model="gpt-4.1-mini",
         messages=messages,
         temperature=0.3,
         max_tokens=500,
