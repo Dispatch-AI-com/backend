@@ -4,20 +4,9 @@ from typing import Optional, List
 from enum import Enum
 
 
-class Environment(str, Enum):
-    DEVELOPMENT = "development"
-    STAGING = "staging"
-    PRODUCTION = "production"
-
-
-class LLMProvider(str, Enum):
-    OPENAI = "openai"
-    MOCK = "mock"
-
-
 class Settings(BaseSettings):
     # Environment
-    environment: Environment = Environment.DEVELOPMENT
+    environment: str = Field(default="development")
     debug: bool = Field(default=True)
 
     # API Configuration
@@ -29,9 +18,10 @@ class Settings(BaseSettings):
     redis_host: str = Field(default="localhost")
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
+    redis_url: Optional[str] = Field(default=None)
 
     # LLM Configuration
-    llm_provider: LLMProvider = Field(default=LLMProvider.OPENAI)
+    llm_provider: str = Field(default="openai")
     openai_api_key: Optional[str] = Field(default=None)
     openai_model: str = Field(default="gpt-4.1-mini")
     openai_max_tokens: int = Field(default=2500)
@@ -97,11 +87,6 @@ class Settings(BaseSettings):
     cors_origins: list = Field(default=["*"])
     cors_methods: list = Field(default=["*"])
     cors_headers: list = Field(default=["*"])
-
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
 
 
 settings = Settings()
