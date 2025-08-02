@@ -1,136 +1,105 @@
 """
-LLM-First Speech Correction Service
+Simplified Speech Correction Service
 
-Uses LLM as primary engine for handling diverse accents and unpredictable speech patterns,
-with intelligent caching and performance optimizations.
+Streamlined LLM-based speech correction for phone call scenarios,
+focusing on accuracy and simplicity over caching complexity.
 """
 
 import json
-import hashlib
-import time
 import asyncio
-from typing import Dict, Optional, Tuple
+from typing import Dict, Tuple
 from openai import AsyncOpenAI
 from config import get_settings
 
 settings = get_settings()
 
 
-class IntelligentCache:
-    """Intelligent caching system for speech corrections"""
-    
-    def __init__(self, max_size: int = 1000, ttl_seconds: int = 3600):
-        self.cache = {}
-        self.access_times = {}
-        self.max_size = max_size
-        self.ttl_seconds = ttl_seconds
-    
-    def _generate_key(self, text: str, context: str) -> str:
-        """Generate cache key from input text and context"""
-        combined = f"{text.lower().strip()}:{context}"
-        return hashlib.md5(combined.encode()).hexdigest()
-    
-    def _is_expired(self, timestamp: float) -> bool:
-        """Check if cache entry is expired"""
-        return time.time() - timestamp > self.ttl_seconds
-    
-    def _cleanup_expired(self):
-        """Remove expired entries"""
-        current_time = time.time()
-        expired_keys = [
-            key for key, timestamp in self.access_times.items()
-            if current_time - timestamp > self.ttl_seconds
-        ]
-        for key in expired_keys:
-            self.cache.pop(key, None)
-            self.access_times.pop(key, None)
-    
-    def _evict_lru(self):
-        """Evict least recently used entry"""
-        if not self.access_times:
-            return
-        lru_key = min(self.access_times.keys(), key=lambda k: self.access_times[k])
-        self.cache.pop(lru_key, None)
-        self.access_times.pop(lru_key, None)
-    
-    def get(self, text: str, context: str) -> Optional[Dict]:
-        """Get cached correction result"""
-        key = self._generate_key(text, context)
-        
-        if key in self.cache:
-            if not self._is_expired(self.access_times[key]):
-                self.access_times[key] = time.time()  # Update access time
-                return self.cache[key]
-            else:
-                # Remove expired entry
-                self.cache.pop(key, None)
-                self.access_times.pop(key, None)
-        
-        return None
-    
-    def set(self, text: str, context: str, result: Dict):
-        """Cache correction result"""
-        key = self._generate_key(text, context)
-        
-        # Cleanup expired entries periodically
-        if len(self.cache) % 100 == 0:
-            self._cleanup_expired()
-        
-        # Evict LRU if cache is full
-        while len(self.cache) >= self.max_size:
-            self._evict_lru()
-        
-        self.cache[key] = result
-        self.access_times[key] = time.time()
-    
-    def get_stats(self) -> Dict:
-        """Get cache statistics"""
-        return {
-            "size": len(self.cache),
-            "max_size": self.max_size,
-            "hit_rate": getattr(self, '_hits', 0) / max(getattr(self, '_requests', 1), 1)
-        }
-
-
-class LLMSpeechCorrector:
-    """LLM-first speech correction system with intelligent caching"""
+class SimplifiedSpeechCorrector:
+    """Simplified speech correction system for phone call scenarios"""
     
     def __init__(self, api_key=None):
         self.client = None
         if settings.llm_provider == "openai":
             self.client = AsyncOpenAI(api_key=api_key or settings.openai_api_key)
         
-        # Initialize caching system
-        self.cache = IntelligentCache(max_size=1000, ttl_seconds=3600)
-        
         # Performance settings
         self.timeout_seconds = 3.0
         self.max_retries = 2
         
-        # Fallback dictionary for critical errors
+        # Critical corrections for immediate fallback
         self.critical_corrections = {
+            # Australian state names (most critical)
             "NSEW": "NSW",
             "N.S.E.W": "NSW",
+            "North South East West": "NSW",
+            "new south": "NSW",
             "Victor": "VIC", 
+            "Victoria": "VIC",
             "Queens Land": "QLD",
+            "Queensland": "QLD", 
+            "Queen's Land": "QLD",
             "South Australia": "SA",
             "West Australia": "WA",
             "Western Australia": "WA",
             "Tasmania": "TAS",
-            "Northern Territory": "NT"
+            "Tassie": "TAS",
+            "Northern Territory": "NT",
+            
+            # Common street types
+            "rode": "Road",
+            "strait": "Street", 
+            "drove": "Drive",
+            "lain": "Lane",
+            "caught": "Court",
+            "plays": "Place",
+            "present": "Crescent",
+            
+            # Direction words
+            "Norse": "North",
+            "Yeast": "East",
+            "Waste": "West",
+            
+            # Common place names
+            "Para Mata": "Parramatta",
+            "Para-mata": "Parramatta"
         }
     
-    def _apply_critical_fallback(self, text: str) -> Tuple[str, bool]:
-        """Apply critical corrections as fallback"""
+    def _apply_critical_corrections(self, text: str) -> Dict:
+        """Apply critical corrections using dictionary mapping"""
         corrected = text
         changed = False
+        corrections_applied = []
         
         for wrong, correct in self.critical_corrections.items():
             if wrong.lower() in text.lower():
-                corrected = corrected.replace(wrong, correct)
-                changed = True
+                # Case-insensitive replacement
+                import re
+                pattern = re.compile(re.escape(wrong), re.IGNORECASE)
+                if pattern.search(corrected):
+                    corrected = pattern.sub(correct, corrected)
+                    changed = True
+                    corrections_applied.append(f"{wrong} → {correct}")
         
-        return corrected, changed
+        return {
+            "original": text,
+            "corrected": corrected,
+            "confidence": 0.9 if changed else 0.1,
+            "method": "critical_corrections" if changed else "no_correction",
+            "reasoning": f"Applied: {', '.join(corrections_applied)}" if corrections_applied else "No critical corrections needed"
+        }
+    
+    def _should_use_llm(self, text: str) -> bool:
+        """Determine if LLM correction is needed based on text complexity"""
+        # Use LLM for longer, more complex inputs that might have subtle errors
+        if len(text.split()) > 3:  # More than 3 words
+            return True
+        
+        # Use LLM if text contains numbers (often misrecognized)
+        if any(char.isdigit() for char in text):
+            return True
+            
+        # Skip LLM for very short, simple inputs
+        return False
     
     async def _llm_correct_with_timeout(self, text: str, context: str) -> Dict:
         """LLM correction with timeout and error handling"""
