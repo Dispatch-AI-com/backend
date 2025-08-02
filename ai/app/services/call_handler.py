@@ -486,16 +486,10 @@ class CustomerServiceLangGraph:
                     f"✨ AI extracted time with MongoDB format: {cleaned_time} -> {final_mongodb_time}"
                 )
             else:
-                # Quick fallback for edge cases
-                from app.utils.hybrid_time_converter import (
-                    convert_service_time_to_mongodb_hybrid,
-                )
-
-                final_mongodb_time = convert_service_time_to_mongodb_hybrid(
-                    cleaned_time
-                )
+                # Fallback: use the extracted time as-is
+                final_mongodb_time = cleaned_time
                 print(
-                    f"🔄 AI extraction with fallback conversion: {cleaned_time} -> {final_mongodb_time}"
+                    f"🔄 Using extracted time as fallback: {cleaned_time}"
                 )
 
             # Update state
