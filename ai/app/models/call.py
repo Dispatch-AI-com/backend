@@ -27,7 +27,7 @@ class CallSummary(BaseModel):
 
 # Call Data Structure Models
 class Message(BaseModel):
-    speaker: Literal['AI', 'customer']
+    speaker: Literal["AI", "customer"]
     message: str
     startedAt: str
 

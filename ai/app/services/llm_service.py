@@ -12,7 +12,9 @@ class LLMService:
         else:
             self.client = None
 
-    async def generate_response(self, message: str, context: Optional[str] = None) -> str:
+    async def generate_response(
+        self, message: str, context: Optional[str] = None
+    ) -> str:
         if settings.llm_provider == "mock":
             return f"Mock response to: {message}"
 
@@ -36,10 +38,6 @@ class LLMService:
             return content
         except Exception as e:
             raise Exception(f"LLM service error: {str(e)}")
-
-
-
-
 
 
 llm_service = LLMService()

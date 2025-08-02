@@ -19,7 +19,7 @@ prompt = get_name_extraction_prompt()
 
 def get_name_extraction_prompt():
     """Get name extraction system prompt
-    
+
     Returns:
         str: System prompt for name collection
     """
@@ -53,7 +53,7 @@ Response Templates:
 
 def get_phone_extraction_prompt():
     """Get phone extraction system prompt
-    
+
     Returns:
         str: System prompt for phone number collection
     """
@@ -85,9 +85,10 @@ Response Templates:
 - If you cannot extract a valid phone number, politely ask user to tell the phone number again
 """
 
+
 def get_address_extraction_prompt():
     """Get street extraction system prompt
-    
+
     Returns:
         str: System prompt for address collection
     """
@@ -119,6 +120,7 @@ Response Templates:
 - If you successfully extract valid street information, acknowledged and repeat the full address, then proceed to ask what service user would like to book.
 - If you cannot extract valid street information, politely ask user, repeat what you already extracted and what missing information you are after.
 """
+
 
 '''def get_street_extraction_prompt():
     """Get street extraction system prompt
@@ -273,10 +275,10 @@ Response Templates:
 
 def get_service_extraction_prompt(available_services=None):
     """Get service extraction system prompt
-    
+
     Args:
         available_services: List of available services with name, price, and description
-    
+
     Returns:
         str: System prompt for service collection
     """
@@ -285,9 +287,11 @@ def get_service_extraction_prompt(available_services=None):
     if available_services:
         services_text = "\n\nAvailable Services:\n"
         for service in available_services:
-            price_text = f"${service['price']}" if service.get('price') else "Price on request"
+            price_text = (
+                f"${service['price']}" if service.get("price") else "Price on request"
+            )
             services_text += f"• {service['name']}: {price_text}\n"
-    
+
     return f"""You are a professional customer service assistant. Your tasks are:
 1. Engage in natural and friendly conversation with users
 2. Collect service type information from our available services
@@ -328,16 +332,16 @@ Available Placeholder Variables:
 
 def get_time_extraction_prompt():
     """Get time extraction system prompt with MongoDB format constraint
-    
+
     Returns:
         str: System prompt for service time collection
     """
     from datetime import datetime, timezone
-    
+
     # Get current time for context
     current_time = datetime.now(timezone.utc)
     current_str = current_time.strftime("%A, %B %d, %Y at %I:%M %p UTC")
-    
+
     return f"""You are a professional customer service assistant. Your tasks are:
 1. Engage in natural and friendly conversation with users
 2. Collect preferred service time information and convert to standard format
