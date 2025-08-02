@@ -158,7 +158,7 @@ async def ai_conversation(data: ConversationInput):
     state["last_user_input"] = data.customerMessage.message
 
     # 4. Call unified workflow processing - all business logic delegated to call_handler
-    updated_state = cs_agent.process_customer_workflow(state, call_sid=data.callSid)
+    updated_state = await cs_agent.process_customer_workflow(state, call_sid=data.callSid)
 
     # 5. Generate AI response
     ai_message = updated_state["last_llm_response"]["response"] if updated_state["last_llm_response"] else "Sorry, system is busy, please try again later."

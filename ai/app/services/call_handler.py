@@ -39,6 +39,7 @@ from .redis_service import (
 )
 
 from config import settings
+from .llm_speech_corrector import SimplifiedSpeechCorrector
 
 
 class CustomerServiceState(TypedDict):
@@ -160,6 +161,9 @@ class CustomerServiceLangGraph:
             self.client = OpenAI(api_key=api_key)
         else:
             self.client = OpenAI(api_key=settings.openai_api_key)
+        
+        # Initialize speech corrector
+        self.speech_corrector = SimplifiedSpeechCorrector(api_key=api_key)
         
         # Create LangGraph workflow - using simplified approach
         self.workflow = None
@@ -385,8 +389,8 @@ class CustomerServiceLangGraph:
         
         return state
 
-    def process_state_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Process state collection step"""
+    async def process_state_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
+        """Process state collection step with speech correction"""
         # Initialize attempts counter if not present
         if "state_attempts" not in state or state["state_attempts"] is None:
             state["state_attempts"] = 0
@@ -394,6 +398,20 @@ class CustomerServiceLangGraph:
         # Initialize max_attempts if not present
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
+        
+        # Apply speech correction for state input
+        original_input = state.get("last_user_input", "")
+        if original_input:
+            correction_result = await self.speech_corrector.correct_speech_input(
+                text=original_input, 
+                context="state_collection"
+            )
+            corrected_input = correction_result["corrected"]
+            
+            if correction_result["method"] != "no_change":
+                print(f"🔧 Speech correction applied: '{original_input}' -> '{corrected_input}' (method: {correction_result['method']})")
+                # Update state with corrected input for processing
+                state["last_user_input"] = corrected_input
         
         # Call LLM to extract state
         result = extract_state_from_conversation(state)
@@ -697,7 +715,7 @@ class CustomerServiceLangGraph:
 
     # ================== Unified Workflow Entry Function ==================
     
-    def process_customer_workflow(self, state: CustomerServiceState, call_sid: Optional[str] = None):
+    async def process_customer_workflow(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Unified customer information collection workflow processing function - Updated for 7-step workflow (removed email)
         
         This is the main entry point for external API calls, responsible for automatically
@@ -723,7 +741,7 @@ class CustomerServiceLangGraph:
         elif not state.get("suburb_complete", False):
             state = self.process_suburb_collection(state, call_sid)
         elif not state.get("state_complete", False):
-            state = self.process_state_collection(state, call_sid)
+            state = await self.process_state_collection(state, call_sid)
         elif not state.get("postcode_complete", False):
             state = self.process_postcode_collection(state, call_sid)
         elif not state["service_complete"]:
