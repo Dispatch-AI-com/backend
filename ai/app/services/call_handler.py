@@ -1,18 +1,19 @@
 """
-AI Customer Service Workflow Controller - Refactored Version
+AI Customer Service Workflow Controller - 5-Step Simplified Version
 
 Focuses on workflow control and business logic processing, with prompts and validation functions decoupled to independent modules.
 
 Main Responsibilities:
-- Manage customer information collection workflow (8-step process)
+- Manage customer information collection workflow (5-step process: Name → Phone → Address → Service → Time)
 - Handle conversation state and transitions
-- Coordinate LLM interactions without validation
+- Coordinate LLM interactions with speech correction
 - Manage Redis data updates
 - Handle exceptions and error recovery
 
 Architecture Description:
 - Prompt module: app.utils.prompts.customer_info_prompts
 - Extractors module: app.services.retrieve.customer_info_extractors
+- Speech correction: SimplifiedSpeechCorrector for Australian address accuracy
 - Workflow control: This file (call_handler.py)
 """
 
@@ -46,10 +47,14 @@ from config import settings
 
 
 class CustomerServiceLangGraph:
-    """Customer service workflow controller - Updated for 8-step workflow
+    """Customer service workflow controller - 5-Step Simplified Workflow
 
-    Main responsibility is to manage the entire customer information collection process
-    and coordinate interactions between various components.
+    Main responsibility is to manage the entire customer information collection process:
+    1. Name Collection
+    2. Phone Collection  
+    3. Address Collection (single string with speech correction)
+    4. Service Selection
+    5. Time/Booking Completion
     """
 
     def _replace_service_placeholders(
@@ -276,7 +281,7 @@ class CustomerServiceLangGraph:
     async def process_address_collection(
         self, state: CustomerServiceState, call_sid: Optional[str] = None
     ):
-        """Process street collection step with speech correction"""
+        """Process address collection step with speech correction for Australian addresses"""
         # Initialize attempts counter if not present
         if "address_attempts" not in state or state["address_attempts"] is None:
             state["address_attempts"] = 0
@@ -285,7 +290,7 @@ class CustomerServiceLangGraph:
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
 
-        # Apply LLM-first speech correction for address input
+        # Apply speech correction for Australian address input (NSW/NSEW fix)
         original_input = state.get("last_user_input", "")
         if original_input:
             try:
@@ -313,46 +318,35 @@ class CustomerServiceLangGraph:
                 print(f"⚠️ Speech correction failed, using original input: {e}")
                 # Continue with original input if correction fails
 
-        # Call LLM to extract street
+        # Call LLM to extract address
         result = extract_address_from_conversation(state)
         state["last_llm_response"] = result
 
-        # Check if street was extracted
+        # Check if address was extracted
         extracted_address = result["info_extracted"].get("address")
-        # address = extracted_info.get("address")
-        # street_name = extracted_info.get("street_name")
         is_complete = result["info_complete"]
 
         if is_complete and extracted_address:
-            # Combine street number and name for local state
-            # full_street = f"{street_number} {street_name}".strip()
+            # Clean address string
             cleaned_address = extracted_address.strip()
+            
             # Local state update
             state["address"] = cleaned_address
             state["address_complete"] = True
             state["current_step"] = "collect_service"
 
-            # Real-time Redis update - save as nested address structure
+            # Real-time Redis update
             if call_sid:
                 redis_success = update_user_info_field(
                     call_sid=call_sid, field_name="address", field_value=cleaned_address
                 )
-                """street_name_success = update_user_info_field(
-                    call_sid=call_sid,
-                    field_name="address.street_name",
-                    field_value=street_name
-                )
-                """
-                if redis_success:
-                    print(
-                        f"✅ Street extracted and saved successfully: {cleaned_address}"
-                    )
-                else:
-                    print(
-                        f"⚠️ Street extracted successfully but Redis save failed: {cleaned_address}"
-                    )
 
-            print(f"✅ Street collection completed: {cleaned_address}")
+                if redis_success:
+                    print(f"✅ Address extracted and saved successfully: {cleaned_address}")
+                else:
+                    print(f"⚠️ Address extracted successfully but Redis save failed: {cleaned_address}")
+
+            print(f"✅ Address collection completed: {cleaned_address}")
         else:
             # Increment attempt count
             state["address_attempts"] += 1
@@ -368,128 +362,6 @@ class CustomerServiceLangGraph:
                 )
 
         return state
-
-    '''
-    def process_suburb_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Process suburb collection step"""
-        # Initialize attempts counter if not present
-        if "suburb_attempts" not in state or state["suburb_attempts"] is None:
-            state["suburb_attempts"] = 0
-        
-        # Initialize max_attempts if not present
-        if "max_attempts" not in state or state["max_attempts"] is None:
-            state["max_attempts"] = settings.max_attempts
-        
-        # Call LLM to extract suburb
-        result = extract_suburb_from_conversation(state)
-        state["last_llm_response"] = result
-        
-        # Check if suburb was extracted
-        extracted_suburb = result["info_extracted"].get("suburb")
-        is_complete = result["info_complete"]
-        
-        if is_complete and extracted_suburb:
-            # Clean and standardize suburb
-            cleaned_suburb = extracted_suburb.strip()
-            
-            # Local state update
-            state["suburb"] = cleaned_suburb
-            state["suburb_complete"] = True
-            state["current_step"] = "collect_state"
-            
-            # Real-time Redis update - save as nested address structure
-            if call_sid:
-                redis_success = update_user_info_field(
-                    call_sid=call_sid,
-                    field_name="address.suburb",
-                    field_value=cleaned_suburb
-                )
-                
-                if redis_success:
-                    print(f"✅ Suburb extracted and saved successfully: {cleaned_suburb}")
-                else:
-                    print(f"⚠️ Suburb extracted successfully but Redis save failed: {cleaned_suburb}")
-            
-            print(f"✅ Suburb collection completed: {cleaned_suburb}")
-        else:
-            # Increment attempt count
-            state["suburb_attempts"] += 1
-            
-            if state["suburb_attempts"] >= state["max_attempts"]:
-                print(f"❌ Suburb collection failed, reached maximum attempts ({state['max_attempts']})")
-                state["current_step"] = "collect_state"  # Skip to next step
-            else:
-                print(f"⚠️ Suburb extraction failed, attempt: {state['suburb_attempts']}/{state['max_attempts']}")
-        
-        return state
-
-    async def process_state_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Process state collection step with speech correction"""
-        # Initialize attempts counter if not present
-        if "state_attempts" not in state or state["state_attempts"] is None:
-            state["state_attempts"] = 0
-        
-        # Initialize max_attempts if not present
-        if "max_attempts" not in state or state["max_attempts"] is None:
-            state["max_attempts"] = settings.max_attempts
-        
-        # Apply speech correction for state input
-        original_input = state.get("last_user_input", "")
-        if original_input:
-            correction_result = await self.speech_corrector.correct_speech_input(
-                text=original_input, 
-                context="state_collection"
-            )
-            corrected_input = correction_result["corrected"]
-            
-            if correction_result["method"] != "no_change":
-                print(f"🔧 Speech correction applied: '{original_input}' -> '{corrected_input}' (method: {correction_result['method']})")
-                # Update state with corrected input for processing
-                state["last_user_input"] = corrected_input
-        
-        # Call LLM to extract state
-        result = extract_state_from_conversation(state)
-        state["last_llm_response"] = result
-        
-        # Check if state was extracted
-        extracted_state = result["info_extracted"].get("state")
-        is_complete = result["info_complete"]
-        
-        if is_complete and extracted_state:
-            # Clean and standardize state (uppercase)
-            cleaned_state = extracted_state.strip().upper()
-            
-            # Local state update
-            state["state"] = cleaned_state
-            state["state_complete"] = True
-            state["current_step"] = "collect_postcode"
-            
-            # Real-time Redis update - save as nested address structure
-            if call_sid:
-                redis_success = update_user_info_field(
-                    call_sid=call_sid,
-                    field_name="address.state",
-                    field_value=cleaned_state
-                )
-                
-                if redis_success:
-                    print(f"✅ State extracted and saved successfully: {cleaned_state}")
-                else:
-                    print(f"⚠️ State extracted successfully but Redis save failed: {cleaned_state}")
-            
-            print(f"✅ State collection completed: {cleaned_state}")
-        else:
-            # Increment attempt count
-            state["state_attempts"] += 1
-            
-            if state["state_attempts"] >= state["max_attempts"]:
-                print(f"❌ State collection failed, reached maximum attempts ({state['max_attempts']})")
-                state["current_step"] = "collect_postcode"  # Skip to next step
-            else:
-                print(f"⚠️ State extraction failed, attempt: {state['state_attempts']}/{state['max_attempts']}")
-        
-        return state
-    '''
 
     def process_service_collection(
         self, state: CustomerServiceState, call_sid: Optional[str] = None
@@ -706,12 +578,13 @@ class CustomerServiceLangGraph:
     # ================== Unified Workflow Entry Function ==================
 
     async def process_customer_workflow(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Unified customer information collection workflow processing function - Updated for 7-step workflow (removed email)
+        """Unified customer information collection workflow - 5-Step Process
 
-        This is the main entry point for external API calls, responsible for automatically
-        determining which collection step should be executed based on current state,
-        and returning the updated state.
-
+        Main entry point for external API calls. Executes the appropriate collection step
+        based on current state completion status.
+        
+        Workflow: Name → Phone → Address → Service → Time
+        
         Args:
             state: Customer service state object
             call_sid: Optional call ID for Redis real-time updates
@@ -757,9 +630,9 @@ class CustomerServiceLangGraph:
     # ================== Utility Functions ==================
 
     def print_results(self, state: CustomerServiceState):
-        """Print summary of collection results - Updated for 7-step workflow (removed email)"""
+        """Print summary of collection results - 5-Step Workflow"""
         print("\n" + "=" * 50)
-        print("📋 Customer Information Collection Results Summary")
+        print("📋 Customer Information Collection Results Summary (5-Step)")
         print("=" * 50)
 
         # Basic information
@@ -770,14 +643,9 @@ class CustomerServiceLangGraph:
             f"📞 Phone: {state.get('phone', 'Not collected')} {'✅' if state.get('phone_complete') else '❌'}"
         )
         print(
-            f"📞 Phone: {state.get('address', 'Not collected')} {'✅' if state.get('address_complete') else '❌'}"
+            f"🏠 Address: {state.get('address', 'Not collected')} {'✅' if state.get('address_complete') else '❌'}"
         )
 
-        # Address components
-        # print(f"🏠 Street: {state.get('street', 'Not collected')} {'✅' if state.get('street_complete') else '❌'}")
-        # print(f"🏘️ Suburb: {state.get('suburb', 'Not collected')} {'✅' if state.get('suburb_complete') else '❌'}")
-        # print(f"🗺️ State: {state.get('state', 'Not collected')} {'✅' if state.get('state_complete') else '❌'}")
-        # print(f"📮 Postcode: {state.get('postcode', 'Not collected')} {'✅' if state.get('postcode_complete') else '❌'}")
 
         # Service information
         service_status = ""
@@ -809,29 +677,16 @@ class CustomerServiceLangGraph:
 
         # Attempt count statistics
         print("\n📈 Attempt Count Statistics:")
-        print(
-            f"  • Name: {state.get('name_attempts', 0)}/{state.get('max_attempts', 3)}"
-        )
-        print(
-            f"  • Phone: {state.get('phone_attempts', 0)}/{state.get('max_attempts', 3)}"
-        )
-        print(
-            f"  • Address: {state.get('address_attempts', 0)}/{state.get('max_attempts', 3)}"
-        )
-        # print(f"  • Suburb: {state.get('suburb_attempts', 0)}/{state.get('max_attempts', 3)}")
-        # print(f"  • State: {state.get('state_attempts', 0)}/{state.get('max_attempts', 3)}")
-        # print(f"  • Postcode: {state.get('postcode_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(
-            f"  • Service: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}"
-        )
-        print(
-            f"  • Time: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}"
-        )
+        print(f"  • Name: {state.get('name_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • Phone: {state.get('phone_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • Address: {state.get('address_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(f"  • Service: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}")
+        print(f"  • Time: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}")
 
         print("=" * 50)
 
     def save_to_file(self, state: CustomerServiceState, filename: Optional[str] = None):
-        """Save conversation to file - Updated for nested address structure"""
+        """Save conversation to file - 5-Step Workflow"""
         if filename is None:
             filename = "customer_service_conversation.json"
 
@@ -844,13 +699,6 @@ class CustomerServiceLangGraph:
                 "name": state.get("name"),
                 "phone": state.get("phone"),
                 "address": state.get("address"),
-                """"address": {
-                    "street_number": state.get("street_number"),
-                    "street_name": state.get("street_name"),
-                    "suburb": state.get("suburb"),
-                    "state": state.get("state"),
-                    "postcode": state.get("postcode")
-                },"""
                 "service": state.get("service"),
                 "service_time": state.get("service_time"),
             },
@@ -858,14 +706,6 @@ class CustomerServiceLangGraph:
                 "name_complete": state.get("name_complete", False),
                 "phone_complete": state.get("phone_complete", False),
                 "address_complete": state.get("address_complete", False),
-                """"address_complete": {
-                    "street_number_complete": state.get("street_number_complete", False),
-                    "street_name_complete": state.get("street_name_complete", False),
-                    "street_complete": state.get("street_complete", False),
-                    "suburb_complete": state.get("suburb_complete", False),
-                    "state_complete": state.get("state_complete", False),
-                    "postcode_complete": state.get("postcode_complete", False)
-                },"""
                 "service_complete": state.get("service_complete", False),
                 "time_complete": state.get("time_complete", False),
             },
@@ -873,14 +713,6 @@ class CustomerServiceLangGraph:
                 "name_attempts": state.get("name_attempts", 0),
                 "phone_attempts": state.get("phone_attempts", 0),
                 "address_attempts": state.get("address_attempts", 0),
-                """"address_attempts": {
-                    "street_number_attempts": state.get("street_number_attempts", 0),
-                    "street_name_attempts": state.get("street_name_attempts", 0),
-                    "street_attempts": state.get("street_attempts", 0),
-                    "suburb_attempts": state.get("suburb_attempts", 0),
-                    "state_attempts": state.get("state_attempts", 0),
-                    "postcode_attempts": state.get("postcode_attempts", 0)
-                },"""
                 "service_attempts": state.get("service_attempts", 0),
                 "time_attempts": state.get("time_attempts", 0),
             },
@@ -899,24 +731,18 @@ class CustomerServiceLangGraph:
         self,
         initial_message: str = "Hello! I'm the AI customer service assistant. What is your name?",
     ):
-        """Start conversation process (for standalone testing) - Updated for 7-step workflow (removed email)"""
-        # Initialize state
+        """Start conversation process (for standalone testing) - 5-Step Workflow"""
+        # Initialize state for 5-step workflow
         state: CustomerServiceState = {
             "name": None,
             "phone": None,
             "address": None,
-            # "suburb": None,
-            # "state": None,
-            # "postcode": None,
             "service": None,
             "service_time": None,
             "current_step": "collect_name",
             "name_attempts": 0,
             "phone_attempts": 0,
-            "street_attempts": 0,
-            "suburb_attempts": 0,
-            "state_attempts": 0,
-            "postcode_attempts": 0,
+            "address_attempts": 0,
             "service_attempts": 0,
             "time_attempts": 0,
             "max_attempts": settings.max_attempts,
@@ -926,9 +752,6 @@ class CustomerServiceLangGraph:
             "name_complete": False,
             "phone_complete": False,
             "address_complete": False,
-            # "suburb_complete": False,
-            # "state_complete": False,
-            # "postcode_complete": False,
             "service_complete": False,
             "time_complete": False,
             "conversation_complete": False,
@@ -936,7 +759,7 @@ class CustomerServiceLangGraph:
             "time_available": True,
         }
 
-        print("🤖 AI Customer Service Assistant Started (8-Step Workflow)")
+        print("🤖 AI Customer Service Assistant Started (5-Step Workflow)")
         print("💡 Type 'quit' or 'exit' to exit conversation")
         print("💡 Type 'status' to view current collection status")
         print("💡 Type 'save' to save conversation to file")
@@ -1015,7 +838,7 @@ class CustomerServiceLangGraph:
 
 async def main():
     """Module test entry point"""
-    print("🚀 Starting AI customer service system test (8-Step Workflow)...")
+    print("🚀 Starting AI customer service system test (5-Step Workflow)...")
 
     # Create customer service instance
     cs_agent = CustomerServiceLangGraph()
