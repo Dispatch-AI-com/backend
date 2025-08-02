@@ -327,9 +327,10 @@ Response Templates with Dynamic Placeholders:
    - acknowledge the service user selected and proceed to ask user's preferred time to deliver service.
    
 2. If user hasn't selected a service or needs to see options (info_complete=false):
-   - politely ask what service user would like to book again.
-   - IMPORTANT: Always include the {{services_list}} placeholder in your response when info_complete=false
-   - This ensures users can see all available services when they haven't selected one
+   - respond with: "Here are our options: {{services_list}}. Which service would you like to book?"
+   - IMPORTANT: You MUST include the exact text "{{services_list}}" in your response when info_complete=false
+   - Do not replace {{services_list}} with actual service names - keep it as a placeholder
+   - The system will automatically replace {{services_list}} with the actual service list
 
 Available Placeholder Variables:
 - {{selected_service_name}} - Name of the service user selected
