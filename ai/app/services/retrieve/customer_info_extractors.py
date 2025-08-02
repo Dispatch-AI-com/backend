@@ -33,15 +33,30 @@ def _get_openai_client() -> OpenAI:
 
 
 def _build_conversation_context(state: CustomerServiceState) -> str:
-    # Since we removed conversation history, just return current user input
-    return state.get("last_user_input") or ""
+    """Build conversation context - simplified since state info is now in prompt"""
+    current_input = state.get("last_user_input") or ""
+    return current_input
 
 
 def _call_openai_api(
-    prompt: str, conversation_context: str, user_input: str
+    prompt: str, conversation_context: str, user_input: str, state: CustomerServiceState = None
 ) -> Dict[str, Any]:
     client = _get_openai_client()
     user_input = user_input or ""
+    
+    # Add state information to the prompt if provided
+    if state:
+        state_info = f"""
+Current State Information:
+- Name: {state.get('name', 'Not collected')}
+- Phone: {state.get('phone', 'Not collected')}
+- Address: {state.get('address', 'Not collected')}
+- Service: {state.get('service', 'Not collected')}
+- Service Time: {state.get('service_time', 'Not collected')}
+- Current Step: {state.get('current_step', 'Unknown')}
+"""
+        prompt = prompt + state_info
+    
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -78,7 +93,7 @@ def extract_name_from_conversation(state: CustomerServiceState) -> Dict[str, Any
     try:
         context = _build_conversation_context(state)
         prompt = get_name_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "")
+        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", state)
         if result:
             return result
         else:
@@ -99,7 +114,7 @@ def extract_phone_from_conversation(state: CustomerServiceState) -> Dict[str, An
     try:
         context = _build_conversation_context(state)
         prompt = get_phone_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "")
+        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", state)
         if result:
             return result
         else:
@@ -117,7 +132,7 @@ def extract_phone_from_conversation(state: CustomerServiceState) -> Dict[str, An
 
 
 def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
-    """Extract address from conversation"""
+    """Extract address from conversation with memory of previously collected information"""
     try:
         context = _build_conversation_context(state)
         prompt = get_address_extraction_prompt()
@@ -126,8 +141,9 @@ def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, 
         print(f"🔍 [ADDRESS_EXTRACTION] Starting address extraction")
         print(f"🔍 [ADDRESS_EXTRACTION] User input: '{user_input}'")
         print(f"🔍 [ADDRESS_EXTRACTION] Context: '{context}'")
+        print(f"🔍 [ADDRESS_EXTRACTION] Previously collected address: '{state.get('address', 'None')}'")
         
-        result = _call_openai_api(prompt, context, user_input)
+        result = _call_openai_api(prompt, context, user_input, state)
         
         if result:
             extracted_address = result.get("info_extracted", {}).get("address")
@@ -177,7 +193,7 @@ def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, 
             print(f"⚠️ [SERVICE_EXTRACTION] No available services found in state!")
         
         prompt = get_service_extraction_prompt(available_services)
-        result = _call_openai_api(prompt, context, user_input)
+        result = _call_openai_api(prompt, context, user_input, state)
         
         if result:
             extracted_service = result.get("info_extracted", {}).get("service")
@@ -211,7 +227,7 @@ def extract_time_from_conversation(state: CustomerServiceState) -> Dict[str, Any
     try:
         context = _build_conversation_context(state)
         prompt = get_time_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "")
+        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", state)
         if result:
             return result
         else:

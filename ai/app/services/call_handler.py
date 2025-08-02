@@ -359,6 +359,11 @@ class CustomerServiceLangGraph:
             # Clean address string
             cleaned_address = extracted_address.strip()
             
+            # Check if we already have some address information
+            existing_address = state.get("address", "")
+            if existing_address and existing_address != cleaned_address:
+                print(f"🔍 [ADDRESS_COLLECTION] Updating address: '{existing_address}' -> '{cleaned_address}'")
+            
             # Local state update
             state["address"] = cleaned_address
             state["address_complete"] = True

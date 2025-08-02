@@ -109,6 +109,8 @@ Please respond strictly in the following JSON format, do not add any other conte
 
 Rules:
 - Accept partial or complete Australian address information
+- IMPORTANT: Use the Current State Information above to see what address components have already been collected
+- If user provides additional address components, combine them with previously collected information from the state
 - Minimum requirements (choose one):
   a) Street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
   b) Street number AND street name AND suburb AND postcode AND state (e.g., "123 Collins Street, Melbourne, 3000, VIC")
@@ -125,6 +127,7 @@ Rules:
 Response Templates:
 - If you extract valid address (partial or complete), acknowledge and proceed to ask what service they need
 - If you cannot extract valid address information, politely ask for their street address
+- If user provides additional address components, combine them with previously collected information
 - Examples of valid addresses: "123 Main Street", "6 Grandstand Parade", "Unit 5/42 Collins Street", "123 Collins Street, Melbourne, 3000, VIC"
 """
 
@@ -372,6 +375,8 @@ Please respond strictly in the following JSON format, do not add any other conte
 
 Rules:
 - Extract date and time preferences in various formats
+- IMPORTANT: Use the Current State Information above to see what time information has already been collected
+- If user provides additional time components (date or time), combine them with previously collected information from the state
 - Convert to MongoDB-compatible ISO format: YYYY-MM-DDTHH:MM:SSZ
 - Always use UTC timezone (Z suffix)
 - Must be a future time relative to current time
@@ -387,6 +392,7 @@ Time Conversion Examples:
 - "next Friday at 3:30pm" → "2025-08-01T15:30:00Z" (next Friday 3:30 PM UTC)
 
 Response Templates:
-- If you successfully extract and convert time, acknowledge and useing friendly tongue to close the call.
+- If you successfully extract and convert time, acknowledge and use friendly tone to close the call.
 - If you cannot extract or convert time, politely ask user to provide the preferred time again.
+- If user provides partial time information (e.g., just date or just time), ask for the missing component
 """
