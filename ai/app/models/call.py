@@ -27,7 +27,7 @@ class CallSummary(BaseModel):
 
 # Call Data Structure Models
 class Message(BaseModel):
-    speaker: Literal['AI', 'customer']
+    speaker: Literal["AI", "customer"]
     message: str
     startedAt: str
 
@@ -40,17 +40,13 @@ class Service(BaseModel):
 
 
 class Address(BaseModel):
-    street_number: str = Field(default="", description="Street number")
-    street_name: str = Field(default="", description="Street name")
-    suburb: str = Field(default="", description="Suburb")
-    state: str = Field(default="", description="State")
-    postcode: str = Field(default="", description="Postcode")
+    address: str = Field(default="", description="Complete address as a single string")
 
 
 class UserInfo(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
-    address: Optional[Address] = None
+    address: Optional[str] = None  # Simplified to store address as string
 
 
 class Company(BaseModel):
