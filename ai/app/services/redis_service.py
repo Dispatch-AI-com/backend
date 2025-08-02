@@ -52,6 +52,27 @@ def get_call_skeleton_dict(call_sid: str) -> Dict[str, Any]:
     return json.loads(data)
 
 
+def get_message_history(call_sid: str) -> list:
+    """Get message history from Redis for a specific call"""
+    try:
+        skeleton_dict = get_call_skeleton_dict(call_sid)
+        history = skeleton_dict.get("history", [])
+        
+        # Convert to the format expected by extractors
+        message_history = []
+        for msg in history[-8:]:  # Last 8 messages for context
+            message_history.append({
+                "role": "user" if msg.get("speaker") == "customer" else "assistant",
+                "content": msg.get("message", "")
+            })
+        
+        print(f"🔍 Redis: Retrieved {len(message_history)} messages from history")
+        return message_history
+    except Exception as e:
+        print(f"❌ Redis: Failed to get message history: {str(e)}")
+        return []
+
+
 def update_user_info_field(
     call_sid: str, field_name: str, field_value, timestamp: Optional[str] = None
 ) -> bool:

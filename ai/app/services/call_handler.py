@@ -40,6 +40,7 @@ from .redis_service import (
     update_user_info_field,
     update_service_selection,
     update_booking_status,
+    get_message_history,
 )
 
 from .llm_speech_corrector import SimplifiedSpeechCorrector
@@ -195,8 +196,13 @@ class CustomerServiceLangGraph:
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
 
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+        
         # Call LLM to extract name
-        result = extract_name_from_conversation(state)
+        result = extract_name_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Check if name was extracted
@@ -254,8 +260,13 @@ class CustomerServiceLangGraph:
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
 
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+        
         # Call LLM to extract phone
-        result = extract_phone_from_conversation(state)
+        result = extract_phone_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Check if phone was extracted
@@ -341,9 +352,14 @@ class CustomerServiceLangGraph:
                 print(f"⚠️ Speech correction failed, using original input: {e}")
                 # Continue with original input if correction fails
 
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+        
         # Call LLM to extract address
         print(f"🔍 [ADDRESS_COLLECTION] Calling LLM for address extraction...")
-        result = extract_address_from_conversation(state)
+        result = extract_address_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Check if address was extracted
@@ -417,8 +433,13 @@ class CustomerServiceLangGraph:
         else:
             print(f"⚠️ [SERVICE_COLLECTION] No available services found in state!")
 
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+        
         # Call LLM to extract service
-        result = extract_service_from_conversation(state)
+        result = extract_service_from_conversation(state, message_history)
 
         # Replace placeholders in the response with actual service information
         if result and "response" in result:
@@ -508,8 +529,13 @@ class CustomerServiceLangGraph:
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
 
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+        
         # Call AI to extract and convert time in one step
-        result = extract_time_from_conversation(state)
+        result = extract_time_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Extract AI results

@@ -77,6 +77,15 @@ async def ai_conversation(data: ConversationInput):
         f"🔍 Current selected service: {current_service.name if current_service else 'None'}"
     )
 
+    # Convert message history to the format expected by extractors
+    message_history = []
+    if callskeleton.history:
+        for msg in callskeleton.history[-8:]:  # Last 8 messages for context
+            message_history.append({
+                "role": "user" if msg.speaker == "customer" else "assistant",
+                "content": msg.message
+            })
+    
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
@@ -105,6 +114,7 @@ async def ai_conversation(data: ConversationInput):
         "conversation_complete": callskeleton.servicebooked,
         "service_available": True,
         "time_available": True,
+        "message_history": message_history,  # Add message history to state
     }
 
     # 3. Set current user input

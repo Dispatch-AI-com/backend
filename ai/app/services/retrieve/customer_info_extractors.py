@@ -39,32 +39,30 @@ def _build_conversation_context(state: CustomerServiceState) -> str:
 
 
 def _call_openai_api(
-    prompt: str, conversation_context: str, user_input: str, state: CustomerServiceState = None
+    prompt: str, conversation_context: str, user_input: str, message_history: list = None
 ) -> Dict[str, Any]:
     client = _get_openai_client()
     user_input = user_input or ""
     
-    # Add relevant state information to the prompt if provided
-    if state:
-        state_info = ""
-        
-        # Only add address if it exists
-        if state.get('address'):
-            state_info += f"\nPreviously collected address: {state['address']}"
-        
-        # Only add service time if it exists
-        if state.get('service_time'):
-            state_info += f"\nPreviously collected service time: {state['service_time']}"
-        
-        if state_info:
-            prompt = prompt + state_info
+    # Build messages array
+    messages = [{"role": "system", "content": prompt}]
+    
+    # Add message history if provided (last 4 messages)
+    if message_history:
+        print(f"🔍 [OPENAI_API] Adding {len(message_history)} messages from history")
+        for i, msg in enumerate(message_history[-4:]):  # Take last 4 messages
+            print(f"🔍 [OPENAI_API] History message {i+1}: {msg.get('role', 'unknown')} - {msg.get('content', '')[:50]}...")
+            messages.append(msg)
+    else:
+        print(f"🔍 [OPENAI_API] No message history provided")
+    
+    # Add current user input
+    messages.append({"role": "user", "content": f"User input: {user_input}"})
+    print(f"🔍 [OPENAI_API] Total messages sent to OpenAI: {len(messages)}")
     
     response = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": f"User input: {user_input}"},
-        ],
+        messages=messages,
         temperature=0.3,
         max_tokens=500,
     )
@@ -91,11 +89,11 @@ def _default_result(response: str, key: str, error: str) -> Dict[str, Any]:
 # NOTE: _default_street_result removed - address is now single string
 
 
-def extract_name_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
+def extract_name_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
         prompt = get_name_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", state)
+        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", message_history)
         if result:
             return result
         else:
@@ -112,11 +110,11 @@ def extract_name_from_conversation(state: CustomerServiceState) -> Dict[str, Any
         )
 
 
-def extract_phone_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
+def extract_phone_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
         prompt = get_phone_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", state)
+        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", message_history)
         if result:
             return result
         else:
@@ -133,7 +131,7 @@ def extract_phone_from_conversation(state: CustomerServiceState) -> Dict[str, An
         )
 
 
-def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
+def extract_address_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
     """Extract address from conversation with memory of previously collected information"""
     try:
         context = _build_conversation_context(state)
@@ -145,7 +143,7 @@ def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, 
         print(f"🔍 [ADDRESS_EXTRACTION] Context: '{context}'")
         print(f"🔍 [ADDRESS_EXTRACTION] Previously collected address: '{state.get('address', 'None')}'")
         
-        result = _call_openai_api(prompt, context, user_input, state)
+        result = _call_openai_api(prompt, context, user_input, message_history)
         
         if result:
             extracted_address = result.get("info_extracted", {}).get("address")
@@ -179,7 +177,7 @@ def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, 
 # Address is now collected as a single string in the 5-step workflow
 
 
-def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
+def extract_service_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
         # Get available services from state if available
@@ -195,7 +193,7 @@ def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, 
             print(f"⚠️ [SERVICE_EXTRACTION] No available services found in state!")
         
         prompt = get_service_extraction_prompt(available_services)
-        result = _call_openai_api(prompt, context, user_input, state)
+        result = _call_openai_api(prompt, context, user_input, message_history)
         
         if result:
             extracted_service = result.get("info_extracted", {}).get("service")
@@ -225,11 +223,11 @@ def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, 
         )
 
 
-def extract_time_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
+def extract_time_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
         prompt = get_time_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", state)
+        result = _call_openai_api(prompt, context, state.get("last_user_input") or "", message_history)
         if result:
             return result
         else:

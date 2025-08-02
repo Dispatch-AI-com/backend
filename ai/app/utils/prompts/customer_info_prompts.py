@@ -109,9 +109,9 @@ Please respond strictly in the following JSON format, do not add any other conte
 
 Rules:
 - Accept partial or complete Australian address information
-- IMPORTANT: Check if "Previously collected address" exists above
-- If previously collected address exists, combine new information with it
-- If no previously collected address, extract from current user input
+- IMPORTANT: Review the conversation history above to see what address information has already been discussed
+- If address components were mentioned in previous messages, combine them with current user input
+- If no address information was discussed before, extract from current user input
 - Minimum requirements (choose one):
   a) Street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
   b) Street number AND street name AND suburb AND postcode AND state (e.g., "123 Collins Street, Melbourne, 3000, VIC")
@@ -128,9 +128,9 @@ Rules:
 Response Templates:
 - If you extract valid address (partial or complete), acknowledge and proceed to ask what service they need
 - If you cannot extract valid address information:
-  - If previously collected address exists, ask for missing components (e.g., suburb, state, postcode)
-  - If no previously collected address, politely ask for their street address
-- If user provides additional address components, combine with previously collected information
+  - If address components were mentioned in conversation history, ask for missing components (e.g., suburb, state, postcode)
+  - If no address information was discussed before, politely ask for their street address
+- If user provides additional address components, combine with information from conversation history
 - Examples of valid addresses: "123 Main Street", "6 Grandstand Parade", "Unit 5/42 Collins Street", "123 Collins Street, Melbourne, 3000, VIC"
 """
 
@@ -378,9 +378,9 @@ Please respond strictly in the following JSON format, do not add any other conte
 
 Rules:
 - Extract date and time preferences in various formats
-- IMPORTANT: Check if "Previously collected service time" exists above
-- If previously collected service time exists, combine new information with it
-- If no previously collected service time, extract from current user input
+- IMPORTANT: Review the conversation history above to see what time information has already been discussed
+- If time components were mentioned in previous messages, combine them with current user input
+- If no time information was discussed before, extract from current user input
 - Convert to MongoDB-compatible ISO format: YYYY-MM-DDTHH:MM:SSZ
 - Always use UTC timezone (Z suffix)
 - Must be a future time relative to current time
@@ -398,7 +398,7 @@ Time Conversion Examples:
 Response Templates:
 - If you successfully extract and convert time, acknowledge and use friendly tone to close the call.
 - If you cannot extract or convert time:
-  - If previously collected service time exists, ask for missing components (e.g., time if only date provided, date if only time provided)
-  - If no previously collected service time, politely ask user to provide the preferred time
-- If user provides partial time information, combine with previously collected information
+  - If time components were mentioned in conversation history, ask for missing components (e.g., time if only date provided, date if only time provided)
+  - If no time information was discussed before, politely ask user to provide the preferred time
+- If user provides partial time information, combine with information from conversation history
 """
