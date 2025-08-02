@@ -8,7 +8,7 @@ focusing on accuracy and simplicity over caching complexity.
 import json
 import asyncio
 import re
-from typing import Dict, Optional
+from typing import Dict
 from openai import AsyncOpenAI
 from config import get_settings
 
