@@ -44,18 +44,20 @@ def _call_openai_api(
     client = _get_openai_client()
     user_input = user_input or ""
     
-    # Add state information to the prompt if provided
+    # Add relevant state information to the prompt if provided
     if state:
-        state_info = f"""
-Current State Information:
-- Name: {state.get('name', 'Not collected')}
-- Phone: {state.get('phone', 'Not collected')}
-- Address: {state.get('address', 'Not collected')}
-- Service: {state.get('service', 'Not collected')}
-- Service Time: {state.get('service_time', 'Not collected')}
-- Current Step: {state.get('current_step', 'Unknown')}
-"""
-        prompt = prompt + state_info
+        state_info = ""
+        
+        # Only add address if it exists
+        if state.get('address'):
+            state_info += f"\nPreviously collected address: {state['address']}"
+        
+        # Only add service time if it exists
+        if state.get('service_time'):
+            state_info += f"\nPreviously collected service time: {state['service_time']}"
+        
+        if state_info:
+            prompt = prompt + state_info
     
     response = client.chat.completions.create(
         model="gpt-4o-mini",
