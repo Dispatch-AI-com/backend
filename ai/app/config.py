@@ -63,22 +63,6 @@ class Settings(BaseSettings):
         ]
     )
 
-    # Name Validation Configuration
-    min_name_length: int = Field(default=2)
-    max_name_length: int = Field(default=50)
-
-    # Phone Number Validation Configuration
-    min_phone_length: int = Field(default=10)
-    max_phone_length: int = Field(default=15)
-
-    # Address Validation Configuration
-    min_address_length: int = Field(default=5)
-    max_address_length: int = Field(default=200)
-
-    # Email Validation Configuration
-    email_regex_pattern: str = Field(
-        default=r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    )
 
     # Conversation History Configuration
     max_conversation_context: int = Field(default=3)
