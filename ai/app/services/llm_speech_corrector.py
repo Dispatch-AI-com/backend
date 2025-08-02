@@ -96,13 +96,9 @@ class SimplifiedSpeechCorrector:
             "reasoning": f"Applied: {', '.join(corrections_applied)}" if corrections_applied else "No critical corrections needed"
         }
         
-        logger.info(f"[SPEECH_CORRECTION] Critical corrections completed:")
-        logger.info(f"  Original: '{text}'")
-        logger.info(f"  Corrected: '{corrected}'")
-        logger.info(f"  Changed: {changed}")
-        logger.info(f"  Confidence: {result['confidence']}")
-        logger.info(f"  Method: {result['method']}")
-        logger.info(f"  Corrections applied: {corrections_applied}")
+        if changed:
+            logger.info(f"[SPEECH_CORRECTION] Applied corrections: {', '.join(corrections_applied)}")
+            logger.info(f"[SPEECH_CORRECTION] '{text}' → '{corrected}'")
         
         return result
 
@@ -225,54 +221,29 @@ Return ONLY: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.
         Returns:
             Dict: Correction result with metadata
         """
-        logger.info(f"[SPEECH_CORRECTION] ===== STARTING SPEECH CORRECTION =====")
-        logger.info(f"[SPEECH_CORRECTION] Input text: '{text}'")
-        logger.info(f"[SPEECH_CORRECTION] Context: {context}")
-        
         if not text or not isinstance(text, str) or not text.strip():
-            logger.warning(f"[SPEECH_CORRECTION] Empty or invalid input: '{text}'")
-            result = {
+            return {
                 "original": text or "",
                 "corrected": text or "",
                 "confidence": 1.0,
                 "reasoning": "Empty input",
                 "method": "no_correction"
             }
-            logger.info(f"[SPEECH_CORRECTION] ===== CORRECTION COMPLETED (EMPTY INPUT) =====")
-            return result
 
         try:
             # MVP: Only apply critical corrections (fast, reliable)
-            logger.info(f"[SPEECH_CORRECTION] Applying critical corrections...")
-            critical_result = self._apply_critical_corrections(text)
-            
-            # Log final result
-            logger.info(f"[SPEECH_CORRECTION] ===== CORRECTION COMPLETED =====")
-            logger.info(f"[SPEECH_CORRECTION] FINAL RESULT:")
-            logger.info(f"  Original: '{critical_result['original']}'")
-            logger.info(f"  Corrected: '{critical_result['corrected']}'")
-            logger.info(f"  Confidence: {critical_result['confidence']}")
-            logger.info(f"  Method: {critical_result['method']}")
-            logger.info(f"  Reasoning: {critical_result['reasoning']}")
-            logger.info(f"  Should apply: {self.should_apply_correction(critical_result)}")
-            logger.info(f"[SPEECH_CORRECTION] ===== END SPEECH CORRECTION =====")
-            
-            return critical_result
+            return self._apply_critical_corrections(text)
             
         except Exception as e:
             # MVP: Simple fallback, no complex error handling
             logger.error(f"[SPEECH_CORRECTION] Error during correction: {e}")
-            result = {
+            return {
                 "original": text,
                 "corrected": text,
                 "confidence": 0.0,
                 "reasoning": "Using original text",
                 "method": "error_fallback"
             }
-            logger.info(f"[SPEECH_CORRECTION] ===== CORRECTION FAILED - USING ORIGINAL =====")
-            logger.info(f"[SPEECH_CORRECTION] Error fallback result: {result}")
-            logger.info(f"[SPEECH_CORRECTION] ===== END SPEECH CORRECTION =====")
-            return result
 
     def should_apply_correction(self, result: Dict, threshold: float = 0.6) -> bool:
         """Determine if correction should be applied based on confidence"""

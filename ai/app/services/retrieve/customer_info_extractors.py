@@ -49,16 +49,11 @@ def _call_openai_api(
     
     # Add message history if provided (last 4 messages)
     if message_history:
-        print(f"🔍 [OPENAI_API] Adding {len(message_history)} messages from history")
-        for i, msg in enumerate(message_history[-4:]):  # Take last 4 messages
-            print(f"🔍 [OPENAI_API] History message {i+1}: {msg.get('role', 'unknown')} - {msg.get('content', '')[:50]}...")
+        for msg in message_history[-4:]:  # Take last 4 messages
             messages.append(msg)
-    else:
-        print(f"🔍 [OPENAI_API] No message history provided")
     
     # Add current user input
     messages.append({"role": "user", "content": f"User input: {user_input}"})
-    print(f"🔍 [OPENAI_API] Total messages sent to OpenAI: {len(messages)}")
     
     response = client.chat.completions.create(
         model="gpt-4.1-mini",
@@ -138,27 +133,11 @@ def extract_address_from_conversation(state: CustomerServiceState, message_histo
         prompt = get_address_extraction_prompt()
         user_input = state.get("last_user_input") or ""
         
-        print(f"🔍 [ADDRESS_EXTRACTION] Starting address extraction")
-        print(f"🔍 [ADDRESS_EXTRACTION] User input: '{user_input}'")
-        print(f"🔍 [ADDRESS_EXTRACTION] Context: '{context}'")
-        print(f"🔍 [ADDRESS_EXTRACTION] Previously collected address: '{state.get('address', 'None')}'")
-        
         result = _call_openai_api(prompt, context, user_input, message_history)
         
         if result:
-            extracted_address = result.get("info_extracted", {}).get("address")
-            is_complete = result.get("info_complete", False)
-            analysis = result.get("analysis", "")
-            
-            print(f"🔍 [ADDRESS_EXTRACTION] LLM Result:")
-            print(f"  - Extracted address: '{extracted_address}'")
-            print(f"  - Info complete: {is_complete}")
-            print(f"  - Analysis: '{analysis}'")
-            print(f"  - Full result: {result}")
-            
             return result
         else:
-            print(f"❌ [ADDRESS_EXTRACTION] LLM returned empty result")
             return _default_result(
                 "Sorry, there was a problem processing your address. Please tell me your address again.",
                 "address",
@@ -184,31 +163,15 @@ def extract_service_from_conversation(state: CustomerServiceState, message_histo
         available_services = state.get("available_services", None)
         user_input = state.get("last_user_input") or ""
         
-        print(f"🔍 [SERVICE_EXTRACTION] Starting service extraction")
-        print(f"🔍 [SERVICE_EXTRACTION] User input: '{user_input}'")
-        print(f"🔍 [SERVICE_EXTRACTION] Available services count: {len(available_services) if available_services else 0}")
-        if available_services:
-            print(f"🔍 [SERVICE_EXTRACTION] Available services: {[s.get('name', 'Unknown') for s in available_services]}")
-        else:
-            print(f"⚠️ [SERVICE_EXTRACTION] No available services found in state!")
+        if not available_services:
+            print("⚠️ [SERVICE_EXTRACTION] No available services found in state!")
         
         prompt = get_service_extraction_prompt(available_services)
         result = _call_openai_api(prompt, context, user_input, message_history)
         
         if result:
-            extracted_service = result.get("info_extracted", {}).get("service")
-            is_complete = result.get("info_complete", False)
-            analysis = result.get("analysis", "")
-            
-            print(f"🔍 [SERVICE_EXTRACTION] LLM Result:")
-            print(f"  - Extracted service: '{extracted_service}'")
-            print(f"  - Info complete: {is_complete}")
-            print(f"  - Analysis: '{analysis}'")
-            print(f"  - Full result: {result}")
-            
             return result
         else:
-            print(f"❌ [SERVICE_EXTRACTION] LLM returned empty result")
             return _default_result(
                 "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
                 "service",

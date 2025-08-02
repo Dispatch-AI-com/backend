@@ -358,18 +358,12 @@ class CustomerServiceLangGraph:
             message_history = get_message_history(call_sid)
         
         # Call LLM to extract address
-        print(f"🔍 [ADDRESS_COLLECTION] Calling LLM for address extraction...")
         result = extract_address_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Check if address was extracted
         extracted_address = result["info_extracted"].get("address")
         is_complete = result["info_complete"]
-        
-        print(f"🔍 [ADDRESS_COLLECTION] Extraction result analysis:")
-        print(f"  - Extracted address: '{extracted_address}'")
-        print(f"  - Info complete: {is_complete}")
-        print(f"  - Full result: {result}")
 
         if is_complete and extracted_address:
             # Clean address string
@@ -427,11 +421,8 @@ class CustomerServiceLangGraph:
 
         # Check available services in state
         available_services = state.get("available_services", [])
-        print(f"🔍 [SERVICE_COLLECTION] Available services in state: {len(available_services)} services")
-        if available_services:
-            print(f"🔍 [SERVICE_COLLECTION] Services: {[s.get('name', 'Unknown') for s in available_services]}")
-        else:
-            print(f"⚠️ [SERVICE_COLLECTION] No available services found in state!")
+        if not available_services:
+            print("⚠️ [SERVICE_COLLECTION] No available services found in state!")
 
         # Get message history from Redis
         message_history = []
