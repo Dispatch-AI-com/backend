@@ -19,6 +19,7 @@ class Settings(BaseSettings):
     redis_port: int = Field(default=6379)
     redis_db: int = Field(default=0)
     redis_url: Optional[str] = Field(default=None)
+    redis_socket_timeout: int = Field(default=5)
 
     # LLM Configuration
     llm_provider: str = Field(default="openai")
