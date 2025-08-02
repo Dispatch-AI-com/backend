@@ -115,7 +115,10 @@ Rules:
 - Partial address acceptable: "6 Grandstand Parade" (just street portion)
 - Handle unit/apartment numbers: "Unit 2/88 King Street" 
 - Set info_complete to true if you can extract at least street number + street name
+- IMPORTANT: If user mentions state (NSW, VIC, QLD, SA, WA, TAS, NT, ACT), include it in the address
+- State is optional but should be recorded if provided
 - Response field should be natural and friendly, matching customer service tone
+
 
 Response Templates:
 - If you extract valid address (partial or complete), acknowledge and proceed to ask what service they need
