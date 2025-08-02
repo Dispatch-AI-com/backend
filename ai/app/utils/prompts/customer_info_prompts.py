@@ -109,12 +109,14 @@ Please respond strictly in the following JSON format, do not add any other conte
 
 Rules:
 - Accept partial or complete Australian address information
-- At minimum, require street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
+- Minimum requirements (choose one):
+  a) Street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
+  b) Street number AND street name AND suburb AND postcode AND state (e.g., "123 Collins Street, Melbourne, 3000, VIC")
 - Common Australian street types: Street, Road, Avenue, Drive, Lane, Court, Place, Way, Parade, etc.
 - Full address preferred but not required: "123 Collins Street, Melbourne, VIC, 3000"
 - Partial address acceptable: "6 Grandstand Parade" (just street portion)
 - Handle unit/apartment numbers: "Unit 2/88 King Street" 
-- Set info_complete to true if you can extract at least street number + street name
+- Set info_complete to true if you can extract at least street number + street name OR street number + suburb + postcode + state
 - IMPORTANT: If user mentions state (NSW, VIC, QLD, SA, WA, TAS, NT, ACT), include it in the address
 - State is optional but should be recorded if provided
 - Response field should be natural and friendly, matching customer service tone
@@ -123,7 +125,7 @@ Rules:
 Response Templates:
 - If you extract valid address (partial or complete), acknowledge and proceed to ask what service they need
 - If you cannot extract valid address information, politely ask for their street address
-- Examples of valid addresses: "123 Main Street", "6 Grandstand Parade", "Unit 5/42 Collins Street"
+- Examples of valid addresses: "123 Main Street", "6 Grandstand Parade", "Unit 5/42 Collins Street", "123 Collins Street, Melbourne, 3000, VIC"
 """
 
 
@@ -326,6 +328,8 @@ Response Templates with Dynamic Placeholders:
    
 2. If user hasn't selected a service or needs to see options (info_complete=false):
    - politely ask what service user would like to book again.
+   - IMPORTANT: Always include the {{services_list}} placeholder in your response when info_complete=false
+   - This ensures users can see all available services when they haven't selected one
 
 Available Placeholder Variables:
 - {{selected_service_name}} - Name of the service user selected

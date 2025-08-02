@@ -66,6 +66,10 @@ class CustomerServiceLangGraph:
 
         # Get available services
         available_services = state.get("available_services", [])
+        
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Processing response: '{response_text[:100]}...'")
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Available services count: {len(available_services)}")
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{{services_list}}' in response_text}")
 
         # Replace {{services_list}} placeholder
         if "{{services_list}}" in response_text:
@@ -119,6 +123,7 @@ class CustomerServiceLangGraph:
                     "{{selected_service_price}}", "Price on request"
                 )
 
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Final response: '{response_text[:100]}...'")
         return response_text
 
     def _generate_closing_message(
@@ -319,12 +324,18 @@ class CustomerServiceLangGraph:
                 # Continue with original input if correction fails
 
         # Call LLM to extract address
+        print(f"🔍 [ADDRESS_COLLECTION] Calling LLM for address extraction...")
         result = extract_address_from_conversation(state)
         state["last_llm_response"] = result
 
         # Check if address was extracted
         extracted_address = result["info_extracted"].get("address")
         is_complete = result["info_complete"]
+        
+        print(f"🔍 [ADDRESS_COLLECTION] Extraction result analysis:")
+        print(f"  - Extracted address: '{extracted_address}'")
+        print(f"  - Info complete: {is_complete}")
+        print(f"  - Full result: {result}")
 
         if is_complete and extracted_address:
             # Clean address string
@@ -374,6 +385,14 @@ class CustomerServiceLangGraph:
         # Initialize service_max_attempts if not present
         if "service_max_attempts" not in state or state["service_max_attempts"] is None:
             state["service_max_attempts"] = settings.service_max_attempts
+
+        # Check available services in state
+        available_services = state.get("available_services", [])
+        print(f"🔍 [SERVICE_COLLECTION] Available services in state: {len(available_services)} services")
+        if available_services:
+            print(f"🔍 [SERVICE_COLLECTION] Services: {[s.get('name', 'Unknown') for s in available_services]}")
+        else:
+            print(f"⚠️ [SERVICE_COLLECTION] No available services found in state!")
 
         # Call LLM to extract service
         result = extract_service_from_conversation(state)

@@ -121,16 +121,35 @@ def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, 
     try:
         context = _build_conversation_context(state)
         prompt = get_address_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "")
+        user_input = state.get("last_user_input") or ""
+        
+        print(f"🔍 [ADDRESS_EXTRACTION] Starting address extraction")
+        print(f"🔍 [ADDRESS_EXTRACTION] User input: '{user_input}'")
+        print(f"🔍 [ADDRESS_EXTRACTION] Context: '{context}'")
+        
+        result = _call_openai_api(prompt, context, user_input)
+        
         if result:
+            extracted_address = result.get("info_extracted", {}).get("address")
+            is_complete = result.get("info_complete", False)
+            analysis = result.get("analysis", "")
+            
+            print(f"🔍 [ADDRESS_EXTRACTION] LLM Result:")
+            print(f"  - Extracted address: '{extracted_address}'")
+            print(f"  - Info complete: {is_complete}")
+            print(f"  - Analysis: '{analysis}'")
+            print(f"  - Full result: {result}")
+            
             return result
         else:
+            print(f"❌ [ADDRESS_EXTRACTION] LLM returned empty result")
             return _default_result(
                 "Sorry, there was a problem processing your address. Please tell me your address again.",
                 "address",
                 "Parse error",
             )
     except Exception as e:
+        print(f"❌ [ADDRESS_EXTRACTION] Exception occurred: {str(e)}")
         return _default_result(
             "Sorry, the system is temporarily unavailable. Please tell me your street address again.",
             "address",
@@ -147,17 +166,40 @@ def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, 
         context = _build_conversation_context(state)
         # Get available services from state if available
         available_services = state.get("available_services", None)
+        user_input = state.get("last_user_input") or ""
+        
+        print(f"🔍 [SERVICE_EXTRACTION] Starting service extraction")
+        print(f"🔍 [SERVICE_EXTRACTION] User input: '{user_input}'")
+        print(f"🔍 [SERVICE_EXTRACTION] Available services count: {len(available_services) if available_services else 0}")
+        if available_services:
+            print(f"🔍 [SERVICE_EXTRACTION] Available services: {[s.get('name', 'Unknown') for s in available_services]}")
+        else:
+            print(f"⚠️ [SERVICE_EXTRACTION] No available services found in state!")
+        
         prompt = get_service_extraction_prompt(available_services)
-        result = _call_openai_api(prompt, context, state.get("last_user_input") or "")
+        result = _call_openai_api(prompt, context, user_input)
+        
         if result:
+            extracted_service = result.get("info_extracted", {}).get("service")
+            is_complete = result.get("info_complete", False)
+            analysis = result.get("analysis", "")
+            
+            print(f"🔍 [SERVICE_EXTRACTION] LLM Result:")
+            print(f"  - Extracted service: '{extracted_service}'")
+            print(f"  - Info complete: {is_complete}")
+            print(f"  - Analysis: '{analysis}'")
+            print(f"  - Full result: {result}")
+            
             return result
         else:
+            print(f"❌ [SERVICE_EXTRACTION] LLM returned empty result")
             return _default_result(
                 "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
                 "service",
                 "Parse error",
             )
     except Exception as e:
+        print(f"❌ [SERVICE_EXTRACTION] Exception occurred: {str(e)}")
         return _default_result(
             "Sorry, the system is temporarily unavailable. Please tell me what service you need again.",
             "service",
