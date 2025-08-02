@@ -11,13 +11,10 @@ from typing import TypedDict, Literal, Optional, Dict, List
 class CustomerServiceState(TypedDict):
     """Customer service system state definition - Updated for 5-step workflow"""
 
-    # User information
+    # User information - 5-step workflow
     name: Optional[str]
     phone: Optional[str]
-    address: Optional[str]  # New: only address is required.
-    # suburb: Optional[str]      # remove: suburb
-    # state: Optional[str]       # remove: state/territory
-    # postcode: Optional[str]    # remove: postcode
+    address: Optional[str]  # Single string address
     service: Optional[str]
     service_id: Optional[str]  # New: service ID
     service_price: Optional[float]  # New: service price
@@ -26,7 +23,7 @@ class CustomerServiceState(TypedDict):
     service_time: Optional[str]
     service_time_mongodb: Optional[str]  # MongoDB datetime format
 
-    # Process control - Updated for 5-step workflow (removed email)
+    # Process control - 5-step workflow
     current_step: Literal[
         "collect_name",
         "collect_phone",
@@ -37,10 +34,7 @@ class CustomerServiceState(TypedDict):
     ]
     name_attempts: int
     phone_attempts: int
-    address_attempts: int  # New: only address is required.
-    # suburb_attempts: int       # remove
-    # state_attempts: int        # remove
-    # postcode_attempts: int     # remove
+    address_attempts: int  # Single address collection
     service_attempts: int
     time_attempts: int
     max_attempts: int
@@ -50,13 +44,10 @@ class CustomerServiceState(TypedDict):
     last_user_input: Optional[str]
     last_llm_response: Optional[dict]
 
-    # Status flags - Updated for 7-step workflow (removed email)
+    # Status flags - 5-step workflow
     name_complete: bool
     phone_complete: bool
-    address_complete: bool  # New:only address is requried.
-    # suburb_complete: bool      # New
-    # state_complete: bool       # New
-    # postcode_complete: bool    # New
+    address_complete: bool  # Single address completion
     service_complete: bool
     time_complete: bool
     conversation_complete: bool

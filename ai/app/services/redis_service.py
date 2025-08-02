@@ -25,9 +25,6 @@ def get_call_skeleton(call_sid: str) -> CallSkeleton:
         if skeleton.user and skeleton.user.userInfo and skeleton.user.userInfo.address:
             addr = skeleton.user.userInfo.address
             print(f"🔍 Redis: Address from skeleton: {addr}")
-            print(
-                f"🔍 Redis: Address fields: street_number='{addr.street_number}', street_name='{addr.street_name}', suburb='{addr.suburb}', state='{addr.state}', postcode='{addr.postcode}'"
-            )
         else:
             print("🔍 Redis: No address found in skeleton")
 
@@ -58,12 +55,12 @@ def get_call_skeleton_dict(call_sid: str) -> Dict[str, Any]:
 def update_user_info_field(
     call_sid: str, field_name: str, field_value, timestamp: Optional[str] = None
 ) -> bool:
-    """Update specific user information field in real-time
+    """Update specific user information field in real-time (5-step workflow)
 
     Args:
         call_sid: Call ID
-        field_name: Field name (name, phone, address, email)
-        field_value: Field value
+        field_name: Field name (name, phone, address)
+        field_value: Field value (for address: single string)
         timestamp: Update timestamp
 
     Returns:
@@ -87,46 +84,9 @@ def update_user_info_field(
         if "userInfo" not in skeleton_dict["user"]:
             skeleton_dict["user"]["userInfo"] = {}
 
-        # Handle nested field paths (e.g., "address.street_number")
-        if "." in field_name:
-            path_parts = field_name.split(".")
-            current_dict = skeleton_dict["user"]["userInfo"]
-
-            # Navigate to the nested structure and ensure it exists
-            for part in path_parts[:-1]:
-                if part not in current_dict:
-                    current_dict[part] = {}
-                current_dict = current_dict[part]
-
-            # Set the final field
-            final_field = path_parts[-1]
-            current_dict[final_field] = field_value
-            print(f"🔍 Redis: Set nested field {field_name} = {field_value}")
-
-            # For address fields, log the complete address structure
-            if path_parts[0] == "address":
-                address_obj = skeleton_dict["user"]["userInfo"].get("address", {})
-                print(f"🔍 Redis: Current address structure: {address_obj}")
-
-        elif field_name == "address":
-            print(
-                f"🔍 Redis: Processing complete address field, type: {type(field_value)}"
-            )
-            if hasattr(field_value, "model_dump"):
-                # If it's a Pydantic model (Address object), convert to dict
-                address_dict = field_value.model_dump()
-                print(f"🔍 Redis: Address converted to dict: {address_dict}")
-                skeleton_dict["user"]["userInfo"][field_name] = address_dict
-            elif isinstance(field_value, dict):
-                # If it's already a dict (from model_dump()), store directly
-                print(f"🔍 Redis: Address already dict: {field_value}")
-                skeleton_dict["user"]["userInfo"][field_name] = field_value
-            else:
-                print(f"🔍 Redis: Address unexpected type: {type(field_value)}")
-                skeleton_dict["user"]["userInfo"][field_name] = field_value
-        else:
-            # For other types (string, etc.), store directly
-            skeleton_dict["user"]["userInfo"][field_name] = field_value
+        # 5-step workflow: Simple field storage (name, phone, address as strings)
+        skeleton_dict["user"]["userInfo"][field_name] = field_value
+        print(f"🔍 Redis: Set field {field_name} = {field_value}")
 
         # Add timestamp record
         if timestamp:

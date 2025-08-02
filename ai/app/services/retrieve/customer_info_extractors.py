@@ -1,11 +1,11 @@
 """
 Customer Information Extraction Module
 
-Responsible for extracting structured customer information (name, phone, address components, email, service, time) from conversation history using OpenAI API.
+Responsible for extracting structured customer information (name, phone, address, service, time) from conversation history using OpenAI API.
 
 Key Features:
 - Extracts structured customer info from conversation
-- Supports multiple info types including individual address components
+- Single string address collection (5-step workflow)
 - Unified error handling and fallback
 - Standardized return format
 
@@ -25,22 +25,7 @@ from utils.prompts.customer_info_prompts import (
     get_time_extraction_prompt,
 )
 
-"""
-class CustomerServiceState(TypedDict):
-    name: Optional[str]
-    phone: Optional[str]
-    address: Optional[str]
-    #suburb: Optional[str]
-    #state: Optional[str]
-    #postcode: Optional[str]
-    service: Optional[str]
-    service_id: Optional[str]
-    service_price: Optional[float]
-    service_description: Optional[str]
-    available_services: Optional[List[Dict]]
-    service_time: Optional[str]
-    last_user_input: Optional[str]
-"""
+# Customer service state uses 5-step workflow: name, phone, address, service, time
 
 
 def _get_openai_client() -> OpenAI:
@@ -86,18 +71,7 @@ def _default_result(response: str, key: str, error: str) -> Dict[str, Any]:
     }
 
 
-"""
-def _default_street_result(response: str, error: str) -> Dict[str, Any]:
-    return {
-        "response": response,
-        "info_extracted": {
-            "street_number": None,
-            "street_name": None
-        },
-        "info_complete": False,
-        "analysis": error
-    }
-"""
+# NOTE: _default_street_result removed - address is now single string
 
 
 def extract_name_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
@@ -164,46 +138,8 @@ def extract_address_from_conversation(state: CustomerServiceState) -> Dict[str, 
         )
 
 
-'''
-def extract_suburb_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
-    """Extract suburb information from conversation"""
-    try:
-        context = _build_conversation_context(state)
-        prompt = get_suburb_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get('last_user_input') or "")
-        if result:
-            return result
-        else:
-            return _default_result("Sorry, there was a problem processing your suburb. Please tell me your suburb again.", "suburb", "Parse error")
-    except Exception as e:
-        return _default_result("Sorry, the system is temporarily unavailable. Please tell me your suburb again.", "suburb", f"API error: {str(e)}")
-
-def extract_state_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
-    """Extract state information from conversation"""
-    try:
-        context = _build_conversation_context(state)
-        prompt = get_state_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get('last_user_input') or "")
-        if result:
-            return result
-        else:
-            return _default_result("Sorry, there was a problem processing your state. Please tell me your state again.", "state", "Parse error")
-    except Exception as e:
-        return _default_result("Sorry, the system is temporarily unavailable. Please tell me your state again.", "state", f"API error: {str(e)}")
-
-def extract_postcode_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
-    """Extract postcode information from conversation"""
-    try:
-        context = _build_conversation_context(state)
-        prompt = get_postcode_extraction_prompt()
-        result = _call_openai_api(prompt, context, state.get('last_user_input') or "")
-        if result:
-            return result
-        else:
-            return _default_result("Sorry, there was a problem processing your postcode. Please tell me your postcode again.", "postcode", "Parse error")
-    except Exception as e:
-        return _default_result("Sorry, the system is temporarily unavailable. Please tell me your postcode again.", "postcode", f"API error: {str(e)}")
-'''
+# NOTE: Individual address component extractors removed (suburb, state, postcode)
+# Address is now collected as a single string in the 5-step workflow
 
 
 def extract_service_from_conversation(state: CustomerServiceState) -> Dict[str, Any]:
