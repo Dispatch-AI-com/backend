@@ -3,13 +3,9 @@ import json
 from models.call import CallSkeleton
 from typing import Optional, Dict, Any
 
-from config import settings
+from infrastructure.redis_client import get_redis
 
-REDIS_HOST = settings.redis_host
-REDIS_PORT = settings.redis_port
-REDIS_DB = settings.redis_db
-
-r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, db=REDIS_DB, decode_responses=True)
+r = get_redis()
 
 
 def get_call_skeleton(call_sid: str) -> CallSkeleton:
