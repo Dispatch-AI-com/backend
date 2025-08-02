@@ -41,6 +41,8 @@ from .redis_service import (
     update_booking_status
 )
 
+from .llm_speech_corrector import LLMSpeechCorrector
+
 from config import settings
 
 
@@ -115,6 +117,9 @@ class CustomerServiceLangGraph:
             self.client = OpenAI(api_key=api_key)
         else:
             self.client = OpenAI(api_key=settings.openai_api_key)
+        
+        # Initialize LLM-first speech correction service
+        self.speech_corrector = LLMSpeechCorrector(api_key)
         
         # Create LangGraph workflow - using simplified approach
         self.workflow = None
@@ -227,8 +232,8 @@ class CustomerServiceLangGraph:
         
         return state
 
-    def process_address_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Process street collection step"""
+    async def process_address_collection(self, state: CustomerServiceState, call_sid: Optional[str] = None):
+        """Process street collection step with speech correction"""
         # Initialize attempts counter if not present
         if "address_attempts" not in state or state["address_attempts"] is None:
             state["address_attempts"] = 0
@@ -236,6 +241,29 @@ class CustomerServiceLangGraph:
         # Initialize max_attempts if not present
         if "max_attempts" not in state or state["max_attempts"] is None:
             state["max_attempts"] = settings.max_attempts
+        
+        # Apply LLM-first speech correction for address input
+        original_input = state.get("last_user_input", "")
+        if original_input:
+            try:
+                correction_result = await self.speech_corrector.correct_speech_input(
+                    text=original_input,
+                    context="address_collection"
+                )
+                
+                # Apply correction if confidence is sufficient
+                if self.speech_corrector.should_apply_correction(correction_result):
+                    corrected_input = correction_result["corrected"]
+                    state["last_user_input"] = corrected_input
+                    print(f"🔧 LLM speech correction applied: '{original_input}' -> '{corrected_input}'")
+                    print(f"   Method: {correction_result['method']}, Confidence: {correction_result['confidence']:.2f}")
+                    print(f"   Cached: {correction_result.get('cached', False)}, Reasoning: {correction_result['reasoning']}")
+                else:
+                    print(f"✅ No speech correction needed for: '{original_input}' (confidence: {correction_result['confidence']:.2f})")
+                    
+            except Exception as e:
+                print(f"⚠️ Speech correction failed, using original input: {e}")
+                # Continue with original input if correction fails
         
         # Call LLM to extract street
         result = extract_address_from_conversation(state)
@@ -570,7 +598,7 @@ class CustomerServiceLangGraph:
 
     # ================== Unified Workflow Entry Function ==================
     
-    def process_customer_workflow(self, state: CustomerServiceState, call_sid: Optional[str] = None):
+    async def process_customer_workflow(self, state: CustomerServiceState, call_sid: Optional[str] = None):
         """Unified customer information collection workflow processing function - Updated for 7-step workflow (removed email)
         
         This is the main entry point for external API calls, responsible for automatically
@@ -592,7 +620,7 @@ class CustomerServiceLangGraph:
         elif not state["phone_complete"]:
             state = self.process_phone_collection(state, call_sid)
         elif not state["address_complete"]:
-            state = self.process_address_collection(state, call_sid)
+            state = await self.process_address_collection(state, call_sid)
         #elif not state.get("street_complete", False):
          #   state = self.process_street_collection(state, call_sid)
         #elif not state.get("suburb_complete", False):
@@ -747,7 +775,7 @@ class CustomerServiceLangGraph:
             print(f"❌ Failed to save file: {e}")
             return None
 
-    def start_conversation(self, initial_message: str = "Hello! I'm the AI customer service assistant. What is your name?"):
+    async def start_conversation(self, initial_message: str = "Hello! I'm the AI customer service assistant. What is your name?"):
         """Start conversation process (for standalone testing) - Updated for 7-step workflow (removed email)"""
         # Initialize state
         state: CustomerServiceState = {
@@ -819,7 +847,7 @@ class CustomerServiceLangGraph:
                 state["last_user_input"] = user_input
                 
                 # Process based on current step using unified workflow
-                state = self.process_customer_workflow(state)
+                state = await self.process_customer_workflow(state)
                 
                 # Display AI response
                 if state["last_llm_response"]:
@@ -853,7 +881,7 @@ class CustomerServiceLangGraph:
 
 # ================== Module Test Entry Point ==================
 
-if __name__ == "__main__":
+async def main():
     """Module test entry point"""
     print("🚀 Starting AI customer service system test (8-Step Workflow)...")
     
@@ -861,7 +889,11 @@ if __name__ == "__main__":
     cs_agent = CustomerServiceLangGraph()
     
     # Start conversation
-    final_state = cs_agent.start_conversation()
+    final_state = await cs_agent.start_conversation()
     
     print("\n📊 Final state summary:")
     cs_agent.print_results(final_state)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
