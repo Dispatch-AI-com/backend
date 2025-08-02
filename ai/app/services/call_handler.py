@@ -41,7 +41,7 @@ from .redis_service import (
     update_booking_status
 )
 
-from .llm_speech_corrector import LLMSpeechCorrector
+from .llm_speech_corrector import SimplifiedSpeechCorrector
 
 from config import settings
 
@@ -118,8 +118,8 @@ class CustomerServiceLangGraph:
         else:
             self.client = OpenAI(api_key=settings.openai_api_key)
         
-        # Initialize LLM-first speech correction service
-        self.speech_corrector = LLMSpeechCorrector(api_key)
+        # Initialize simplified speech correction service
+        self.speech_corrector = SimplifiedSpeechCorrector(api_key)
         
         # Create LangGraph workflow - using simplified approach
         self.workflow = None
@@ -255,9 +255,9 @@ class CustomerServiceLangGraph:
                 if self.speech_corrector.should_apply_correction(correction_result):
                     corrected_input = correction_result["corrected"]
                     state["last_user_input"] = corrected_input
-                    print(f"🔧 LLM speech correction applied: '{original_input}' -> '{corrected_input}'")
+                    print(f"🔧 Speech correction applied: '{original_input}' -> '{corrected_input}'")
                     print(f"   Method: {correction_result['method']}, Confidence: {correction_result['confidence']:.2f}")
-                    print(f"   Cached: {correction_result.get('cached', False)}, Reasoning: {correction_result['reasoning']}")
+                    print(f"   Reasoning: {correction_result['reasoning']}")
                 else:
                     print(f"✅ No speech correction needed for: '{original_input}' (confidence: {correction_result['confidence']:.2f})")
                     

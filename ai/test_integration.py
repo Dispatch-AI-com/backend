@@ -104,45 +104,46 @@ async def test_address_collection_integration():
         print("-" * 40)
 
 
-async def test_performance_and_caching():
-    """Test performance and caching of the LLM speech corrector"""
+async def test_performance():
+    """Test performance of the simplified speech corrector"""
     
     cs_agent = CustomerServiceLangGraph(api_key="test-key")
     
-    print("\nPerformance and Caching Test")
+    print("\nPerformance Test")
     print("=" * 40)
     
-    # Test the same input multiple times to verify caching
+    # Test critical correction performance
     test_input = "I live in NSEW"
     
     import time
     
-    # First call (should take longer)
+    # Critical correction call (should be very fast)
     start_time = time.time()
     correction_result = await cs_agent.speech_corrector.correct_speech_input(test_input, "address_collection")
     first_call_time = time.time() - start_time
     
-    print(f"First call: {first_call_time*1000:.1f}ms")
+    print(f"Critical correction: {first_call_time*1000:.1f}ms")
     print(f"Result: {correction_result['corrected']}")
     print(f"Method: {correction_result['method']}")
-    print(f"Cached: {correction_result.get('cached', False)}")
     
-    # Second call (should be faster due to caching)
+    # Test LLM call performance (complex input)
+    complex_input = "My postcode is three oh oh eight"
     start_time = time.time()
-    cached_result = await cs_agent.speech_corrector.correct_speech_input(test_input, "address_collection")
-    second_call_time = time.time() - start_time
+    llm_result = await cs_agent.speech_corrector.correct_speech_input(complex_input, "address_collection")
+    llm_call_time = time.time() - start_time
     
-    print(f"Second call: {second_call_time*1000:.1f}ms")
-    print(f"Cached: {cached_result.get('cached', False)}")
+    print(f"LLM call: {llm_call_time*1000:.1f}ms")
+    print(f"Result: {llm_result['corrected']}")
+    print(f"Method: {llm_result['method']}")
     
     # Performance statistics
-    stats = cs_agent.speech_corrector.get_performance_stats()
-    print(f"Cache stats: {stats['cache_stats']}")
+    print(f"Timeout setting: {cs_agent.speech_corrector.timeout_seconds}s")
+    print(f"Max retries: {cs_agent.speech_corrector.max_retries}")
     
-    if second_call_time < first_call_time * 0.1:  # Should be at least 10x faster
-        print("✅ Caching is working effectively")
+    if first_call_time < 0.01:  # Should be very fast for critical corrections
+        print("✅ Critical corrections are working efficiently")
     else:
-        print("⚠️ Caching may not be working optimally")
+        print("⚠️ Performance may need optimization")
 
 
 async def main():
@@ -150,7 +151,7 @@ async def main():
     print("🧪 Starting LLM-First Speech Correction Integration Tests\n")
     
     await test_address_collection_integration()
-    await test_performance_and_caching()
+    await test_performance()
     
     print("\n🎉 Integration tests completed!")
 

@@ -121,37 +121,24 @@ class SimplifiedSpeechCorrector:
                 "method": "no_client"
             }
         
-        # Optimized prompt for speech recognition errors
-        correction_prompt = f"""You are an expert at fixing speech recognition errors from phone calls, especially Australian addresses with diverse accents.
+        # Streamlined prompt for phone call scenarios
+        correction_prompt = f"""Fix speech recognition errors in: "{text}"
 
-TASK: Fix speech recognition errors in this text: "{text}"
-CONTEXT: {context}
+Focus on Australian addresses: states (NSW, VIC, QLD, SA, WA, TAS, NT, ACT), 
+street types (Road, Street, Avenue, Drive, Lane, Court, Place, Crescent),
+and common phonetic errors.
 
-COMMON PATTERNS TO FIX:
-- Australian states: NSW, VIC, QLD, SA, WA, TAS, NT, ACT
-- Street types: Road, Street, Avenue, Drive, Lane, Court, Place, Crescent  
-- Numbers that sound like letters: "eight" → "8", "oh" → "0"
-- Accent variations: Different pronunciations of place names
-- Phonetic errors: Words that sound similar but are different
-
-RULES:
-1. ONLY fix clear speech recognition errors
-2. Keep text natural and conversational
-3. Don't change correct information
-4. Focus on Australian address/location terms
-
-Return ONLY this JSON (no other text):
-{{"original": "{text}", "corrected": "fixed_text", "confidence": 0.0-1.0, "reasoning": "brief_explanation"}}"""
+Return JSON: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.0-1.0, "reasoning": "explanation"}}"""
 
         try:
             response = await asyncio.wait_for(
                 self.client.chat.completions.create(
                     model=settings.openai_model,
                     messages=[
-                        {"role": "system", "content": "You are a speech recognition error correction specialist for Australian phone calls."},
+                        {"role": "system", "content": "You fix Australian address speech recognition errors in phone calls."},
                         {"role": "user", "content": correction_prompt}
                     ],
-                    max_tokens=150,
+                    max_tokens=120,
                     temperature=0.1
                 ),
                 timeout=self.timeout_seconds
@@ -159,37 +146,28 @@ Return ONLY this JSON (no other text):
             
             content = response.choices[0].message.content.strip()
             
-            # Extract JSON from response
-            if content.startswith('```json'):
-                content = content[7:-3]
-            elif content.startswith('```'):
-                content = content[3:-3]
+            # Clean JSON response
+            if content.startswith('```'):
+                content = content.split('```')[1]
+                if content.startswith('json'):
+                    content = content[4:]
             
             result = json.loads(content)
             result["method"] = "llm_correction"
             return result
             
-        except asyncio.TimeoutError:
-            return {
-                "original": text,
-                "corrected": text,
-                "confidence": 0.0,
-                "reasoning": "LLM timeout - keeping original",
-                "method": "timeout"
-            }
         except Exception as e:
-            print(f"LLM correction error: {str(e)}")
             return {
                 "original": text,
                 "corrected": text,
                 "confidence": 0.0,
-                "reasoning": f"LLM error: {str(e)[:50]}",
-                "method": "error"
+                "reasoning": f"LLM failed: {str(e)[:30]}",
+                "method": "llm_error"
             }
     
     async def correct_speech_input(self, text: str, context: str = "address_collection") -> Dict:
         """
-        Main speech correction method with caching and fallbacks
+        Simplified speech correction method for phone call scenarios
         
         Args:
             text: Speech recognition text to correct
@@ -204,53 +182,32 @@ Return ONLY this JSON (no other text):
                 "corrected": text,
                 "confidence": 1.0,
                 "reasoning": "Empty input",
-                "method": "no_correction",
-                "cached": False
+                "method": "no_correction"
             }
         
-        # Check cache first
-        cached_result = self.cache.get(text, context)
-        if cached_result:
-            cached_result["cached"] = True
-            return cached_result
+        # Step 1: Apply critical corrections (fast, reliable)
+        critical_result = self._apply_critical_corrections(text)
+        if critical_result["confidence"] > 0.5:  # Found critical corrections
+            return critical_result
         
-        # Try LLM correction with retries
-        for attempt in range(self.max_retries + 1):
+        # Step 2: Use LLM for complex cases (if warranted)
+        if self._should_use_llm(text):
             try:
-                result = await self._llm_correct_with_timeout(text, context)
-                
-                # Validate result
-                if (result.get("confidence", 0) > 0.3 and 
-                    result.get("corrected") and 
-                    result["method"] == "llm_correction"):
-                    
-                    result["cached"] = False
-                    result["attempts"] = attempt + 1
-                    
-                    # Cache successful result
-                    self.cache.set(text, context, result)
-                    return result
-                    
+                llm_result = await self._llm_correct_with_timeout(text, context)
+                # Return LLM result if confidence is reasonable
+                if llm_result.get("confidence", 0) > 0.4:
+                    return llm_result
             except Exception as e:
-                print(f"LLM correction attempt {attempt + 1} failed: {e}")
-                continue
+                print(f"LLM correction failed: {e}")
         
-        # Fallback to critical corrections
-        fallback_corrected, fallback_changed = self._apply_critical_fallback(text)
-        
-        result = {
+        # Step 3: Return original with low confidence
+        return {
             "original": text,
-            "corrected": fallback_corrected,
-            "confidence": 0.8 if fallback_changed else 0.1,
-            "reasoning": "Critical fallback applied" if fallback_changed else "No correction needed",
-            "method": "critical_fallback" if fallback_changed else "no_correction",
-            "cached": False,
-            "attempts": self.max_retries + 1
+            "corrected": text,
+            "confidence": 0.1,
+            "reasoning": "No corrections applied",
+            "method": "no_correction"
         }
-        
-        # Cache fallback result
-        self.cache.set(text, context, result)
-        return result
     
     def should_apply_correction(self, result: Dict, threshold: float = 0.6) -> bool:
         """Determine if correction should be applied based on confidence"""
@@ -265,19 +222,12 @@ Return ONLY this JSON (no other text):
         # Apply if confidence is above threshold
         return confidence >= threshold
     
-    def get_performance_stats(self) -> Dict:
-        """Get performance and cache statistics"""
-        return {
-            "cache_stats": self.cache.get_stats(),
-            "timeout_seconds": self.timeout_seconds,
-            "max_retries": self.max_retries
-        }
 
 
-# Test function for the new LLM-first corrector
-async def test_llm_speech_corrector():
-    """Test the LLM-first speech correction system"""
-    corrector = LLMSpeechCorrector(api_key="test-key")  # Will use mock mode
+# Test function for the simplified corrector
+async def test_simplified_speech_corrector():
+    """Test the simplified speech correction system"""
+    corrector = SimplifiedSpeechCorrector(api_key="test-key")  # Will use mock mode
     
     test_cases = [
         "I live in NSEW",
@@ -290,7 +240,7 @@ async def test_llm_speech_corrector():
         "The suburb is Cash mere"
     ]
     
-    print("LLM-First Speech Correction Test:")
+    print("Simplified Speech Correction Test:")
     print("=" * 60)
     
     for test_input in test_cases:
@@ -305,20 +255,12 @@ async def test_llm_speech_corrector():
         print(f"Confidence: {result['confidence']:.2f}")
         print(f"Method:     {result['method']}")
         print(f"Apply:      {'Yes' if should_apply else 'No'}")
-        print(f"Cached:     {result.get('cached', False)}")
         print(f"Time:       {(end_time - start_time)*1000:.1f}ms")
         print(f"Reasoning:  {result['reasoning']}")
         print("-" * 40)
-    
-    # Test caching
-    print("\nTesting cache performance:")
-    start_time = time.time()
-    cached_result = await corrector.correct_speech_input("I live in NSEW")
-    end_time = time.time()
-    print(f"Second call (cached): {(end_time - start_time)*1000:.1f}ms")
-    print(f"Cache stats: {corrector.get_performance_stats()}")
 
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(test_llm_speech_corrector())
+    import time
+    asyncio.run(test_simplified_speech_corrector())
