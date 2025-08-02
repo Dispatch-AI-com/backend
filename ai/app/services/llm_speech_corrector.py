@@ -9,7 +9,6 @@ import json
 import asyncio
 import re
 from typing import Dict
-from openai import AsyncOpenAI
 from config import get_settings
 
 settings = get_settings()
@@ -19,11 +18,10 @@ class SimplifiedSpeechCorrector:
     """Simplified speech correction system for phone call scenarios"""
 
     def __init__(self, api_key=None):
+        # MVP: Disable LLM client - only use dictionary corrections
         self.client = None
-        if settings.llm_provider == "openai" and (api_key or settings.openai_api_key):
-            self.client = AsyncOpenAI(api_key=api_key or settings.openai_api_key)
-
-        # Performance settings
+        
+        # Performance settings (kept for future use)
         self.timeout_seconds = 3.0
         self.max_retries = 2
 
@@ -92,20 +90,11 @@ class SimplifiedSpeechCorrector:
         }
 
     def _should_use_llm(self, text: str) -> bool:
-        """Determine if LLM correction is needed based on text complexity"""
-        # Use LLM for longer, more complex inputs that might have subtle errors
-        if len(text.split()) > 3:  # More than 3 words
-            return True
-
-        # Use LLM if text contains numbers (often misrecognized)
-        if any(char.isdigit() for char in text):
-            return True
-
-        # Skip LLM for very short, simple inputs
+        """MVP: Disable LLM usage - only use dictionary corrections"""
         return False
 
     async def _llm_correct_with_timeout(self, text: str, context: str) -> Dict:
-        """LLM correction with timeout and error handling"""
+        """LLM correction with enhanced error handling for production"""
         if settings.llm_provider == "mock":
             return {
                 "original": text,
@@ -124,93 +113,125 @@ class SimplifiedSpeechCorrector:
                 "method": "no_client"
             }
 
-        # Streamlined prompt for phone call scenarios
-        correction_prompt = f"""Fix speech recognition errors in: "{text}"
+        # Simplified, more reliable prompt for production
+        correction_prompt = f"""Fix speech errors in Australian address: "{text}"
 
-Focus on Australian addresses: states (NSW, VIC, QLD, SA, WA, TAS, NT, ACT), 
-street types (Road, Street, Avenue, Drive, Lane, Court, Place, Crescent),
-and common phonetic errors.
+Common fixes:
+- NSEW → NSW
+- Victor → VIC  
+- Queens Land → QLD
+- rode → Road
+- grandstand → Grandstand
 
-Return JSON: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.0-1.0, "reasoning": "explanation"}}"""
+Return ONLY: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.8, "reasoning": "explanation"}}"""
 
-        try:
-            response = await asyncio.wait_for(
-                self.client.chat.completions.create(
-                    model=settings.openai_model,
-                    messages=[
-                        {"role": "system", "content": "You fix Australian address speech recognition errors in phone calls."},
-                        {"role": "user", "content": correction_prompt}
-                    ],
-                    max_tokens=120,
-                    temperature=0.1
-                ),
-                timeout=self.timeout_seconds
-            )
+        # Try with retries for better reliability
+        for attempt in range(self.max_retries):
+            try:
+                response = await asyncio.wait_for(
+                    self.client.chat.completions.create(
+                        model=settings.openai_model,
+                        messages=[
+                            {"role": "system", "content": "Fix Australian address speech errors. Return only JSON."},
+                            {"role": "user", "content": correction_prompt}
+                        ],
+                        max_tokens=100,
+                        temperature=0.0  # More deterministic
+                    ),
+                    timeout=self.timeout_seconds
+                )
 
-            content = response.choices[0].message.content.strip()
+                if not response.choices or not response.choices[0].message.content:
+                    continue  # Retry if empty response
 
-            # Clean JSON response
-            if content.startswith("```"):
-                content = content.split("```")[1]
-                if content.startswith("json"):
-                    content = content[4:]
+                content = response.choices[0].message.content.strip()
 
-            result = json.loads(content)
-            result["method"] = "llm_correction"
-            return result
+                # Robust JSON extraction
+                try:
+                    # Clean common JSON formatting issues
+                    if content.startswith("```"):
+                        lines = content.split("\n")
+                        for line in lines:
+                            if line.strip().startswith("{"):
+                                content = line.strip()
+                                break
+                    
+                    # Remove trailing text after JSON
+                    if "}" in content:
+                        content = content[:content.rfind("}") + 1]
+                    
+                    result = json.loads(content)
+                    
+                    # Validate required fields
+                    if not all(key in result for key in ["original", "corrected", "confidence", "reasoning"]):
+                        continue  # Retry if missing fields
+                    
+                    # Ensure safe values
+                    result["method"] = "llm_correction"
+                    result["confidence"] = min(max(float(result.get("confidence", 0.5)), 0.0), 1.0)
+                    result["reasoning"] = str(result.get("reasoning", "LLM correction applied"))[:100]  # Limit length
+                    
+                    return result
+                    
+                except (json.JSONDecodeError, ValueError, TypeError) as parse_error:
+                    print(f"Speech corrector JSON parse error (attempt {attempt + 1}): {parse_error}")
+                    continue  # Retry on parse error
 
-        except Exception as e:
-            return {
-                "original": text,
-                "corrected": text,
-                "confidence": 0.0,
-                "reasoning": f"LLM failed: {str(e)[:30]}",
-                "method": "llm_error"
-            }
+            except asyncio.TimeoutError:
+                print(f"Speech corrector timeout (attempt {attempt + 1})")
+                continue
+            except Exception as api_error:
+                print(f"Speech corrector API error (attempt {attempt + 1}): {str(api_error)[:50]}")
+                continue
+
+        # All retries failed - return safe fallback
+        print(f"Speech corrector: All {self.max_retries} attempts failed for '{text}'")
+        return {
+            "original": text,
+            "corrected": text,
+            "confidence": 0.0,
+            "reasoning": "LLM service temporarily unavailable",
+            "method": "llm_error"
+        }
 
     async def correct_speech_input(self, text: str, context: str = "address_collection") -> Dict:
         """
-        Simplified speech correction method for phone call scenarios
+        MVP Speech correction - only fix obvious issues, keep it simple
+        
+        For MVP: Focus on critical Australian address corrections only.
+        No complex LLM calls, just dictionary-based fixes.
 
         Args:
             text: Speech recognition text to correct
-            context: Context of the collection (address_collection, etc.)
+            context: Context (not used in MVP version)
 
         Returns:
             Dict: Correction result with metadata
         """
-        if not text or not text.strip():
+        if not text or not isinstance(text, str) or not text.strip():
             return {
-                "original": text,
-                "corrected": text,
+                "original": text or "",
+                "corrected": text or "",
                 "confidence": 1.0,
                 "reasoning": "Empty input",
                 "method": "no_correction"
             }
 
-        # Step 1: Apply critical corrections (fast, reliable)
-        critical_result = self._apply_critical_corrections(text)
-        if critical_result["confidence"] > 0.5:  # Found critical corrections
+        try:
+            # MVP: Only apply critical corrections (fast, reliable)
+            critical_result = self._apply_critical_corrections(text)
             return critical_result
-
-        # Step 2: Use LLM for complex cases (if warranted)
-        if self._should_use_llm(text):
-            try:
-                llm_result = await self._llm_correct_with_timeout(text, context)
-                # Return LLM result if confidence is reasonable
-                if llm_result.get("confidence", 0) > 0.4:
-                    return llm_result
-            except Exception as e:
-                print(f"LLM correction failed: {e}")
-
-        # Step 3: Return original with low confidence
-        return {
-            "original": text,
-            "corrected": text,
-            "confidence": 0.1,
-            "reasoning": "No corrections applied",
-            "method": "no_correction"
-        }
+            
+        except Exception as e:
+            # MVP: Simple fallback, no complex error handling
+            print(f"Speech correction error: {e}")
+            return {
+                "original": text,
+                "corrected": text,
+                "confidence": 0.0,
+                "reasoning": "Using original text",
+                "method": "error_fallback"
+            }
 
     def should_apply_correction(self, result: Dict, threshold: float = 0.6) -> bool:
         """Determine if correction should be applied based on confidence"""
