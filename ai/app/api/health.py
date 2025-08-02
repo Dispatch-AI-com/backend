@@ -13,8 +13,3 @@ async def ping():
 async def redis():
     r = get_redis()
     return {"message": "pong！", "redis": r.ping()}
-
-
-@router.get("/llm")
-async def llm():
-    return {"message": "pong！"}
