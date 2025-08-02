@@ -70,8 +70,9 @@ class CustomerServiceLangGraph:
         print(f"🔍 [PLACEHOLDER_REPLACEMENT] Processing response: '{response_text[:100]}...'")
         print(f"🔍 [PLACEHOLDER_REPLACEMENT] Available services count: {len(available_services)}")
         print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{{services_list}}' in response_text}")
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{services_list}' in response_text}")
 
-        # Replace {{services_list}} placeholder
+        # Replace {{services_list}} placeholder (double braces)
         if "{{services_list}}" in response_text:
             services_list = ""
             for service in available_services:
@@ -85,6 +86,23 @@ class CustomerServiceLangGraph:
             response_text = response_text.replace(
                 "{{services_list}}", services_list.strip()
             )
+            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: {services_list.strip()}")
+        
+        # Replace {services_list} placeholder (single braces) - fallback for LLM variations
+        if "{services_list}" in response_text:
+            services_list = ""
+            for service in available_services:
+                price_text = (
+                    f"${service['price']}"
+                    if service.get("price")
+                    else "Price on request"
+                )
+                services_list += f"• {service['name']}: {price_text}\n"
+
+            response_text = response_text.replace(
+                "{services_list}", services_list.strip()
+            )
+            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: {services_list.strip()}")
 
         # Replace selected service placeholders
         if (
