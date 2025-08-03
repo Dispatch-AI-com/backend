@@ -137,10 +137,27 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
         # First extract the full address using the existing LLM approach
         result = await _call_openai_api(prompt, context, user_input, message_history)
         
-        if result and result.get("info_extracted", {}).get("address"):
-            # LLM already extracted all address components in the prompt
-            print(f"🏠 [ADDRESS_EXTRACTION] LLM extracted address components: {result['info_extracted']}")
-            return result
+        if result and result.get("info_extracted"):
+            # Check if any address components were extracted (street_number, street_name, suburb, postcode, state)
+            extracted_info = result.get("info_extracted", {})
+            has_any_components = any([
+                extracted_info.get("street_number"),
+                extracted_info.get("street_name"), 
+                extracted_info.get("suburb"),
+                extracted_info.get("postcode"),
+                extracted_info.get("state")
+            ])
+            
+            if has_any_components:
+                # LLM extracted some address components
+                print(f"🏠 [ADDRESS_EXTRACTION] LLM extracted address components: {result['info_extracted']}")
+                return result
+            else:
+                return _default_result(
+                    "Sorry, there was a problem processing your address. Please tell me your address again.",
+                    "address",
+                    "No address components extracted",
+                )
         else:
             return _default_result(
                 "Sorry, there was a problem processing your address. Please tell me your address again.",
