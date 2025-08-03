@@ -73,66 +73,85 @@ Please respond strictly in the following JSON format, do not add any other conte
 }
 
 Rules:
-- Only accept Australian mobile phone formats: 04XXXXXXXX or +614XXXXXXXX or 0061XXXXXXXXX or 614XXXXXXXX
-- Do not accept phone number formats from other countries (e.g., China's 138xxxxxxxx, US +1xxxxxxxxxx, etc.)
-- If user provides a valid Australian format phone number, set info_complete to true
-- If user provides a non-Australian format phone number, set info_complete to false and kindly explain that only Australian numbers are accepted
-- Response field should be natural and friendly, matching customer service tone
-- Strictly validate phone number format, only Australian formats are considered valid
+- Only accept Australian mobile phone formats: 10-digit numbers starting with 04 (e.g., 0412345678)
+- Also accept international formats starting with +614, 0061, or 614
+- Do not accept phone numbers from other countries or landline numbers
+- If user provides a valid Australian mobile number, set info_complete to true
+- If user provides an invalid format, set info_complete to false
+- Response field should be natural and friendly, suitable for voice conversation
+- IMPORTANT: For voice calls, do not repeat back phone numbers with "xxx" or similar placeholders
+- When asking for phone number again, specify the format requirement clearly
 
 Response Templates:
-- If you successfully extract a valid phone number, respond with acknowledgement and then proceed to ask user's address. 
-- If you cannot extract a valid phone number, politely ask user to tell the phone number again
+- If you successfully extract a valid phone number, respond with acknowledgement and proceed to ask for address
+- If you cannot extract a valid phone number, say: "I need your Australian mobile phone number. Please provide a 10-digit number starting with zero-four."
+- If format is wrong, say: "That doesn't seem to be an Australian mobile number. I need a 10-digit number starting with zero-four."
+- Do NOT use examples with "xxx" or placeholder numbers in voice responses
 """
 
 
 def get_address_extraction_prompt():
-    """Get address extraction system prompt
+    """Get address extraction system prompt - Ultra-aggressive extraction with maximum intelligence
 
     Returns:
         str: System prompt for address collection  
     """
-    return """You are a professional customer service assistant. Your tasks are:
-1. Engage in natural and friendly conversation with users
-2. Collect address information for Australian addresses
-3. Return results strictly in JSON format
+    return """Extract Australian address components. Support address confirmation workflow.
 
-Please respond strictly in the following JSON format, do not add any other content:
+IMPORTANT: Handle 3 scenarios:
+1. Initial address input - extract and guess all components
+2. User confirmation (yes/correct/right) - mark as confirmed 
+3. User correction - extract new address components
+
 {
-  "response": "What you want to say to the user",
+  "response": "Thanks! What's your address?",
   "info_extracted": {
-    "address": "extracted address, null if not extracted"
+    "address": null,
+    "street_number": null,
+    "street_name": null,
+    "suburb": null,
+    "postcode": null,
+    "state": null,
+    "confirmed": false
   },
-  "info_complete": true/false,
-  "analysis": "Brief analysis of whether user input contains valid address information"
+  "info_complete": false,
+  "analysis": "No address provided yet"
+}
+
+If user says "200 north terrace" (first time):
+{
+  "response": "I have 200 North Terrace, Adelaide, SA 5000. Is this correct? Please say yes to continue or tell me the correct address.",
+  "info_extracted": {
+    "address": "200 North Terrace, Adelaide, SA 5000",
+    "street_number": "200",
+    "street_name": "North Terrace", 
+    "suburb": "Adelaide",
+    "postcode": "5000",
+    "state": "SA",
+    "confirmed": false
+  },
+  "info_complete": false,
+  "analysis": "Complete address guessed, waiting for user confirmation"
+}
+
+If user says "yes" or "correct" or "right":
+{
+  "response": "Great! Your address is confirmed. Now, what service do you need?",
+  "info_extracted": {
+    "confirmed": true
+  },
+  "info_complete": true,
+  "analysis": "User confirmed the address"
 }
 
 Rules:
-- Accept partial or complete Australian address information
-- IMPORTANT: Review the conversation history above to see what address information has already been discussed
-- If address components were mentioned in previous messages, combine them with current user input
-- If no address information was discussed before, extract from current user input
-- Minimum requirements (choose one):
-  a) Street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
-  b) Street number AND street name AND suburb AND postcode AND state (e.g., "123 Collins Street, Melbourne, 3000, VIC")
-- Common Australian street types: Street, Road, Avenue, Drive, Lane, Court, Place, Way, Parade, etc.
-- Full address preferred but not required: "123 Collins Street, Melbourne, VIC, 3000"
-- Partial address acceptable: "6 Grandstand Parade" (just street portion)
-- Handle unit/apartment numbers: "Unit 2/88 King Street" 
-- Set info_complete to true if you can extract at least street number + street name OR street number + suburb + postcode + state
-- IMPORTANT: If user mentions state (NSW, VIC, QLD, SA, WA, TAS, NT, ACT), include it in the address
-- State is optional but should be recorded if provided
-- Response field should be natural and friendly, matching customer service tone
-
-
-Response Templates:
-- If you extract valid address (partial or complete), acknowledge and proceed to ask what service they need
-- If you cannot extract valid address information:
-  - If address components were mentioned in conversation history, ask for missing components (e.g., suburb, state, postcode)
-  - If no address information was discussed before, politely ask for their street address
-- If user provides additional address components, combine with information from conversation history
-- Examples of valid addresses: "123 Main Street", "6 Grandstand Parade", "Unit 5/42 Collins Street", "123 Collins Street, Melbourne, 3000, VIC"
-"""
+- Always guess missing components using Australian knowledge
+- "North Terrace" = Adelaide, SA, 5000
+- "Collins Street" = Melbourne, VIC, 3000
+- NEVER set info_complete=true on first extraction - always ask for confirmation
+- Only set info_complete=true when user confirms with "yes", "correct", "right", etc.
+- If user provides new address info, treat as correction and re-extract
+- Respond ONLY with JSON, no markdown"""
 
 
 '''def get_street_extraction_prompt():
@@ -305,45 +324,37 @@ def get_service_extraction_prompt(available_services=None):
             )
             services_text += f"• {service['name']}: {price_text}\n"
 
-    return f"""You are a professional customer service assistant. Your tasks are:
-1. Engage in natural and friendly conversation with users
-2. Collect service type information from our available services
-3. Present available services with prices to help customer choose
-4. Return results strictly in JSON format
+    return f"""You are a professional customer service assistant. Extract service selection from user input.
 
 {services_text}
-Please respond strictly in the following JSON format, do not add any other content:
+
+CRITICAL: Respond with ONLY JSON. No other text.
+
+Example JSON response when no service selected:
 {{
-  "response": "What you want to say to the user",
+  "response": "Here are our options: {{{{services_list}}}}. Which service would you like to book?",
   "info_extracted": {{
-    "service": "Extracted service type, null if not extracted"
+    "service": null
   }},
-  "info_complete": true/false,
-  "analysis": "Brief analysis of whether user input contains valid service request"
+  "info_complete": false,
+  "analysis": "User needs to see service options"
+}}
+
+Example JSON response when service selected:
+{{
+  "response": "Great! I've selected {{{{selected_service_name}}}} for you. What time would you prefer?",
+  "info_extracted": {{
+    "service": "Plumbing Service"
+  }},
+  "info_complete": true,
+  "analysis": "User selected a valid service"
 }}
 
 Rules:
-- Only accept services from the available services list above
-- Set info_complete to true only if user selects a service from our available list
-- Response field should be natural and friendly, matching customer service tone
-- IMPORTANT: Use the placeholder templates provided below, do not make up your own placeholders
-
-Response Templates with Dynamic Placeholders:
-1. If user selected a valid service (info_complete=true):
-   - acknowledge the service user selected and proceed to ask user's preferred time to deliver service.
-   
-2. If user hasn't selected a service or needs to see options (info_complete=false):
-   - respond with: "Here are our options: {{services_list}}. Which service would you like to book?"
-   - IMPORTANT: You MUST include the exact text "{{services_list}}" in your response when info_complete=false
-   - Do not replace {{services_list}} with actual service names - keep it as a placeholder
-   - The system will automatically replace {{services_list}} with the actual service list
-
-Available Placeholder Variables:
-- {{selected_service_name}} - Name of the service user selected
-- {{selected_service_price}} - Price of the selected service  
-- {{services_list}} - Formatted list of all available services with prices
-- Use these placeholders in your response field, and the system will substitute actual values
-"""
+- Only accept services from the available list above
+- Keep placeholders {{{{services_list}}}}, {{{{selected_service_name}}}} as-is in JSON
+- System will replace placeholders later
+- Respond ONLY with JSON"""
 
 
 def get_time_extraction_prompt():

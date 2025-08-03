@@ -1,4 +1,3 @@
-import redis
 import json
 from models.call import CallSkeleton
 from typing import Optional, Dict, Any
@@ -126,6 +125,82 @@ def update_user_info_field(
 
     except Exception as e:
         print(f"❌ Redis update failed ({field_name}): {str(e)}")
+        return False
+
+
+def update_address_components(
+    call_sid: str, 
+    address: str,
+    street_number: Optional[str] = None,
+    street_name: Optional[str] = None,
+    suburb: Optional[str] = None,
+    postcode: Optional[str] = None,
+    state: Optional[str] = None,
+    timestamp: Optional[str] = None
+) -> bool:
+    """Update address and its granular components in real-time
+
+    Args:
+        call_sid: Call ID
+        address: Complete address string
+        street_number: House/unit number
+        street_name: Street name including type
+        suburb: Suburb/city name
+        postcode: 4-digit postal code
+        state: Australian state/territory abbreviation
+        timestamp: Update timestamp
+
+    Returns:
+        bool: Whether update was successful
+    """
+    print(
+        f"🔍 Redis update_address_components called: call_sid={call_sid}, address={address}"
+    )
+    print(f"🔍 Components: street_number={street_number}, street_name={street_name}, suburb={suburb}, postcode={postcode}, state={state}")
+    
+    try:
+        # Get current CallSkeleton data
+        skeleton_dict = get_call_skeleton_dict(call_sid)
+        print("🔍 Retrieved skeleton from Redis successfully")
+
+        # Update user information
+        if "user" not in skeleton_dict:
+            skeleton_dict["user"] = {
+                "userInfo": {},
+                "service": None,
+                "serviceBookedTime": None,
+            }
+        if "userInfo" not in skeleton_dict["user"]:
+            skeleton_dict["user"]["userInfo"] = {}
+
+        # Store complete address and individual components
+        skeleton_dict["user"]["userInfo"]["address"] = address
+        skeleton_dict["user"]["userInfo"]["street_number"] = street_number
+        skeleton_dict["user"]["userInfo"]["street_name"] = street_name
+        skeleton_dict["user"]["userInfo"]["suburb"] = suburb
+        skeleton_dict["user"]["userInfo"]["postcode"] = postcode
+        skeleton_dict["user"]["userInfo"]["state"] = state
+        
+        print(f"🔍 Redis: Set address components - full address: {address}")
+        print(f"🔍 Redis: Components stored: {street_number}, {street_name}, {suburb}, {postcode}, {state}")
+
+        # Add timestamp record
+        if timestamp:
+            skeleton_dict["user"]["userInfo"]["address_timestamp"] = timestamp
+
+        # Save back to Redis
+        try:
+            json_data = json.dumps(skeleton_dict)
+            r.set(f"call:{call_sid}", json_data)
+            print("✅ Redis address components update successful")
+            print(f"🔍 Redis: Final userInfo: {skeleton_dict.get('user', {}).get('userInfo', {})}")
+            return True
+        except Exception as json_error:
+            print(f"❌ Redis JSON serialization failed: {str(json_error)}")
+            return False
+
+    except Exception as e:
+        print(f"❌ Redis address components update failed: {str(e)}")
         return False
 
 
