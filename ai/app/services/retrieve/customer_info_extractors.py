@@ -134,8 +134,26 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
         prompt = get_address_extraction_prompt()
         user_input = state.get("last_user_input") or ""
         
-        # First extract the full address using the existing LLM approach
-        result = await _call_openai_api(prompt, context, user_input, message_history)
+        # Build context with existing address components
+        existing_components = []
+        if state.get("street_number"):
+            existing_components.append(f"Street number: {state['street_number']}")
+        if state.get("street_name"):
+            existing_components.append(f"Street name: {state['street_name']}")
+        if state.get("suburb"):
+            existing_components.append(f"Suburb: {state['suburb']}")
+        if state.get("postcode"):
+            existing_components.append(f"Postcode: {state['postcode']}")
+        if state.get("state"):
+            existing_components.append(f"State: {state['state']}")
+            
+        if existing_components:
+            context_with_existing = f"Previously collected address components: {', '.join(existing_components)}\nCurrent user input: {user_input}"
+        else:
+            context_with_existing = f"Current user input: {user_input}"
+        
+        # Extract address using the enhanced context
+        result = await _call_openai_api(prompt, context, context_with_existing, message_history)
         
         if result and result.get("info_extracted"):
             # Check if any address components were extracted (street_number, street_name, suburb, postcode, state)
