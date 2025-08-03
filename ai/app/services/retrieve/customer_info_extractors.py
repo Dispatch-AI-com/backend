@@ -304,29 +304,64 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
 # Address is now collected as a single string in the 5-step workflow
 
 
-def extract_service_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
+async def extract_service_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
     try:
         context = _build_conversation_context(state)
         # Get available services from state if available
         available_services = state.get("available_services", None)
         user_input = state.get("last_user_input") or ""
         
+        print(f"🔍 [SERVICE_DEBUG] Starting service extraction")
+        print(f"🔍 [SERVICE_DEBUG] Raw user input: '{user_input}'")
+        print(f"🔍 [SERVICE_DEBUG] Available services count: {len(available_services) if available_services else 0}")
+        
         if not available_services:
-            print("⚠️ [SERVICE_EXTRACTION] No available services found in state!")
+            print("⚠️ [SERVICE_DEBUG] No available services found in state!")
         
         prompt = get_service_extraction_prompt(available_services)
-        result = _call_openai_api(prompt, context, user_input, message_history)
+        result = await _call_openai_api(prompt, context, user_input, message_history)
         
-        if result:
-            return result
-        else:
+        print(f"🔍 [SERVICE_DEBUG] LLM raw response: {result}")
+        
+        # Check if we got a valid response structure
+        if not result:
+            print(f"❌ [SERVICE_DEBUG] Empty LLM response (likely JSON parsing failed)")
             return _default_result(
                 "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
                 "service",
-                "Parse error",
+                "Empty LLM response",
+            )
+        
+        if not isinstance(result, dict):
+            print(f"❌ [SERVICE_DEBUG] Invalid LLM response type: {type(result)}")
+            return _default_result(
+                "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
+                "service",
+                f"Invalid response type: {type(result)}",
+            )
+        
+        # Check for required keys
+        if "info_extracted" not in result:
+            print(f"❌ [SERVICE_DEBUG] Missing 'info_extracted' key in LLM response")
+            print(f"❌ [SERVICE_DEBUG] Available keys: {list(result.keys())}")
+            return _default_result(
+                "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
+                "service",
+                "Missing info_extracted key",
+            )
+        
+        if result and result.get("info_extracted"):
+            print(f"✅ [SERVICE_DEBUG] Successfully extracted service info")
+            return result
+        else:
+            print(f"❌ [SERVICE_DEBUG] No service info in LLM response")
+            return _default_result(
+                "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
+                "service",
+                "No service info extracted",
             )
     except Exception as e:
-        print(f"❌ [SERVICE_EXTRACTION] Exception occurred: {str(e)}")
+        print(f"❌ [SERVICE_DEBUG] Exception occurred: {str(e)}")
         return _default_result(
             "Sorry, the system is temporarily unavailable. Please tell me what service you need again.",
             "service",

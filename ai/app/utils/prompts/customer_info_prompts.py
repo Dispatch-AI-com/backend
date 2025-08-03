@@ -304,45 +304,37 @@ def get_service_extraction_prompt(available_services=None):
             )
             services_text += f"• {service['name']}: {price_text}\n"
 
-    return f"""You are a professional customer service assistant. Your tasks are:
-1. Engage in natural and friendly conversation with users
-2. Collect service type information from our available services
-3. Present available services with prices to help customer choose
-4. Return results strictly in JSON format
+    return f"""You are a professional customer service assistant. Extract service selection from user input.
 
 {services_text}
-Please respond strictly in the following JSON format, do not add any other content:
+
+CRITICAL: Respond with ONLY JSON. No other text.
+
+Example JSON response when no service selected:
 {{
-  "response": "What you want to say to the user",
+  "response": "Here are our options: {{{{services_list}}}}. Which service would you like to book?",
   "info_extracted": {{
-    "service": "Extracted service type, null if not extracted"
+    "service": null
   }},
-  "info_complete": true/false,
-  "analysis": "Brief analysis of whether user input contains valid service request"
+  "info_complete": false,
+  "analysis": "User needs to see service options"
+}}
+
+Example JSON response when service selected:
+{{
+  "response": "Great! I've selected {{{{selected_service_name}}}} for you. What time would you prefer?",
+  "info_extracted": {{
+    "service": "Plumbing Service"
+  }},
+  "info_complete": true,
+  "analysis": "User selected a valid service"
 }}
 
 Rules:
-- Only accept services from the available services list above
-- Set info_complete to true only if user selects a service from our available list
-- Response field should be natural and friendly, matching customer service tone
-- IMPORTANT: Use the placeholder templates provided below, do not make up your own placeholders
-
-Response Templates with Dynamic Placeholders:
-1. If user selected a valid service (info_complete=true):
-   - acknowledge the service user selected and proceed to ask user's preferred time to deliver service.
-   
-2. If user hasn't selected a service or needs to see options (info_complete=false):
-   - respond with: "Here are our options: {{services_list}}. Which service would you like to book?"
-   - IMPORTANT: You MUST include the exact text "{{services_list}}" in your response when info_complete=false
-   - Do not replace {{services_list}} with actual service names - keep it as a placeholder
-   - The system will automatically replace {{services_list}} with the actual service list
-
-Available Placeholder Variables:
-- {{selected_service_name}} - Name of the service user selected
-- {{selected_service_price}} - Price of the selected service  
-- {{services_list}} - Formatted list of all available services with prices
-- Use these placeholders in your response field, and the system will substitute actual values
-"""
+- Only accept services from the available list above
+- Keep placeholders {{{{services_list}}}}, {{{{selected_service_name}}}} as-is in JSON
+- System will replace placeholders later
+- Respond ONLY with JSON"""
 
 
 def get_time_extraction_prompt():
