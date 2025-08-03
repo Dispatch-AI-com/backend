@@ -101,7 +101,12 @@ Please respond strictly in the following JSON format, do not add any other conte
 {
   "response": "What you want to say to the user",
   "info_extracted": {
-    "address": "extracted address, null if not extracted"
+    "address": "extracted complete address, null if not extracted",
+    "street_number": "extracted street number, null if not extracted",
+    "street_name": "extracted street name, null if not extracted", 
+    "suburb": "extracted suburb, null if not extracted",
+    "postcode": "extracted postcode, null if not extracted",
+    "state": "extracted state abbreviation (NSW/VIC/QLD/SA/WA/TAS/NT/ACT), null if not extracted"
   },
   "info_complete": true/false,
   "analysis": "Brief analysis of whether user input contains valid address information"

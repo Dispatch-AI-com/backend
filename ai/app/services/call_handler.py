@@ -38,6 +38,7 @@ from .retrieve.customer_info_extractors import (
 
 from .redis_service import (
     update_user_info_field,
+    update_address_components,
     update_service_selection,
     update_booking_status,
     get_message_history,
@@ -358,7 +359,7 @@ class CustomerServiceLangGraph:
             message_history = get_message_history(call_sid)
         
         # Call LLM to extract address
-        result = extract_address_from_conversation(state, message_history)
+        result = await extract_address_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Check if address was extracted
@@ -369,24 +370,52 @@ class CustomerServiceLangGraph:
             # Clean address string
             cleaned_address = extracted_address.strip()
             
+            # Extract address components from the result
+            street_number = result["info_extracted"].get("street_number")
+            street_name = result["info_extracted"].get("street_name")
+            suburb = result["info_extracted"].get("suburb")
+            postcode = result["info_extracted"].get("postcode")
+            state_abbrev = result["info_extracted"].get("state")
+            
             # Check if we already have some address information
             existing_address = state.get("address", "")
             if existing_address and existing_address != cleaned_address:
                 print(f"🔍 [ADDRESS_COLLECTION] Updating address: '{existing_address}' -> '{cleaned_address}'")
             
-            # Local state update
+            # Local state update - store both complete address and components
             state["address"] = cleaned_address
+            state["street_number"] = street_number
+            state["street_name"] = street_name
+            state["suburb"] = suburb
+            state["postcode"] = postcode
+            state["state"] = state_abbrev
+            
+            # Update completion flags for components
+            state["street_number_complete"] = bool(street_number)
+            state["street_name_complete"] = bool(street_name)
+            state["suburb_complete"] = bool(suburb)
+            state["postcode_complete"] = bool(postcode)
+            state["state_complete"] = bool(state_abbrev)
+            
+            # Overall address completion
             state["address_complete"] = True
             state["current_step"] = "collect_service"
 
-            # Real-time Redis update
+            # Real-time Redis update with address components
             if call_sid:
-                redis_success = update_user_info_field(
-                    call_sid=call_sid, field_name="address", field_value=cleaned_address
+                redis_success = update_address_components(
+                    call_sid=call_sid,
+                    address=cleaned_address,
+                    street_number=street_number,
+                    street_name=street_name,
+                    suburb=suburb,
+                    postcode=postcode,
+                    state=state_abbrev
                 )
 
                 if redis_success:
-                    print(f"✅ Address extracted and saved successfully: {cleaned_address}")
+                    print(f"✅ Address and components extracted and saved successfully: {cleaned_address}")
+                    print(f"🏠 Components: {street_number}, {street_name}, {suburb}, {postcode}, {state_abbrev}")
                 else:
                     print(f"⚠️ Address extracted successfully but Redis save failed: {cleaned_address}")
 
@@ -698,6 +727,14 @@ class CustomerServiceLangGraph:
         print(
             f"🏠 Address: {state.get('address', 'Not collected')} {'✅' if state.get('address_complete') else '❌'}"
         )
+        
+        # Show address components if available
+        if state.get('address_complete'):
+            print(f"   • Street Number: {state.get('street_number', 'N/A')}")
+            print(f"   • Street Name: {state.get('street_name', 'N/A')}")
+            print(f"   • Suburb: {state.get('suburb', 'N/A')}")
+            print(f"   • Postcode: {state.get('postcode', 'N/A')}")
+            print(f"   • State: {state.get('state', 'N/A')}")
 
 
         # Service information
@@ -752,6 +789,11 @@ class CustomerServiceLangGraph:
                 "name": state.get("name"),
                 "phone": state.get("phone"),
                 "address": state.get("address"),
+                "street_number": state.get("street_number"),
+                "street_name": state.get("street_name"),
+                "suburb": state.get("suburb"),
+                "postcode": state.get("postcode"),
+                "state": state.get("state"),
                 "service": state.get("service"),
                 "service_time": state.get("service_time"),
             },
@@ -759,6 +801,11 @@ class CustomerServiceLangGraph:
                 "name_complete": state.get("name_complete", False),
                 "phone_complete": state.get("phone_complete", False),
                 "address_complete": state.get("address_complete", False),
+                "street_number_complete": state.get("street_number_complete", False),
+                "street_name_complete": state.get("street_name_complete", False),
+                "suburb_complete": state.get("suburb_complete", False),
+                "postcode_complete": state.get("postcode_complete", False),
+                "state_complete": state.get("state_complete", False),
                 "service_complete": state.get("service_complete", False),
                 "time_complete": state.get("time_complete", False),
             },
@@ -790,6 +837,11 @@ class CustomerServiceLangGraph:
             "name": None,
             "phone": None,
             "address": None,
+            "street_number": None,
+            "street_name": None,
+            "suburb": None,
+            "postcode": None,
+            "state": None,
             "service": None,
             "service_time": None,
             "current_step": "collect_name",
@@ -805,6 +857,11 @@ class CustomerServiceLangGraph:
             "name_complete": False,
             "phone_complete": False,
             "address_complete": False,
+            "street_number_complete": False,
+            "street_name_complete": False,
+            "suburb_complete": False,
+            "postcode_complete": False,
+            "state_complete": False,
             "service_complete": False,
             "time_complete": False,
             "conversation_complete": False,

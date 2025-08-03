@@ -14,7 +14,7 @@ Key Features:
 import json
 import os
 from typing import Dict, Any
-from openai import OpenAI
+from openai import AsyncOpenAI
 from custom_types import CustomerServiceState
 
 from utils.prompts.customer_info_prompts import (
@@ -25,11 +25,12 @@ from utils.prompts.customer_info_prompts import (
     get_time_extraction_prompt,
 )
 
+
 # Customer service state uses 5-step workflow: name, phone, address, service, time
 
 
-def _get_openai_client() -> OpenAI:
-    return OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+def _get_openai_client() -> AsyncOpenAI:
+    return AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def _build_conversation_context(state: CustomerServiceState) -> str:
@@ -38,7 +39,7 @@ def _build_conversation_context(state: CustomerServiceState) -> str:
     return current_input
 
 
-def _call_openai_api(
+async def _call_openai_api(
     prompt: str, conversation_context: str, user_input: str, message_history: list = None
 ) -> Dict[str, Any]:
     client = _get_openai_client()
@@ -55,8 +56,8 @@ def _call_openai_api(
     # Add current user input
     messages.append({"role": "user", "content": f"User input: {user_input}"})
     
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
+    response = await client.chat.completions.create(
+        model="gpt-4o-mini",
         messages=messages,
         temperature=0.3,
         max_tokens=500,
@@ -126,16 +127,19 @@ def extract_phone_from_conversation(state: CustomerServiceState, message_history
         )
 
 
-def extract_address_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
-    """Extract address from conversation with memory of previously collected information"""
+async def extract_address_from_conversation(state: CustomerServiceState, message_history: list = None) -> Dict[str, Any]:
+    """Extract address from conversation with memory of previously collected information and parse into components"""
     try:
         context = _build_conversation_context(state)
         prompt = get_address_extraction_prompt()
         user_input = state.get("last_user_input") or ""
         
-        result = _call_openai_api(prompt, context, user_input, message_history)
+        # First extract the full address using the existing LLM approach
+        result = await _call_openai_api(prompt, context, user_input, message_history)
         
-        if result:
+        if result and result.get("info_extracted", {}).get("address"):
+            # LLM already extracted all address components in the prompt
+            print(f"🏠 [ADDRESS_EXTRACTION] LLM extracted address components: {result['info_extracted']}")
             return result
         else:
             return _default_result(

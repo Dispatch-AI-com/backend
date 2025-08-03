@@ -1,7 +1,6 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings
 from typing import Optional, List
-from enum import Enum
 
 
 class Settings(BaseSettings):

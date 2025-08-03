@@ -14,7 +14,12 @@ class CustomerServiceState(TypedDict):
     # User information - 5-step workflow
     name: Optional[str]
     phone: Optional[str]
-    address: Optional[str]  # Single string address
+    address: Optional[str]  # Complete address string (for backward compatibility)
+    street_number: Optional[str]  # House/unit number
+    street_name: Optional[str]  # Street name
+    suburb: Optional[str]  # Suburb/city
+    postcode: Optional[str]  # Postal code
+    state: Optional[str]  # State/territory
     service: Optional[str]
     service_id: Optional[str]  # New: service ID
     service_price: Optional[float]  # New: service price
@@ -47,7 +52,12 @@ class CustomerServiceState(TypedDict):
     # Status flags - 5-step workflow
     name_complete: bool
     phone_complete: bool
-    address_complete: bool  # Single address completion
+    address_complete: bool  # Overall address completion (all components collected)
+    street_number_complete: bool  # Individual component completion flags
+    street_name_complete: bool
+    suburb_complete: bool
+    postcode_complete: bool
+    state_complete: bool
     service_complete: bool
     time_complete: bool
     conversation_complete: bool
