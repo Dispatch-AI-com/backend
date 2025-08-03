@@ -11,8 +11,11 @@ import {
 } from 'passport-google-oauth20';
 
 import { EUserRole } from '@/common/constants/user.constant';
+import {
+  GoogleCalendarAuth,
+  GoogleCalendarAuthDocument,
+} from '@/modules/user/schema/google-calendar-auth.schema';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
-import { GoogleCalendarAuth, GoogleCalendarAuthDocument } from '@/modules/user/schema/google-calendar-auth.schema';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -20,7 +23,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
-    @InjectModel(GoogleCalendarAuth.name) private readonly googleCalendarAuthModel: Model<GoogleCalendarAuthDocument>
+    @InjectModel(GoogleCalendarAuth.name)
+    private readonly googleCalendarAuthModel: Model<GoogleCalendarAuthDocument>,
   ) {
     super({
       clientID: configService.get<string>('GOOGLE_CLIENT_ID') ?? '',
@@ -42,10 +46,10 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: VerifyCallback,
   ): Promise<void> {
     try {
-      console.log('Google OAuth callback received:', { 
+      console.log('Google OAuth callback received:', {
         accessToken: accessToken ? 'present' : 'missing',
         refreshToken: refreshToken ? 'present' : 'missing',
-        profileId: profile.id 
+        profileId: profile.id,
       });
 
       const { id, name, emails, photos } = profile;
@@ -93,17 +97,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       console.log('Saving Google Calendar auth tokens');
       await this.googleCalendarAuthModel.findOneAndUpdate(
         { userId: user._id },
-        { 
-          accessToken, 
-          refreshToken, 
-          tokenExpiresAt: new Date(Date.now() + 3600 * 1000) // 1小时后过期
+        {
+          accessToken,
+          refreshToken,
+          tokenExpiresAt: new Date(Date.now() + 3600 * 1000), // 1小时后过期
         },
-        { upsert: true, new: true }
+        { upsert: true, new: true },
       );
 
-      const result = { 
-        user: user.toObject() as User, 
-        token
+      const result = {
+        user: user.toObject() as User,
+        token,
       };
       console.log('Google OAuth completed successfully');
       done(null, result);

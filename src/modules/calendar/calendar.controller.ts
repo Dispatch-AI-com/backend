@@ -1,10 +1,19 @@
-import { Controller, Post, Body, Req, UseGuards, BadRequestException, Logger } from '@nestjs/common';
-import axios from 'axios';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Logger,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { ApiBadRequestResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import axios from 'axios';
 import { Request } from 'express';
-import { PushCalendarDto } from './dto/push-calendar.dto';
-import { ApiTags, ApiOkResponse, ApiBadRequestResponse } from '@nestjs/swagger';
+
 import { GoogleCalendarAuthService } from '../user/google-calendar-auth.service';
+import { PushCalendarDto } from './dto/push-calendar.dto';
 
 interface CalendarEventResponse {
   success: boolean;
@@ -27,7 +36,7 @@ export class CalendarController {
   @ApiBadRequestResponse({ description: 'no google access token' })
   async pushEvent(
     @Body() body: PushCalendarDto,
-    @Req() req: Request & { user?: { userId: string } }
+    @Req() req: Request & { user?: { userId: string } },
   ): Promise<CalendarEventResponse> {
     try {
       const userId = req.user?.userId;
@@ -36,7 +45,8 @@ export class CalendarController {
       }
 
       // get google calendar auth by user id from database
-      const googleAuth = await this.googleCalendarAuthService.getAuthByUserId(userId);
+      const googleAuth =
+        await this.googleCalendarAuthService.getAuthByUserId(userId);
       if (!googleAuth?.accessToken) {
         throw new BadRequestException('Google Calendar not authorized');
       }
@@ -62,11 +72,14 @@ export class CalendarController {
       if (!aiApiUrl) {
         throw new BadRequestException('AI service URL not configured');
       }
-      
+
       const res = await axios.post(`${aiApiUrl}/calendar/push`, params);
       return res.data as CalendarEventResponse;
     } catch (err) {
-      this.logger.error('push calendar event error: ' + (err instanceof Error ? err.message : String(err)));
+      this.logger.error(
+        'push calendar event error: ' +
+          (err instanceof Error ? err.message : String(err)),
+      );
       throw err;
     }
   }

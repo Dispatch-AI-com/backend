@@ -17,4 +17,5 @@ export class GoogleCalendarAuth extends Document {
 }
 
 export type GoogleCalendarAuthDocument = GoogleCalendarAuth & Document;
-export const GoogleCalendarAuthSchema = SchemaFactory.createForClass(GoogleCalendarAuth);
+export const GoogleCalendarAuthSchema =
+  SchemaFactory.createForClass(GoogleCalendarAuth);

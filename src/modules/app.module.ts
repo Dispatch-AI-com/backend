@@ -23,8 +23,8 @@ import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
-import { CalendarModule } from './calendar/calendar.module';
 
+import { CalendarModule } from './calendar/calendar.module';
 import { OnboardingModule } from './onboarding/onboarding.module';
 
 @Module({

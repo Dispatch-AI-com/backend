@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { CalendarController } from './calendar.controller';
+
 import { UserModule } from '../user/user.module';
+import { CalendarController } from './calendar.controller';
 
 @Module({
   imports: [UserModule],
