@@ -116,7 +116,18 @@ Please respond strictly in the following JSON format, do not add any other conte
   "analysis": "Brief analysis of whether user input contains valid address information"
 }
 
+EXAMPLES of street_number and street_name extraction:
+- "200 north terrace" → street_number: "200", street_name: "North Terrace"
+- "212 North Terrace" → street_number: "212", street_name: "North Terrace"  
+- "88 collins street" → street_number: "88", street_name: "Collins Street"
+
 IMPORTANT: Set info_complete to true ONLY if you have extracted ALL required address components: street_number, street_name, suburb, postcode, and state.
+
+CRITICAL PARSING RULES:
+- Always extract street numbers and names regardless of case: "200 north terrace" = "200 North Terrace"
+- Normalize street names to proper case: "north terrace" → "North Terrace", "collins street" → "Collins Street"
+- Street types are case-insensitive: "terrace", "Terrace", "TERRACE" are all valid
+- Look for patterns: [number] [direction?] [name] [type] - e.g., "200 north terrace" = number:"200" + name:"North Terrace"
 
 Rules:
 - Require complete Australian address information for service delivery
@@ -129,12 +140,15 @@ Rules:
   c) Suburb/City (e.g., "Melbourne", "Adelaide", "Sydney")
   d) Postcode (e.g., "3000", "5000", "2000")
   e) State (e.g., "VIC", "SA", "NSW", "QLD", "WA", "TAS", "NT", "ACT")
-- Common Australian street types: Street, Road, Avenue, Drive, Lane, Court, Place, Way, Parade, Terrace, Boulevard, Circuit, Crescent, Grove, Rise, Close, Walk, Gardens, etc.
+- Common Australian street named ending with: Street, Road, Avenue, Drive, Lane, Court, Place, Way, Parade, Terrace, Boulevard, Circuit, Crescent, Grove, Rise, Close, Walk, Gardens, etc.
 - Complete address required: "123 Collins Street, Melbourne, VIC, 3000"
 - Handle unit/apartment numbers: "Unit 2/88 King Street, Adelaide, SA, 5000" 
-- Handle directional street names: "212 North Terrace", "88 East Street", "45 South Road"
+- Handle directional street names: "200 North Terrace", "212 North Terrace", "88 East Street", "45 South Road"
 - Recognize that directional words (North, South, East, West) are part of the street name
 - Accept famous Australian streets: "North Terrace" (Adelaide), "King William Street", "Rundle Mall"
+- IMPORTANT: "Terrace" is a common street type - examples: "200 north terrace", "212 North Terrace", "88 Adelaide Terrace"
+- Handle case variations: "north terrace", "North Terrace", "NORTH TERRACE" are all valid
+- Street number can be 1-4 digits: "5", "88", "200", "1234"
 - CRITICAL: Set info_complete to true ONLY when you have ALL 5 components: street_number, street_name, suburb, postcode, state
 - DO NOT set info_complete to true for partial addresses - all components are required
 - If missing any component, ask for the specific missing information
@@ -154,7 +168,8 @@ Response Templates:
 - If you cannot extract ANY address information:
   - Politely ask for complete address: "Could you please tell me your complete address including street, suburb, postcode, and state?"
 - Always acknowledge information received before asking for missing parts
-- Examples of COMPLETE addresses: "123 Collins Street, Melbourne, VIC, 3000", "Unit 5/88 King Street, Adelaide, SA, 5000"
+- Examples of COMPLETE addresses: "123 Collins Street, Melbourne, VIC, 3000", "200 North Terrace, Adelaide, SA, 5000", "Unit 5/88 King Street, Adelaide, SA, 5000"
+- Examples of partial recognition: "200 north terrace" should extract street_number: "200", street_name: "North Terrace"
 - CRITICAL: Only proceed to next step when you have ALL required address components
 """
 
