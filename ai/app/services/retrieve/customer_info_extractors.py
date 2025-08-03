@@ -56,20 +56,80 @@ async def _call_openai_api(
     # Add current user input
     messages.append({"role": "user", "content": f"User input: {user_input}"})
     
-    response = await client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=messages,
-        temperature=0.3,
-        max_tokens=500,
-    )
-    content = (
-        response.choices[0].message.content
-        if response.choices[0].message.content
-        else ""
-    )
+    print(f"🔍 [LLM_DEBUG] Sending request to OpenAI:")
+    print(f"  • Model: gpt-4o-mini")
+    print(f"  • Messages count: {len(messages)}")
+    print(f"  • User input: '{user_input}'")
+    print(f"  • System prompt length: {len(messages[0]['content'])} chars")
+    
     try:
-        return json.loads(content)
-    except json.JSONDecodeError:
+        response = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.3,
+            max_tokens=500,
+        )
+        
+        print(f"🔍 [LLM_DEBUG] OpenAI API call successful")
+        print(f"  • Response choices count: {len(response.choices) if response.choices else 0}")
+        
+        if not response.choices:
+            print(f"❌ [LLM_DEBUG] No choices in OpenAI response")
+            return {}
+            
+        if not response.choices[0].message:
+            print(f"❌ [LLM_DEBUG] No message in first choice")
+            return {}
+            
+        content = response.choices[0].message.content or ""
+        print(f"🔍 [LLM_DEBUG] Raw LLM response content (length: {len(content)}): '{content}'")
+        
+        if not content:
+            print(f"❌ [LLM_DEBUG] Empty content from OpenAI")
+            return {}
+        
+    except Exception as api_error:
+        print(f"❌ [LLM_DEBUG] OpenAI API call failed: {str(api_error)}")
+        return {}
+    
+    # Clean the content to handle common LLM response issues
+    cleaned_content = content.strip()
+    
+    # Remove markdown code blocks if present
+    if cleaned_content.startswith("```json"):
+        cleaned_content = cleaned_content[7:]  # Remove ```json
+    if cleaned_content.startswith("```"):
+        cleaned_content = cleaned_content[3:]   # Remove ```
+    if cleaned_content.endswith("```"):
+        cleaned_content = cleaned_content[:-3]  # Remove trailing ```
+    
+    cleaned_content = cleaned_content.strip()
+    
+    if cleaned_content != content:
+        print(f"🔍 [LLM_DEBUG] Cleaned content: '{cleaned_content}'")
+    
+    try:
+        parsed_result = json.loads(cleaned_content)
+        print(f"✅ [LLM_DEBUG] Successfully parsed JSON response")
+        return parsed_result
+    except json.JSONDecodeError as e:
+        print(f"❌ [LLM_DEBUG] JSON parsing failed: {str(e)}")
+        print(f"❌ [LLM_DEBUG] Raw content that failed to parse: '{cleaned_content}'")
+        
+        # Try to extract JSON from the response if it's mixed with other text
+        try:
+            # Look for JSON pattern in the response
+            import re
+            json_match = re.search(r'\{.*\}', cleaned_content, re.DOTALL)
+            if json_match:
+                json_part = json_match.group(0)
+                print(f"🔍 [LLM_DEBUG] Attempting to parse extracted JSON: '{json_part}'")
+                parsed_result = json.loads(json_part)
+                print(f"✅ [LLM_DEBUG] Successfully parsed extracted JSON")
+                return parsed_result
+        except:
+            pass
+        
         return {}
 
 
@@ -163,6 +223,33 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
         result = await _call_openai_api(prompt, context, context_with_existing, message_history)
         
         print(f"🔍 [ADDRESS_DEBUG] LLM raw response: {result}")
+        
+        # Check if we got a valid response structure
+        if not result:
+            print(f"❌ [ADDRESS_DEBUG] Empty LLM response (likely JSON parsing failed)")
+            return _default_result(
+                "Sorry, there was a problem processing your address. Please tell me your address again.",
+                "address",
+                "Empty LLM response",
+            )
+        
+        if not isinstance(result, dict):
+            print(f"❌ [ADDRESS_DEBUG] Invalid LLM response type: {type(result)}")
+            return _default_result(
+                "Sorry, there was a problem processing your address. Please tell me your address again.",
+                "address",
+                f"Invalid response type: {type(result)}",
+            )
+        
+        # Check for required keys
+        if "info_extracted" not in result:
+            print(f"❌ [ADDRESS_DEBUG] Missing 'info_extracted' key in LLM response")
+            print(f"❌ [ADDRESS_DEBUG] Available keys: {list(result.keys())}")
+            return _default_result(
+                "Sorry, there was a problem processing your address. Please tell me your address again.",
+                "address",
+                "Missing info_extracted key",
+            )
         
         if result and result.get("info_extracted"):
             # Check if any address components were extracted (street_number, street_name, suburb, postcode, state)
