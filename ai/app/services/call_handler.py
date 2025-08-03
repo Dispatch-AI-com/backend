@@ -327,18 +327,22 @@ class CustomerServiceLangGraph:
 
         # Apply speech correction for Australian address input (NSW/NSEW fix)
         original_input = state.get("last_user_input", "")
+        print(f"🔧 [SPEECH_DEBUG] Starting speech correction for address input: '{original_input}'")
+        
         if original_input:
             try:
                 correction_result = await self.speech_corrector.correct_speech_input(
                     text=original_input, context="address_collection"
                 )
+                
+                print(f"🔧 [SPEECH_DEBUG] Speech corrector result: {correction_result}")
 
                 # Apply correction if confidence is sufficient
                 if self.speech_corrector.should_apply_correction(correction_result):
                     corrected_input = correction_result["corrected"]
                     state["last_user_input"] = corrected_input
                     print(
-                        f"🔧 Speech correction applied: '{original_input}' -> '{corrected_input}'"
+                        f"✅ [SPEECH_DEBUG] Speech correction applied: '{original_input}' -> '{corrected_input}'"
                     )
                     print(
                         f"   Method: {correction_result['method']}, Confidence: {correction_result['confidence']:.2f}"
@@ -346,11 +350,14 @@ class CustomerServiceLangGraph:
                     print(f"   Reasoning: {correction_result['reasoning']}")
                 else:
                     print(
-                        f"✅ No speech correction needed for: '{original_input}' (confidence: {correction_result['confidence']:.2f})"
+                        f"🔧 [SPEECH_DEBUG] No speech correction applied for: '{original_input}'"
                     )
+                    print(f"   Confidence too low: {correction_result['confidence']:.2f} (threshold: 0.6)")
+                    print(f"   Method: {correction_result['method']}")
+                    print(f"   Reasoning: {correction_result['reasoning']}")
 
             except Exception as e:
-                print(f"⚠️ Speech correction failed, using original input: {e}")
+                print(f"❌ [SPEECH_DEBUG] Speech correction failed: {str(e)}")
                 # Continue with original input if correction fails
 
         # Get message history from Redis

@@ -134,6 +134,9 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
         prompt = get_address_extraction_prompt()
         user_input = state.get("last_user_input") or ""
         
+        print(f"🔍 [ADDRESS_DEBUG] Starting address extraction")
+        print(f"🔍 [ADDRESS_DEBUG] Raw user input: '{user_input}'")
+        
         # Build context with existing address components
         existing_components = []
         if state.get("street_number"):
@@ -149,15 +152,32 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
             
         if existing_components:
             context_with_existing = f"Previously collected address components: {', '.join(existing_components)}\nCurrent user input: {user_input}"
+            print(f"🔍 [ADDRESS_DEBUG] Existing components found: {', '.join(existing_components)}")
         else:
             context_with_existing = f"Current user input: {user_input}"
+            print(f"🔍 [ADDRESS_DEBUG] No existing components, fresh extraction")
+        
+        print(f"🔍 [ADDRESS_DEBUG] Context sent to LLM: '{context_with_existing}'")
         
         # Extract address using the enhanced context
         result = await _call_openai_api(prompt, context, context_with_existing, message_history)
         
+        print(f"🔍 [ADDRESS_DEBUG] LLM raw response: {result}")
+        
         if result and result.get("info_extracted"):
             # Check if any address components were extracted (street_number, street_name, suburb, postcode, state)
             extracted_info = result.get("info_extracted", {})
+            
+            print(f"🔍 [ADDRESS_DEBUG] Extracted components:")
+            print(f"  • Street number: '{extracted_info.get('street_number')}'")
+            print(f"  • Street name: '{extracted_info.get('street_name')}'")
+            print(f"  • Suburb: '{extracted_info.get('suburb')}'")
+            print(f"  • Postcode: '{extracted_info.get('postcode')}'")
+            print(f"  • State: '{extracted_info.get('state')}'")
+            print(f"  • Complete address: '{extracted_info.get('address')}'")
+            print(f"  • Info complete: {result.get('info_complete')}")
+            print(f"  • LLM analysis: '{result.get('analysis')}'")
+            
             has_any_components = any([
                 extracted_info.get("street_number"),
                 extracted_info.get("street_name"), 
@@ -168,22 +188,24 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
             
             if has_any_components:
                 # LLM extracted some address components
-                print(f"🏠 [ADDRESS_EXTRACTION] LLM extracted address components: {result['info_extracted']}")
+                print(f"✅ [ADDRESS_DEBUG] Successfully extracted components, returning result")
                 return result
             else:
+                print(f"❌ [ADDRESS_DEBUG] No address components found in LLM response")
                 return _default_result(
                     "Sorry, there was a problem processing your address. Please tell me your address again.",
                     "address",
                     "No address components extracted",
                 )
         else:
+            print(f"❌ [ADDRESS_DEBUG] Invalid LLM response structure")
             return _default_result(
                 "Sorry, there was a problem processing your address. Please tell me your address again.",
                 "address",
                 "Parse error",
             )
     except Exception as e:
-        print(f"❌ [ADDRESS_EXTRACTION] Exception occurred: {str(e)}")
+        print(f"❌ [ADDRESS_DEBUG] Exception occurred: {str(e)}")
         return _default_result(
             "Sorry, the system is temporarily unavailable. Please tell me your street address again.",
             "address",
