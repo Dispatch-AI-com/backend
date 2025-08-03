@@ -3,8 +3,6 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi_mcp.server import FastApiMCP
-from app.routers import routers as all_routers
 
 # Add the app directory to Python path for absolute imports
 app_dir = Path(__file__).parent

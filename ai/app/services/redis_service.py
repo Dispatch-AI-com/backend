@@ -1,4 +1,3 @@
-import redis
 import json
 from models.call import CallSkeleton
 from typing import Optional, Dict, Any

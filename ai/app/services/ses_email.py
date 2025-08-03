@@ -22,7 +22,7 @@ async def send_plain_email(to: str, subject: str, body: str) -> None:
 
 async def send_email_with_ics(to: str, subject: str, body: str, ics_content: str):
     msg = email.message.EmailMessage()
-    msg["From"] = email.utils.formataddr(("DispatchAI Bot", SES_FROM or "no-reply@dispatchai.com"))
+    msg["From"] = email.utils.formataddr(("DispatchAI Bot", os.getenv("SES_FROM") or "no-reply@dispatchai.com"))
     msg["To"] = to
     msg["Subject"] = subject
     msg.set_content(body)
@@ -37,9 +37,9 @@ async def send_email_with_ics(to: str, subject: str, body: str, ics_content: str
 
     await aiosmtplib.send(
         msg,
-        hostname=SMTP_HOST,
-        port=SMTP_PORT,
-        username=SMTP_USER,
-        password=SMTP_PASS,
+        hostname=os.getenv("SMTP_HOST"),
+        port=int(os.getenv("SMTP_PORT", 587)),
+        username=os.getenv("SMTP_USER"),
+        password=os.getenv("SMTP_PASS"),
         start_tls=True,
     )
