@@ -69,42 +69,44 @@ class CustomerServiceLangGraph:
         # Get available services
         available_services = state.get("available_services", [])
         
-        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Processing response: '{response_text[:100]}...'")
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Processing response: '{response_text}'")
         print(f"🔍 [PLACEHOLDER_REPLACEMENT] Available services count: {len(available_services)}")
-        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{{services_list}}' in response_text}")
+        if available_services:
+            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Available services: {[s['name'] for s in available_services]}")
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{{{services_list}}}}: {'{{services_list}}' in response_text}")
         print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{services_list}' in response_text}")
 
         # Replace {{services_list}} placeholder (double braces)
         if "{{services_list}}" in response_text:
             services_list = ""
-            for service in available_services:
+            for i, service in enumerate(available_services, 1):
                 price_text = (
-                    f"${service['price']}"
+                    f"{service['price']} dollars"
                     if service.get("price")
                     else "Price on request"
                 )
-                services_list += f"• {service['name']}: {price_text}\n"
+                services_list += f"{i}. {service['name']} for {price_text}. "
 
             response_text = response_text.replace(
                 "{{services_list}}", services_list.strip()
             )
-            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: {services_list.strip()}")
+            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: '{services_list.strip()}'")
         
         # Replace {services_list} placeholder (single braces) - fallback for LLM variations
         if "{services_list}" in response_text:
             services_list = ""
-            for service in available_services:
+            for i, service in enumerate(available_services, 1):
                 price_text = (
-                    f"${service['price']}"
+                    f"{service['price']} dollars"
                     if service.get("price")
                     else "Price on request"
                 )
-                services_list += f"• {service['name']}: {price_text}\n"
+                services_list += f"{i}. {service['name']} for {price_text}. "
 
             response_text = response_text.replace(
                 "{services_list}", services_list.strip()
             )
-            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: {services_list.strip()}")
+            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {services_list} with: '{services_list.strip()}'")
 
         # Replace selected service placeholders
         if (

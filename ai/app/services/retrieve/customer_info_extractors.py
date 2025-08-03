@@ -319,6 +319,7 @@ async def extract_service_from_conversation(state: CustomerServiceState, message
             print("⚠️ [SERVICE_DEBUG] No available services found in state!")
         
         prompt = get_service_extraction_prompt(available_services)
+        print(f"🔍 [SERVICE_DEBUG] Generated prompt (first 500 chars): {prompt[:500]}...")
         result = await _call_openai_api(prompt, context, user_input, message_history)
         
         print(f"🔍 [SERVICE_DEBUG] LLM raw response: {result}")
