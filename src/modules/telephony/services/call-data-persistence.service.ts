@@ -35,32 +35,29 @@ export class CallDataPersistenceService {
     twilioParams: VoiceStatusBody,
   ): Promise<void> {
     const session = await this.sessions.load(callSid);
-    if (!ValidationHelper.shouldProcessSession(session)) {
+    if (!session) {
       winstonLogger.warn(
         `[CallDataPersistenceService][processCallCompletion] Session not found for callSid: ${callSid}`,
       );
       return;
     }
 
-    // At this point, session is guaranteed to be non-null
-    const nonNullSession = session as CallSkeleton;
-
     try {
       // Step 1: Create call log record
-      const callLog = await this.createCallLogRecord(nonNullSession, twilioParams);
+      const callLog = await this.createCallLogRecord(session, twilioParams);
 
       // Step 2: Generate transcript and chunks with AI summary
-      await this.createTranscriptAndChunks(nonNullSession);
+      await this.createTranscriptAndChunks(session);
 
       // Step 3: Create service booking if service was booked
-      if (ValidationHelper.isServiceAvailable(nonNullSession)) {
-        const serviceBooking = await this.createServiceBookingRecord(nonNullSession);
+      if (ValidationHelper.isServiceAvailable(session)) {
+        const serviceBooking = await this.createServiceBookingRecord(session);
         // Step 4: Update call log with booking ID
         if (callLog._id != null) {
           await this.updateCallLogWithBookingId(
             callLog._id,
             String((serviceBooking as any)._id),
-            nonNullSession.company.userId,
+            session.company.userId,
           );
         }
       }
