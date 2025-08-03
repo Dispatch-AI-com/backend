@@ -117,26 +117,34 @@ Rules:
 - IMPORTANT: Review the conversation history above to see what address information has already been discussed
 - If address components were mentioned in previous messages, combine them with current user input
 - If no address information was discussed before, extract from current user input
-- Minimum requirements (choose one):
-  a) Street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
-  b) Street number AND street name AND suburb AND postcode AND state (e.g., "123 Collins Street, Melbourne, 3000, VIC")
-- Common Australian street types: Street, Road, Avenue, Drive, Lane, Court, Place, Way, Parade, etc.
+- Minimum requirements for completion (flexible acceptance):
+  a) IDEAL: Street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
+  b) ACCEPTABLE: Just street name if clear (e.g., "Collins Street" if user says "I live on Collins Street")
+  c) ACCEPTABLE: Just street number if context is clear (e.g., "123" if previous conversation established street)
+  d) COMPLETE: Street number AND street name AND suburb AND postcode AND state
+- Common Australian street types: Street, Road, Avenue, Drive, Lane, Court, Place, Way, Parade, Terrace, Boulevard, Circuit, Crescent, Grove, Rise, Close, Walk, Gardens, etc.
 - Full address preferred but not required: "123 Collins Street, Melbourne, VIC, 3000"
-- Partial address acceptable: "6 Grandstand Parade" (just street portion)
+- Partial address acceptable: "6 Grandstand Parade", "Collins Street", or even "123" in context
 - Handle unit/apartment numbers: "Unit 2/88 King Street" 
-- Set info_complete to true if you can extract at least street number + street name OR street number + suburb + postcode + state
+- Handle directional street names: "212 North Terrace", "88 East Street", "45 South Road"
+- Recognize that directional words (North, South, East, West) are part of the street name
+- Accept famous Australian streets: "North Terrace" (Adelaide), "King William Street", "Rundle Mall"
+- Set info_complete to true if you can extract ANY useful address information (street number, street name, or both)
 - IMPORTANT: If user mentions state (NSW, VIC, QLD, SA, WA, TAS, NT, ACT), include it in the address
 - State is optional but should be recorded if provided
 - Response field should be natural and friendly, matching customer service tone
 
 
 Response Templates:
-- If you extract valid address (partial or complete), acknowledge and proceed to ask what service they need
-- If you cannot extract valid address information:
-  - If address components were mentioned in conversation history, ask for missing components (e.g., suburb, state, postcode)
-  - If no address information was discussed before, politely ask for their street address
+- If you extract ANY useful address information (even partial), acknowledge and proceed to ask what service they need
+- For partial information (only street name or only number):
+  - Accept it gracefully: "Thank you for that address information. What service do you need today?"
+  - Don't ask for more address details unless absolutely critical
+- If you cannot extract ANY address information:
+  - Politely ask for their street address: "Could you please tell me your street address?"
 - If user provides additional address components, combine with information from conversation history
-- Examples of valid addresses: "123 Main Street", "6 Grandstand Parade", "Unit 5/42 Collins Street", "123 Collins Street, Melbourne, 3000, VIC"
+- Examples of acceptable addresses: "123 Main Street" (ideal), "212 North Terrace" (ideal), "Collins Street" (acceptable), "123" (acceptable in context), "Unit 5/42 Collins Street", "88 King William Road", "456 North Terrace, Adelaide, 5000, SA"
+- IMPORTANT: Be flexible and accepting of partial information - don't insist on complete addresses
 """
 
 

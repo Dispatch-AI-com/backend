@@ -366,9 +366,17 @@ class CustomerServiceLangGraph:
         extracted_address = result["info_extracted"].get("address")
         is_complete = result["info_complete"]
 
-        if is_complete and extracted_address:
+        # Check if we have any useful address information
+        has_address_string = extracted_address and extracted_address.strip()
+        has_address_components = (
+            result["info_extracted"].get("street_number") or 
+            result["info_extracted"].get("street_name") or
+            result["info_extracted"].get("suburb")
+        )
+        
+        if is_complete and (has_address_string or has_address_components):
             # Clean address string
-            cleaned_address = extracted_address.strip()
+            cleaned_address = extracted_address.strip() if extracted_address else ""
             
             # Extract address components from the result
             street_number = result["info_extracted"].get("street_number")
@@ -376,6 +384,22 @@ class CustomerServiceLangGraph:
             suburb = result["info_extracted"].get("suburb")
             postcode = result["info_extracted"].get("postcode")
             state_abbrev = result["info_extracted"].get("state")
+            
+            # If no complete address string but we have components, build one
+            if not cleaned_address and (street_number or street_name):
+                address_parts = []
+                if street_number:
+                    address_parts.append(str(street_number))
+                if street_name:
+                    address_parts.append(str(street_name))
+                if suburb:
+                    address_parts.append(str(suburb))
+                if postcode:
+                    address_parts.append(str(postcode))
+                if state_abbrev:
+                    address_parts.append(str(state_abbrev))
+                cleaned_address = ", ".join(address_parts)
+                print(f"🔧 [ADDRESS_COLLECTION] Built address from components: {cleaned_address}")
             
             # Check if we already have some address information
             existing_address = state.get("address", "")
