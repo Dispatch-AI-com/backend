@@ -1,3 +1,4 @@
+import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 
 import { CalllogModule } from '@/modules/calllog/calllog.module';
@@ -10,11 +11,15 @@ import { UserModule } from '@/modules/user/user.module';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
+import { AiIntegrationService } from './services/ai-integration.service';
+import { CallDataPersistenceService } from './services/call-data-persistence.service';
+import { CallProcessorService } from './services/call-processor.service';
 import { TelephonyController } from './telephony.controller';
 import { TelephonyService } from './telephony.service';
 
 @Module({
   imports: [
+    HttpModule,
     CalllogModule,
     TranscriptModule,
     TranscriptChunkModule,
@@ -24,7 +29,14 @@ import { TelephonyService } from './telephony.service';
     CompanyModule,
   ],
   controllers: [TelephonyController],
-  providers: [TelephonyService, SessionRepository, SessionHelper],
+  providers: [
+    TelephonyService,
+    CallProcessorService,
+    AiIntegrationService,
+    CallDataPersistenceService,
+    SessionRepository,
+    SessionHelper,
+  ],
   exports: [TelephonyService],
 })
 export class TelephonyModule {}
