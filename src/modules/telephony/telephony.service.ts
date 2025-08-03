@@ -62,7 +62,7 @@ export class TelephonyService {
     const company = await this.companyService.findByUserId(user._id as string);
     await this.sessionHelper.fillCompany(CallSid, company);
 
-    const welcome = this.buildWelcomeMessage(company.businessName, services);
+    const welcome = this.buildWelcomeMessage(company.businessName, services, company.greeting);
 
     return this.speakAndLog(CallSid, welcome, NextAction.GATHER);
   }
@@ -171,12 +171,19 @@ export class TelephonyService {
   private buildWelcomeMessage(
     companyName?: string,
     services?: readonly { name: string }[],
+    greeting?: { message: string; isCustom: boolean },
   ): string {
+    // If user has chosen a custom welcome message, use it and add professional follow-up
+    if (greeting?.isCustom && greeting.message) {
+      return `${greeting.message} May I have your name to begin with the process?`;
+    }
+    
+    // Default behavior: use system-generated welcome message
     if (companyName !== undefined && services && services.length > 0) {
       const serviceList = services.map(s => s.name).join(', ');
       return `Welcome! We are ${companyName}. We provide ${serviceList}. May I get your name please?`;
     }
-    return 'Welcome! How can I help you today? May I get your name please?';
+    return 'Welcome! May I get your name please?';
   }
 
   private async processCallCompletion(
