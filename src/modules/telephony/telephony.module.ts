@@ -1,4 +1,3 @@
-import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
 
 import { CalllogModule } from '@/modules/calllog/calllog.module';
@@ -19,7 +18,6 @@ import { TelephonyService } from './telephony.service';
 
 @Module({
   imports: [
-    HttpModule,
     CalllogModule,
     TranscriptModule,
     TranscriptChunkModule,
