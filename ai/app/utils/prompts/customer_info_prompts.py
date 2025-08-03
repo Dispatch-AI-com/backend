@@ -73,16 +73,20 @@ Please respond strictly in the following JSON format, do not add any other conte
 }
 
 Rules:
-- Only accept Australian mobile phone formats: 04XXXXXXXX or +614XXXXXXXX or 0061XXXXXXXXX or 614XXXXXXXX
-- Do not accept phone number formats from other countries (e.g., China's 138xxxxxxxx, US +1xxxxxxxxxx, etc.)
-- If user provides a valid Australian format phone number, set info_complete to true
-- If user provides a non-Australian format phone number, set info_complete to false and kindly explain that only Australian numbers are accepted
-- Response field should be natural and friendly, matching customer service tone
-- Strictly validate phone number format, only Australian formats are considered valid
+- Only accept Australian mobile phone formats: 10-digit numbers starting with 04 (e.g., 0412345678)
+- Also accept international formats starting with +614, 0061, or 614
+- Do not accept phone numbers from other countries or landline numbers
+- If user provides a valid Australian mobile number, set info_complete to true
+- If user provides an invalid format, set info_complete to false
+- Response field should be natural and friendly, suitable for voice conversation
+- IMPORTANT: For voice calls, do not repeat back phone numbers with "xxx" or similar placeholders
+- When asking for phone number again, specify the format requirement clearly
 
 Response Templates:
-- If you successfully extract a valid phone number, respond with acknowledgement and then proceed to ask user's address. 
-- If you cannot extract a valid phone number, politely ask user to tell the phone number again
+- If you successfully extract a valid phone number, respond with acknowledgement and proceed to ask for address
+- If you cannot extract a valid phone number, say: "I need your Australian mobile phone number. Please provide a 10-digit number starting with zero-four."
+- If format is wrong, say: "That doesn't seem to be an Australian mobile number. I need a 10-digit number starting with zero-four."
+- Do NOT use examples with "xxx" or placeholder numbers in voice responses
 """
 
 
@@ -112,39 +116,46 @@ Please respond strictly in the following JSON format, do not add any other conte
   "analysis": "Brief analysis of whether user input contains valid address information"
 }
 
+IMPORTANT: Set info_complete to true ONLY if you have extracted ALL required address components: street_number, street_name, suburb, postcode, and state.
+
 Rules:
-- Accept partial or complete Australian address information
+- Require complete Australian address information for service delivery
 - IMPORTANT: Review the conversation history above to see what address information has already been discussed
-- If address components were mentioned in previous messages, combine them with current user input
+- If some address components were mentioned in previous messages, combine them with current user input
 - If no address information was discussed before, extract from current user input
-- Minimum requirements for completion (flexible acceptance):
-  a) IDEAL: Street number AND street name (e.g., "123 Collins Street", "6 Grandstand Parade")
-  b) ACCEPTABLE: Just street name if clear (e.g., "Collins Street" if user says "I live on Collins Street")
-  c) ACCEPTABLE: Just street number if context is clear (e.g., "123" if previous conversation established street)
-  d) COMPLETE: Street number AND street name AND suburb AND postcode AND state
+- REQUIRED components for completion:
+  a) Street number (e.g., "123", "Unit 5/88")
+  b) Street name (e.g., "Collins Street", "North Terrace")
+  c) Suburb/City (e.g., "Melbourne", "Adelaide", "Sydney")
+  d) Postcode (e.g., "3000", "5000", "2000")
+  e) State (e.g., "VIC", "SA", "NSW", "QLD", "WA", "TAS", "NT", "ACT")
 - Common Australian street types: Street, Road, Avenue, Drive, Lane, Court, Place, Way, Parade, Terrace, Boulevard, Circuit, Crescent, Grove, Rise, Close, Walk, Gardens, etc.
-- Full address preferred but not required: "123 Collins Street, Melbourne, VIC, 3000"
-- Partial address acceptable: "6 Grandstand Parade", "Collins Street", or even "123" in context
-- Handle unit/apartment numbers: "Unit 2/88 King Street" 
+- Complete address required: "123 Collins Street, Melbourne, VIC, 3000"
+- Handle unit/apartment numbers: "Unit 2/88 King Street, Adelaide, SA, 5000" 
 - Handle directional street names: "212 North Terrace", "88 East Street", "45 South Road"
 - Recognize that directional words (North, South, East, West) are part of the street name
 - Accept famous Australian streets: "North Terrace" (Adelaide), "King William Street", "Rundle Mall"
-- Set info_complete to true if you can extract ANY useful address information (street number, street name, or both)
-- IMPORTANT: If user mentions state (NSW, VIC, QLD, SA, WA, TAS, NT, ACT), include it in the address
-- State is optional but should be recorded if provided
+- CRITICAL: Set info_complete to true ONLY when you have ALL 5 components: street_number, street_name, suburb, postcode, state
+- DO NOT set info_complete to true for partial addresses - all components are required
+- If missing any component, ask for the specific missing information
+- IMPORTANT: All components (street number, street name, suburb, postcode, state) are REQUIRED
 - Response field should be natural and friendly, matching customer service tone
+- PRIORITY: Complete address collection for accurate service delivery
 
 
 Response Templates:
-- If you extract ANY useful address information (even partial), acknowledge and proceed to ask what service they need
-- For partial information (only street name or only number):
-  - Accept it gracefully: "Thank you for that address information. What service do you need today?"
-  - Don't ask for more address details unless absolutely critical
+- If you have ALL 5 required components (street_number, street_name, suburb, postcode, state), acknowledge and proceed to ask what service they need:
+  "Perfect! I have your complete address. What service do you need today?"
+- If you have partial address information, acknowledge what you have and ask for missing components:
+  - If missing suburb: "Thank you. I have [street info]. Could you please tell me which suburb or city?"
+  - If missing postcode: "Thank you. I have [street and suburb]. What's the postcode?"
+  - If missing state: "Thank you. I have [street, suburb, postcode]. Which state is that in?"
+  - If missing multiple components: "I have [what you have]. Could you please provide your complete address including suburb, postcode, and state?"
 - If you cannot extract ANY address information:
-  - Politely ask for their street address: "Could you please tell me your street address?"
-- If user provides additional address components, combine with information from conversation history
-- Examples of acceptable addresses: "123 Main Street" (ideal), "212 North Terrace" (ideal), "Collins Street" (acceptable), "123" (acceptable in context), "Unit 5/42 Collins Street", "88 King William Road", "456 North Terrace, Adelaide, 5000, SA"
-- IMPORTANT: Be flexible and accepting of partial information - don't insist on complete addresses
+  - Politely ask for complete address: "Could you please tell me your complete address including street, suburb, postcode, and state?"
+- Always acknowledge information received before asking for missing parts
+- Examples of COMPLETE addresses: "123 Collins Street, Melbourne, VIC, 3000", "Unit 5/88 King Street, Adelaide, SA, 5000"
+- CRITICAL: Only proceed to next step when you have ALL required address components
 """
 
 

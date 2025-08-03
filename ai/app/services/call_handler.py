@@ -366,40 +366,36 @@ class CustomerServiceLangGraph:
         extracted_address = result["info_extracted"].get("address")
         is_complete = result["info_complete"]
 
-        # Check if we have any useful address information
-        has_address_string = extracted_address and extracted_address.strip()
-        has_address_components = (
-            result["info_extracted"].get("street_number") or 
-            result["info_extracted"].get("street_name") or
-            result["info_extracted"].get("suburb")
-        )
+        # Check if we have complete address information (all 5 components required)
+        street_number = result["info_extracted"].get("street_number")
+        street_name = result["info_extracted"].get("street_name")
+        suburb = result["info_extracted"].get("suburb")
+        postcode = result["info_extracted"].get("postcode")
+        state_abbrev = result["info_extracted"].get("state")
         
-        if is_complete and (has_address_string or has_address_components):
+        has_complete_address = all([
+            street_number and str(street_number).strip(),
+            street_name and str(street_name).strip(),
+            suburb and str(suburb).strip(),
+            postcode and str(postcode).strip(),
+            state_abbrev and str(state_abbrev).strip()
+        ])
+        
+        if is_complete and has_complete_address:
             # Clean address string
             cleaned_address = extracted_address.strip() if extracted_address else ""
             
-            # Extract address components from the result
-            street_number = result["info_extracted"].get("street_number")
-            street_name = result["info_extracted"].get("street_name")
-            suburb = result["info_extracted"].get("suburb")
-            postcode = result["info_extracted"].get("postcode")
-            state_abbrev = result["info_extracted"].get("state")
-            
-            # If no complete address string but we have components, build one
-            if not cleaned_address and (street_number or street_name):
-                address_parts = []
-                if street_number:
-                    address_parts.append(str(street_number))
-                if street_name:
-                    address_parts.append(str(street_name))
-                if suburb:
-                    address_parts.append(str(suburb))
-                if postcode:
-                    address_parts.append(str(postcode))
-                if state_abbrev:
-                    address_parts.append(str(state_abbrev))
+            # If no complete address string but we have all components, build one
+            if not cleaned_address:
+                address_parts = [
+                    str(street_number),
+                    str(street_name),
+                    str(suburb),
+                    str(postcode),
+                    str(state_abbrev)
+                ]
                 cleaned_address = ", ".join(address_parts)
-                print(f"🔧 [ADDRESS_COLLECTION] Built address from components: {cleaned_address}")
+                print(f"🔧 [ADDRESS_COLLECTION] Built complete address from components: {cleaned_address}")
             
             # Check if we already have some address information
             existing_address = state.get("address", "")
