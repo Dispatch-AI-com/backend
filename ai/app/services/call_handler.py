@@ -185,7 +185,7 @@ class CustomerServiceLangGraph:
 
     # ================== Information Collection Processing Functions ==================
 
-    def process_name_collection(
+    async def process_name_collection(
         self, state: CustomerServiceState, call_sid: Optional[str] = None
     ):
         """Process name collection step"""
@@ -203,7 +203,7 @@ class CustomerServiceLangGraph:
             message_history = get_message_history(call_sid)
         
         # Call LLM to extract name
-        result = extract_name_from_conversation(state, message_history)
+        result = await extract_name_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Check if name was extracted
@@ -249,7 +249,7 @@ class CustomerServiceLangGraph:
 
         return state
 
-    def process_phone_collection(
+    async def process_phone_collection(
         self, state: CustomerServiceState, call_sid: Optional[str] = None
     ):
         """Process phone collection step"""
@@ -267,7 +267,7 @@ class CustomerServiceLangGraph:
             message_history = get_message_history(call_sid)
         
         # Call LLM to extract phone
-        result = extract_phone_from_conversation(state, message_history)
+        result = await extract_phone_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Check if phone was extracted
@@ -436,7 +436,7 @@ class CustomerServiceLangGraph:
 
         return state
 
-    def process_service_collection(
+    async def process_service_collection(
         self, state: CustomerServiceState, call_sid: Optional[str] = None
     ):
         """Process service collection step"""
@@ -459,7 +459,7 @@ class CustomerServiceLangGraph:
             message_history = get_message_history(call_sid)
         
         # Call LLM to extract service
-        result = extract_service_from_conversation(state, message_history)
+        result = await extract_service_from_conversation(state, message_history)
 
         # Replace placeholders in the response with actual service information
         if result and "response" in result:
@@ -539,7 +539,7 @@ class CustomerServiceLangGraph:
 
         return state
 
-    def process_time_collection(
+    async def process_time_collection(
         self, state: CustomerServiceState, call_sid: Optional[str] = None
     ):
         """Process time collection step - Simplified with AI direct MongoDB output"""
@@ -555,7 +555,7 @@ class CustomerServiceLangGraph:
             message_history = get_message_history(call_sid)
         
         # Call AI to extract and convert time in one step
-        result = extract_time_from_conversation(state, message_history)
+        result = await extract_time_from_conversation(state, message_history)
         state["last_llm_response"] = result
 
         # Extract AI results
@@ -680,15 +680,15 @@ class CustomerServiceLangGraph:
         )
 
         if not state["name_complete"]:
-            state = self.process_name_collection(state, call_sid)
+            state = await self.process_name_collection(state, call_sid)
         elif not state["phone_complete"]:
-            state = self.process_phone_collection(state, call_sid)
+            state = await self.process_phone_collection(state, call_sid)
         elif not state["address_complete"]:
             state = await self.process_address_collection(state, call_sid)
         elif not state["service_complete"]:
-            state = self.process_service_collection(state, call_sid)
+            state = await self.process_service_collection(state, call_sid)
         elif not state["time_complete"]:
-            state = self.process_time_collection(state, call_sid)
+            state = await self.process_time_collection(state, call_sid)
         else:
             # All information collection completed - fallback path
             print(
