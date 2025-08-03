@@ -56,8 +56,8 @@ async def _call_openai_api(
     # Add current user input
     messages.append({"role": "user", "content": f"User input: {user_input}"})
     
-    print(f"🔍 [LLM_DEBUG] Sending request to OpenAI:")
-    print(f"  • Model: gpt-4o-mini")
+    print("🔍 [LLM_DEBUG] Sending request to OpenAI:")
+    print("  • Model: gpt-4o-mini")
     print(f"  • Messages count: {len(messages)}")
     print(f"  • User input: '{user_input}'")
     print(f"  • System prompt length: {len(messages[0]['content'])} chars")
@@ -70,22 +70,22 @@ async def _call_openai_api(
             max_tokens=500,
         )
         
-        print(f"🔍 [LLM_DEBUG] OpenAI API call successful")
+        print("🔍 [LLM_DEBUG] OpenAI API call successful")
         print(f"  • Response choices count: {len(response.choices) if response.choices else 0}")
         
         if not response.choices:
-            print(f"❌ [LLM_DEBUG] No choices in OpenAI response")
+            print("❌ [LLM_DEBUG] No choices in OpenAI response")
             return {}
             
         if not response.choices[0].message:
-            print(f"❌ [LLM_DEBUG] No message in first choice")
+            print("❌ [LLM_DEBUG] No message in first choice")
             return {}
             
         content = response.choices[0].message.content or ""
         print(f"🔍 [LLM_DEBUG] Raw LLM response content (length: {len(content)}): '{content}'")
         
         if not content:
-            print(f"❌ [LLM_DEBUG] Empty content from OpenAI")
+            print("❌ [LLM_DEBUG] Empty content from OpenAI")
             return {}
         
     except Exception as api_error:
@@ -110,7 +110,7 @@ async def _call_openai_api(
     
     try:
         parsed_result = json.loads(cleaned_content)
-        print(f"✅ [LLM_DEBUG] Successfully parsed JSON response")
+        print("✅ [LLM_DEBUG] Successfully parsed JSON response")
         return parsed_result
     except json.JSONDecodeError as e:
         print(f"❌ [LLM_DEBUG] JSON parsing failed: {str(e)}")
@@ -125,9 +125,9 @@ async def _call_openai_api(
                 json_part = json_match.group(0)
                 print(f"🔍 [LLM_DEBUG] Attempting to parse extracted JSON: '{json_part}'")
                 parsed_result = json.loads(json_part)
-                print(f"✅ [LLM_DEBUG] Successfully parsed extracted JSON")
+                print("✅ [LLM_DEBUG] Successfully parsed extracted JSON")
                 return parsed_result
-        except:
+        except (json.JSONDecodeError, Exception):
             pass
         
         return {}
@@ -194,7 +194,7 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
         prompt = get_address_extraction_prompt()
         user_input = state.get("last_user_input") or ""
         
-        print(f"🔍 [ADDRESS_DEBUG] Starting address extraction")
+        print("🔍 [ADDRESS_DEBUG] Starting address extraction")
         print(f"🔍 [ADDRESS_DEBUG] Raw user input: '{user_input}'")
         
         # Build context with existing address components
@@ -215,7 +215,7 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
             print(f"🔍 [ADDRESS_DEBUG] Existing components found: {', '.join(existing_components)}")
         else:
             context_with_existing = f"Current user input: {user_input}"
-            print(f"🔍 [ADDRESS_DEBUG] No existing components, fresh extraction")
+            print("🔍 [ADDRESS_DEBUG] No existing components, fresh extraction")
         
         print(f"🔍 [ADDRESS_DEBUG] Context sent to LLM: '{context_with_existing}'")
         
@@ -226,7 +226,7 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
         
         # Check if we got a valid response structure
         if not result:
-            print(f"❌ [ADDRESS_DEBUG] Empty LLM response (likely JSON parsing failed)")
+            print("❌ [ADDRESS_DEBUG] Empty LLM response (likely JSON parsing failed)")
             return _default_result(
                 "Sorry, there was a problem processing your address. Please tell me your address again.",
                 "address",
@@ -243,7 +243,7 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
         
         # Check for required keys
         if "info_extracted" not in result:
-            print(f"❌ [ADDRESS_DEBUG] Missing 'info_extracted' key in LLM response")
+            print("❌ [ADDRESS_DEBUG] Missing 'info_extracted' key in LLM response")
             print(f"❌ [ADDRESS_DEBUG] Available keys: {list(result.keys())}")
             return _default_result(
                 "Sorry, there was a problem processing your address. Please tell me your address again.",
@@ -255,7 +255,7 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
             # Check if any address components were extracted (street_number, street_name, suburb, postcode, state)
             extracted_info = result.get("info_extracted", {})
             
-            print(f"🔍 [ADDRESS_DEBUG] Extracted components:")
+            print("🔍 [ADDRESS_DEBUG] Extracted components:")
             print(f"  • Street number: '{extracted_info.get('street_number')}'")
             print(f"  • Street name: '{extracted_info.get('street_name')}'")
             print(f"  • Suburb: '{extracted_info.get('suburb')}'")
@@ -275,17 +275,17 @@ async def extract_address_from_conversation(state: CustomerServiceState, message
             
             if has_any_components:
                 # LLM extracted some address components
-                print(f"✅ [ADDRESS_DEBUG] Successfully extracted components, returning result")
+                print("✅ [ADDRESS_DEBUG] Successfully extracted components, returning result")
                 return result
             else:
-                print(f"❌ [ADDRESS_DEBUG] No address components found in LLM response")
+                print("❌ [ADDRESS_DEBUG] No address components found in LLM response")
                 return _default_result(
                     "Sorry, there was a problem processing your address. Please tell me your address again.",
                     "address",
                     "No address components extracted",
                 )
         else:
-            print(f"❌ [ADDRESS_DEBUG] Invalid LLM response structure")
+            print("❌ [ADDRESS_DEBUG] Invalid LLM response structure")
             return _default_result(
                 "Sorry, there was a problem processing your address. Please tell me your address again.",
                 "address",
@@ -311,7 +311,7 @@ async def extract_service_from_conversation(state: CustomerServiceState, message
         available_services = state.get("available_services", None)
         user_input = state.get("last_user_input") or ""
         
-        print(f"🔍 [SERVICE_DEBUG] Starting service extraction")
+        print("🔍 [SERVICE_DEBUG] Starting service extraction")
         print(f"🔍 [SERVICE_DEBUG] Raw user input: '{user_input}'")
         print(f"🔍 [SERVICE_DEBUG] Available services count: {len(available_services) if available_services else 0}")
         
@@ -326,7 +326,7 @@ async def extract_service_from_conversation(state: CustomerServiceState, message
         
         # Check if we got a valid response structure
         if not result:
-            print(f"❌ [SERVICE_DEBUG] Empty LLM response (likely JSON parsing failed)")
+            print("❌ [SERVICE_DEBUG] Empty LLM response (likely JSON parsing failed)")
             return _default_result(
                 "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
                 "service",
@@ -343,7 +343,7 @@ async def extract_service_from_conversation(state: CustomerServiceState, message
         
         # Check for required keys
         if "info_extracted" not in result:
-            print(f"❌ [SERVICE_DEBUG] Missing 'info_extracted' key in LLM response")
+            print("❌ [SERVICE_DEBUG] Missing 'info_extracted' key in LLM response")
             print(f"❌ [SERVICE_DEBUG] Available keys: {list(result.keys())}")
             return _default_result(
                 "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
@@ -352,10 +352,10 @@ async def extract_service_from_conversation(state: CustomerServiceState, message
             )
         
         if result and result.get("info_extracted"):
-            print(f"✅ [SERVICE_DEBUG] Successfully extracted service info")
+            print("✅ [SERVICE_DEBUG] Successfully extracted service info")
             return result
         else:
-            print(f"❌ [SERVICE_DEBUG] No service info in LLM response")
+            print("❌ [SERVICE_DEBUG] No service info in LLM response")
             return _default_result(
                 "Sorry, there was a problem processing your service request. Please tell me what service you need again.",
                 "service",

@@ -378,7 +378,6 @@ class CustomerServiceLangGraph:
 
         # Check if address was extracted
         extracted_address = result["info_extracted"].get("address")
-        is_complete = result["info_complete"]
 
         # Check for address confirmation
         extracted_info = result["info_extracted"]
@@ -387,7 +386,7 @@ class CustomerServiceLangGraph:
         # Handle confirmation workflow
         if user_confirmed:
             # User confirmed the address - use existing address from state
-            print(f"✅ [ADDRESS_COLLECTION] User confirmed address")
+            print("✅ [ADDRESS_COLLECTION] User confirmed address")
             existing_address = state.get("address", "")
             existing_components = {
                 "street_number": state.get("street_number"),
@@ -458,7 +457,7 @@ class CustomerServiceLangGraph:
             
             # Don't mark as complete yet - wait for user confirmation
             # Only save the components for now
-            print(f"📝 [ADDRESS_COLLECTION] Address components saved, waiting for user confirmation")
+            print("📝 [ADDRESS_COLLECTION] Address components saved, waiting for user confirmation")
 
             # Real-time Redis update with address components
             if call_sid:
