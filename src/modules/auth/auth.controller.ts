@@ -135,14 +135,18 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'OAuth URL generated' })
   @Post('google/authorize')
-  async generateGoogleAuthUrl(): Promise<{ authUrl: string }> {
+  generateGoogleAuthUrl(): { authUrl: string } {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = process.env.GOOGLE_CALLBACK_URL;
     const scope = 'https://www.googleapis.com/auth/calendar';
     
+    if (!clientId || !redirectUri) {
+      throw new BadRequestException('Google OAuth configuration is missing');
+    }
+    
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${redirectUri}&` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `scope=${encodeURIComponent(scope)}&` +
       `response_type=code&` +
       `access_type=offline&` +
@@ -157,7 +161,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'OAuth callback processed' })
   @Post('google/callback')
-  async handleGoogleCallback(@Body() body: { code: string; userId?: string }) {
+  async handleGoogleCallback(@Body() body: { code: string; userId?: string }): Promise<unknown> {
     try {
       // 如果没有提供 userId，尝试从 JWT 中获取
       let userId = body.userId;
@@ -183,10 +187,13 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Google account linked' })
   @UseGuards(AuthGuard('jwt'))
   @Post('link-google-account')
-  async linkGoogleAccount(@Req() req: Request) {
-    const userId = (req.user as any).userId;
+  async linkGoogleAccount(@Req() req: Request): Promise<{ authUrl: string }> {
+    const user = req.user as { userId: string };
+    if (!user?.userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
     // 生成授权 URL 并返回
-    const authUrl = await this.authService.generateGoogleAuthUrl(userId);
+    const authUrl = await this.authService.generateGoogleAuthUrl(user.userId);
     return { authUrl };
   }
 
@@ -197,9 +204,12 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refreshed' })
   @UseGuards(AuthGuard('jwt'))
   @Post('google/refresh-token')
-  async refreshGoogleToken(@Req() req: Request) {
-    const userId = (req.user as any).userId;
-    const result = await this.authService.refreshGoogleToken(userId);
+  async refreshGoogleToken(@Req() req: Request): Promise<unknown> {
+    const user = req.user as { userId: string };
+    if (!user?.userId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    const result = await this.authService.refreshGoogleToken(user.userId);
     return result;
   }
 }

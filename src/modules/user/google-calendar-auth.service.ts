@@ -10,8 +10,18 @@ export class GoogleCalendarAuthService {
     private readonly googleCalendarAuthModel: Model<GoogleCalendarAuthDocument>,
   ) {}
 
+  private validateObjectId(id: string | Types.ObjectId): Types.ObjectId {
+    if (typeof id === 'string') {
+      if (!Types.ObjectId.isValid(id)) {
+        throw new Error('Invalid ObjectId format');
+      }
+      return new Types.ObjectId(id);
+    }
+    return id;
+  }
+
   async getAuthByUserId(userId: Types.ObjectId | string) {
-    const userIdObj = typeof userId === 'string' ? new Types.ObjectId(userId) : userId;
+    const userIdObj = this.validateObjectId(userId);
     return this.googleCalendarAuthModel.findOne({ userId: userIdObj });
   }
 
@@ -21,7 +31,7 @@ export class GoogleCalendarAuthService {
     refreshToken?: string, 
     tokenExpiresAt?: Date
   ) {
-    const userIdObj = typeof userId === 'string' ? new Types.ObjectId(userId) : userId;
+    const userIdObj = this.validateObjectId(userId);
     return this.googleCalendarAuthModel.findOneAndUpdate(
       { userId: userIdObj },
       { accessToken, refreshToken, tokenExpiresAt },
@@ -30,7 +40,7 @@ export class GoogleCalendarAuthService {
   }
 
   async deleteAuth(userId: Types.ObjectId | string) {
-    const userIdObj = typeof userId === 'string' ? new Types.ObjectId(userId) : userId;
+    const userIdObj = this.validateObjectId(userId);
     return this.googleCalendarAuthModel.findOneAndDelete({ userId: userIdObj });
   }
 

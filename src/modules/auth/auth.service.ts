@@ -2,6 +2,7 @@ import {
   ConflictException,
   Injectable,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
@@ -131,42 +132,46 @@ export class AuthService {
     return { user: user.toObject() as User, token };
   }
 
-  async handleGoogleCallback(code: string, userId: string) {
+  async handleGoogleCallback(code: string, userId: string): Promise<{ success: boolean }> {
     const tokenResponse = await this.exchangeCodeForTokens(code);
     
     await this.googleCalendarAuthService.upsertAuth(
       userId,
-      tokenResponse.access_token,
-      tokenResponse.refresh_token,
-      new Date(Date.now() + tokenResponse.expires_in * 1000)
+      tokenResponse.access_token as string,
+      tokenResponse.refresh_token as string | undefined,
+      new Date(Date.now() + (tokenResponse.expires_in as number) * 1000)
     );
     
     return { success: true };
   }
 
-  async generateGoogleAuthUrl(userId?: string): Promise<string> {
+  generateGoogleAuthUrl(userId?: string): string {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const redirectUri = process.env.GOOGLE_CALLBACK_URL;
     const scope = 'https://www.googleapis.com/auth/calendar';
     
+    if (!clientId || !redirectUri) {
+      throw new BadRequestException('Google OAuth configuration is missing');
+    }
+    
     let authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${redirectUri}&` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `scope=${encodeURIComponent(scope)}&` +
       `response_type=code&` +
       `access_type=offline&` +
       `prompt=consent`;
     
-    if (userId) {
-      authUrl += `&state=${userId}`;
+    if (userId && userId.trim() !== '') {
+      authUrl += `&state=${encodeURIComponent(userId)}`;
     }
     
     return authUrl;
   }
 
-  async refreshGoogleToken(userId: string) {
+  async refreshGoogleToken(userId: string): Promise<{ success: boolean; expiresIn: number }> {
     const auth = await this.googleCalendarAuthService.getAuthByUserId(userId);
-    if (!auth || !auth.refreshToken) {
+    if (!auth?.refreshToken) {
       throw new UnauthorizedException('No refresh token found');
     }
 
@@ -174,18 +179,26 @@ export class AuthService {
     
     await this.googleCalendarAuthService.upsertAuth(
       userId,
-      tokenResponse.access_token,
+      tokenResponse.access_token as string,
       auth.refreshToken,
-      new Date(Date.now() + tokenResponse.expires_in * 1000)
+      new Date(Date.now() + (tokenResponse.expires_in as number) * 1000)
     );
     
-    return { success: true, expiresIn: tokenResponse.expires_in };
+    return { success: true, expiresIn: tokenResponse.expires_in as number };
   }
 
-  private async exchangeCodeForTokens(code: string) {
+  private async exchangeCodeForTokens(code: string): Promise<{
+    access_token: string;
+    refresh_token?: string;
+    expires_in: number;
+  }> {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     const redirectUri = process.env.GOOGLE_CALLBACK_URL;
+    
+    if (!clientId || !clientSecret || !redirectUri) {
+      throw new BadRequestException('Google OAuth configuration is missing');
+    }
     
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -193,11 +206,11 @@ export class AuthService {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: clientId!,
-        client_secret: clientSecret!,
+        client_id: clientId,
+        client_secret: clientSecret,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: redirectUri!,
+        redirect_uri: redirectUri,
       }),
     });
     
@@ -205,12 +218,25 @@ export class AuthService {
       throw new UnauthorizedException('Failed to exchange code for tokens');
     }
     
-    return response.json();
+    const result = await response.json() as {
+      access_token: string;
+      refresh_token?: string;
+      expires_in: number;
+    };
+    
+    return result;
   }
 
-  private async refreshAccessToken(refreshToken: string) {
+  private async refreshAccessToken(refreshToken: string): Promise<{
+    access_token: string;
+    expires_in: number;
+  }> {
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Google OAuth configuration is missing');
+    }
     
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -218,8 +244,8 @@ export class AuthService {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: clientId!,
-        client_secret: clientSecret!,
+        client_id: clientId,
+        client_secret: clientSecret,
         refresh_token: refreshToken,
         grant_type: 'refresh_token',
       }),
@@ -229,6 +255,11 @@ export class AuthService {
       throw new UnauthorizedException('Failed to refresh access token');
     }
     
-    return response.json();
+    const result = await response.json() as {
+      access_token: string;
+      expires_in: number;
+    };
+    
+    return result;
   }
 }
