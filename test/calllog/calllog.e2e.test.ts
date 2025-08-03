@@ -4,7 +4,6 @@ import request from 'supertest';
 import { AppModule } from '../../src/modules/app.module';
 import mongoose from 'mongoose';
 import { ICallLog } from '../../src/common/interfaces/calllog';
-import { CallLogStatus } from '../../src/common/constants/calllog.constant';
 import { createMockCallLogDto } from './mock-calllog';
 
 // Suppress punycode deprecation warning
@@ -81,7 +80,6 @@ describe('CallLogController (e2e)', () => {
       expect(response.status).toBe(201);
       expect(response.body).toMatchObject({
         userId: testCallLog.userId,
-        status: testCallLog.status,
         callerNumber: testCallLog.callerNumber,
         callerName: testCallLog.callerName,
         serviceBookedId: testCallLog.serviceBookedId,
@@ -126,15 +124,6 @@ describe('CallLogController (e2e)', () => {
       expect(response.body.pagination).toHaveProperty('total');
     });
 
-    it('should filter logs by status', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}?status=${CallLogStatus.Completed}`);
-
-      expect(response.status).toBe(200);
-      response.body.data.forEach((log: ICallLog) => {
-        expect(log.status).toBe(CallLogStatus.Completed);
-      });
-    });
 
     it('should filter logs by date range', async () => {
       const startAtFrom = '2025-05-01';
@@ -193,37 +182,27 @@ describe('CallLogController (e2e)', () => {
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('totalCalls');
-      expect(response.body).toHaveProperty('liveCalls');
       expect(typeof response.body.totalCalls).toBe('number');
-      expect(typeof response.body.liveCalls).toBe('number');
     });
   });
 
   describe('PATCH /users/:userId/calllogs/:calllogId', () => {
-    it('should update call log status', async () => {
+    it('should update call log fields', async () => {
       const response = await request(app.getHttpServer())
         .patch(`${baseUrl}/${createdCallLogId}`)
-        .send({ status: CallLogStatus.Missed });
+        .send({ callerName: 'Updated Name' });
 
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe(CallLogStatus.Missed);
+      expect(response.body.callerName).toBe('Updated Name');
       expect(response.body._id).toBe(createdCallLogId);
     });
 
     it('should return 404 for non-existent call log', async () => {
       const response = await request(app.getHttpServer())
         .patch(`${baseUrl}/non-existent-id`)
-        .send({ status: CallLogStatus.Missed });
+        .send({ callerName: 'Updated Name' });
 
       expect(response.status).toBe(404);
-    });
-
-    it('should validate status enum values', async () => {
-      const response = await request(app.getHttpServer())
-        .patch(`${baseUrl}/${createdCallLogId}`)
-        .send({ status: 'InvalidStatus' });
-
-      expect(response.status).toBe(400);
     });
   });
 

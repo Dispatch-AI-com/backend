@@ -205,4 +205,36 @@ export class CompanyService {
       );
     }
   }
+
+  async updateGreeting(
+    userId: string,
+    greeting: { message: string; isCustom: boolean },
+  ): Promise<Company> {
+    const company = await this.companyModel.findOne({ user: userId });
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    company.greeting = {
+      message: greeting.message.trim(),
+      isCustom: greeting.isCustom,
+    };
+
+    return await company.save();
+  }
+
+  async getGreeting(
+    userId: string,
+  ): Promise<{ message: string; isCustom: boolean } | undefined> {
+    const company = await this.companyModel
+      .findOne({ user: userId })
+      .select('greeting');
+
+    if (!company) {
+      throw new NotFoundException('Company not found');
+    }
+
+    return company.greeting;
+  }
 }

@@ -1,7 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Schema as MongooseSchema } from 'mongoose';
+import { Document, Schema as MongooseSchema, Types } from 'mongoose';
 
 import { User } from '@/modules/user/schema/user.schema';
+
+const DEFAULT_GREETING_MESSAGE = `Hello! I'm an Dispatch AI assistant working for you.
+
+Your team is not available to take the call right now.
+
+I can take a message for you, or help you book an appointment with your team. What can I do for you today?
+
+你也可以和我说普通话。`;
 
 @Schema({ timestamps: true })
 export class Company {
@@ -40,6 +48,24 @@ export class Company {
 
   @Prop({ unique: true })
   twilioPhoneNumber!: string;
+
+  @Prop({
+    type: {
+      message: {
+        type: String,
+      },
+      isCustom: { type: Boolean, default: false },
+    },
+    default: () => ({
+      message: DEFAULT_GREETING_MESSAGE,
+      isCustom: false,
+    }),
+  })
+  greeting!: {
+    message: string;
+    isCustom: boolean;
+  };
+  _id!: Types.ObjectId;
 }
 
 export type CompanyDocument = Company & Document;

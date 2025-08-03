@@ -1,0 +1,194 @@
+pipeline {
+    agent {
+        kubernetes {
+            cloud 'EKS-Agent-UAT-lawrence'
+            yamlFile 'jenkins-agent-uat.yaml'
+        }
+    }
+
+    environment {
+        ENVIRONMENT = "uat"
+        AWS_ACCOUNT_ID = "893774231297"
+        AWS_REGION = "ap-southeast-2"
+        // Backend environment variables
+        ECR_REPO_BACKEND = "dispatchai-backend"
+        IMAGE_NAME_BACKEND = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_BACKEND}"
+        // AI service environment variables
+        ECR_REPO_AI = "dispatchai-backend-ai"
+        IMAGE_NAME_AI = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_AI}"
+        
+        IMAGE_TAG = "uat-${env.BUILD_ID}"
+        NODE_ENV = 'uat'
+        ENV = 'uat'
+    }
+
+    stages {
+        stage('Clean workspace') {
+            steps { cleanWs() }
+        }
+
+        stage('checkout repos') {
+            steps {
+                container('node') {
+                    dir('backend') {
+                        git branch: "${env.BRANCH_NAME}", credentialsId: '2c8f4c5f-0bc2-48ee-b820-f107d08db968', url: 'https://github.com/Dispatch-AI-com/backend.git'
+                    }
+                }
+                container('dispatchai-jenkins-agent') {
+                    dir('helm') {
+                        git branch: "main", credentialsId: '2c8f4c5f-0bc2-48ee-b820-f107d08db968', url: 'https://github.com/Dispatch-AI-com/helm.git'
+                    }
+                }
+            }
+        }
+
+        stage('install, test and build') {
+            parallel {
+                stage('Backend - Node.js') {
+                    steps {
+                        container('node') {
+                            dir('backend') {
+                                sh "npm install -g pnpm"
+                                sh "pnpm install --frozen-lockfile"
+                                sh "pnpm run type-check"
+                                sh "pnpm run lint"
+                                sh "pnpm run build"
+                            }
+                        }
+                    }
+                }
+                stage('AI Service - Python') {
+                    steps {
+                        container('python') {
+                            dir('backend/ai') {
+                                sh """
+                                    # Install make (required for Alpine)
+                                    apk add --no-cache make
+                                    
+                                    # Install dependencies using uv
+                                    uv sync --frozen
+                                """
+                                
+                                // 🔍 Python Lint (Ruff)
+                                sh "make lint"
+                                
+                                // 🎨 Python Format Check
+                                sh "make format"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('build docker image') {
+            parallel {
+                stage('Backend Docker Image') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('backend') {
+                                script {
+                                    // Use BuildKit to build backend docker image and push to ECR
+                                    sh """
+                                        docker-credential-ecr-login list
+                                        buildctl --addr=tcp://localhost:1234 build \\
+                                        --frontend=dockerfile.v0 \\
+                                        --local context=. \\
+                                        --local dockerfile=. \\
+                                        --opt filename=Dockerfile.uat \\
+                                        --output type=image,name=${IMAGE_NAME_BACKEND}:${IMAGE_TAG},push=true
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('AI Service Docker Image') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('backend/ai') {
+                                script {
+                                    // Use BuildKit to build AI service docker image and push to ECR
+                                    sh """
+                                        docker-credential-ecr-login list
+                                        buildctl --addr=tcp://localhost:1234 build \\
+                                        --frontend=dockerfile.v0 \\
+                                        --local context=. \\
+                                        --local dockerfile=. \\
+                                        --opt filename=Dockerfile.uat \\
+                                        --output type=image,name=${IMAGE_NAME_AI}:${IMAGE_TAG},push=true
+                                    """
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('helm to deploy backend') {
+            parallel {
+                stage('Deploy Backend') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('helm/envs/uat') {
+                                script {
+                                    // deploy backend to eks via bash
+                                    sh "bash deploy-backend-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                                }
+                            }
+                        }
+                    }
+                }
+                stage('Deploy AI Service') {
+                    steps {
+                        container('dispatchai-jenkins-agent') {
+                            dir('helm/envs/uat') {
+                                script {
+                                    // deploy AI service to eks via bash
+                                    sh "bash deploy-backend-ai-${ENVIRONMENT}.sh ${IMAGE_TAG}"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Backend and AI service have been deployed successfully"
+            echo "Backend image: ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}"
+            echo "AI service image: ${IMAGE_NAME_AI}:${IMAGE_TAG}"
+            emailext(
+                to: "lin.lu.devops@gmail.com",
+                subject: "✅ DispatchAI Backend & AI Service pipeline succeeded.",
+                body: "Jenkins CICD Pipeline succeeded!<br/>" +
+                    "Job Result: ${currentBuild.currentResult}<br/>" +
+                    "Job Name: ${env.JOB_NAME}<br/>" +
+                    "Branch: ${env.BRANCH_NAME}<br/>" +
+                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                    "URL: ${env.BUILD_URL}<br/>" +
+                    "Backend Image: ${IMAGE_NAME_BACKEND}:${IMAGE_TAG}<br/>" +
+                    "AI Service Image: ${IMAGE_NAME_AI}:${IMAGE_TAG}<br/>",
+                attachLog: false
+            )
+        }
+
+        failure {
+            emailext(
+                to: "lin.lu.devops@gmail.com",
+                subject: "❌ DispatchAI Backend & AI Service pipeline failed.",
+                body: "Jenkins CICD Pipeline failed!<br/>" +
+                    "Job Result: ${currentBuild.currentResult}<br/>" +
+                    "Job Name: ${env.JOB_NAME}<br/>" +
+                    "Branch: ${env.BRANCH_NAME}<br/>" +
+                    "Build Number: ${env.BUILD_NUMBER}<br/>" +
+                    "URL: ${env.BUILD_URL}<br/>" +
+                    "Please check logfile for more details.<br/>",
+                attachLog: false
+            )
+        }
+    }
+}

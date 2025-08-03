@@ -35,9 +35,9 @@ export class FormValueDto {
 }
 
 export enum ServiceBookingStatus {
-  Pending = 'pending',
-  Confirmed = 'confirmed',
-  Done = 'done',
+  Cancelled = 'Cancelled',
+  Confirmed = 'Confirmed',
+  Done = 'Done',
 }
 
 export class CreateServiceBookingDto {
@@ -70,4 +70,8 @@ export class CreateServiceBookingDto {
   @IsString()
   @IsNotEmpty()
   userId!: string;
+
+  @IsString()
+  @IsOptional()
+  callSid?: string;
 }

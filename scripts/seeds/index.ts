@@ -1,1 +1,2 @@
-import './seed-inbox-data';
+import './seed-calllog';
+import './seed-telephony';

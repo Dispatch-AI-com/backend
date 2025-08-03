@@ -14,16 +14,24 @@ export interface Service {
 export interface UserInfo {
   name?: string;
   phone?: string;
-  address?: string;
-  email?: string;
+  address?: string; // Simplified to single address string
+}
+
+// Legacy Address interface for backward compatibility (deprecated)
+export interface Address {
+  street_number: string;
+  street_name: string;
+  suburb: string;
+  state: string;
+  postcode: string;
 }
 
 export interface Company {
   id: string;
   name: string;
   email: string;
+  userId: string;
   calendar_access_token?: string;
-  description?: string;
 }
 
 export interface CallSkeleton {
@@ -36,6 +44,7 @@ export interface CallSkeleton {
     userInfo: Partial<UserInfo>;
   };
   history: Message[];
-  confirmBooking: boolean;
-  confirmEmailSent: boolean;
+  servicebooked: boolean;
+  confirmEmailsent: boolean;
+  createdAt?: string;
 }

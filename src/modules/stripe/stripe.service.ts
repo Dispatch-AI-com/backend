@@ -81,9 +81,7 @@ export class StripeService {
     return invoices.data;
   }
 
-  async listRefundsByChargeId(
-    chargeId: string,
-  ): Promise<Stripe.Refund[]> {
+  async listRefundsByChargeId(chargeId: string): Promise<Stripe.Refund[]> {
     const refundList = await this.stripe.refunds.list({
       charge: chargeId,
       limit: 10,

@@ -34,7 +34,7 @@ export class ServiceBooking {
     answer: string;
   }[];
 
-  @Prop({ enum: ['pending', 'confirmed', 'done'], default: 'pending' })
+  @Prop({ enum: ['Cancelled', 'Confirmed', 'Done'], default: 'Cancelled' })
   status!: string;
 
   @Prop()
@@ -45,6 +45,9 @@ export class ServiceBooking {
 
   @Prop({ required: true })
   userId!: string;
+
+  @Prop()
+  callSid?: string;
 }
 
 export const ServiceBookingSchema =

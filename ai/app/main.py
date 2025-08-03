@@ -1,27 +1,52 @@
-from fastapi import APIRouter, FastAPI
+import sys
+from pathlib import Path
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_mcp.server import FastApiMCP
 from app.routers import routers as all_routers
 
+# Add the app directory to Python path for absolute imports
+app_dir = Path(__file__).parent
+sys.path.insert(0, str(app_dir))
 
-app = FastAPI() 
+from config import get_settings  # noqa: E402
+from api import health, chat, call, summary  # noqa: E402
 
+settings = get_settings()
+
+app = FastAPI(
+    title=settings.api_title,
+    version=settings.api_version,
+    debug=settings.debug,
+)
+
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=settings.cors_methods,
+    allow_headers=settings.cors_headers,
 )
 
-api_router = APIRouter(prefix="/api")
-for r in all_routers:
-    api_router.include_router(r)
+# Include routers
+app.include_router(health.router, prefix=settings.api_prefix)
+app.include_router(chat.router, prefix=settings.api_prefix)
+app.include_router(call.router, prefix=settings.api_prefix)
+app.include_router(summary.router, prefix=settings.api_prefix)
 
-app.include_router(api_router)
 
-mcp = FastApiMCP(
-    app,        
-    name="Dispatch AI MCP"
-)
-mcp.mount()
+@app.get("/")
+async def root():
+    return {
+        "message": "AI Service API",
+        "version": settings.api_version,
+        "environment": settings.environment,
+    }
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)
