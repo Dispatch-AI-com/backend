@@ -331,6 +331,11 @@ class CustomerServiceLangGraph:
         original_input = state.get("last_user_input", "")
         print(f"🔧 [SPEECH_DEBUG] Starting speech correction for address input: '{original_input}'")
         
+        # Check if this looks like a confirmation
+        confirmation_words = ["yes", "correct", "right", "that's right", "that's correct", "yeah"]
+        is_likely_confirmation = any(word in original_input.lower() for word in confirmation_words)
+        print(f"🔧 [ADDRESS_DEBUG] Input type analysis - likely confirmation: {is_likely_confirmation}")
+        
         if original_input:
             try:
                 correction_result = await self.speech_corrector.correct_speech_input(
@@ -375,12 +380,35 @@ class CustomerServiceLangGraph:
         extracted_address = result["info_extracted"].get("address")
         is_complete = result["info_complete"]
 
+        # Check for address confirmation
+        extracted_info = result["info_extracted"]
+        user_confirmed = extracted_info.get("confirmed")
+        
+        # Handle confirmation workflow
+        if user_confirmed:
+            # User confirmed the address - use existing address from state
+            print(f"✅ [ADDRESS_COLLECTION] User confirmed address")
+            existing_address = state.get("address", "")
+            existing_components = {
+                "street_number": state.get("street_number"),
+                "street_name": state.get("street_name"), 
+                "suburb": state.get("suburb"),
+                "postcode": state.get("postcode"),
+                "state": state.get("state")
+            }
+            
+            if existing_address and all(existing_components.values()):
+                state["address_complete"] = True
+                state["current_step"] = "collect_service"
+                print(f"✅ Address confirmed and completed: {existing_address}")
+                return state
+        
         # Check if we have complete address information (all 5 components required)
-        street_number = result["info_extracted"].get("street_number")
-        street_name = result["info_extracted"].get("street_name")
-        suburb = result["info_extracted"].get("suburb")
-        postcode = result["info_extracted"].get("postcode")
-        state_abbrev = result["info_extracted"].get("state")
+        street_number = extracted_info.get("street_number")
+        street_name = extracted_info.get("street_name")
+        suburb = extracted_info.get("suburb")
+        postcode = extracted_info.get("postcode")
+        state_abbrev = extracted_info.get("state")
         
         has_complete_address = all([
             street_number and str(street_number).strip(),
@@ -390,7 +418,9 @@ class CustomerServiceLangGraph:
             state_abbrev and str(state_abbrev).strip()
         ])
         
-        if is_complete and has_complete_address:
+        # Only update and save address components, but don't mark as complete yet
+        # Wait for user confirmation
+        if has_complete_address:
             # Clean address string
             cleaned_address = extracted_address.strip() if extracted_address else ""
             
@@ -426,9 +456,9 @@ class CustomerServiceLangGraph:
             state["postcode_complete"] = bool(postcode)
             state["state_complete"] = bool(state_abbrev)
             
-            # Overall address completion
-            state["address_complete"] = True
-            state["current_step"] = "collect_service"
+            # Don't mark as complete yet - wait for user confirmation
+            # Only save the components for now
+            print(f"📝 [ADDRESS_COLLECTION] Address components saved, waiting for user confirmation")
 
             # Real-time Redis update with address components
             if call_sid:

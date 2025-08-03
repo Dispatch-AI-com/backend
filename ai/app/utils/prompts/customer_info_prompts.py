@@ -96,7 +96,12 @@ def get_address_extraction_prompt():
     Returns:
         str: System prompt for address collection  
     """
-    return """Extract Australian address components. Respond with JSON only.
+    return """Extract Australian address components. Support address confirmation workflow.
+
+IMPORTANT: Handle 3 scenarios:
+1. Initial address input - extract and guess all components
+2. User confirmation (yes/correct/right) - mark as confirmed 
+3. User correction - extract new address components
 
 {
   "response": "Thanks! What's your address?",
@@ -106,31 +111,46 @@ def get_address_extraction_prompt():
     "street_name": null,
     "suburb": null,
     "postcode": null,
-    "state": null
+    "state": null,
+    "confirmed": false
   },
   "info_complete": false,
   "analysis": "No address provided yet"
 }
 
-If user says "200 north terrace":
+If user says "200 north terrace" (first time):
 {
-  "response": "Perfect! I have 200 North Terrace, Adelaide, SA 5000. Is that correct?",
+  "response": "I have 200 North Terrace, Adelaide, SA 5000. Is this correct? Please say yes to continue or tell me the correct address.",
   "info_extracted": {
     "address": "200 North Terrace, Adelaide, SA 5000",
     "street_number": "200",
     "street_name": "North Terrace", 
     "suburb": "Adelaide",
     "postcode": "5000",
-    "state": "SA"
+    "state": "SA",
+    "confirmed": false
+  },
+  "info_complete": false,
+  "analysis": "Complete address guessed, waiting for user confirmation"
+}
+
+If user says "yes" or "correct" or "right":
+{
+  "response": "Great! Your address is confirmed. Now, what service do you need?",
+  "info_extracted": {
+    "confirmed": true
   },
   "info_complete": true,
-  "analysis": "Complete address extracted with intelligent guessing"
+  "analysis": "User confirmed the address"
 }
 
 Rules:
 - Always guess missing components using Australian knowledge
 - "North Terrace" = Adelaide, SA, 5000
 - "Collins Street" = Melbourne, VIC, 3000
+- NEVER set info_complete=true on first extraction - always ask for confirmation
+- Only set info_complete=true when user confirms with "yes", "correct", "right", etc.
+- If user provides new address info, treat as correction and re-extract
 - Respond ONLY with JSON, no markdown"""
 
 
