@@ -24,13 +24,21 @@ export class ServiceService {
 
   async findAll(userId?: string): Promise<Service[]> {
     if (userId != null && userId !== '') {
-      return this.serviceModel.find({ userId: { $eq: userId } }).exec();
+      return this.serviceModel.find({ 
+        userId: { $eq: userId },
+        isDeleted: { $ne: true } // Exclude deleted services
+      }).exec();
     }
-    return this.serviceModel.find().exec();
+    return this.serviceModel.find({ 
+      isDeleted: { $ne: true } // Exclude deleted services
+    }).exec();
   }
 
   async findOne(id: string): Promise<Service> {
-    const service = await this.serviceModel.findById(id).exec();
+    const service = await this.serviceModel.findOne({ 
+      _id: id,
+      isDeleted: { $ne: true } // Exclude deleted services
+    }).exec();
     if (!service) {
       throw new NotFoundException('Service not found');
     }
@@ -43,8 +51,11 @@ export class ServiceService {
     }
 
     const updated = await this.serviceModel
-      .findByIdAndUpdate(
-        new Types.ObjectId(id),
+      .findOneAndUpdate(
+        { 
+          _id: new Types.ObjectId(id),
+          isDeleted: { $ne: true } // Exclude deleted services
+        },
         { $set: dto },
         {
           new: true,
@@ -61,16 +72,38 @@ export class ServiceService {
   }
 
   async remove(id: string): Promise<void> {
-    const result = await this.serviceModel.findByIdAndDelete(id).exec();
+    // Soft delete: Only mark isDeleted as true, don't actually delete data
+    const result = await this.serviceModel.findByIdAndUpdate(
+      id,
+      { $set: { isDeleted: true } },
+      { new: true }
+    ).exec();
+    
     if (!result) {
       throw new NotFoundException('Service not found');
     }
   }
+  
   async findAllByUserId(userId: string): Promise<Service[]> {
-    return this.serviceModel.find({ userId }).exec();
+    return this.serviceModel.find({ 
+      userId,
+      isDeleted: { $ne: true } // Exclude deleted services
+    }).exec();
   }
 
   async findAllActiveByUserId(userId: string): Promise<Service[]> {
-    return this.serviceModel.find({ userId, isAvailable: true }).exec();
+    return this.serviceModel.find({ 
+      userId, 
+      isAvailable: true,
+      isDeleted: { $ne: true } // Exclude deleted services
+    }).exec();
+  }
+
+  // Get all services (including deleted ones) for booking page display
+  async findAllIncludingDeleted(userId?: string): Promise<Service[]> {
+    if (userId != null && userId !== '') {
+      return this.serviceModel.find({ userId: { $eq: userId } }).exec();
+    }
+    return this.serviceModel.find().exec();
   }
 }
