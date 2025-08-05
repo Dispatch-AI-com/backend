@@ -25,19 +25,25 @@ export const ValidationHelper = {
   } {
     const missingFields: string[] = [];
 
-    if (!session.user.service) {
+    if (session.user.service == null) {
       missingFields.push('service');
     }
 
-    if (!session.user.serviceBookedTime) {
+    if (session.user.serviceBookedTime == null) {
       missingFields.push('serviceBookedTime');
     }
 
-    if (!session.user.userInfo.name?.trim()) {
+    if (
+      session.user.userInfo.name == null ||
+      session.user.userInfo.name.trim() === ''
+    ) {
       missingFields.push('customer name');
     }
 
-    if (!session.user.userInfo.phone?.trim()) {
+    if (
+      session.user.userInfo.phone == null ||
+      session.user.userInfo.phone.trim() === ''
+    ) {
       missingFields.push('customer phone');
     }
 
@@ -59,7 +65,7 @@ export const ValidationHelper = {
    */
   isValidAIResponse(response: unknown): boolean {
     return Boolean(
-      response &&
+      response != null &&
         typeof response === 'object' &&
         'message' in response &&
         typeof response.message === 'string' &&
@@ -85,7 +91,7 @@ export const ValidationHelper = {
    * Extract fallback address if primary address is invalid
    */
   getFallbackAddress(address: string | undefined): string {
-    return this.isValidAddress(address) && address
+    return this.isValidAddress(address) && address != null
       ? address
       : 'Address not provided';
   },

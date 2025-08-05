@@ -15,7 +15,6 @@ import {
 import { UserService } from '@/modules/user/user.service';
 
 import { SessionHelper } from '../helpers/session.helper';
-import { ValidationHelper } from '../helpers/validation.helper';
 import { WelcomeMessageHelper } from '../helpers/welcome-message.helper';
 import { AiIntegrationService } from './ai-integration.service';
 import { CallDataPersistenceService } from './call-data-persistence.service';
@@ -24,6 +23,18 @@ const PUBLIC_URL = process.env.PUBLIC_URL ?? 'https://your-domain/api';
 
 @Injectable()
 export class CallProcessorService {
+  private readonly statusHandlers: Record<
+    string,
+    (callSid: string, statusData: VoiceStatusBody) => Promise<void> | void
+  > = {
+    completed: this.handleCompletedStatus.bind(this),
+    busy: this.handleFinalStatus.bind(this),
+    failed: this.handleFinalStatus.bind(this),
+    'no-answer': this.handleFinalStatus.bind(this),
+  };
+
+  private readonly defaultStatusHandler = this.handleNonFinalStatus.bind(this);
+
   constructor(
     private readonly sessionHelper: SessionHelper,
     private readonly userService: UserService,
@@ -94,23 +105,60 @@ export class CallProcessorService {
   async handleStatus(statusData: VoiceStatusBody): Promise<void> {
     const { CallSid, CallStatus } = statusData;
 
-    if (ValidationHelper.isFinalCallStatus(CallStatus)) {
-      winstonLogger.log(
-        `[CallProcessorService][callSid=${CallSid}][handleStatus] status=${CallStatus}`,
-      );
+    // Get handler for specific status, or use default handler
+    const handler =
+      this.statusHandlers[CallStatus] ?? this.defaultStatusHandler;
 
-      try {
-        await this.dataPersistence.processCallCompletion(CallSid, statusData);
-      } catch (error) {
-        winstonLogger.error(
-          `[CallProcessorService][callSid=${CallSid}][handleStatus] Failed to process call completion`,
-          { error: (error as Error).message, stack: (error as Error).stack },
-        );
-      }
-    }
+    await handler(CallSid, statusData);
 
     winstonLogger.log(
       `[CallProcessorService][callSid=${CallSid}][handleStatus] status=${CallStatus}`,
+    );
+  }
+
+  private async handleCompletedStatus(
+    callSid: string,
+    statusData: VoiceStatusBody,
+  ): Promise<void> {
+    winstonLogger.log(
+      `[CallProcessorService][callSid=${callSid}][handleCompletedStatus] Processing completed call`,
+    );
+
+    try {
+      await this.dataPersistence.processCallCompletion(callSid, statusData);
+    } catch (error) {
+      winstonLogger.error(
+        `[CallProcessorService][callSid=${callSid}][handleCompletedStatus] Failed to process call completion`,
+        { error: (error as Error).message, stack: (error as Error).stack },
+      );
+    }
+  }
+
+  private async handleFinalStatus(
+    callSid: string,
+    statusData: VoiceStatusBody,
+  ): Promise<void> {
+    winstonLogger.log(
+      `[CallProcessorService][callSid=${callSid}][handleFinalStatus] Processing final call status: ${statusData.CallStatus}`,
+    );
+
+    try {
+      await this.dataPersistence.processCallCompletion(callSid, statusData);
+    } catch (error) {
+      winstonLogger.error(
+        `[CallProcessorService][callSid=${callSid}][handleFinalStatus] Failed to process call completion for status ${statusData.CallStatus}`,
+        { error: (error as Error).message, stack: (error as Error).stack },
+      );
+    }
+  }
+
+  private handleNonFinalStatus(
+    callSid: string,
+    statusData: VoiceStatusBody,
+  ): void {
+    // For non-final statuses, just log - no additional processing needed
+    winstonLogger.log(
+      `[CallProcessorService][callSid=${callSid}][handleNonFinalStatus] Non-final status: ${statusData.CallStatus}`,
     );
   }
 
