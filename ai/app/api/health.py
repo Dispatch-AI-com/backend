@@ -18,6 +18,7 @@ async def ping():
 @router.get("/redis")
 async def redis():
     r = get_redis()
+    return {"message": "pong！", "redis": r.ping()}
     
 @router.get("/mcp_ping")
 async def mcp_ping(
