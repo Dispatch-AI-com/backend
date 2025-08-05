@@ -51,18 +51,12 @@ async def send_email_with_ics(
 
     ics = _ensure_crlf(ics_content)
 
-    msg.add_alternative(
-        ics,
-        subtype="calendar",
-        charset="utf-8",
-        params={"method": method, "name": "invite.ics"},
-    )
     msg.add_attachment(
         ics.encode('utf-8'),
         maintype="text",
         subtype="calendar",
         filename="invite.ics",
-    )
+    )   
 
     await aiosmtplib.send(
         msg,
