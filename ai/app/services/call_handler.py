@@ -102,6 +102,24 @@ class CustomerServiceLangGraph:
                 f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: '{services_list.strip()}'"
             )
 
+        # Replace {{{{services_list}}}} placeholder (quadruple braces)
+        if "{{{{services_list}}}}" in response_text:
+            services_list = ""
+            for i, service in enumerate(available_services, 1):
+                price_text = (
+                    f"{service['price']} dollars"
+                    if service.get("price")
+                    else "Price on request"
+                )
+                services_list += f"{i}. {service['name']} for {price_text}. "
+
+            response_text = response_text.replace(
+                "{{{{services_list}}}}", services_list.strip()
+            )
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{{{services_list}}}} with: '{services_list.strip()}'"
+            )
+
         # Replace {services_list} placeholder (single braces) - fallback for LLM variations
         if "{services_list}" in response_text:
             services_list = ""
@@ -120,10 +138,12 @@ class CustomerServiceLangGraph:
                 f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {services_list} with: '{services_list.strip()}'"
             )
 
-        # Replace selected service placeholders
+        # Replace selected service placeholders (both 2-brace and 4-brace patterns)
         if (
             "{{selected_service_name}}" in response_text
             or "{{selected_service_price}}" in response_text
+            or "{{{{selected_service_name}}}}" in response_text
+            or "{{{{selected_service_price}}}}" in response_text
         ):
             # Try to find the selected service from available services
             extracted_service = state.get("service")
@@ -136,9 +156,15 @@ class CustomerServiceLangGraph:
                         break
 
             if selected_service:
+                # Replace 2-brace patterns
                 response_text = response_text.replace(
                     "{{selected_service_name}}", selected_service["name"]
                 )
+                # Replace 4-brace patterns
+                response_text = response_text.replace(
+                    "{{{{selected_service_name}}}}", selected_service["name"]
+                )
+                
                 price_text = (
                     f"{selected_service['price']}"
                     if selected_service.get("price")
@@ -147,14 +173,23 @@ class CustomerServiceLangGraph:
                 response_text = response_text.replace(
                     "{{selected_service_price}}", price_text
                 )
+                response_text = response_text.replace(
+                    "{{{{selected_service_price}}}}", price_text
+                )
             else:
                 # Fallback if service not found
+                fallback_service_name = extracted_service or "the selected service"
                 response_text = response_text.replace(
-                    "{{selected_service_name}}",
-                    extracted_service or "the selected service",
+                    "{{selected_service_name}}", fallback_service_name
+                )
+                response_text = response_text.replace(
+                    "{{{{selected_service_name}}}}", fallback_service_name
                 )
                 response_text = response_text.replace(
                     "{{selected_service_price}}", "Price on request"
+                )
+                response_text = response_text.replace(
+                    "{{{{selected_service_price}}}}", "Price on request"
                 )
 
         print(
