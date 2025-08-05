@@ -95,6 +95,22 @@ export class HealthController {
   }
 
   @ApiOperation({
+    summary: 'Test MCP ping',
+    description: 'Returns a test message from MCP server',
+  })
+  @ApiResponse({ status: 200, description: 'Returns Test message' })
+  @Get('mcp-ping')
+  mcpPing(): Promise<{
+    status: string;
+    message?: string;
+    timestamp: Date;
+    duration?: number;
+    error?: string;
+  }> {
+    return this.healthService.mcpPing();
+  }
+
+  @ApiOperation({
     summary: 'Test AI ping',
     description: 'Returns a test message from AI server',
   })
