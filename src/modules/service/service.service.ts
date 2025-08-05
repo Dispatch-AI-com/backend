@@ -31,7 +31,12 @@ export class ServiceService {
         existingDeletedService._id,
         {
           $set: {
-            ...createServiceDto,
+            name: createServiceDto.name,
+            description: createServiceDto.description,
+            price: createServiceDto.price,
+            isAvailable: createServiceDto.isAvailable,
+            notifications: createServiceDto.notifications,
+            userId: createServiceDto.userId,
             isDeleted: false,
             updatedAt: new Date()
           }
