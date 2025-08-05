@@ -63,7 +63,6 @@ class Settings(BaseSettings):
         ]
     )
 
-
     # Conversation History Configuration
     max_conversation_context: int = Field(default=3)
 
