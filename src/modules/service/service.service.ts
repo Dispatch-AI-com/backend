@@ -20,8 +20,8 @@ export class ServiceService {
   async create(createServiceDto: CreateServiceDto): Promise<Service> {
     // Check if there's a deleted service with the same name for the same user
     const existingDeletedService = await this.serviceModel.findOne({
-      name: createServiceDto.name,
-      userId: createServiceDto.userId,
+      name: { $eq: createServiceDto.name },
+      userId: { $eq: createServiceDto.userId },
       isDeleted: true
     }).exec();
 
