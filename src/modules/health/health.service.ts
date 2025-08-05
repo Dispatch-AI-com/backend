@@ -167,7 +167,7 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     try {
       const { data } = await firstValueFrom(
         this.http.get<{ pong: string; tools_lines?: string[] }>(
-          '/health/mcp-ping',
+          '/health/mcp_ping',
           { params: { show_tools: true, plain: true } },
         ),
       );

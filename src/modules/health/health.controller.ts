@@ -99,7 +99,7 @@ export class HealthController {
     description: 'Returns a test message from MCP server',
   })
   @ApiResponse({ status: 200, description: 'Returns Test message' })
-  @Get('mcp-ping')
+  @Get('mcp_ping')
   mcpPing(): Promise<{
     status: string;
     message?: string;
