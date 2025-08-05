@@ -106,8 +106,15 @@ export class CallProcessorService {
     const { CallSid, CallStatus } = statusData;
 
     // Get handler for specific status, or use default handler
-    const handler =
-      this.statusHandlers[CallStatus] ?? this.defaultStatusHandler;
+    let handler;
+    if (
+      Object.prototype.hasOwnProperty.call(this.statusHandlers, CallStatus) &&
+      typeof this.statusHandlers[CallStatus] === 'function'
+    ) {
+      handler = this.statusHandlers[CallStatus];
+    } else {
+      handler = this.defaultStatusHandler;
+    }
 
     await handler(CallSid, statusData);
 
