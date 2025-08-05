@@ -332,7 +332,7 @@ CRITICAL: Respond with ONLY JSON. No other text.
 
 Example JSON response when no service selected:
 {{
-  "response": "Here are our options: {{{{services_list}}}}. Which service would you like to book?",
+  "response": "Thank you for providing your information! Now, here are our available services: {{{{services_list}}}}. Which service would you like to book today?",
   "info_extracted": {{
     "service": null
   }},

@@ -150,10 +150,31 @@ class CustomerServiceLangGraph:
             selected_service = None
 
             if extracted_service:
+                extracted_lower = extracted_service.lower()
+                print(f"🔍 [PLACEHOLDER_REPLACEMENT] Looking for extracted service: '{extracted_service}'")
+                
+                # First try exact match
                 for service in available_services:
-                    if service["name"].lower() == extracted_service.lower():
+                    if service["name"].lower() == extracted_lower:
                         selected_service = service
+                        print(f"✅ [PLACEHOLDER_REPLACEMENT] Exact match found: {service['name']}")
                         break
+                
+                # If no exact match, try partial matching
+                if not selected_service:
+                    for service in available_services:
+                        service_name_lower = service["name"].lower()
+                        # Check if extracted service contains service name or vice versa
+                        if (extracted_lower in service_name_lower or 
+                            service_name_lower in extracted_lower or
+                            # Also check word-level matching
+                            any(word in service_name_lower for word in extracted_lower.split())):
+                            selected_service = service
+                            print(f"✅ [PLACEHOLDER_REPLACEMENT] Partial match found: {service['name']} for '{extracted_service}'")
+                            break
+                
+                if not selected_service:
+                    print(f"⚠️ [PLACEHOLDER_REPLACEMENT] No match found for service: '{extracted_service}'")
 
             if selected_service:
                 # Replace 2-brace patterns
@@ -463,7 +484,30 @@ class CustomerServiceLangGraph:
             if existing_address and all(existing_components.values()):
                 state["address_complete"] = True
                 state["current_step"] = "collect_service"
+                
+                # Create natural transition message thanking user and introducing services
+                available_services = state.get("available_services", [])
+                services_list = ""
+                for i, service in enumerate(available_services, 1):
+                    price_text = (
+                        f"{service['price']} dollars"
+                        if service.get("price")
+                        else "Price on request"
+                    )
+                    services_list += f"{i}. {service['name']} for {price_text}. "
+                
+                transition_message = f"Thank you for providing your information! Now, here are our available services: {services_list.strip()}. Which service would you like to book today?"
+                
+                # Update the response to include the transition message
+                state["last_llm_response"] = {
+                    "response": transition_message,
+                    "info_extracted": {"confirmed": True},
+                    "info_complete": True,
+                    "analysis": "Address confirmed, transitioning to service selection"
+                }
+                
                 print(f"✅ Address confirmed and completed: {existing_address}")
+                print(f"🔄 Created transition message to service selection")
                 return state
 
         # Check if we have complete address information (all 5 components required)
