@@ -64,18 +64,10 @@ class SendICSArgs(BaseMailArgs, EventInfo):
 
 
 def _to_pendulum_with_tz(dt: datetime, tz_name: str) -> pendulum.DateTime:
-    """
-    将 Pydantic 的 datetime 转为带时区的 Pendulum：
-    - 若已有 tzinfo，则转换到 tz_name；
-    - 若 naive，则按 tz_name 本地化。
-    """
     if dt.tzinfo is None:
-        # Naive datetime - 将其解释为指定时区的本地时间
         return pendulum.parse(dt.isoformat(), tz=tz_name)
     else:
-        # 已有时区信息 - 转换到指定时区
-        p = pendulum.instance(dt)
-        return p.in_tz(tz_name)
+        return pendulum.instance(dt).in_tz(tz_name)
 
 
 @router.post(
@@ -89,11 +81,8 @@ async def send_email_with_ics_api(args: SendICSArgs):
             raise HTTPException(status_code=400, detail="end must be after start")
 
         uid = args.uid or f"{uuid4()}@dispatchai"
-
-        # ——— 时区处理 ———
         start = _to_pendulum_with_tz(args.start, args.timezone)
         end   = _to_pendulum_with_tz(args.end,   args.timezone)
-        # ——————————————
 
         if args.cancel:
             ics = build_ics_cancel(
@@ -143,3 +132,48 @@ async def send_email_with_ics_api(args: SendICSArgs):
         raise
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+
+class SendGoogleCalArgs(BaseMailArgs, EventInfo):
+    access_token: str = Field(..., description="Google OAuth Access Token")
+    calendar_id:  str = Field(..., description="目标日历 ID")
+
+
+@router.post(
+    "/send-google-calendar",
+    summary="Create event in Google Calendar",
+    operation_id="send_email_with_google_calendar",
+)
+async def send_email_with_google_calendar(args: SendGoogleCalArgs):
+    """
+    TODO: 用 HTTP 客户端调用 Google Calendar API，示例在文档中提供。
+    """
+    # 暂时返回接收到的参数，后续实现逻辑时再替换
+    return {
+        "status": "pending",
+        "tool": "google_calendar",
+        "received": args.model_dump(),
+    }
+
+
+
+class SendOutlookCalArgs(BaseMailArgs, EventInfo):
+    access_token: str = Field(..., description="Outlook OAuth Access Token")
+    calendar_id:  str = Field(..., description="目标日历 ID")
+
+
+@router.post(
+    "/send-outlook-calendar",
+    summary="Create event in Outlook Calendar",
+    operation_id="send_email_with_outlook_calendar",
+)
+async def send_email_with_outlook_calendar(args: SendOutlookCalArgs):
+    """
+    TODO: 用 HTTP 客户端调用 Microsoft Graph API，示例在文档中提供。
+    """
+    return {
+        "status": "pending",
+        "tool": "outlook_calendar",
+        "received": args.model_dump(),
+    }
