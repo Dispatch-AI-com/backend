@@ -18,7 +18,12 @@ import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-ch
 import { DataTransformerHelper } from '../helpers/data-transformer.helper';
 import { ValidationHelper } from '../helpers/validation.helper';
 import { SessionRepository } from '../repositories/session.repository';
-import { CallSkeleton, Message } from '../types/redis-session';
+import {
+  CallSkeleton,
+  Message,
+  Service,
+  UserInfo,
+} from '../types/redis-session';
 import { AiSummaryService } from './ai-summary.service';
 
 @Injectable()
@@ -46,20 +51,22 @@ export class CallDataPersistenceService {
 
     try {
       // Step 1: Generate AI summary first (independent operation)
-      const aiSummary = await this.generateAISummaryForSession(session);
-
-      // Step 2: Create transcript and chunks
-      await this.createTranscriptAndChunks(
+      const aiSummary = await this.generateAISummaryForSession(
         session.callSid,
-        aiSummary.summary,
-        aiSummary.keyPoints,
-        session.history,
+        session,
       );
 
-      // Step 3: Create service booking if service was booked
-      const serviceBookingId = await this.createServiceBookingRecord(session);
+      // Step 2: Create service booking if service was booked
+      const serviceBookingId = await this.createServiceBookingRecord(
+        session.callSid,
+        session.servicebooked,
+        session.user.service,
+        session.user.serviceBookedTime,
+        session.user.userInfo,
+        session.company.userId,
+      );
 
-      // Step 4: Create call log record (last step to include all data)
+      // Step 3: Create call log record (last step to include all data)
       await this.createCallLogRecord(
         session.callSid,
         session.company.userId,
@@ -67,6 +74,14 @@ export class CallDataPersistenceService {
         twilioParams.Caller,
         session.user.userInfo.name ?? 'Unknown Caller',
         new Date(twilioParams.Timestamp),
+      );
+
+      // Step 4: Create transcript and chunks
+      await this.createTranscriptAndChunks(
+        session.callSid,
+        aiSummary.summary,
+        aiSummary.keyPoints,
+        session.history,
       );
 
       // Clean up Redis session
@@ -85,11 +100,12 @@ export class CallDataPersistenceService {
   }
 
   private async generateAISummaryForSession(
+    callSid: string,
     session: CallSkeleton,
   ): Promise<{ summary: string; keyPoints: string[] }> {
     try {
       const aiSummary = await this.aiSummaryService.generateSummary(
-        session.callSid,
+        callSid,
         session,
         {
           enableFallback: true,
@@ -99,13 +115,13 @@ export class CallDataPersistenceService {
       );
 
       winstonLogger.log(
-        `[CallDataPersistenceService][generateAISummaryForSession] Generated AI summary for ${session.callSid}`,
+        `[CallDataPersistenceService][generateAISummaryForSession] Generated AI summary for ${callSid}`,
       );
 
       return aiSummary;
     } catch (error) {
       winstonLogger.error(
-        `[CallDataPersistenceService][generateAISummaryForSession] Failed to generate AI summary for ${session.callSid}`,
+        `[CallDataPersistenceService][generateAISummaryForSession] Failed to generate AI summary for ${callSid}`,
         { error: (error as Error).message },
       );
       // Return fallback summary if generation fails
@@ -171,27 +187,27 @@ export class CallDataPersistenceService {
   }
 
   private async createServiceBookingRecord(
-    session: CallSkeleton,
+    callSid: string,
+    servicebooked: boolean,
+    service: Service | undefined,
+    serviceBookedTime: string | undefined,
+    userInfo: Partial<UserInfo>,
+    userId: string,
   ): Promise<string | undefined> {
     // Return early if no service was booked
-    if (
-      !session.servicebooked ||
-      session.user.service == null ||
-      session.user.serviceBookedTime == null
-    ) {
+    if (!servicebooked || service == null || serviceBookedTime == null) {
       winstonLogger.log(
-        `[CallDataPersistenceService][createServiceBookingRecord] No service booking required for ${session.callSid}`,
+        `[CallDataPersistenceService][createServiceBookingRecord] No service booking required for ${callSid}`,
       );
       return undefined;
     }
 
     // Get customer address string (simplified address structure)
-    const userInfo = session.user.userInfo;
     const addressString = ValidationHelper.getFallbackAddress(userInfo.address);
 
     // Create service booking data
     const serviceBookingData: CreateServiceBookingDto = {
-      serviceId: session.user.service.id,
+      serviceId: service.id,
       client: {
         name: userInfo.name ?? 'Name not provided',
         phoneNumber: userInfo.phone ?? 'Phone not provided',
@@ -204,14 +220,14 @@ export class CallDataPersistenceService {
         },
         {
           serviceFieldId: 'call_sid',
-          answer: session.callSid,
+          answer: callSid,
         },
       ],
-      bookingTime: session.user.serviceBookedTime,
+      bookingTime: serviceBookedTime,
       status: ServiceBookingStatus.Confirmed,
       note: `Service booked via phone call.`,
-      userId: session.company.userId,
-      callSid: session.callSid,
+      userId: userId,
+      callSid: callSid,
     };
 
     try {
@@ -222,12 +238,12 @@ export class CallDataPersistenceService {
       );
 
       winstonLogger.log(
-        `[CallDataPersistenceService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${serviceBookingId}`,
+        `[CallDataPersistenceService][createServiceBookingRecord] Service booking created successfully for ${callSid}, booking ID: ${serviceBookingId}`,
       );
       return serviceBookingId;
     } catch (error) {
       winstonLogger.error(
-        `[CallDataPersistenceService][createServiceBookingRecord] Failed to create service booking for ${session.callSid}`,
+        `[CallDataPersistenceService][createServiceBookingRecord] Failed to create service booking for ${callSid}`,
         { error: (error as Error).message, stack: (error as Error).stack },
       );
       throw error;

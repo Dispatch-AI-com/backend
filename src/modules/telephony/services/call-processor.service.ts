@@ -27,13 +27,21 @@ export class CallProcessorService {
     string,
     (callSid: string, statusData: VoiceStatusBody) => Promise<void> | void
   > = {
+    // Final statuses that require data persistence
     completed: this.handleCompletedStatus.bind(this),
     busy: this.handleFinalStatus.bind(this),
     failed: this.handleFinalStatus.bind(this),
     'no-answer': this.handleFinalStatus.bind(this),
+    // Non-final statuses that only require logging
+    queued: this.handleNonFinalStatus.bind(this),
+    ringing: this.handleNonFinalStatus.bind(this),
+    'in-progress': this.handleNonFinalStatus.bind(this),
   };
 
-  private readonly defaultStatusHandler = this.handleNonFinalStatus.bind(this);
+  // White list derived from statusHandlers and VoiceStatusBody interface
+  private readonly validCallStatuses = new Set<string>(
+    Object.keys(this.statusHandlers),
+  );
 
   constructor(
     private readonly sessionHelper: SessionHelper,
@@ -105,17 +113,16 @@ export class CallProcessorService {
   async handleStatus(statusData: VoiceStatusBody): Promise<void> {
     const { CallSid, CallStatus } = statusData;
 
-    // Get handler for specific status, or use default handler
-    let handler;
-    if (
-      Object.prototype.hasOwnProperty.call(this.statusHandlers, CallStatus) &&
-      typeof this.statusHandlers[CallStatus] === 'function'
-    ) {
-      handler = this.statusHandlers[CallStatus];
-    } else {
-      handler = this.defaultStatusHandler;
+    // Validate CallStatus against white list
+    if (!this.validCallStatuses.has(CallStatus)) {
+      winstonLogger.warn(
+        `[CallProcessorService][callSid=${CallSid}][handleStatus] Invalid call status received: ${CallStatus}. Ignoring.`,
+      );
+      return;
     }
 
+    // Get handler for the validated status (guaranteed to exist)
+    const handler = this.statusHandlers[CallStatus];
     await handler(CallSid, statusData);
 
     winstonLogger.log(
