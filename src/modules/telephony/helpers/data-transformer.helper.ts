@@ -46,12 +46,16 @@ export const DataTransformerHelper = {
     keyPoints: string[];
   } {
     const summary =
-      aiSummary && typeof aiSummary === 'object' && 'summary' in aiSummary
-        ? aiSummary.summary
+      aiSummary != null &&
+      typeof aiSummary === 'object' &&
+      'summary' in aiSummary
+        ? (aiSummary.summary as string)
         : undefined;
     const keyPoints =
-      aiSummary && typeof aiSummary === 'object' && 'keyPoints' in aiSummary
-        ? aiSummary.keyPoints
+      aiSummary != null &&
+      typeof aiSummary === 'object' &&
+      'keyPoints' in aiSummary
+        ? (aiSummary.keyPoints as string[])
         : undefined;
 
     return {
@@ -69,7 +73,7 @@ export const DataTransformerHelper = {
     booked: boolean;
     company: string;
   } {
-    if (!session || typeof session !== 'object') {
+    if (session == null || typeof session !== 'object') {
       return {
         name: 'general inquiry',
         booked: false,
@@ -77,16 +81,32 @@ export const DataTransformerHelper = {
       };
     }
 
-    const sessionObj = session as any;
+    const sessionObj = session as Record<string, unknown>;
+
+    // Safely extract user service name
+    const user = sessionObj.user as Record<string, unknown> | undefined;
+    const userService = user?.service as Record<string, unknown> | undefined;
+    const userServiceName =
+      typeof userService?.name === 'string' ? userService.name : undefined;
+
+    // Safely extract services array name
+    const services = sessionObj.services as unknown[] | undefined;
+    const servicesName =
+      Array.isArray(services) && services.length > 0
+        ? (services[0] as Record<string, unknown>).name
+        : undefined;
+    const firstServiceName =
+      typeof servicesName === 'string' ? servicesName : undefined;
+
+    // Safely extract company name
+    const company = sessionObj.company as Record<string, unknown> | undefined;
+    const companyName =
+      typeof company?.name === 'string' ? company.name : 'Unknown';
+
     return {
-      name:
-        sessionObj.user?.service?.name ??
-        (sessionObj.services?.length > 0
-          ? sessionObj.services[0].name
-          : null) ??
-        'general inquiry',
+      name: userServiceName ?? firstServiceName ?? 'general inquiry',
       booked: Boolean(sessionObj.servicebooked),
-      company: sessionObj.company?.name ?? 'Unknown',
+      company: companyName,
     };
   },
 

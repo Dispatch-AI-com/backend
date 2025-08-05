@@ -6,20 +6,27 @@ import { ICallLog } from '@/common/interfaces/calllog';
 import { VoiceStatusBody } from '@/common/interfaces/twilio-voice-webhook';
 import { winstonLogger } from '@/logger/winston.logger';
 import { CalllogService } from '@/modules/calllog/calllog.service';
+import { CreateCallLogDto } from '@/modules/calllog/dto/create-calllog.dto';
 import {
   CreateServiceBookingDto,
   ServiceBookingStatus,
 } from '@/modules/service-booking/dto/create-service-booking.dto';
-import { ServiceBookingDocument } from '@/modules/service-booking/schema/service-booking.schema';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
+import { CreateTranscriptDto } from '@/modules/transcript/dto/create-transcript.dto';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
+import { CreateTranscriptChunkDto } from '@/modules/transcript-chunk/dto/create-transcript-chunk.dto';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
 
 import { DataTransformerHelper } from '../helpers/data-transformer.helper';
 import { ValidationHelper } from '../helpers/validation.helper';
 import { SessionRepository } from '../repositories/session.repository';
-import { CallSkeleton } from '../types/redis-session';
-import { AiIntegrationService } from './ai-integration.service';
+import {
+  CallSkeleton,
+  Message,
+  Service,
+  UserInfo,
+} from '../types/redis-session';
+import { AiSummaryService } from './ai-summary.service';
 
 @Injectable()
 export class CallDataPersistenceService {
@@ -29,8 +36,7 @@ export class CallDataPersistenceService {
     private readonly transcriptService: TranscriptService,
     private readonly transcriptChunkService: TranscriptChunkService,
     private readonly serviceBookingService: ServiceBookingService,
-    private readonly aiIntegration: AiIntegrationService,
-    private readonly http: HttpService,
+    private readonly aiSummaryService: AiSummaryService,
   ) {}
 
   async processCallCompletion(
@@ -46,24 +52,39 @@ export class CallDataPersistenceService {
     }
 
     try {
-      // Step 1: Create call log record
-      const callLog = await this.createCallLogRecord(session, twilioParams);
+      // Step 1: Generate AI summary first (independent operation)
+      const aiSummary = await this.generateAISummaryForSession(
+        session.callSid,
+        session,
+      );
 
-      // Step 2: Generate transcript and chunks with AI summary
-      await this.createTranscriptAndChunks(session);
+      // Step 2: Create service booking if service was booked
+      const serviceBookingId = await this.createServiceBookingRecord(
+        session.callSid,
+        session.servicebooked,
+        session.user.service,
+        session.user.serviceBookedTime,
+        session.user.userInfo,
+        session.company.userId,
+      );
 
-      // Step 3: Create service booking if service was booked
-      if (ValidationHelper.isServiceAvailable(session)) {
-        const serviceBooking = await this.createServiceBookingRecord(session);
-        // Step 4: Update call log with booking ID
-        if (callLog._id != null) {
-          await this.updateCallLogWithBookingId(
-            callLog._id,
-            String((serviceBooking as any)._id),
-            session.company.userId,
-          );
-        }
-      }
+      // Step 3: Create call log record (last step to include all data)
+      await this.createCallLogRecord(
+        session.callSid,
+        session.company.userId,
+        serviceBookingId,
+        twilioParams.Caller,
+        session.user.userInfo.name ?? 'Unknown Caller',
+        new Date(twilioParams.Timestamp),
+      );
+
+      // Step 4: Create transcript and chunks
+      await this.createTranscriptAndChunks(
+        session.callSid,
+        aiSummary.summary,
+        aiSummary.keyPoints,
+        session.history,
+      );
 
       // Clean up Redis session
       await this.sessions.delete(callSid);
@@ -80,101 +101,115 @@ export class CallDataPersistenceService {
     }
   }
 
-  private async createCallLogRecord(
+  private async generateAISummaryForSession(
+    callSid: string,
     session: CallSkeleton,
-    twilioParams: VoiceStatusBody,
+  ): Promise<{ summary: string; keyPoints: string[] }> {
+    try {
+      const aiSummary = await this.aiSummaryService.generateSummary(
+        callSid,
+        session,
+        {
+          enableFallback: true,
+          fallbackSummary: 'Call summary generation failed',
+          fallbackKeyPoints: ['Summary could not be generated'],
+        },
+      );
+
+      winstonLogger.log(
+        `[CallDataPersistenceService][generateAISummaryForSession] Generated AI summary for ${callSid}`,
+      );
+
+      return aiSummary;
+    } catch (error) {
+      winstonLogger.error(
+        `[CallDataPersistenceService][generateAISummaryForSession] Failed to generate AI summary for ${callSid}`,
+        { error: (error as Error).message },
+      );
+      // Return fallback summary if generation fails
+      return {
+        summary: 'Call summary generation failed',
+        keyPoints: ['Summary could not be generated'],
+      };
+    }
+  }
+
+  private async createCallLogRecord(
+    callSid: string,
+    userId: string,
+    serviceBookedId: string | undefined,
+    callerNumber: string,
+    callerName: string,
+    startAt: Date,
   ): Promise<ICallLog> {
-    const callLogData = {
-      callSid: session.callSid,
-      userId: session.company.userId,
-      serviceBookedId: session.user.service?.id,
-      callerNumber: twilioParams.Caller,
-      callerName: session.user.userInfo.name,
-      startAt: new Date(twilioParams.Timestamp),
+    const callLogDto: CreateCallLogDto = {
+      callSid,
+      userId,
+      serviceBookedId,
+      callerNumber,
+      callerName,
+      startAt,
     };
 
-    const callLog = await this.callLogService.create(callLogData);
+    const callLog = await this.callLogService.create(callLogDto);
     winstonLogger.log(
-      `[CallDataPersistenceService][createCallLogRecord] Created CallLog for ${session.callSid}`,
+      `[CallDataPersistenceService][createCallLogRecord] Created CallLog for ${callSid}`,
     );
     return callLog;
   }
 
   private async createTranscriptAndChunks(
-    session: CallSkeleton,
+    callSid: string,
+    summary: string,
+    keyPoints: string[],
+    history: Message[],
   ): Promise<void> {
-    // Create transcript placeholder record
-    const transcript = await this.transcriptService.create({
-      callSid: session.callSid,
-      summary: 'Transcript summary', // Will be generated by AI
-      keyPoints: [],
-    });
+    // Create transcript DTO
+    const transcriptDto: CreateTranscriptDto = {
+      callSid,
+      summary,
+      keyPoints,
+    };
 
-    // Convert conversation history to transcript chunks
-    const chunks = DataTransformerHelper.convertMessagesToChunks(
-      session.history,
+    // Create transcript record with AI-generated summary
+    const transcript = await this.transcriptService.create(transcriptDto);
+
+    // Create transcript chunk DTOs from conversation history
+    const chunkDtos: CreateTranscriptChunkDto[] =
+      DataTransformerHelper.convertMessagesToChunks(history);
+
+    // Create transcript chunks from conversation history
+    if (chunkDtos.length > 0) {
+      await this.transcriptChunkService.createMany(transcript._id, chunkDtos);
+    }
+
+    winstonLogger.log(
+      `[CallDataPersistenceService][createTranscriptAndChunks] Created transcript and chunks for ${callSid}`,
     );
-    if (chunks.length > 0) {
-      await this.transcriptChunkService.createMany(transcript._id, chunks);
-    }
-
-    // Generate AI summary
-    try {
-      const aiSummary = await this.aiIntegration.generateAISummary(
-        session.callSid,
-        session,
-      );
-
-      // Validate and clean AI returned data
-      const cleanedSummary =
-        DataTransformerHelper.cleanAISummaryResponse(aiSummary);
-
-      await this.transcriptService.update(transcript._id, cleanedSummary);
-      winstonLogger.log(
-        `[CallDataPersistenceService][createTranscriptAndChunks] Generated AI summary for ${session.callSid}`,
-      );
-    } catch (error) {
-      winstonLogger.error(
-        `[CallDataPersistenceService][createTranscriptAndChunks] Failed to generate AI summary for ${session.callSid}`,
-        { error: (error as Error).message },
-      );
-
-      // Provide fallback summary
-      try {
-        const fallbackSummary = ValidationHelper.validateTranscriptData({
-          summary: 'Call summary generation failed',
-          keyPoints: ['Summary could not be generated'],
-        });
-        await this.transcriptService.update(transcript._id, fallbackSummary);
-      } catch (fallbackError) {
-        winstonLogger.error(
-          `[CallDataPersistenceService][createTranscriptAndChunks] Failed to update transcript with fallback summary for ${session.callSid}`,
-          { error: (fallbackError as Error).message },
-        );
-      }
-    }
   }
 
   private async createServiceBookingRecord(
-    session: CallSkeleton,
-  ): Promise<ServiceBookingDocument> {
-    if (
-      session.user.service == null ||
-      session.user.serviceBookedTime == null
-    ) {
-      winstonLogger.warn(
-        `[CallDataPersistenceService][createServiceBookingRecord] Missing service or booking time for ${session.callSid}`,
+    callSid: string,
+    servicebooked: boolean,
+    service: Service | undefined,
+    serviceBookedTime: string | undefined,
+    userInfo: Partial<UserInfo>,
+    userId: string,
+  ): Promise<string | undefined> {
+    // Return early if no service was booked
+    if (!servicebooked || service == null || serviceBookedTime == null) {
+      winstonLogger.log(
+        `[CallDataPersistenceService][createServiceBookingRecord] No service booking required for ${callSid}`,
       );
-      return {} as ServiceBookingDocument;
+      return undefined;
     }
 
     // Get customer address string (simplified address structure)
-    const userInfo = session.user.userInfo;
     const addressString = ValidationHelper.getFallbackAddress(userInfo.address);
 
     // Create service booking data
     const serviceBookingData: CreateServiceBookingDto = {
-      serviceId: session.user.service.id,
+      serviceId: service.id,
       client: {
         name: userInfo.name ?? 'Name not provided',
         phoneNumber: userInfo.phone ?? 'Phone not provided',
@@ -187,50 +222,33 @@ export class CallDataPersistenceService {
         },
         {
           serviceFieldId: 'call_sid',
-          answer: session.callSid,
+          answer: callSid,
         },
       ],
-      bookingTime: session.user.serviceBookedTime,
+      bookingTime: serviceBookedTime,
       status: ServiceBookingStatus.Confirmed,
       note: `Service booked via phone call.`,
-      userId: session.company.userId,
-      callSid: session.callSid,
+      userId: userId,
+      callSid: callSid,
     };
 
     try {
       const serviceBooking =
         await this.serviceBookingService.create(serviceBookingData);
-      winstonLogger.log(
-        `[CallDataPersistenceService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${String((serviceBooking as any)._id)}`,
+      const serviceBookingId = String(
+        (serviceBooking as unknown as { _id: string })._id,
       );
-      return serviceBooking as ServiceBookingDocument;
+
+      winstonLogger.log(
+        `[CallDataPersistenceService][createServiceBookingRecord] Service booking created successfully for ${callSid}, booking ID: ${serviceBookingId}`,
+      );
+      return serviceBookingId;
     } catch (error) {
       winstonLogger.error(
-        `[CallDataPersistenceService][createServiceBookingRecord] Failed to create service booking for ${session.callSid}`,
+        `[CallDataPersistenceService][createServiceBookingRecord] Failed to create service booking for ${callSid}`,
         { error: (error as Error).message, stack: (error as Error).stack },
       );
       throw error;
-    }
-  }
-
-  private async updateCallLogWithBookingId(
-    callLogId: string,
-    serviceBookingId: string,
-    userId: string,
-  ): Promise<void> {
-    try {
-      await this.callLogService.update(userId, callLogId, {
-        serviceBookedId: serviceBookingId,
-      });
-      winstonLogger.log(
-        `[CallDataPersistenceService][updateCallLogWithBookingId] Updated CallLog ${callLogId} with ServiceBooking ID ${serviceBookingId}`,
-      );
-    } catch (error) {
-      winstonLogger.error(
-        `[CallDataPersistenceService][updateCallLogWithBookingId] Failed to update CallLog ${callLogId}`,
-        { error: (error as Error).message, stack: (error as Error).stack },
-      );
-      // Don't throw - this is not critical enough to fail the whole process
     }
   }
 }

@@ -15,7 +15,7 @@ export const WelcomeMessageHelper = {
     greeting?: { message: string; isCustom: boolean },
   ): string {
     // If user has chosen a custom welcome message, use it and add professional follow-up
-    if (greeting?.isCustom && greeting.message) {
+    if (greeting?.isCustom === true && greeting.message) {
       return `${greeting.message} May I have your name to begin with the process?`;
     }
 
