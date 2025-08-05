@@ -69,11 +69,13 @@ def _to_pendulum_with_tz(dt: datetime, tz_name: str) -> pendulum.DateTime:
     - 若已有 tzinfo，则转换到 tz_name；
     - 若 naive，则按 tz_name 本地化。
     """
-    tz = pendulum.timezone(tz_name)
-    p = pendulum.instance(dt)
-    if p.tzinfo is None:
-        return p.replace(tzinfo=tz)
-    return p.in_tz(tz)
+    if dt.tzinfo is None:
+        # Naive datetime - 将其解释为指定时区的本地时间
+        return pendulum.parse(dt.isoformat(), tz=tz_name)
+    else:
+        # 已有时区信息 - 转换到指定时区
+        p = pendulum.instance(dt)
+        return p.in_tz(tz_name)
 
 
 @router.post(
