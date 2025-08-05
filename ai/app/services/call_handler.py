@@ -507,7 +507,7 @@ class CustomerServiceLangGraph:
                 }
                 
                 print(f"✅ Address confirmed and completed: {existing_address}")
-                print(f"🔄 Created transition message to service selection")
+                print("🔄 Created transition message to service selection")
                 return state
 
         # Check if we have complete address information (all 5 components required)
