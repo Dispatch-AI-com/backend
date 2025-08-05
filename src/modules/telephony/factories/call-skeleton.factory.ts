@@ -1,4 +1,4 @@
-import type { CallSkeleton } from '@/modules/telephony/types/redis-session';
+import type { CallSkeleton } from '../types/redis-session';
 
 export function createEmptySkeleton(callSid: string): CallSkeleton {
   return {

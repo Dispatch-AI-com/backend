@@ -9,7 +9,6 @@ import {
   CreateServiceBookingDto,
   ServiceBookingStatus,
 } from '@/modules/service-booking/dto/create-service-booking.dto';
-import { ServiceBookingDocument } from '@/modules/service-booking/schema/service-booking.schema';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
 import { CreateTranscriptDto } from '@/modules/transcript/dto/create-transcript.dto';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
@@ -19,7 +18,7 @@ import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-ch
 import { DataTransformerHelper } from '../helpers/data-transformer.helper';
 import { ValidationHelper } from '../helpers/validation.helper';
 import { SessionRepository } from '../repositories/session.repository';
-import { CallSkeleton } from '../types/redis-session';
+import { CallSkeleton, Message } from '../types/redis-session';
 import { AiSummaryService } from './ai-summary.service';
 
 @Injectable()
@@ -50,32 +49,25 @@ export class CallDataPersistenceService {
       const aiSummary = await this.generateAISummaryForSession(session);
 
       // Step 2: Create transcript and chunks
-      const transcriptDto: CreateTranscriptDto = {
-        callSid: session.callSid,
-        summary: aiSummary.summary,
-        keyPoints: aiSummary.keyPoints,
-      };
-      const chunkDtos: CreateTranscriptChunkDto[] =
-        DataTransformerHelper.convertMessagesToChunks(session.history);
-      await this.createTranscriptAndChunks(transcriptDto, chunkDtos);
+      await this.createTranscriptAndChunks(
+        session.callSid,
+        aiSummary.summary,
+        aiSummary.keyPoints,
+        session.history,
+      );
 
       // Step 3: Create service booking if service was booked
-      const serviceBooking = await this.createServiceBookingRecord(session);
-      const serviceBookingId =
-        serviceBooking._id != null
-          ? String((serviceBooking as { _id: string })._id)
-          : undefined;
+      const serviceBookingId = await this.createServiceBookingRecord(session);
 
       // Step 4: Create call log record (last step to include all data)
-      const callLogDto: CreateCallLogDto = {
-        callSid: session.callSid,
-        userId: session.company.userId,
-        serviceBookedId: serviceBookingId,
-        callerNumber: twilioParams.Caller,
-        callerName: session.user.userInfo.name ?? 'Unknown Caller',
-        startAt: new Date(twilioParams.Timestamp),
-      };
-      await this.createCallLogRecord(callLogDto);
+      await this.createCallLogRecord(
+        session.callSid,
+        session.company.userId,
+        serviceBookingId,
+        twilioParams.Caller,
+        session.user.userInfo.name ?? 'Unknown Caller',
+        new Date(twilioParams.Timestamp),
+      );
 
       // Clean up Redis session
       await this.sessions.delete(callSid);
@@ -125,21 +117,48 @@ export class CallDataPersistenceService {
   }
 
   private async createCallLogRecord(
-    callLogDto: CreateCallLogDto,
+    callSid: string,
+    userId: string,
+    serviceBookedId: string | undefined,
+    callerNumber: string,
+    callerName: string,
+    startAt: Date,
   ): Promise<ICallLog> {
+    const callLogDto: CreateCallLogDto = {
+      callSid,
+      userId,
+      serviceBookedId,
+      callerNumber,
+      callerName,
+      startAt,
+    };
+
     const callLog = await this.callLogService.create(callLogDto);
     winstonLogger.log(
-      `[CallDataPersistenceService][createCallLogRecord] Created CallLog for ${callLogDto.callSid}`,
+      `[CallDataPersistenceService][createCallLogRecord] Created CallLog for ${callSid}`,
     );
     return callLog;
   }
 
   private async createTranscriptAndChunks(
-    transcriptDto: CreateTranscriptDto,
-    chunkDtos: CreateTranscriptChunkDto[],
+    callSid: string,
+    summary: string,
+    keyPoints: string[],
+    history: Message[],
   ): Promise<void> {
+    // Create transcript DTO
+    const transcriptDto: CreateTranscriptDto = {
+      callSid,
+      summary,
+      keyPoints,
+    };
+
     // Create transcript record with AI-generated summary
     const transcript = await this.transcriptService.create(transcriptDto);
+
+    // Create transcript chunk DTOs from conversation history
+    const chunkDtos: CreateTranscriptChunkDto[] =
+      DataTransformerHelper.convertMessagesToChunks(history);
 
     // Create transcript chunks from conversation history
     if (chunkDtos.length > 0) {
@@ -147,13 +166,13 @@ export class CallDataPersistenceService {
     }
 
     winstonLogger.log(
-      `[CallDataPersistenceService][createTranscriptAndChunks] Created transcript and chunks for ${transcriptDto.callSid}`,
+      `[CallDataPersistenceService][createTranscriptAndChunks] Created transcript and chunks for ${callSid}`,
     );
   }
 
   private async createServiceBookingRecord(
     session: CallSkeleton,
-  ): Promise<ServiceBookingDocument> {
+  ): Promise<string | undefined> {
     // Return early if no service was booked
     if (
       !session.servicebooked ||
@@ -163,7 +182,7 @@ export class CallDataPersistenceService {
       winstonLogger.log(
         `[CallDataPersistenceService][createServiceBookingRecord] No service booking required for ${session.callSid}`,
       );
-      return {} as ServiceBookingDocument;
+      return undefined;
     }
 
     // Get customer address string (simplified address structure)
@@ -198,10 +217,14 @@ export class CallDataPersistenceService {
     try {
       const serviceBooking =
         await this.serviceBookingService.create(serviceBookingData);
-      winstonLogger.log(
-        `[CallDataPersistenceService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${String((serviceBooking as unknown as { _id: string })._id)}`,
+      const serviceBookingId = String(
+        (serviceBooking as unknown as { _id: string })._id,
       );
-      return serviceBooking as ServiceBookingDocument;
+
+      winstonLogger.log(
+        `[CallDataPersistenceService][createServiceBookingRecord] Service booking created successfully for ${session.callSid}, booking ID: ${serviceBookingId}`,
+      );
+      return serviceBookingId;
     } catch (error) {
       winstonLogger.error(
         `[CallDataPersistenceService][createServiceBookingRecord] Failed to create service booking for ${session.callSid}`,
