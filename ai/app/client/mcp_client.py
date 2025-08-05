@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from mcp.client.sse import sse_client
 from mcp import ClientSession
 
-MCP_URL = "http://127.0.0.1:8000/mcp"
+MCP_URL = "http://127.0.0.1:8000/api/mcp"
 
 
 @asynccontextmanager

@@ -55,9 +55,10 @@ mcp = FastApiMCP(
         "send_email_with_google_calendar",
         "send_email_with_outlook_calendar",
     ],
+
 )
 
-mcp.mount()
+mcp.mount_sse(app,mount_path=f"{settings.api_prefix}/mcp")
 
 if __name__ == "__main__":
     import uvicorn
