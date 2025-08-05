@@ -35,9 +35,6 @@ export class Company {
   };
 
   @Prop({ required: true, unique: true })
-  email!: string;
-
-  @Prop({ required: true, unique: true })
   abn!: string;
 
   @Prop({ required: true })

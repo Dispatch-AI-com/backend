@@ -56,16 +56,15 @@ export class CallProcessorService {
     await this.sessionHelper.ensureSession(CallSid);
     const user = await this.userService.findByTwilioPhoneNumber(To);
     if (user == null) {
-      return this.speakAndLog(CallSid, 'User not found', NextAction.GATHER);
+      return this.speakAndLog(CallSid, 'User not found', NextAction.HANGUP);
     }
-
     const services = await this.serviceService.findAllActiveByUserId(
       user._id as string,
     );
     await this.sessionHelper.fillCompanyServices(CallSid, services);
 
     const company = await this.companyService.findByUserId(user._id as string);
-    await this.sessionHelper.fillCompany(CallSid, company);
+    await this.sessionHelper.fillCompany(CallSid, company, user.email);
 
     const welcome = WelcomeMessageHelper.buildWelcomeMessage(
       company.businessName,

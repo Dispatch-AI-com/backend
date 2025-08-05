@@ -46,11 +46,15 @@ export class SessionHelper {
     await this.appendMessage(callSid, 'AI', message);
   }
 
-  async fillCompany(callSid: string, company: Company): Promise<void> {
+  async fillCompany(
+    callSid: string,
+    company: Company,
+    email: string,
+  ): Promise<void> {
     const telephonyCompany: TelephonyCompany = {
       id: company._id.toString(),
       name: company.businessName,
-      email: company.email,
+      email: email,
       userId:
         typeof company.user === 'object' && '_id' in company.user
           ? (company.user as User & { _id: Types.ObjectId })._id.toString()
