@@ -17,15 +17,6 @@ export interface UserInfo {
   address?: string; // Simplified to single address string
 }
 
-// Legacy Address interface for backward compatibility (deprecated)
-export interface Address {
-  street_number: string;
-  street_name: string;
-  suburb: string;
-  state: string;
-  postcode: string;
-}
-
 export interface Company {
   id: string;
   name: string;
