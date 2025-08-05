@@ -49,12 +49,12 @@ export class SessionHelper {
   async fillCompany(
     callSid: string,
     company: Company,
-    email: string,
+    user: User,
   ): Promise<void> {
     const telephonyCompany: TelephonyCompany = {
       id: company._id.toString(),
       name: company.businessName,
-      email: email,
+      email: user.email,
       userId:
         typeof company.user === 'object' && '_id' in company.user
           ? (company.user as User & { _id: Types.ObjectId })._id.toString()

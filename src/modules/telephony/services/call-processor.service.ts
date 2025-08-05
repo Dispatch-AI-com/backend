@@ -62,9 +62,8 @@ export class CallProcessorService {
       user._id as string,
     );
     await this.sessionHelper.fillCompanyServices(CallSid, services);
-
     const company = await this.companyService.findByUserId(user._id as string);
-    await this.sessionHelper.fillCompany(CallSid, company, user.email);
+    await this.sessionHelper.fillCompany(CallSid, company, user);
 
     const welcome = WelcomeMessageHelper.buildWelcomeMessage(
       company.businessName,
