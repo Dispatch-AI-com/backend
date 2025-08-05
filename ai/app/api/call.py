@@ -127,12 +127,17 @@ async def ai_conversation(data: ConversationInput):
         state, call_sid=data.callSid
     )
 
-    # 5. Generate AI response
+    # 5. Generate AI response and apply placeholder replacement
     ai_message = (
         updated_state["last_llm_response"]["response"]
         if updated_state["last_llm_response"]
         else "Sorry, system is busy, please try again later."
     )
+    
+    # Apply service placeholder replacement to ensure voice responses have correct service names
+    print(f"🔍 [API_ENDPOINT] Pre-replacement response: '{ai_message}'")
+    ai_message = cs_agent._replace_service_placeholders(ai_message, updated_state)
+    print(f"🔍 [API_ENDPOINT] Post-replacement response: '{ai_message}'")
     ai_response = {
         "speaker": "AI",
         "message": ai_message,
