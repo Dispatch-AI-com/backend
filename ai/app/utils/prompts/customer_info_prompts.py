@@ -94,7 +94,7 @@ def get_address_extraction_prompt():
     """Get address extraction system prompt - Ultra-aggressive extraction with maximum intelligence
 
     Returns:
-        str: System prompt for address collection  
+        str: System prompt for address collection
     """
     return """Extract Australian address components. Support address confirmation workflow.
 

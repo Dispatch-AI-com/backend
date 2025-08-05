@@ -17,29 +17,31 @@ router = APIRouter(
 
 
 class BaseMailArgs(BaseModel):
-    to: str      = Field(..., description="收件人邮箱")
+    to: str = Field(..., description="收件人邮箱")
     subject: str = Field(..., description="邮件主题")
-    body: str    = Field(..., description="纯文本正文")
+    body: str = Field(..., description="纯文本正文")
 
 
 class EventInfo(BaseModel):
-    uid: Optional[str]              = Field(None, description="事件 UID；不传时自动生成")
-    summary: str                    = Field(..., description="事件标题")
-    start: datetime                 = Field(..., description="开始时间，ISO8601")
-    end: datetime                   = Field(..., description="结束时间，ISO8601")
-    description: Optional[str]      = Field(None, description="事件描述")
-    location: Optional[str]         = Field(None, description="事件地点")
-    organizer_name: str             = Field("DispatchAI", description="发起人姓名")
-    organizer_email: str            = Field("no-reply@dispatchai.com", description="发起人邮箱")
-    attendees: List[str]            = Field(default_factory=list, description="参与人邮箱列表")
-    sequence: int                   = Field(0, description="更新序号，更新/取消时＋1")
+    uid: Optional[str] = Field(None, description="事件 UID；不传时自动生成")
+    summary: str = Field(..., description="事件标题")
+    start: datetime = Field(..., description="开始时间，ISO8601")
+    end: datetime = Field(..., description="结束时间，ISO8601")
+    description: Optional[str] = Field(None, description="事件描述")
+    location: Optional[str] = Field(None, description="事件地点")
+    organizer_name: str = Field("DispatchAI", description="发起人姓名")
+    organizer_email: str = Field("no-reply@dispatchai.com", description="发起人邮箱")
+    attendees: List[str] = Field(default_factory=list, description="参与人邮箱列表")
+    sequence: int = Field(0, description="更新序号，更新/取消时＋1")
     rrule: Optional[Dict[str, Any]] = Field(
         None,
         description='重复规则，如 {"freq":"DAILY","count":5} 或 {"freq":"WEEKLY","interval":1}',
     )
     alarm_minutes_before: Optional[int] = Field(None, description="会前多少分钟提醒")
-    cancel: bool                     = Field(False, description="是否取消 (CANCEL)")
-    timezone: str                    = Field("Australia/Sydney", description="事件时区（IANA 名称），默认悉尼市区")
+    cancel: bool = Field(False, description="是否取消 (CANCEL)")
+    timezone: str = Field(
+        "Australia/Sydney", description="事件时区（IANA 名称），默认悉尼市区"
+    )
 
 
 class SendPlainArgs(BaseMailArgs):
@@ -82,7 +84,7 @@ async def send_email_with_ics_api(args: SendICSArgs):
 
         uid = args.uid or f"{uuid4()}@dispatchai"
         start = _to_pendulum_with_tz(args.start, args.timezone)
-        end   = _to_pendulum_with_tz(args.end,   args.timezone)
+        end = _to_pendulum_with_tz(args.end, args.timezone)
 
         if args.cancel:
             ics = build_ics_cancel(
@@ -134,10 +136,9 @@ async def send_email_with_ics_api(args: SendICSArgs):
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
-
 class SendGoogleCalArgs(BaseMailArgs, EventInfo):
     access_token: str = Field(..., description="Google OAuth Access Token")
-    calendar_id:  str = Field(..., description="目标日历 ID")
+    calendar_id: str = Field(..., description="目标日历 ID")
 
 
 @router.post(
@@ -157,10 +158,9 @@ async def send_email_with_google_calendar(args: SendGoogleCalArgs):
     }
 
 
-
 class SendOutlookCalArgs(BaseMailArgs, EventInfo):
     access_token: str = Field(..., description="Outlook OAuth Access Token")
-    calendar_id:  str = Field(..., description="目标日历 ID")
+    calendar_id: str = Field(..., description="目标日历 ID")
 
 
 @router.post(

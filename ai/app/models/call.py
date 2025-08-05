@@ -46,7 +46,9 @@ class Address(BaseModel):
 class UserInfo(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
-    address: Optional[str] = None  # Complete address string (for backward compatibility)
+    address: Optional[str] = (
+        None  # Complete address string (for backward compatibility)
+    )
     street_number: Optional[str] = None  # House/unit number
     street_name: Optional[str] = None  # Street name including type
     suburb: Optional[str] = None  # Suburb/city name

@@ -17,20 +17,24 @@ class SendEmailAndCalArgs(BaseModel):
     start: str = Field(..., description="开始时间，ISO8601 带时区")
     end: str = Field(..., description="结束时间，ISO8601 带时区")
     description: Optional[str] = Field(None, description="事件描述")
-    location:    Optional[str] = Field(None, description="事件地点")
-    attendees:   List[str] = Field(default_factory=list, description="与会人邮箱列表")
+    location: Optional[str] = Field(None, description="事件地点")
+    attendees: List[str] = Field(default_factory=list, description="与会人邮箱列表")
     alarm_minutes_before: Optional[int] = Field(None, description="会前多少分钟提醒")
-    timezone:    str = Field("Australia/Sydney", description="事件时区")
+    timezone: str = Field("Australia/Sydney", description="事件时区")
     calendarapp: Literal["none", "google", "outlook"] = Field(
-        "none",
-        description="选择哪个日历平台：none（仅发 ICS）、google、outlook"
+        "none", description="选择哪个日历平台：none（仅发 ICS）、google、outlook"
     )
-    access_token: Optional[str] = Field(None, description="OAuth2 访问令牌，仅 google/outlook 模式必填")
-    calendar_id:  Optional[str] = Field(None, description="目标日历 ID，仅 google/outlook 模式必填")
+    access_token: Optional[str] = Field(
+        None, description="OAuth2 访问令牌，仅 google/outlook 模式必填"
+    )
+    calendar_id: Optional[str] = Field(
+        None, description="目标日历 ID，仅 google/outlook 模式必填"
+    )
 
 
-
-@router.post("/send-email-and-calendar", summary="Send email + calendar via chosen platform")
+@router.post(
+    "/send-email-and-calendar", summary="Send email + calendar via chosen platform"
+)
 async def send_email_and_calendar(args: SendEmailAndCalArgs):
     uid = f"{uuid4()}@dispatchai"
 
@@ -47,7 +51,7 @@ async def send_email_and_calendar(args: SendEmailAndCalArgs):
         if not args.access_token or not args.calendar_id:
             raise HTTPException(
                 status_code=400,
-                detail="当 calendarapp=google 或 outlook 时，access_token 和 calendar_id 必填"
+                detail="当 calendarapp=google 或 outlook 时，access_token 和 calendar_id 必填",
             )
 
     payload: Dict[str, Any] = {
@@ -66,10 +70,12 @@ async def send_email_and_calendar(args: SendEmailAndCalArgs):
     }
 
     if args.calendarapp in ("google", "outlook"):
-        payload.update({
-            "access_token": args.access_token,
-            "calendar_id":  args.calendar_id,
-        })
+        payload.update(
+            {
+                "access_token": args.access_token,
+                "calendar_id": args.calendar_id,
+            }
+        )
 
     try:
         raw = await call_tool(tool_id, payload)

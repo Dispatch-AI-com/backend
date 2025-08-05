@@ -19,11 +19,12 @@ async def ping():
 async def redis():
     r = get_redis()
     return {"message": "pong！", "redis": r.ping()}
-    
+
+
 @router.get("/mcp_ping")
 async def mcp_ping(
     show_tools: bool = Query(False),
-    plain: bool = Query(False, description="是否用纯文本按行返回")
+    plain: bool = Query(False, description="是否用纯文本按行返回"),
 ):
     try:
         raw = await call_tool("health_ping", {})
@@ -48,5 +49,7 @@ async def mcp_ping(
         return {"pong": pong, "tools_lines": lines}
 
     except Exception as e:
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
         raise HTTPException(502, repr(e))

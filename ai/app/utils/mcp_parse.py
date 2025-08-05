@@ -2,12 +2,14 @@
 import json
 from typing import Any
 
+
 def to_dict(res: Any) -> dict:
     if hasattr(res, "model_dump"):
         return res.model_dump()
     if hasattr(res, "dict"):
         return res.dict()
     return dict(res)
+
 
 def parse_tool_result(res: Any):
     data = to_dict(res)

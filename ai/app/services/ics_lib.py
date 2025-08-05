@@ -5,6 +5,7 @@ import pendulum
 from datetime import timedelta
 from ics import Calendar, Event, DisplayAlarm
 
+
 def _rrule_to_str(rrule: Mapping[str, object]) -> str:
     """
     把 {"freq":"WEEKLY","interval":1,"byday":["MO","WE"]} 转成
@@ -19,6 +20,7 @@ def _rrule_to_str(rrule: Mapping[str, object]) -> str:
             val = str(v)
         parts.append(f"{key}={val}")
     return ";".join(parts)
+
 
 def build_ics_request(
     *,
@@ -60,10 +62,13 @@ def build_ics_request(
 
     if alarm_minutes_before is not None:
         # ⚠️ 这里改成 timedelta，不能再用 int
-        ev.alarms.append(DisplayAlarm(trigger=timedelta(minutes=-int(alarm_minutes_before))))
+        ev.alarms.append(
+            DisplayAlarm(trigger=timedelta(minutes=-int(alarm_minutes_before)))
+        )
 
     cal.events.add(ev)
     return cal.serialize()
+
 
 def build_ics_cancel(
     *,

@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
-
+from config import get_settings
+from api import health, chat, call, summary, email, dispatch
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_mcp.server import FastApiMCP
@@ -9,8 +10,6 @@ from fastapi_mcp.server import FastApiMCP
 app_dir = Path(__file__).parent
 sys.path.insert(0, str(app_dir))
 
-from config import get_settings
-from api import health, chat, call, summary, email, dispatch
 
 settings = get_settings()
 
@@ -46,10 +45,16 @@ async def root():
         "environment": settings.environment,
     }
 
+
 mcp = FastApiMCP(
-    app,        
+    app,
     name="Dispatch AI MCP",
-    include_operations=["health_ping", "send_email_with_ics", "send_email_with_google_calendar", "send_email_with_outlook_calendar"]
+    include_operations=[
+        "health_ping",
+        "send_email_with_ics",
+        "send_email_with_google_calendar",
+        "send_email_with_outlook_calendar",
+    ],
 )
 
 mcp.mount()

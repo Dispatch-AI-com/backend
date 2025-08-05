@@ -53,7 +53,7 @@ class CustomerServiceLangGraph:
 
     Main responsibility is to manage the entire customer information collection process:
     1. Name Collection
-    2. Phone Collection  
+    2. Phone Collection
     3. Address Collection (single string with speech correction)
     4. Service Selection
     5. Time/Booking Completion
@@ -68,13 +68,21 @@ class CustomerServiceLangGraph:
 
         # Get available services
         available_services = state.get("available_services", [])
-        
+
         print(f"🔍 [PLACEHOLDER_REPLACEMENT] Processing response: '{response_text}'")
-        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Available services count: {len(available_services)}")
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Available services count: {len(available_services)}"
+        )
         if available_services:
-            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Available services: {[s['name'] for s in available_services]}")
-        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{{{services_list}}}}: {'{{services_list}}' in response_text}")
-        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{services_list}' in response_text}")
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Available services: {[s['name'] for s in available_services]}"
+            )
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{{{services_list}}}}: {'{{services_list}}' in response_text}"
+        )
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{services_list}' in response_text}"
+        )
 
         # Replace {{services_list}} placeholder (double braces)
         if "{{services_list}}" in response_text:
@@ -90,8 +98,10 @@ class CustomerServiceLangGraph:
             response_text = response_text.replace(
                 "{{services_list}}", services_list.strip()
             )
-            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: '{services_list.strip()}'")
-        
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: '{services_list.strip()}'"
+            )
+
         # Replace {services_list} placeholder (single braces) - fallback for LLM variations
         if "{services_list}" in response_text:
             services_list = ""
@@ -106,7 +116,9 @@ class CustomerServiceLangGraph:
             response_text = response_text.replace(
                 "{services_list}", services_list.strip()
             )
-            print(f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {services_list} with: '{services_list.strip()}'")
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {services_list} with: '{services_list.strip()}'"
+            )
 
         # Replace selected service placeholders
         if (
@@ -145,7 +157,9 @@ class CustomerServiceLangGraph:
                     "{{selected_service_price}}", "Price on request"
                 )
 
-        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Final response: '{response_text[:100]}...'")
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Final response: '{response_text[:100]}...'"
+        )
         return response_text
 
     def _generate_closing_message(
@@ -203,7 +217,7 @@ class CustomerServiceLangGraph:
         message_history = []
         if call_sid:
             message_history = get_message_history(call_sid)
-        
+
         # Call LLM to extract name
         result = await extract_name_from_conversation(state, message_history)
         state["last_llm_response"] = result
@@ -267,7 +281,7 @@ class CustomerServiceLangGraph:
         message_history = []
         if call_sid:
             message_history = get_message_history(call_sid)
-        
+
         # Call LLM to extract phone
         result = await extract_phone_from_conversation(state, message_history)
         state["last_llm_response"] = result
@@ -329,19 +343,32 @@ class CustomerServiceLangGraph:
 
         # Apply speech correction for Australian address input (NSW/NSEW fix)
         original_input = state.get("last_user_input", "")
-        print(f"🔧 [SPEECH_DEBUG] Starting speech correction for address input: '{original_input}'")
-        
+        print(
+            f"🔧 [SPEECH_DEBUG] Starting speech correction for address input: '{original_input}'"
+        )
+
         # Check if this looks like a confirmation
-        confirmation_words = ["yes", "correct", "right", "that's right", "that's correct", "yeah"]
-        is_likely_confirmation = any(word in original_input.lower() for word in confirmation_words)
-        print(f"🔧 [ADDRESS_DEBUG] Input type analysis - likely confirmation: {is_likely_confirmation}")
-        
+        confirmation_words = [
+            "yes",
+            "correct",
+            "right",
+            "that's right",
+            "that's correct",
+            "yeah",
+        ]
+        is_likely_confirmation = any(
+            word in original_input.lower() for word in confirmation_words
+        )
+        print(
+            f"🔧 [ADDRESS_DEBUG] Input type analysis - likely confirmation: {is_likely_confirmation}"
+        )
+
         if original_input:
             try:
                 correction_result = await self.speech_corrector.correct_speech_input(
                     text=original_input, context="address_collection"
                 )
-                
+
                 print(f"🔧 [SPEECH_DEBUG] Speech corrector result: {correction_result}")
 
                 # Apply correction if confidence is sufficient
@@ -359,7 +386,9 @@ class CustomerServiceLangGraph:
                     print(
                         f"🔧 [SPEECH_DEBUG] No speech correction applied for: '{original_input}'"
                     )
-                    print(f"   Confidence too low: {correction_result['confidence']:.2f} (threshold: 0.6)")
+                    print(
+                        f"   Confidence too low: {correction_result['confidence']:.2f} (threshold: 0.6)"
+                    )
                     print(f"   Method: {correction_result['method']}")
                     print(f"   Reasoning: {correction_result['reasoning']}")
 
@@ -371,7 +400,7 @@ class CustomerServiceLangGraph:
         message_history = []
         if call_sid:
             message_history = get_message_history(call_sid)
-        
+
         # Call LLM to extract address
         result = await extract_address_from_conversation(state, message_history)
         state["last_llm_response"] = result
@@ -382,7 +411,7 @@ class CustomerServiceLangGraph:
         # Check for address confirmation
         extracted_info = result["info_extracted"]
         user_confirmed = extracted_info.get("confirmed")
-        
+
         # Handle confirmation workflow
         if user_confirmed:
             # User confirmed the address - use existing address from state
@@ -390,39 +419,41 @@ class CustomerServiceLangGraph:
             existing_address = state.get("address", "")
             existing_components = {
                 "street_number": state.get("street_number"),
-                "street_name": state.get("street_name"), 
+                "street_name": state.get("street_name"),
                 "suburb": state.get("suburb"),
                 "postcode": state.get("postcode"),
-                "state": state.get("state")
+                "state": state.get("state"),
             }
-            
+
             if existing_address and all(existing_components.values()):
                 state["address_complete"] = True
                 state["current_step"] = "collect_service"
                 print(f"✅ Address confirmed and completed: {existing_address}")
                 return state
-        
+
         # Check if we have complete address information (all 5 components required)
         street_number = extracted_info.get("street_number")
         street_name = extracted_info.get("street_name")
         suburb = extracted_info.get("suburb")
         postcode = extracted_info.get("postcode")
         state_abbrev = extracted_info.get("state")
-        
-        has_complete_address = all([
-            street_number and str(street_number).strip(),
-            street_name and str(street_name).strip(),
-            suburb and str(suburb).strip(),
-            postcode and str(postcode).strip(),
-            state_abbrev and str(state_abbrev).strip()
-        ])
-        
+
+        has_complete_address = all(
+            [
+                street_number and str(street_number).strip(),
+                street_name and str(street_name).strip(),
+                suburb and str(suburb).strip(),
+                postcode and str(postcode).strip(),
+                state_abbrev and str(state_abbrev).strip(),
+            ]
+        )
+
         # Only update and save address components, but don't mark as complete yet
         # Wait for user confirmation
         if has_complete_address:
             # Clean address string
             cleaned_address = extracted_address.strip() if extracted_address else ""
-            
+
             # If no complete address string but we have all components, build one
             if not cleaned_address:
                 address_parts = [
@@ -430,16 +461,20 @@ class CustomerServiceLangGraph:
                     str(street_name),
                     str(suburb),
                     str(postcode),
-                    str(state_abbrev)
+                    str(state_abbrev),
                 ]
                 cleaned_address = ", ".join(address_parts)
-                print(f"🔧 [ADDRESS_COLLECTION] Built complete address from components: {cleaned_address}")
-            
+                print(
+                    f"🔧 [ADDRESS_COLLECTION] Built complete address from components: {cleaned_address}"
+                )
+
             # Check if we already have some address information
             existing_address = state.get("address", "")
             if existing_address and existing_address != cleaned_address:
-                print(f"🔍 [ADDRESS_COLLECTION] Updating address: '{existing_address}' -> '{cleaned_address}'")
-            
+                print(
+                    f"🔍 [ADDRESS_COLLECTION] Updating address: '{existing_address}' -> '{cleaned_address}'"
+                )
+
             # Local state update - store both complete address and components
             state["address"] = cleaned_address
             state["street_number"] = street_number
@@ -447,17 +482,19 @@ class CustomerServiceLangGraph:
             state["suburb"] = suburb
             state["postcode"] = postcode
             state["state"] = state_abbrev
-            
+
             # Update completion flags for components
             state["street_number_complete"] = bool(street_number)
             state["street_name_complete"] = bool(street_name)
             state["suburb_complete"] = bool(suburb)
             state["postcode_complete"] = bool(postcode)
             state["state_complete"] = bool(state_abbrev)
-            
+
             # Don't mark as complete yet - wait for user confirmation
             # Only save the components for now
-            print("📝 [ADDRESS_COLLECTION] Address components saved, waiting for user confirmation")
+            print(
+                "📝 [ADDRESS_COLLECTION] Address components saved, waiting for user confirmation"
+            )
 
             # Real-time Redis update with address components
             if call_sid:
@@ -468,14 +505,20 @@ class CustomerServiceLangGraph:
                     street_name=street_name,
                     suburb=suburb,
                     postcode=postcode,
-                    state=state_abbrev
+                    state=state_abbrev,
                 )
 
                 if redis_success:
-                    print(f"✅ Address and components extracted and saved successfully: {cleaned_address}")
-                    print(f"🏠 Components: {street_number}, {street_name}, {suburb}, {postcode}, {state_abbrev}")
+                    print(
+                        f"✅ Address and components extracted and saved successfully: {cleaned_address}"
+                    )
+                    print(
+                        f"🏠 Components: {street_number}, {street_name}, {suburb}, {postcode}, {state_abbrev}"
+                    )
                 else:
-                    print(f"⚠️ Address extracted successfully but Redis save failed: {cleaned_address}")
+                    print(
+                        f"⚠️ Address extracted successfully but Redis save failed: {cleaned_address}"
+                    )
 
             print(f"✅ Address collection completed: {cleaned_address}")
         else:
@@ -515,7 +558,7 @@ class CustomerServiceLangGraph:
         message_history = []
         if call_sid:
             message_history = get_message_history(call_sid)
-        
+
         # Call LLM to extract service
         result = await extract_service_from_conversation(state, message_history)
 
@@ -611,7 +654,7 @@ class CustomerServiceLangGraph:
         message_history = []
         if call_sid:
             message_history = get_message_history(call_sid)
-        
+
         # Call AI to extract and convert time in one step
         result = await extract_time_from_conversation(state, message_history)
         state["last_llm_response"] = result
@@ -634,9 +677,7 @@ class CustomerServiceLangGraph:
             else:
                 # Fallback: use the extracted time as-is
                 final_mongodb_time = cleaned_time
-                print(
-                    f"🔄 Using extracted time as fallback: {cleaned_time}"
-                )
+                print(f"🔄 Using extracted time as fallback: {cleaned_time}")
 
             # Update state
             state["service_time"] = cleaned_time
@@ -717,14 +758,16 @@ class CustomerServiceLangGraph:
 
     # ================== Unified Workflow Entry Function ==================
 
-    async def process_customer_workflow(self, state: CustomerServiceState, call_sid: Optional[str] = None):
+    async def process_customer_workflow(
+        self, state: CustomerServiceState, call_sid: Optional[str] = None
+    ):
         """Unified customer information collection workflow - 5-Step Process
 
         Main entry point for external API calls. Executes the appropriate collection step
         based on current state completion status.
-        
+
         Workflow: Name → Phone → Address → Service → Time
-        
+
         Args:
             state: Customer service state object
             call_sid: Optional call ID for Redis real-time updates
@@ -785,15 +828,14 @@ class CustomerServiceLangGraph:
         print(
             f"🏠 Address: {state.get('address', 'Not collected')} {'✅' if state.get('address_complete') else '❌'}"
         )
-        
+
         # Show address components if available
-        if state.get('address_complete'):
+        if state.get("address_complete"):
             print(f"   • Street Number: {state.get('street_number', 'N/A')}")
             print(f"   • Street Name: {state.get('street_name', 'N/A')}")
             print(f"   • Suburb: {state.get('suburb', 'N/A')}")
             print(f"   • Postcode: {state.get('postcode', 'N/A')}")
             print(f"   • State: {state.get('state', 'N/A')}")
-
 
         # Service information
         service_status = ""
@@ -825,11 +867,21 @@ class CustomerServiceLangGraph:
 
         # Attempt count statistics
         print("\n📈 Attempt Count Statistics:")
-        print(f"  • Name: {state.get('name_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • Phone: {state.get('phone_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • Address: {state.get('address_attempts', 0)}/{state.get('max_attempts', 3)}")
-        print(f"  • Service: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}")
-        print(f"  • Time: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}")
+        print(
+            f"  • Name: {state.get('name_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
+        print(
+            f"  • Phone: {state.get('phone_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
+        print(
+            f"  • Address: {state.get('address_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
+        print(
+            f"  • Service: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}"
+        )
+        print(
+            f"  • Time: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
 
         print("=" * 50)
 

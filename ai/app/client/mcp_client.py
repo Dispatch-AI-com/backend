@@ -7,6 +7,7 @@ from mcp import ClientSession
 
 MCP_URL = "http://127.0.0.1:8000/mcp"
 
+
 @asynccontextmanager
 async def open_session():
     async with sse_client(MCP_URL) as (recv, send):
@@ -14,9 +15,11 @@ async def open_session():
             await sess.initialize()
             yield sess
 
+
 async def call_tool(tool_id: str, params: Dict[str, Any]) -> Dict[str, Any]:
     async with open_session() as sess:
         return await sess.call_tool(tool_id, params)
+
 
 async def list_tools() -> List[Dict[str, Any]]:
     async with open_session() as sess:

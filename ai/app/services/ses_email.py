@@ -4,7 +4,7 @@ import email.utils
 from email.message import EmailMessage
 
 # 统一读环境变量，并设默认值
-SES_FROM  = os.getenv("SES_FROM", "no-reply@dispatchai.com")
+SES_FROM = os.getenv("SES_FROM", "no-reply@dispatchai.com")
 SMTP_HOST = os.getenv("SMTP_HOST")
 SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 SMTP_USER = os.getenv("SMTP_USER")
@@ -15,6 +15,7 @@ TLS_KW = dict(
     start_tls=(SMTP_PORT == 587),
     use_tls=(SMTP_PORT == 465),
 )
+
 
 async def send_plain_email(to: str, subject: str, body: str) -> None:
     msg = EmailMessage()
@@ -33,8 +34,10 @@ async def send_plain_email(to: str, subject: str, body: str) -> None:
         **TLS_KW,
     )
 
+
 def _ensure_crlf(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\n", "\r\n")
+
 
 async def send_email_with_ics(
     to: str,
@@ -52,11 +55,11 @@ async def send_email_with_ics(
     ics = _ensure_crlf(ics_content)
 
     msg.add_attachment(
-        ics.encode('utf-8'),
+        ics.encode("utf-8"),
         maintype="text",
         subtype="calendar",
         filename="invite.ics",
-    )   
+    )
 
     await aiosmtplib.send(
         msg,
