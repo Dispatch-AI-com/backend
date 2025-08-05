@@ -48,13 +48,17 @@ export class ServiceController {
   }
 
   @Get('all-including-deleted')
-  @ApiOperation({ summary: 'Get all services including deleted ones (optionally by userId)' })
+  @ApiOperation({
+    summary: 'Get all services including deleted ones (optionally by userId)',
+  })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'Return all services including deleted ones.',
     type: [CreateServiceDto],
   })
-  async findAllIncludingDeleted(@Query('userId') userId?: string): Promise<Service[]> {
+  async findAllIncludingDeleted(
+    @Query('userId') userId?: string,
+  ): Promise<Service[]> {
     return this.serviceService.findAllIncludingDeleted(userId);
   }
 

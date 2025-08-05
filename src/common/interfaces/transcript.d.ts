@@ -1,5 +1,3 @@
-import type { Types } from 'mongoose';
-
 import type { SpeakerType } from '../constants/transcript-chunk.constant';
 
 export interface ITranscript {
