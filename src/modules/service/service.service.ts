@@ -18,6 +18,35 @@ export class ServiceService {
   ) {}
 
   async create(createServiceDto: CreateServiceDto): Promise<Service> {
+    // Check if there's a deleted service with the same name for the same user
+    const existingDeletedService = await this.serviceModel.findOne({
+      name: createServiceDto.name,
+      userId: createServiceDto.userId,
+      isDeleted: true
+    }).exec();
+
+    if (existingDeletedService) {
+      // Reactivate the deleted service instead of creating a new one
+      const reactivatedService = await this.serviceModel.findByIdAndUpdate(
+        existingDeletedService._id,
+        {
+          $set: {
+            ...createServiceDto,
+            isDeleted: false,
+            updatedAt: new Date()
+          }
+        },
+        { new: true, runValidators: true }
+      ).exec();
+      
+      if (!reactivatedService) {
+        throw new Error('Failed to reactivate service');
+      }
+      
+      return reactivatedService;
+    }
+
+    // Create new service if no deleted service with same name exists
     const createdService = new this.serviceModel(createServiceDto);
     return createdService.save();
   }
