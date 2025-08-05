@@ -4,11 +4,6 @@ import { winstonLogger } from '@/logger/winston.logger';
 
 import { DataTransformerHelper } from '../helpers/data-transformer.helper';
 import { ValidationHelper } from '../helpers/validation.helper';
-import {
-  AISummaryGenerationOptions,
-  AISummaryRequest,
-  AISummaryResponse,
-} from '../interfaces/ai-summary.interface';
 import { CallSkeleton } from '../types/redis-session';
 import { AiIntegrationService } from './ai-integration.service';
 
@@ -21,13 +16,17 @@ export class AiSummaryService {
    * @param callSid - The call session ID
    * @param session - The call session data
    * @param options - Generation options including fallback settings
-   * @returns Promise<AISummaryResponse> - The generated summary and key points
+   * @returns Promise with summary and key points
    */
   async generateSummary(
     callSid: string,
     session: CallSkeleton,
-    options: AISummaryGenerationOptions = {},
-  ): Promise<AISummaryResponse> {
+    options: {
+      enableFallback?: boolean;
+      fallbackSummary?: string;
+      fallbackKeyPoints?: string[];
+    } = {},
+  ): Promise<{ summary: string; keyPoints: string[] }> {
     try {
       // Generate AI summary using the AI integration service
       const aiSummary = await this.aiIntegration.generateAISummary(
@@ -63,12 +62,20 @@ export class AiSummaryService {
    * Generate AI summary from raw conversation data
    * @param request - The AI summary request data
    * @param options - Generation options
-   * @returns Promise<AISummaryResponse> - The generated summary
+   * @returns Promise with generated summary
    */
   async generateSummaryFromRequest(
-    request: AISummaryRequest,
-    options: AISummaryGenerationOptions = {},
-  ): Promise<AISummaryResponse> {
+    request: {
+      callSid: string;
+      conversation: unknown[];
+      serviceInfo?: unknown;
+    },
+    options: {
+      enableFallback?: boolean;
+      fallbackSummary?: string;
+      fallbackKeyPoints?: string[];
+    } = {},
+  ): Promise<{ summary: string; keyPoints: string[] }> {
     try {
       const aiSummary = await this.aiIntegration.generateAISummary(
         request.callSid,
@@ -104,13 +111,21 @@ export class AiSummaryService {
    * Batch generate summaries for multiple calls
    * @param requests - Array of summary requests
    * @param options - Generation options
-   * @returns Promise<AISummaryResponse[]> - Array of generated summaries
+   * @returns Promise with array of generated summaries
    */
   async generateBatchSummaries(
-    requests: AISummaryRequest[],
-    options: AISummaryGenerationOptions = {},
-  ): Promise<AISummaryResponse[]> {
-    const summaries: AISummaryResponse[] = [];
+    requests: {
+      callSid: string;
+      conversation: unknown[];
+      serviceInfo?: unknown;
+    }[],
+    options: {
+      enableFallback?: boolean;
+      fallbackSummary?: string;
+      fallbackKeyPoints?: string[];
+    } = {},
+  ): Promise<{ summary: string; keyPoints: string[] }[]> {
+    const summaries: { summary: string; keyPoints: string[] }[] = [];
 
     for (const request of requests) {
       try {
@@ -139,12 +154,16 @@ export class AiSummaryService {
    * Generate a fallback summary when AI generation fails
    * @param callSid - The call session ID
    * @param options - Fallback options
-   * @returns AISummaryResponse - The fallback summary
+   * @returns The fallback summary
    */
   private generateFallbackSummary(
     callSid: string,
-    options: AISummaryGenerationOptions,
-  ): AISummaryResponse {
+    options: {
+      enableFallback?: boolean;
+      fallbackSummary?: string;
+      fallbackKeyPoints?: string[];
+    },
+  ): { summary: string; keyPoints: string[] } {
     try {
       const fallbackSummary = ValidationHelper.validateTranscriptData({
         summary: options.fallbackSummary ?? 'Call summary generation failed',
