@@ -1,4 +1,3 @@
-import { CallLogStatus } from '../../src/common/constants/calllog.constant';
 import { randomBytes } from 'crypto';
 
 function generateRandomNumber(max: number): number {
@@ -23,7 +22,6 @@ export function createMockCallLogDto(overrides: Partial<any> = {}) {
     serviceBookedId: 'booking-' + generateRandomNumber(1000),
     callerNumber: '+6140000' + generateRandomNumber(10000).toString().padStart(4, '0'),
     callerName: 'User ' + generateRandomNumber(1000),
-    status: CallLogStatus.Done,
     startAt,
     endAt,
     ...overrides,

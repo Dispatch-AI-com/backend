@@ -156,6 +156,37 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  async mcpPing(): Promise<{
+    status: string;
+    message?: string;
+    timestamp: Date;
+    duration?: number;
+    error?: string;
+  }> {
+    const start = performance.now();
+    try {
+      const { data } = await firstValueFrom(
+        this.http.get<{ pong: string; tools_lines?: string[] }>(
+          '/health/mcp_ping',
+          { params: { show_tools: true, plain: true } },
+        ),
+      );
+      return {
+        status: 'ok',
+        message: data.pong,
+        timestamp: new Date(),
+        duration: Math.round(performance.now() - start),
+      };
+    } catch (err) {
+      return {
+        status: 'error',
+        error: err instanceof Error ? err.message : String(err),
+        timestamp: new Date(),
+        duration: Math.round(performance.now() - start),
+      };
+    }
+  }
+
   private async sendHeartbeat(): Promise<void> {
     try {
       const start = performance.now();

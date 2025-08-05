@@ -54,20 +54,48 @@ class SummaryService:
 
         # Use LLM service to generate summary
         summary_response = await llm_service.generate_response(prompt)
-        
+
         # Try to parse JSON response, fallback to structured format
         try:
             import json
-            result = json.loads(summary_response)
-            # Convert keyPoints to key_points for consistency with existing code
-            if "keyPoints" in result and "key_points" not in result:
+            import re
+
+            # Clean up response - extract JSON if wrapped in other text
+            json_match = re.search(
+                r'\{[^{}]*"summary"[^{}]*\}', summary_response, re.DOTALL
+            )
+            if json_match:
+                json_text = json_match.group(0)
+            else:
+                json_text = summary_response.strip()
+
+            result = json.loads(json_text)
+
+            # Ensure required fields exist
+            if "summary" not in result:
+                result["summary"] = "Call summary not available"
+            if "keyPoints" not in result and "key_points" not in result:
+                result["keyPoints"] = []
+
+            # Normalize keyPoints field name
+            if "keyPoints" in result:
                 result["key_points"] = result["keyPoints"]
+
+            # Ensure keyPoints is a list
+            if not isinstance(result.get("keyPoints", []), list):
+                result["keyPoints"] = []
+            if not isinstance(result.get("key_points", []), list):
+                result["key_points"] = []
+
             return result
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, AttributeError):
             # Fallback to basic structure if JSON parsing fails
             return {
-                "summary": summary_response,
-                "key_points": ["Key point extracted from AI response"],
+                "summary": summary_response
+                if summary_response
+                else "Call summary not available",
+                "key_points": ["Summary generation encountered an issue"],
+                "keyPoints": ["Summary generation encountered an issue"],
             }
 
 

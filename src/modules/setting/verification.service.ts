@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -57,7 +57,7 @@ export class VerificationService {
       await this.userModel.findByIdAndUpdate(
         userId,
         { fullPhoneNumber: updateData.mobile },
-        { new: true }
+        { new: true },
       );
     }
 
@@ -72,12 +72,12 @@ export class VerificationService {
     return verification;
   }
 
-  async verifyMobile(userId: string, mobile: string): Promise<Verification> {
+  async verifyMobile(userId: string, _mobile: string): Promise<Verification> {
     const verification = await this.verificationModel
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
         { mobileVerified: true },
-        { new: true }
+        { new: true },
       )
       .exec();
 
@@ -88,12 +88,12 @@ export class VerificationService {
     return verification;
   }
 
-  async verifyEmail(userId: string, email: string): Promise<Verification> {
+  async verifyEmail(userId: string, _email: string): Promise<Verification> {
     const verification = await this.verificationModel
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
         { emailVerified: true },
-        { new: true }
+        { new: true },
       )
       .exec();
 

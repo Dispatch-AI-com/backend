@@ -19,7 +19,7 @@ prompt = get_name_extraction_prompt()
 
 def get_name_extraction_prompt():
     """Get name extraction system prompt
-    
+
     Returns:
         str: System prompt for name collection
     """
@@ -39,21 +39,21 @@ Please respond strictly in the following JSON format, do not add any other conte
 }
 
 Rules:
-- If user provides a valid Chinese or English name, set info_complete to true
+- If user provides a valid English name, set info_complete to true
 - If user doesn't provide their own name or provides something that isn't a name (like numbers, symbols), set info_complete to false
 - Response field should be natural and friendly, matching customer service tone
 - Name should be a reasonable person's name, don't accept obvious fake names or meaningless characters, must be the user's own name, not a third party's name
 - Analyze user input to determine if it truly contains name information
 
 Response Templates:
-- If you successfully extract a valid name, respond with: "Nice to meet you, [name]! Let me verify this information... Thank you! Now could you please provide your phone number?"
-- If you cannot extract a valid name, respond with: "I didn't catch your name clearly. Could you please tell me your name again?"
+- If you successfully extract a valid name, respond with acknowledgement and then proceed to ask user's phone number.
+- If you cannot extract a valid name, politely ask user to tell the name again.
 """
 
 
 def get_phone_extraction_prompt():
     """Get phone extraction system prompt
-    
+
     Returns:
         str: System prompt for phone number collection
     """
@@ -73,20 +73,88 @@ Please respond strictly in the following JSON format, do not add any other conte
 }
 
 Rules:
-- Only accept Australian mobile phone formats: 04XXXXXXXX or +614XXXXXXXX or 0061XXXXXXXXX or 614XXXXXXXX
-- Do not accept phone number formats from other countries (e.g., China's 138xxxxxxxx, US +1xxxxxxxxxx, etc.)
-- If user provides a valid Australian format phone number, set info_complete to true
-- If user provides a non-Australian format phone number, set info_complete to false and kindly explain that only Australian numbers are accepted
-- Response field should be natural and friendly, matching customer service tone
-- Strictly validate phone number format, only Australian formats are considered valid
+- Only accept Australian mobile phone formats: 10-digit numbers starting with 04 (e.g., 0412345678)
+- Also accept international formats starting with +614, 0061, or 614
+- Do not accept phone numbers from other countries or landline numbers
+- If user provides a valid Australian mobile number, set info_complete to true
+- If user provides an invalid format, set info_complete to false
+- Response field should be natural and friendly, suitable for voice conversation
+- IMPORTANT: For voice calls, do not repeat back phone numbers with "xxx" or similar placeholders
+- When asking for phone number again, specify the format requirement clearly
 
 Response Templates:
-- If you successfully extract a valid phone number, respond with: "Perfect! I've got your phone number [phone]. Now I need your address. Could you please tell me your street number and street name?"
-- If you cannot extract a valid phone number, respond with: "I need a valid Australian phone number. Could you please provide your 10 digits phone number starting with 0"
+- If you successfully extract a valid phone number, respond with acknowledgement and proceed to ask for address
+- If you cannot extract a valid phone number, say: "I need your Australian mobile phone number. Please provide a 10-digit number starting with zero-four."
+- If format is wrong, say: "That doesn't seem to be an Australian mobile number. I need a 10-digit number starting with zero-four."
+- Do NOT use examples with "xxx" or placeholder numbers in voice responses
 """
 
 
-def get_street_extraction_prompt():
+def get_address_extraction_prompt():
+    """Get address extraction system prompt - Ultra-aggressive extraction with maximum intelligence
+
+    Returns:
+        str: System prompt for address collection
+    """
+    return """Extract Australian address components. Support address confirmation workflow.
+
+IMPORTANT: Handle 3 scenarios:
+1. Initial address input - extract and guess all components
+2. User confirmation (yes/correct/right) - mark as confirmed 
+3. User correction - extract new address components
+
+{
+  "response": "Thanks! What's your address?",
+  "info_extracted": {
+    "address": null,
+    "street_number": null,
+    "street_name": null,
+    "suburb": null,
+    "postcode": null,
+    "state": null,
+    "confirmed": false
+  },
+  "info_complete": false,
+  "analysis": "No address provided yet"
+}
+
+If user says "200 north terrace" (first time):
+{
+  "response": "I have 200 North Terrace, Adelaide, SA 5000. Is this correct? Please say yes to continue or tell me the correct address.",
+  "info_extracted": {
+    "address": "200 North Terrace, Adelaide, SA 5000",
+    "street_number": "200",
+    "street_name": "North Terrace", 
+    "suburb": "Adelaide",
+    "postcode": "5000",
+    "state": "SA",
+    "confirmed": false
+  },
+  "info_complete": false,
+  "analysis": "Complete address guessed, waiting for user confirmation"
+}
+
+If user says "yes" or "correct" or "right":
+{
+  "response": "Great! Your address is confirmed. Now, what service do you need?",
+  "info_extracted": {
+    "confirmed": true
+  },
+  "info_complete": true,
+  "analysis": "User confirmed the address"
+}
+
+Rules:
+- Always guess missing components using Australian knowledge
+- "North Terrace" = Adelaide, SA, 5000
+- "Collins Street" = Melbourne, VIC, 3000
+- NEVER set info_complete=true on first extraction - always ask for confirmation
+- Only set info_complete=true when user confirms with "yes", "correct", "right", etc.
+- If user provides new address info, treat as correction and re-extract
+- Respond ONLY with JSON, no markdown"""
+
+
+'''def get_street_extraction_prompt():
     """Get street extraction system prompt
     
     Returns:
@@ -143,6 +211,12 @@ Please respond strictly in the following JSON format, do not add any other conte
   "analysis": "Brief analysis of whether user input contains valid suburb information"
 }
 
+
+
+Response Templates:
+- If you successfully extract valid suburb information, respond with: "Perfect! Your suburb is [suburb]. Now I need to know which state you're in. Could you please tell me your state?"
+- If you cannot extract valid suburb information, respond with: "I didn't catch your suburb clearly. Could you please tell me which suburb you live in?"
+
 Rules:
 - Extract Australian suburb names (e.g., "Melbourne", "Parramatta", "Bondi Beach")
 - Accept common suburb name variations and formatting
@@ -150,9 +224,8 @@ Rules:
 - Set info_complete to true if a reasonable suburb name is provided
 - Response field should be natural and friendly, matching customer service tone
 
-Response Templates:
-- If you successfully extract valid suburb information, respond with: "Perfect! Your suburb is [suburb]. Now I need to know which state you're in. Could you please tell me your state?"
-- If you cannot extract valid suburb information, respond with: "I didn't catch your suburb clearly. Could you please tell me which suburb you live in?"
+# example
+
 """
 
 
@@ -229,15 +302,15 @@ Response Templates:
 - If you successfully extract valid postcode information, respond with: "Perfect! I have your complete address now. Thank you for providing all the details. Now, could you please tell me which service you would like to book?"
 - If you cannot extract valid postcode information, respond with: "I need your 4-digit postcode. Could you please provide your postcode? For example: 3000, 2000, etc."
 """
-
+'''
 
 
 def get_service_extraction_prompt(available_services=None):
     """Get service extraction system prompt
-    
+
     Args:
         available_services: List of available services with name, price, and description
-    
+
     Returns:
         str: System prompt for service collection
     """
@@ -246,59 +319,56 @@ def get_service_extraction_prompt(available_services=None):
     if available_services:
         services_text = "\n\nAvailable Services:\n"
         for service in available_services:
-            price_text = f"${service['price']}" if service.get('price') else "Price on request"
+            price_text = (
+                f"${service['price']}" if service.get("price") else "Price on request"
+            )
             services_text += f"• {service['name']}: {price_text}\n"
-    
-    return f"""You are a professional customer service assistant. Your tasks are:
-1. Engage in natural and friendly conversation with users
-2. Collect service type information from our available services
-3. Present available services with prices to help customer choose
-4. Return results strictly in JSON format
+
+    return f"""You are a professional customer service assistant. Extract service selection from user input.
 
 {services_text}
-Please respond strictly in the following JSON format, do not add any other content:
+
+CRITICAL: Respond with ONLY JSON. No other text.
+
+Example JSON response when no service selected:
 {{
-  "response": "What you want to say to the user",
+  "response": "Here are our options: {{{{services_list}}}}. Which service would you like to book?",
   "info_extracted": {{
-    "service": "Extracted service type, null if not extracted"
+    "service": null
   }},
-  "info_complete": true/false,
-  "analysis": "Brief analysis of whether user input contains valid service request"
+  "info_complete": false,
+  "analysis": "User needs to see service options"
+}}
+
+Example JSON response when service selected:
+{{
+  "response": "Great! I've selected {{{{selected_service_name}}}} for you. What time would you prefer?",
+  "info_extracted": {{
+    "service": "Plumbing Service"
+  }},
+  "info_complete": true,
+  "analysis": "User selected a valid service"
 }}
 
 Rules:
-- Only accept services from the available services list above
-- Set info_complete to true only if user selects a service from our available list
-- Response field should be natural and friendly, matching customer service tone
-- IMPORTANT: Use the placeholder templates provided below, do not make up your own placeholders
-
-Response Templates with Dynamic Placeholders:
-1. If user selected a valid service (info_complete=true):
-   - Use template: "Excellent! You've selected service. Finally, when would you like to schedule this service? Could you please provide your preferred date and time?"
-   
-2. If user hasn't selected a service or needs to see options (info_complete=false):
-   - Use template: "Great! I have your contact information. Which service would you like to book?"
-
-Available Placeholder Variables:
-- {{selected_service_name}} - Name of the service user selected
-- {{selected_service_price}} - Price of the selected service  
-- {{services_list}} - Formatted list of all available services with prices
-- Use these placeholders in your response field, and the system will substitute actual values
-"""
+- Only accept services from the available list above
+- Keep placeholders {{{{services_list}}}}, {{{{selected_service_name}}}} as-is in JSON
+- System will replace placeholders later
+- Respond ONLY with JSON"""
 
 
 def get_time_extraction_prompt():
     """Get time extraction system prompt with MongoDB format constraint
-    
+
     Returns:
         str: System prompt for service time collection
     """
     from datetime import datetime, timezone
-    
+
     # Get current time for context
     current_time = datetime.now(timezone.utc)
     current_str = current_time.strftime("%A, %B %d, %Y at %I:%M %p UTC")
-    
+
     return f"""You are a professional customer service assistant. Your tasks are:
 1. Engage in natural and friendly conversation with users
 2. Collect preferred service time information and convert to standard format
@@ -319,6 +389,9 @@ Please respond strictly in the following JSON format, do not add any other conte
 
 Rules:
 - Extract date and time preferences in various formats
+- IMPORTANT: Review the conversation history above to see what time information has already been discussed
+- If time components were mentioned in previous messages, combine them with current user input
+- If no time information was discussed before, extract from current user input
 - Convert to MongoDB-compatible ISO format: YYYY-MM-DDTHH:MM:SSZ
 - Always use UTC timezone (Z suffix)
 - Must be a future time relative to current time
@@ -334,6 +407,9 @@ Time Conversion Examples:
 - "next Friday at 3:30pm" → "2025-08-01T15:30:00Z" (next Friday 3:30 PM UTC)
 
 Response Templates:
-- If you successfully extract and convert time, respond with: "Excellent! I have all your information now. You've requested [service] service for [time]. Thank you for providing all the details. We'll process your booking and get back to you soon!"
-- If you cannot extract or convert time, respond with: "I need to know when you'd prefer the service. Could you please tell me your preferred date and time? For example: Monday at 2pm, next Tuesday morning, etc."
+- If you successfully extract and convert time, acknowledge and use friendly tone to close the call.
+- If you cannot extract or convert time:
+  - If time components were mentioned in conversation history, ask for missing components (e.g., time if only date provided, date if only time provided)
+  - If no time information was discussed before, politely ask user to provide the preferred time
+- If user provides partial time information, combine with information from conversation history
 """
