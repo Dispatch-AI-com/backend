@@ -102,6 +102,24 @@ class CustomerServiceLangGraph:
                 f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: '{services_list.strip()}'"
             )
 
+        # Replace {{{{services_list}}}} placeholder (quadruple braces)
+        if "{{{{services_list}}}}" in response_text:
+            services_list = ""
+            for i, service in enumerate(available_services, 1):
+                price_text = (
+                    f"{service['price']} dollars"
+                    if service.get("price")
+                    else "Price on request"
+                )
+                services_list += f"{i}. {service['name']} for {price_text}. "
+
+            response_text = response_text.replace(
+                "{{{{services_list}}}}", services_list.strip()
+            )
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{{{services_list}}}} with: '{services_list.strip()}'"
+            )
+
         # Replace {services_list} placeholder (single braces) - fallback for LLM variations
         if "{services_list}" in response_text:
             services_list = ""
@@ -120,25 +138,54 @@ class CustomerServiceLangGraph:
                 f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {services_list} with: '{services_list.strip()}'"
             )
 
-        # Replace selected service placeholders
+        # Replace selected service placeholders (both 2-brace and 4-brace patterns)
         if (
             "{{selected_service_name}}" in response_text
             or "{{selected_service_price}}" in response_text
+            or "{{{{selected_service_name}}}}" in response_text
+            or "{{{{selected_service_price}}}}" in response_text
         ):
             # Try to find the selected service from available services
             extracted_service = state.get("service")
             selected_service = None
 
             if extracted_service:
+                extracted_lower = extracted_service.lower()
+                print(f"🔍 [PLACEHOLDER_REPLACEMENT] Looking for extracted service: '{extracted_service}'")
+                
+                # First try exact match
                 for service in available_services:
-                    if service["name"].lower() == extracted_service.lower():
+                    if service["name"].lower() == extracted_lower:
                         selected_service = service
+                        print(f"✅ [PLACEHOLDER_REPLACEMENT] Exact match found: {service['name']}")
                         break
+                
+                # If no exact match, try partial matching
+                if not selected_service:
+                    for service in available_services:
+                        service_name_lower = service["name"].lower()
+                        # Check if extracted service contains service name or vice versa
+                        if (extracted_lower in service_name_lower or 
+                            service_name_lower in extracted_lower or
+                            # Also check word-level matching
+                            any(word in service_name_lower for word in extracted_lower.split())):
+                            selected_service = service
+                            print(f"✅ [PLACEHOLDER_REPLACEMENT] Partial match found: {service['name']} for '{extracted_service}'")
+                            break
+                
+                if not selected_service:
+                    print(f"⚠️ [PLACEHOLDER_REPLACEMENT] No match found for service: '{extracted_service}'")
 
             if selected_service:
+                # Replace 2-brace patterns
                 response_text = response_text.replace(
                     "{{selected_service_name}}", selected_service["name"]
                 )
+                # Replace 4-brace patterns
+                response_text = response_text.replace(
+                    "{{{{selected_service_name}}}}", selected_service["name"]
+                )
+                
                 price_text = (
                     f"{selected_service['price']}"
                     if selected_service.get("price")
@@ -147,14 +194,23 @@ class CustomerServiceLangGraph:
                 response_text = response_text.replace(
                     "{{selected_service_price}}", price_text
                 )
+                response_text = response_text.replace(
+                    "{{{{selected_service_price}}}}", price_text
+                )
             else:
                 # Fallback if service not found
+                fallback_service_name = extracted_service or "the selected service"
                 response_text = response_text.replace(
-                    "{{selected_service_name}}",
-                    extracted_service or "the selected service",
+                    "{{selected_service_name}}", fallback_service_name
+                )
+                response_text = response_text.replace(
+                    "{{{{selected_service_name}}}}", fallback_service_name
                 )
                 response_text = response_text.replace(
                     "{{selected_service_price}}", "Price on request"
+                )
+                response_text = response_text.replace(
+                    "{{{{selected_service_price}}}}", "Price on request"
                 )
 
         print(
@@ -428,7 +484,30 @@ class CustomerServiceLangGraph:
             if existing_address and all(existing_components.values()):
                 state["address_complete"] = True
                 state["current_step"] = "collect_service"
+                
+                # Create natural transition message thanking user and introducing services
+                available_services = state.get("available_services", [])
+                services_list = ""
+                for i, service in enumerate(available_services, 1):
+                    price_text = (
+                        f"{service['price']} dollars"
+                        if service.get("price")
+                        else "Price on request"
+                    )
+                    services_list += f"{i}. {service['name']} for {price_text}. "
+                
+                transition_message = f"Thank you for providing your information! Now, here are our available services: {services_list.strip()}. Which service would you like to book today?"
+                
+                # Update the response to include the transition message
+                state["last_llm_response"] = {
+                    "response": transition_message,
+                    "info_extracted": {"confirmed": True},
+                    "info_complete": True,
+                    "analysis": "Address confirmed, transitioning to service selection"
+                }
+                
                 print(f"✅ Address confirmed and completed: {existing_address}")
+                print("🔄 Created transition message to service selection")
                 return state
 
         # Check if we have complete address information (all 5 components required)
