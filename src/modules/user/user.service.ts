@@ -99,4 +99,9 @@ export class UserService {
       .exec();
     return user;
   }
+
+  async findEmailByUserId(userId: string): Promise<string | null> {
+    const user = await this.userModel.findById(userId).exec();
+    return user?.email ?? null;
+  }
 }

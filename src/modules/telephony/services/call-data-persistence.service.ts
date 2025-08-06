@@ -37,6 +37,7 @@ export class CallDataPersistenceService {
     private readonly transcriptChunkService: TranscriptChunkService,
     private readonly serviceBookingService: ServiceBookingService,
     private readonly aiSummaryService: AiSummaryService,
+    private readonly http: HttpService,
   ) {}
 
   async processCallCompletion(
@@ -84,6 +85,40 @@ export class CallDataPersistenceService {
         aiSummary.summary,
         aiSummary.keyPoints,
         session.history,
+      );
+
+      await firstValueFrom(
+        this.http.post('/dispatch/send-email-and-calendar', {
+          to: session.company.email,
+          subject: 'Service Booking Confirmation',
+          body: aiSummary.summary,
+          summary: session.user.service?.name ?? 'Service Booking',
+          start: session.user.serviceBookedTime ?? new Date().toISOString(),
+          end:
+            session.user.serviceBookedTime != null &&
+            session.user.serviceBookedTime.trim() !== ''
+              ? new Date(
+                  new Date(session.user.serviceBookedTime).getTime() +
+                    60 * 60 * 1000,
+                ).toISOString()
+              : new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          description:
+            (session.user.userInfo.name ?? 'Customer') +
+            ' has ordered ' +
+            (session.user.service?.name ?? 'service') +
+            ' at ' +
+            (session.user.serviceBookedTime ?? 'scheduled time') +
+            ' at ' +
+            ValidationHelper.getFallbackAddress(
+              session.user.userInfo.address ?? 'specified location',
+            ),
+          location: ValidationHelper.getFallbackAddress(
+            session.user.userInfo.address,
+          ),
+          attendees: [session.company.email],
+          alarm_minutes_before: 10,
+          calendarapp: 'none',
+        }),
       );
 
       // Clean up Redis session
