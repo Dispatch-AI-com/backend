@@ -60,7 +60,11 @@ export class BlogService {
     }
 
     if (tag != null && tag !== '') {
-      const allowedTags = ['tech', 'life', 'travel', 'news', 'sports'];
+      const allowedTags = [
+        'Small Businesses',
+        'Small And Medium Businesses',
+        'other',
+      ];
 
       if (!allowedTags.includes(tag)) {
         throw new BadRequestException('Invalid tag value');
@@ -93,7 +97,11 @@ export class BlogService {
     }
 
     if (tag != null && tag !== '') {
-      const allowedTags = ['tech', 'life', 'travel', 'news', 'sports'];
+      const allowedTags = [
+        'Small Businesses',
+        'Small And Medium Businesses',
+        'other',
+      ];
 
       if (!allowedTags.includes(tag)) {
         throw new BadRequestException('Invalid tag value');
@@ -151,5 +159,9 @@ export class BlogService {
       updatedAt,
       videoEmbedUrl: getYouTubeEmbedUrl(videoUrl),
     };
+  }
+
+  async getHighlightBlogs(limit: number): Promise<BlogDocument[]> {
+    return this.blogModel.find().sort({ date: -1 }).limit(limit).exec();
   }
 }

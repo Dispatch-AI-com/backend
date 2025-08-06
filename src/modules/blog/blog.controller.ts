@@ -9,8 +9,10 @@ import {
 } from '@nestjs/common';
 import { DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import {
+  ApiBadRequestResponse,
   ApiCreatedResponse,
   ApiOkResponse,
+  ApiOperation,
   ApiParam,
   ApiQuery,
   ApiTags,
@@ -31,6 +33,35 @@ interface PaginatedResponse<T> {
 @Controller('blogs')
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
+
+  @Get('highlights')
+  @ApiOperation({ summary: 'Get featured blog posts' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of blogs to return',
+    example: 3,
+    type: Number,
+  })
+  @ApiOkResponse({
+    description: 'Successfully retrieved featured blogs',
+    type: [Blog], // Array of Blog objects
+  })
+  @ApiBadRequestResponse({
+    description: 'Invalid parameter: limit must be a number',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'Invalid parameter value',
+        error: 'Bad Request',
+      },
+    },
+  })
+  async getHighlightBlogs(@Query('limit') limit = 3): Promise<Blog[]> {
+    // Ensure limit is numeric
+    const numericLimit = Number(limit) || 3;
+    return this.blogService.getHighlightBlogs(numericLimit);
+  }
 
   @Get('search')
   @ApiOkResponse({
