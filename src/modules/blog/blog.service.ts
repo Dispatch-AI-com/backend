@@ -160,4 +160,8 @@ export class BlogService {
       videoEmbedUrl: getYouTubeEmbedUrl(videoUrl),
     };
   }
+
+  async getHighlightBlogs(limit: number): Promise<BlogDocument[]> {
+    return this.blogModel.find().sort({ date: -1 }).limit(limit).exec();
+  }
 }
