@@ -1,25 +1,25 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from datetime import datetime
-import time
-from models.chat import ChatRequest, ChatResponse
-from services.llm_service import llm_service
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/ai", tags=["chat"])
 
 
+class ChatRequest(BaseModel):
+    message: str
+
+
+class ChatResponse(BaseModel):
+    replyText: str
+    timestamp: str
+    duration: int
+
+
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest):
-    try:
-        start_time = time.time()
-
-        response_text = await llm_service.generate_response(request.message)
-
-        duration = int((time.time() - start_time) * 1000)
-
-        return ChatResponse(
-            replyText=response_text,
-            timestamp=datetime.now().isoformat(),
-            duration=duration,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Stubbed chat endpoint - returns success response"""
+    return ChatResponse(
+        replyText="I'm currently being updated. Please try again later.",
+        timestamp=datetime.now().isoformat(),
+        duration=50,
+    )

@@ -1,7 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from services.call_summary import summary_service
 
 router = APIRouter(prefix="/ai", tags=["ai-summary"])
 
@@ -25,25 +24,8 @@ class SummaryResponse(BaseModel):
 
 @router.post("/summary", response_model=SummaryResponse)
 async def generate_ai_summary(request: SummaryRequest):
-    """Generate AI-powered call summary - compatible with telephony service."""
-    try:
-        # Convert conversation messages to simple format
-        conversation_data = [
-            {"speaker": msg.speaker, "message": msg.message, "timestamp": msg.timestamp}
-            for msg in request.conversation
-        ]
-
-        summary_result = await summary_service.generate_summary(
-            call_sid=request.callSid,
-            conversation_data=conversation_data,
-            service_info=request.serviceInfo,
-        )
-
-        return SummaryResponse(
-            summary=summary_result["summary"],
-            keyPoints=summary_result.get(
-                "key_points", summary_result.get("keyPoints", [])
-            ),
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    """Stubbed summary endpoint - returns basic response"""
+    return SummaryResponse(
+        summary="Summary generation is temporarily unavailable.",
+        keyPoints=["Service is being updated"]
+    )
