@@ -8,7 +8,9 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CreateServiceDto } from './dto/create-service.dto';
@@ -18,6 +20,7 @@ import { ServiceService } from './service.service';
 
 @ApiTags('service')
 @Controller('service')
+@UseGuards(AuthGuard('jwt'))
 export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 
