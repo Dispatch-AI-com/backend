@@ -95,14 +95,9 @@ export class AuthController {
   ): Promise<{ user: UserResponseDto; csrfToken: string }> {
     const { user, token, csrfToken } = await this.authService.login(loginDto);
 
-    const safeUser: UserResponseDto = {
-      _id: String(user._id),
-      email: String(user.email),
-      firstName: user.firstName ? String(user.firstName) : undefined,
-      lastName: user.lastName ? String(user.lastName) : undefined,
-      role: user.role,
-      status: user.status,
-    };
+    const safeUser = plainToInstance(UserResponseDto, user, {
+      excludeExtraneousValues: true,
+    });
 
     // Set httpOnly cookie instead of returning token
     res.cookie('authToken', token, {
