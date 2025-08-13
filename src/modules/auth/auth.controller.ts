@@ -50,12 +50,24 @@ export class AuthController {
   @Post('signup')
   async createUser(
     @Body() createUserDto: CreateUserDto,
-  ): Promise<{ user: UserResponseDto; token: string }> {
-    const { user, token } = await this.authService.createUser(createUserDto);
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ user: UserResponseDto; csrfToken: string }> {
+    const { user, token, csrfToken } =
+      await this.authService.createUser(createUserDto);
     const safeUser = plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true,
     });
-    return { user: safeUser, token };
+
+    // Set httpOnly cookie instead of returning token
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+    });
+
+    return { user: safeUser, csrfToken };
   }
 
   @ApiOperation({
@@ -79,8 +91,9 @@ export class AuthController {
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
-  ): Promise<{ user: UserResponseDto; token: string }> {
-    const { user, token } = await this.authService.login(loginDto);
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ user: UserResponseDto; csrfToken: string }> {
+    const { user, token, csrfToken } = await this.authService.login(loginDto);
 
     const safeUser: UserResponseDto = {
       _id: String(user._id),
@@ -89,7 +102,17 @@ export class AuthController {
       lastName: user.lastName ? String(user.lastName) : undefined,
       role: user.role,
     };
-    return { user: safeUser, token };
+
+    // Set httpOnly cookie instead of returning token
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+    });
+
+    return { user: safeUser, csrfToken };
   }
 
   @ApiOperation({
@@ -114,15 +137,56 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthRedirect(@Req() req: Request, @Res() res: Response): void {
-    const { user, token } = req.user as {
+    const { user, token, csrfToken } = req.user as {
       user: Record<string, unknown>;
       token: string;
+      csrfToken: string;
     };
 
-    // Redirect to frontend with token
+    // Set httpOnly cookie
+    res.cookie('authToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+    });
+
+    // Redirect to frontend with user data and CSRF token (not the JWT token)
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
-      `${frontendUrl}/auth/callback?token=${token}&user=${encodeURIComponent(JSON.stringify(user))}`,
+      `${frontendUrl}/auth/callback?csrfToken=${csrfToken}&user=${encodeURIComponent(JSON.stringify(user))}`,
     );
+  }
+
+  @ApiOperation({
+    summary: 'User Logout',
+    description: 'Logout and clear authentication cookies',
+  })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  @Post('logout')
+  logout(@Res({ passthrough: true }) res: Response): { message: string } {
+    // Clear the httpOnly cookie
+    res.clearCookie('authToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      path: '/',
+    });
+
+    return { message: 'Logout successful' };
+  }
+
+  @ApiOperation({
+    summary: 'Check Authentication Status',
+    description: 'Validate current authentication status',
+  })
+  @ApiResponse({ status: 200, description: 'User is authenticated' })
+  @ApiResponse({ status: 401, description: 'User is not authenticated' })
+  @Get('me')
+  @UseGuards(AuthGuard('jwt'))
+  getCurrentUser(@Req() req: Request): { user: UserResponseDto } {
+    const user = req.user as UserResponseDto;
+    return { user };
   }
 }
