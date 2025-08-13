@@ -101,6 +101,7 @@ export class AuthController {
       firstName: user.firstName ? String(user.firstName) : undefined,
       lastName: user.lastName ? String(user.lastName) : undefined,
       role: user.role,
+      status: user.status,
     };
 
     // Set httpOnly cookie instead of returning token
