@@ -1,15 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 
 import { JwtUserDto } from '../dto/jwt-user.dto';
+import { UserStatus } from '@/modules/user/enum/userStatus.enum';
 
 interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  status: string;
 }
 
 @Injectable()
@@ -29,10 +31,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload): JwtUserDto {
+    if (payload.status === UserStatus.banned) {
+      throw new UnauthorizedException('User account is banned');
+    }
+
     return {
       userId: payload.sub,
       email: payload.email,
       role: payload.role,
+      status: payload.status,
     };
   }
 }
