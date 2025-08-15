@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Req,
@@ -12,10 +13,12 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
 import { Request, Response } from 'express';
 
+import { CSRFProtected } from '@/common/decorators/csrf-protected.decorator';
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
+import { generateCSRFToken } from '@/utils/csrf.util';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -51,14 +54,14 @@ export class AuthController {
   async createUser(
     @Body() createUserDto: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ user: UserResponseDto; csrfToken: string }> {
+  ): Promise<{ user: UserResponseDto }> {
     const { user, token, csrfToken } =
       await this.authService.createUser(createUserDto);
     const safeUser = plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true,
     });
 
-    // Set httpOnly cookie instead of returning token
+    // Set JWT token as httpOnly cookie
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -67,7 +70,16 @@ export class AuthController {
       path: '/',
     });
 
-    return { user: safeUser, csrfToken };
+    // Set CSRF token as httpOnly cookie
+    res.cookie('csrfToken', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+    });
+
+    return { user: safeUser };
   }
 
   @ApiOperation({
@@ -92,14 +104,14 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ user: UserResponseDto; csrfToken: string }> {
+  ): Promise<{ user: UserResponseDto }> {
     const { user, token, csrfToken } = await this.authService.login(loginDto);
 
     const safeUser = plainToInstance(UserResponseDto, user, {
       excludeExtraneousValues: true,
     });
 
-    // Set httpOnly cookie instead of returning token
+    // Set JWT token as httpOnly cookie
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -108,7 +120,16 @@ export class AuthController {
       path: '/',
     });
 
-    return { user: safeUser, csrfToken };
+    // Set CSRF token as httpOnly cookie
+    res.cookie('csrfToken', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+    });
+
+    return { user: safeUser };
   }
 
   @ApiOperation({
@@ -139,7 +160,7 @@ export class AuthController {
       csrfToken: string;
     };
 
-    // Set httpOnly cookie
+    // Set JWT token as httpOnly cookie
     res.cookie('authToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -148,10 +169,19 @@ export class AuthController {
       path: '/',
     });
 
-    // Redirect to frontend with user data and CSRF token (not the JWT token)
+    // Set CSRF token as httpOnly cookie
+    res.cookie('csrfToken', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+    });
+
+    // Redirect to frontend with user data only (tokens are in cookies)
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
-      `${frontendUrl}/auth/callback?csrfToken=${csrfToken}&user=${encodeURIComponent(JSON.stringify(user))}`,
+      `${frontendUrl}/auth/callback?user=${encodeURIComponent(JSON.stringify(user))}`,
     );
   }
 
@@ -161,8 +191,9 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Logout successful' })
   @Post('logout')
+  @CSRFProtected()
   logout(@Res({ passthrough: true }) res: Response): { message: string } {
-    // Clear the httpOnly cookie
+    // Clear the JWT token cookie
     res.clearCookie('authToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -170,7 +201,59 @@ export class AuthController {
       path: '/',
     });
 
+    // Clear the CSRF token cookie
+    res.clearCookie('csrfToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      path: '/',
+    });
+
     return { message: 'Logout successful' };
+  }
+
+  @ApiOperation({
+    summary: 'Refresh CSRF Token',
+    description: 'Generate a new CSRF token and update cookie',
+  })
+  @ApiResponse({ status: 200, description: 'CSRF token refreshed' })
+  @ApiResponse({ status: 401, description: 'User is not authenticated' })
+  @Post('refresh-csrf')
+  @UseGuards(AuthGuard('jwt'))
+  refreshCSRFToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): { message: string } {
+    const newCsrfToken = generateCSRFToken();
+
+    // Set new CSRF token as httpOnly cookie
+    res.cookie('csrfToken', newCsrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      path: '/',
+    });
+
+    return { message: 'CSRF token refreshed successfully' };
+  }
+
+  @ApiOperation({
+    summary: 'Get CSRF Token',
+    description: 'Get current CSRF token from cookie',
+  })
+  @ApiResponse({ status: 200, description: 'CSRF token retrieved' })
+  @ApiResponse({ status: 401, description: 'User is not authenticated' })
+  @Get('csrf-token')
+  @UseGuards(AuthGuard('jwt'))
+  getCSRFToken(@Req() req: Request): { csrfToken: string } {
+    const csrfToken = req.cookies.csrfToken as string;
+
+    if (!csrfToken) {
+      throw new ForbiddenException('CSRF token not found');
+    }
+
+    return { csrfToken };
   }
 
   @ApiOperation({

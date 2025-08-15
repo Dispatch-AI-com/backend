@@ -18,7 +18,12 @@ export class CSRFGuard implements CanActivate {
       return true;
     }
 
-    const csrfToken = request.headers['x-csrf-token'] as string;
+    // Try to get CSRF token from header first, then from cookie
+    let csrfToken = request.headers['x-csrf-token'] as string;
+
+    if (!csrfToken) {
+      csrfToken = request.cookies.csrfToken as string;
+    }
 
     if (!csrfToken) {
       throw new ForbiddenException('CSRF token is required');
