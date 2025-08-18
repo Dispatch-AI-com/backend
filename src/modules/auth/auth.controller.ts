@@ -238,23 +238,8 @@ export class AuthController {
     return { message: 'CSRF token refreshed successfully' };
   }
 
-  @ApiOperation({
-    summary: 'Get CSRF Token',
-    description: 'Get current CSRF token from cookie',
-  })
-  @ApiResponse({ status: 200, description: 'CSRF token retrieved' })
-  @ApiResponse({ status: 401, description: 'User is not authenticated' })
-  @Get('csrf-token')
-  @UseGuards(AuthGuard('jwt'))
-  getCSRFToken(@Req() req: Request): { csrfToken: string } {
-    const csrfToken = req.cookies.csrfToken as string;
-
-    if (!csrfToken) {
-      throw new ForbiddenException('CSRF token not found');
-    }
-
-    return { csrfToken };
-  }
+  // CSRF tokens should not be exposed via API endpoints
+  // They should only be available via httpOnly cookies
 
   @ApiOperation({
     summary: 'Check Authentication Status',
