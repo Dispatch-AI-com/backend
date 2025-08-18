@@ -22,7 +22,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromExtractors([
         // Extract JWT from httpOnly cookie instead of Authorization header
         (request: Request): string | null => {
-          const token = request.cookies.authToken;
+          const token = request.cookies.jwtToken;
           return typeof token === 'string' ? token : null;
         },
       ]),

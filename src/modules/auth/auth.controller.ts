@@ -62,7 +62,7 @@ export class AuthController {
     });
 
     // Set JWT token as httpOnly cookie
-    res.cookie('authToken', token, {
+    res.cookie('jwtToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
@@ -112,7 +112,7 @@ export class AuthController {
     });
 
     // Set JWT token as httpOnly cookie
-    res.cookie('authToken', token, {
+    res.cookie('jwtToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
@@ -161,7 +161,7 @@ export class AuthController {
     };
 
     // Set JWT token as httpOnly cookie
-    res.cookie('authToken', token, {
+    res.cookie('jwtToken', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
@@ -194,7 +194,7 @@ export class AuthController {
   @CSRFProtected()
   logout(@Res({ passthrough: true }) res: Response): { message: string } {
     // Clear the JWT token cookie
-    res.clearCookie('authToken', {
+    res.clearCookie('jwtToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
