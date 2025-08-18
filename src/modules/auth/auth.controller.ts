@@ -178,10 +178,10 @@ export class AuthController {
       path: '/',
     });
 
-    // Redirect to frontend with user data only (tokens are in cookies)
+    // Redirect to frontend with user data and csrfToken (JWT token is in httpOnly cookie)
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
-      `${frontendUrl}/auth/callback?user=${encodeURIComponent(JSON.stringify(user))}`,
+      `${frontendUrl}/auth/callback?user=${encodeURIComponent(JSON.stringify(user))}&csrfToken=${encodeURIComponent(csrfToken)}`,
     );
   }
 
