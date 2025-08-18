@@ -120,9 +120,9 @@ export class AuthController {
       path: '/',
     });
 
-    // Set CSRF token as httpOnly cookie
+    // Set CSRF token as regular cookie (not httpOnly)
     res.cookie('csrfToken', csrfToken, {
-      httpOnly: true,
+      httpOnly: false, 
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -169,16 +169,16 @@ export class AuthController {
       path: '/',
     });
 
-    // Set CSRF token as httpOnly cookie
+    // Set CSRF token as regular cookie (not httpOnly)
     res.cookie('csrfToken', csrfToken, {
-      httpOnly: true,
+      httpOnly: false, // 允许 JavaScript 读取
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/',
     });
 
-    // Redirect to frontend with user data and csrfToken (JWT token is in httpOnly cookie)
+    // Redirect to frontend with user data (CSRF token is in regular cookie)
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
       `${frontendUrl}/auth/callback?user=${encodeURIComponent(JSON.stringify(user))}&csrfToken=${encodeURIComponent(csrfToken)}`,
@@ -203,7 +203,7 @@ export class AuthController {
 
     // Clear the CSRF token cookie
     res.clearCookie('csrfToken', {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       path: '/',
@@ -226,9 +226,9 @@ export class AuthController {
   ): { message: string } {
     const newCsrfToken = generateCSRFToken();
 
-    // Set new CSRF token as httpOnly cookie
+    // Set new CSRF token as regular cookie (not httpOnly)
     res.cookie('csrfToken', newCsrfToken, {
-      httpOnly: true,
+      httpOnly: false, // 允许 JavaScript 读取
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -238,8 +238,23 @@ export class AuthController {
     return { message: 'CSRF token refreshed successfully' };
   }
 
-  // CSRF tokens should not be exposed via API endpoints
-  // They should only be available via httpOnly cookies
+  @ApiOperation({
+    summary: 'Get CSRF Token',
+    description: 'Get current CSRF token from cookie',
+  })
+  @ApiResponse({ status: 200, description: 'CSRF token retrieved' })
+  @ApiResponse({ status: 401, description: 'User is not authenticated' })
+  @Get('csrf-token')
+  @UseGuards(AuthGuard('jwt'))
+  getCSRFToken(@Req() req: Request): { csrfToken: string } {
+    const csrfToken = req.cookies.csrfToken as string;
+
+    if (!csrfToken) {
+      throw new ForbiddenException('CSRF token not found');
+    }
+
+    return { csrfToken };
+  }
 
   @ApiOperation({
     summary: 'Check Authentication Status',
