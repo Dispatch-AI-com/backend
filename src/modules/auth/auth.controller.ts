@@ -54,7 +54,7 @@ export class AuthController {
   async createUser(
     @Body() createUserDto: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ user: UserResponseDto }> {
+  ): Promise<{ user: UserResponseDto; csrfToken: string }> {
     const { user, token, csrfToken } =
       await this.authService.createUser(createUserDto);
     const safeUser = plainToInstance(UserResponseDto, user, {
@@ -79,7 +79,7 @@ export class AuthController {
       path: '/',
     });
 
-    return { user: safeUser };
+    return { user: safeUser, csrfToken };
   }
 
   @ApiOperation({
@@ -104,7 +104,7 @@ export class AuthController {
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<{ user: UserResponseDto }> {
+  ): Promise<{ user: UserResponseDto; csrfToken: string }> {
     const { user, token, csrfToken } = await this.authService.login(loginDto);
 
     const safeUser = plainToInstance(UserResponseDto, user, {
@@ -129,7 +129,7 @@ export class AuthController {
       path: '/',
     });
 
-    return { user: safeUser };
+    return { user: safeUser, csrfToken };
   }
 
   @ApiOperation({
