@@ -7,7 +7,7 @@ import {
   ServiceFormFieldDocument,
 } from './schema/service-form-field.schema';
 
-// Define proper types for better type safety
+// Define interfaces for better type safety
 interface CreateFormFieldDto {
   serviceId: string;
   fieldName: string;
@@ -41,7 +41,63 @@ export class ServiceFormFieldService {
   async create(
     createServiceFormFieldDto: CreateFormFieldDto,
   ): Promise<ServiceFormField> {
-    const createdField = new this.formFieldModel(createServiceFormFieldDto);
+    // Validate and sanitize input data
+    if (typeof createServiceFormFieldDto !== 'object') {
+      throw new Error('Invalid input data provided');
+    }
+
+    if (Array.isArray(createServiceFormFieldDto)) {
+      throw new Error('Invalid input data provided');
+    }
+
+    const { serviceId, fieldName, fieldType, isRequired, options } =
+      createServiceFormFieldDto;
+
+    // Validate required fields
+    if (
+      !serviceId ||
+      typeof serviceId !== 'string' ||
+      serviceId.trim().length === 0
+    ) {
+      throw new Error('Invalid serviceId provided');
+    }
+
+    if (
+      !fieldName ||
+      typeof fieldName !== 'string' ||
+      fieldName.trim().length === 0
+    ) {
+      throw new Error('Invalid fieldName provided');
+    }
+
+    if (
+      !fieldType ||
+      typeof fieldType !== 'string' ||
+      fieldType.trim().length === 0
+    ) {
+      throw new Error('Invalid fieldType provided');
+    }
+
+    if (typeof isRequired !== 'boolean') {
+      throw new Error('Invalid isRequired provided');
+    }
+
+    if (!Array.isArray(options)) {
+      throw new Error('Invalid options provided');
+    }
+
+    // Create sanitized data object
+    const sanitizedData = {
+      serviceId: serviceId.trim(),
+      fieldName: fieldName.trim(),
+      fieldType: fieldType.trim(),
+      isRequired,
+      options: options.filter(
+        item => typeof item === 'string' && item.trim().length > 0,
+      ),
+    };
+
+    const createdField = new this.formFieldModel(sanitizedData);
     return createdField.save();
   }
 
@@ -74,8 +130,13 @@ export class ServiceFormFieldService {
       return null;
     }
 
-    // Only allow whitelisted fields to be updated
-    const allowedFields = ['fieldName', 'fieldType', 'isRequired', 'options'];
+    // Only allow whitelisted fields to be updated with strict validation
+    const allowedFields = [
+      'fieldName',
+      'fieldType',
+      'isRequired',
+      'options',
+    ] as const;
     const sanitizedUpdate: Record<string, unknown> = {};
 
     for (const key of allowedFields) {
@@ -84,20 +145,63 @@ export class ServiceFormFieldService {
       ) {
         const value =
           updateServiceFormFieldDto[key as keyof UpdateFormFieldDto];
+
+        // Strict type validation for each field
         if (key === 'fieldName' || key === 'fieldType') {
-          if (typeof value === 'string') {
-            sanitizedUpdate[key] = value;
+          if (typeof value === 'string' && value.trim().length > 0) {
+            sanitizedUpdate[key] = value.trim();
           }
         } else if (key === 'isRequired') {
           if (typeof value === 'boolean') {
             sanitizedUpdate[key] = value;
           }
-        } else if (key === 'options') {
-          if (Array.isArray(value)) {
-            sanitizedUpdate[key] = value;
+        } else {
+          // key must be 'options' at this point
+          if (
+            Array.isArray(value) &&
+            value.every(item => typeof item === 'string')
+          ) {
+            sanitizedUpdate[key] = value.filter(item => item.trim().length > 0);
           }
         }
       }
+    }
+
+    // Additional security check: ensure sanitizedUpdate only contains validated data
+    if (Object.keys(sanitizedUpdate).length === 0) {
+      return null; // No valid fields to update
+    }
+
+    // Validate that all values in sanitizedUpdate are of expected types
+    const keysToRemove: string[] = [];
+
+    for (const [key, value] of Object.entries(sanitizedUpdate)) {
+      if (!allowedFields.includes(key as (typeof allowedFields)[number])) {
+        keysToRemove.push(key);
+        continue;
+      }
+
+      if (key === 'fieldName' || key === 'fieldType') {
+        if (typeof value !== 'string' || value.trim().length === 0) {
+          keysToRemove.push(key);
+        }
+      } else if (key === 'isRequired') {
+        if (typeof value !== 'boolean') {
+          keysToRemove.push(key);
+        }
+      } else {
+        if (
+          !Array.isArray(value) ||
+          !value.every(item => typeof item === 'string')
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+    }
+
+    // Remove invalid keys
+    for (const key of keysToRemove) {
+      sanitizedUpdate[key] = undefined;
     }
 
     return this.formFieldModel
@@ -126,21 +230,53 @@ export class ServiceFormFieldService {
     serviceId: string,
     fields: FormFieldInput[],
   ): Promise<ServiceFormField[]> {
+    // Validate serviceId
+    if (
+      !serviceId ||
+      typeof serviceId !== 'string' ||
+      serviceId.trim().length === 0
+    ) {
+      throw new Error('Invalid serviceId provided');
+    }
+
+    // Validate fields array
+    if (!Array.isArray(fields)) {
+      throw new Error('Fields must be an array');
+    }
+
     // First delete all existing fields for this service
     await this.removeByServiceId(serviceId);
 
-    // If there are new fields, insert them
+    // If there are new fields, insert them with strict validation
     if (fields.length > 0) {
-      const fieldsWithServiceId = fields.map(field => ({
-        serviceId,
-        fieldName: field.fieldName ?? '',
-        fieldType: field.fieldType ?? '',
-        isRequired: field.isRequired ?? false,
-        options: field.options ?? [],
-      }));
+      const validatedFields = fields
+        .filter(
+          field =>
+            typeof field === 'object' &&
+            !Array.isArray(field) &&
+            typeof field.fieldName === 'string' &&
+            field.fieldName.trim().length > 0 &&
+            typeof field.fieldType === 'string' &&
+            field.fieldType.trim().length > 0 &&
+            typeof field.isRequired === 'boolean' &&
+            Array.isArray(field.options),
+        )
+        .map(field => ({
+          serviceId: serviceId.trim(),
+          fieldName: field.fieldName.trim(),
+          fieldType: field.fieldType.trim(),
+          isRequired: field.isRequired,
+          options: field.options.filter(
+            item => typeof item === 'string' && item.trim().length > 0,
+          ),
+        }));
+
+      if (validatedFields.length === 0) {
+        return [];
+      }
 
       const createdFields =
-        await this.formFieldModel.insertMany(fieldsWithServiceId);
+        await this.formFieldModel.insertMany(validatedFields);
       return createdFields.map(field => field.toObject());
     }
 
