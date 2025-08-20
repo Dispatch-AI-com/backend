@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 
 import {
   ServiceFormField,
@@ -32,11 +32,20 @@ export class ServiceFormFieldService {
 
   // Query a single form field by ID
   async findOne(id: string): Promise<ServiceFormField | null> {
+    // Validate that id is a valid MongoDB ObjectId
+    if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
     return this.formFieldModel.findById(id).exec();
   }
 
   // Update form field
   async update(id: string, updateServiceFormFieldDto: any): Promise<ServiceFormField | null> {
+    // Validate that id is a valid MongoDB ObjectId
+    if (!Types.ObjectId.isValid(id)) {
+      return null;
+    }
+    
     // Only allow whitelisted fields to be updated
     const allowedFields = ['fieldName', 'fieldType', 'isRequired', 'options'];
     const sanitizedUpdate: any = {};
@@ -67,6 +76,10 @@ export class ServiceFormFieldService {
 
   // Delete a single form field
   async remove(id: string): Promise<void> {
+    // Validate that id is a valid MongoDB ObjectId
+    if (!Types.ObjectId.isValid(id)) {
+      return;
+    }
     await this.formFieldModel.findByIdAndDelete(id).exec();
   }
 
