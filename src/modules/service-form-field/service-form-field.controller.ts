@@ -27,7 +27,7 @@ export class ServiceFormFieldController {
     private readonly serviceFormFieldService: ServiceFormFieldService,
   ) {}
 
-  // 创建单个表单字段
+  // Create a single form field
   @Post()
   @ApiOperation({ summary: 'Create a new service form field' })
   @ApiResponse({
@@ -39,7 +39,7 @@ export class ServiceFormFieldController {
     return this.serviceFormFieldService.create(createServiceFormFieldDto);
   }
 
-  // 查询所有表单字段，支持按 serviceId 过滤
+  // Query all form fields, supports filtering by serviceId
   @Get()
   @ApiOperation({ summary: 'Get all service form fields or by serviceId' })
   @ApiResponse({
@@ -54,7 +54,7 @@ export class ServiceFormFieldController {
     return this.serviceFormFieldService.findAll();
   }
 
-  // 根据 ID 查询单个表单字段
+  // Query a single form field by ID
   @Get(':id')
   @ApiOperation({ summary: 'Get a service form field by ID' })
   @ApiResponse({
@@ -66,7 +66,7 @@ export class ServiceFormFieldController {
     return this.serviceFormFieldService.findOne(id);
   }
 
-  // 更新表单字段
+  // Update form field
   @Patch(':id')
   @ApiOperation({ summary: 'Update a service form field' })
   @ApiResponse({
@@ -81,7 +81,7 @@ export class ServiceFormFieldController {
     return this.serviceFormFieldService.update(id, updateServiceFormFieldDto);
   }
 
-  // 删除表单字段
+  // Delete form field
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a service form field' })
   @ApiResponse({
@@ -92,7 +92,7 @@ export class ServiceFormFieldController {
     return this.serviceFormFieldService.remove(id);
   }
 
-  // 批量保存表单字段（用于 Custom Form）
+  // Batch save form fields (for Custom Form)
   @Post('batch/:serviceId')
   @ApiOperation({ summary: 'Save batch of form fields for a service' })
   @ApiResponse({
@@ -106,7 +106,7 @@ export class ServiceFormFieldController {
   ): Promise<ServiceFormField[]> {
     const fields = body.fields || [];
     
-    // 验证数据
+    // Validate data
     if (!Array.isArray(fields)) {
       throw new Error('Fields must be an array');
     }

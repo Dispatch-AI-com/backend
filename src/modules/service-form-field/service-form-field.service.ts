@@ -14,50 +14,60 @@ export class ServiceFormFieldService {
     private readonly formFieldModel: Model<ServiceFormFieldDocument>,
   ) {}
 
-  // 创建单个表单字段
+  // Create a single form field
   async create(createServiceFormFieldDto: any): Promise<ServiceFormField> {
     const createdField = new this.formFieldModel(createServiceFormFieldDto);
     return createdField.save();
   }
 
-  // 查询所有表单字段
+  // Query all form fields
   async findAll(): Promise<ServiceFormField[]> {
     return this.formFieldModel.find().exec();
   }
 
-  // 根据 serviceId 查询表单字段
+  // Query form fields by serviceId
   async findByServiceId(serviceId: string): Promise<ServiceFormField[]> {
-    return this.formFieldModel.find({ serviceId }).exec();
+    return this.formFieldModel.find({ serviceId: { $eq: serviceId } }).exec();
   }
 
-  // 根据 ID 查询单个表单字段
+  // Query a single form field by ID
   async findOne(id: string): Promise<ServiceFormField | null> {
     return this.formFieldModel.findById(id).exec();
   }
 
-  // 更新表单字段
+  // Update form field
   async update(id: string, updateServiceFormFieldDto: any): Promise<ServiceFormField | null> {
+    // Only allow whitelisted fields to be updated
+    const allowedFields = ['fieldName', 'fieldType', 'isRequired', 'options'];
+    const sanitizedUpdate: any = {};
+    
+    for (const key of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(updateServiceFormFieldDto, key)) {
+        sanitizedUpdate[key] = updateServiceFormFieldDto[key];
+      }
+    }
+    
     return this.formFieldModel
-      .findByIdAndUpdate(id, updateServiceFormFieldDto, { new: true })
+      .findByIdAndUpdate(id, sanitizedUpdate, { new: true })
       .exec();
   }
 
-  // 删除单个表单字段
+  // Delete a single form field
   async remove(id: string): Promise<void> {
     await this.formFieldModel.findByIdAndDelete(id).exec();
   }
 
-  // 根据 serviceId 删除所有相关表单字段
+  // Delete all form fields by serviceId
   async removeByServiceId(serviceId: string): Promise<void> {
-    await this.formFieldModel.deleteMany({ serviceId }).exec();
+    await this.formFieldModel.deleteMany({ serviceId: { $eq: serviceId } }).exec();
   }
 
-  // 批量保存表单字段（先删除旧的，再插入新的）
+  // Batch save form fields (delete old ones first, then insert new ones)
   async saveBatch(serviceId: string, fields: any[]): Promise<ServiceFormField[]> {
-    // 先删除该服务的所有现有字段
+    // First delete all existing fields for this service
     await this.removeByServiceId(serviceId);
     
-    // 如果有新字段，则插入
+    // If there are new fields, insert them
     if (fields && fields.length > 0) {
       const fieldsWithServiceId = fields.map(field => ({
         serviceId,
