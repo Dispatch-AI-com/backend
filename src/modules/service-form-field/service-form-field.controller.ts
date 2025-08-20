@@ -1,4 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  Query 
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Model } from 'mongoose';
@@ -6,7 +15,8 @@ import { Model } from 'mongoose';
 import {
   ServiceFormField,
   ServiceFormFieldDocument,
-} from '@/modules/service-form-field/schema/service-form-field.schema';
+} from './schema/service-form-field.schema';
+import { ServiceFormFieldService } from './service-form-field.service';
 
 @ApiTags('service-form-fields')
 @Controller('service-form-fields')
@@ -14,16 +24,93 @@ export class ServiceFormFieldController {
   constructor(
     @InjectModel(ServiceFormField.name)
     private readonly formFieldModel: Model<ServiceFormFieldDocument>,
+    private readonly serviceFormFieldService: ServiceFormFieldService,
   ) {}
 
+  // 创建单个表单字段
+  @Post()
+  @ApiOperation({ summary: 'Create a new service form field' })
+  @ApiResponse({
+    status: 201,
+    type: ServiceFormField,
+    description: 'Service form field created successfully.',
+  })
+  async create(@Body() createServiceFormFieldDto: any): Promise<ServiceFormField> {
+    return this.serviceFormFieldService.create(createServiceFormFieldDto);
+  }
+
+  // 查询所有表单字段，支持按 serviceId 过滤
   @Get()
-  @ApiOperation({ summary: 'Get all service form fields' })
+  @ApiOperation({ summary: 'Get all service form fields or by serviceId' })
   @ApiResponse({
     status: 200,
     type: [ServiceFormField],
-    description: 'Return all service form fields.',
+    description: 'Return all service form fields or filtered by serviceId.',
   })
-  async findAll(): Promise<ServiceFormField[]> {
-    return this.formFieldModel.find().exec();
+  async findAll(@Query('serviceId') serviceId?: string): Promise<ServiceFormField[]> {
+    if (serviceId) {
+      return this.serviceFormFieldService.findByServiceId(serviceId);
+    }
+    return this.serviceFormFieldService.findAll();
+  }
+
+  // 根据 ID 查询单个表单字段
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a service form field by ID' })
+  @ApiResponse({
+    status: 200,
+    type: ServiceFormField,
+    description: 'Return a service form field by ID.',
+  })
+  async findOne(@Param('id') id: string): Promise<ServiceFormField | null> {
+    return this.serviceFormFieldService.findOne(id);
+  }
+
+  // 更新表单字段
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update a service form field' })
+  @ApiResponse({
+    status: 200,
+    type: ServiceFormField,
+    description: 'Service form field updated successfully.',
+  })
+  async update(
+    @Param('id') id: string,
+    @Body() updateServiceFormFieldDto: any,
+  ): Promise<ServiceFormField | null> {
+    return this.serviceFormFieldService.update(id, updateServiceFormFieldDto);
+  }
+
+  // 删除表单字段
+  @Delete(':id')
+  @ApiOperation({ summary: 'Delete a service form field' })
+  @ApiResponse({
+    status: 200,
+    description: 'Service form field deleted successfully.',
+  })
+  async remove(@Param('id') id: string): Promise<void> {
+    return this.serviceFormFieldService.remove(id);
+  }
+
+  // 批量保存表单字段（用于 Custom Form）
+  @Post('batch/:serviceId')
+  @ApiOperation({ summary: 'Save batch of form fields for a service' })
+  @ApiResponse({
+    status: 201,
+    type: [ServiceFormField],
+    description: 'Batch of form fields saved successfully.',
+  })
+  async saveBatch(
+    @Param('serviceId') serviceId: string,
+    @Body() body: any,
+  ): Promise<ServiceFormField[]> {
+    const fields = body.fields || [];
+    
+    // 验证数据
+    if (!Array.isArray(fields)) {
+      throw new Error('Fields must be an array');
+    }
+    
+    return this.serviceFormFieldService.saveBatch(serviceId, fields);
   }
 }
