@@ -7,6 +7,29 @@ import {
   ServiceFormFieldDocument,
 } from './schema/service-form-field.schema';
 
+// Define proper types for better type safety
+interface CreateFormFieldDto {
+  serviceId: string;
+  fieldName: string;
+  fieldType: string;
+  isRequired: boolean;
+  options: string[];
+}
+
+interface UpdateFormFieldDto {
+  fieldName?: string;
+  fieldType?: string;
+  isRequired?: boolean;
+  options?: string[];
+}
+
+interface FormFieldInput {
+  fieldName?: string;
+  fieldType?: string;
+  isRequired?: boolean;
+  options?: string[];
+}
+
 @Injectable()
 export class ServiceFormFieldService {
   constructor(
@@ -15,7 +38,9 @@ export class ServiceFormFieldService {
   ) {}
 
   // Create a single form field
-  async create(createServiceFormFieldDto: any): Promise<ServiceFormField> {
+  async create(
+    createServiceFormFieldDto: CreateFormFieldDto,
+  ): Promise<ServiceFormField> {
     const createdField = new this.formFieldModel(createServiceFormFieldDto);
     return createdField.save();
   }
@@ -40,19 +65,25 @@ export class ServiceFormFieldService {
   }
 
   // Update form field
-  async update(id: string, updateServiceFormFieldDto: any): Promise<ServiceFormField | null> {
+  async update(
+    id: string,
+    updateServiceFormFieldDto: UpdateFormFieldDto,
+  ): Promise<ServiceFormField | null> {
     // Validate that id is a valid MongoDB ObjectId
     if (!Types.ObjectId.isValid(id)) {
       return null;
     }
-    
+
     // Only allow whitelisted fields to be updated
     const allowedFields = ['fieldName', 'fieldType', 'isRequired', 'options'];
-    const sanitizedUpdate: any = {};
-    
+    const sanitizedUpdate: Record<string, unknown> = {};
+
     for (const key of allowedFields) {
-      if (Object.prototype.hasOwnProperty.call(updateServiceFormFieldDto, key)) {
-        const value = updateServiceFormFieldDto[key];
+      if (
+        Object.prototype.hasOwnProperty.call(updateServiceFormFieldDto, key)
+      ) {
+        const value =
+          updateServiceFormFieldDto[key as keyof UpdateFormFieldDto];
         if (key === 'fieldName' || key === 'fieldType') {
           if (typeof value === 'string') {
             sanitizedUpdate[key] = value;
@@ -68,7 +99,7 @@ export class ServiceFormFieldService {
         }
       }
     }
-    
+
     return this.formFieldModel
       .findByIdAndUpdate(id, sanitizedUpdate, { new: true })
       .exec();
@@ -85,28 +116,34 @@ export class ServiceFormFieldService {
 
   // Delete all form fields by serviceId
   async removeByServiceId(serviceId: string): Promise<void> {
-    await this.formFieldModel.deleteMany({ serviceId: { $eq: serviceId } }).exec();
+    await this.formFieldModel
+      .deleteMany({ serviceId: { $eq: serviceId } })
+      .exec();
   }
 
   // Batch save form fields (delete old ones first, then insert new ones)
-  async saveBatch(serviceId: string, fields: any[]): Promise<ServiceFormField[]> {
+  async saveBatch(
+    serviceId: string,
+    fields: FormFieldInput[],
+  ): Promise<ServiceFormField[]> {
     // First delete all existing fields for this service
     await this.removeByServiceId(serviceId);
-    
+
     // If there are new fields, insert them
-    if (fields && fields.length > 0) {
+    if (fields.length > 0) {
       const fieldsWithServiceId = fields.map(field => ({
         serviceId,
-        fieldName: field.fieldName || '',
-        fieldType: field.fieldType || '',
-        isRequired: field.isRequired || false,
-        options: field.options || [],
+        fieldName: field.fieldName ?? '',
+        fieldType: field.fieldType ?? '',
+        isRequired: field.isRequired ?? false,
+        options: field.options ?? [],
       }));
-      
-      const createdFields = await this.formFieldModel.insertMany(fieldsWithServiceId);
+
+      const createdFields =
+        await this.formFieldModel.insertMany(fieldsWithServiceId);
       return createdFields.map(field => field.toObject());
     }
-    
+
     return [];
   }
 }

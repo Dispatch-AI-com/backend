@@ -1,12 +1,12 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  Query 
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -17,6 +17,31 @@ import {
   ServiceFormFieldDocument,
 } from './schema/service-form-field.schema';
 import { ServiceFormFieldService } from './service-form-field.service';
+
+// Define proper types for better type safety
+interface CreateFormFieldDto {
+  serviceId: string;
+  fieldName: string;
+  fieldType: string;
+  isRequired: boolean;
+  options: string[];
+}
+
+interface UpdateFormFieldDto {
+  fieldName?: string;
+  fieldType?: string;
+  isRequired?: boolean;
+  options?: string[];
+}
+
+interface BatchSaveDto {
+  fields: {
+    fieldName?: string;
+    fieldType?: string;
+    isRequired?: boolean;
+    options?: string[];
+  }[];
+}
 
 @ApiTags('service-form-fields')
 @Controller('service-form-fields')
@@ -35,7 +60,9 @@ export class ServiceFormFieldController {
     type: ServiceFormField,
     description: 'Service form field created successfully.',
   })
-  async create(@Body() createServiceFormFieldDto: any): Promise<ServiceFormField> {
+  async create(
+    @Body() createServiceFormFieldDto: CreateFormFieldDto,
+  ): Promise<ServiceFormField> {
     return this.serviceFormFieldService.create(createServiceFormFieldDto);
   }
 
@@ -47,8 +74,10 @@ export class ServiceFormFieldController {
     type: [ServiceFormField],
     description: 'Return all service form fields or filtered by serviceId.',
   })
-  async findAll(@Query('serviceId') serviceId?: string): Promise<ServiceFormField[]> {
-    if (serviceId) {
+  async findAll(
+    @Query('serviceId') serviceId?: string,
+  ): Promise<ServiceFormField[]> {
+    if (serviceId !== undefined && serviceId.trim() !== '') {
       return this.serviceFormFieldService.findByServiceId(serviceId);
     }
     return this.serviceFormFieldService.findAll();
@@ -76,7 +105,7 @@ export class ServiceFormFieldController {
   })
   async update(
     @Param('id') id: string,
-    @Body() updateServiceFormFieldDto: any,
+    @Body() updateServiceFormFieldDto: UpdateFormFieldDto,
   ): Promise<ServiceFormField | null> {
     return this.serviceFormFieldService.update(id, updateServiceFormFieldDto);
   }
@@ -102,15 +131,15 @@ export class ServiceFormFieldController {
   })
   async saveBatch(
     @Param('serviceId') serviceId: string,
-    @Body() body: any,
+    @Body() body: BatchSaveDto,
   ): Promise<ServiceFormField[]> {
-    const fields = body.fields || [];
-    
+    const fields = body.fields;
+
     // Validate data
     if (!Array.isArray(fields)) {
       throw new Error('Fields must be an array');
     }
-    
+
     return this.serviceFormFieldService.saveBatch(serviceId, fields);
   }
 }

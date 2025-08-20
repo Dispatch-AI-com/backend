@@ -237,7 +237,7 @@ export class CompanyService {
 
     return company.greeting;
   }
-  
+
   async existsByAbn(abn: string): Promise<boolean> {
     return (await this.companyModel.exists({ abn })) !== null;
   }
