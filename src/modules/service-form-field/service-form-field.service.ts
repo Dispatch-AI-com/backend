@@ -43,7 +43,20 @@ export class ServiceFormFieldService {
     
     for (const key of allowedFields) {
       if (Object.prototype.hasOwnProperty.call(updateServiceFormFieldDto, key)) {
-        sanitizedUpdate[key] = updateServiceFormFieldDto[key];
+        const value = updateServiceFormFieldDto[key];
+        if (key === 'fieldName' || key === 'fieldType') {
+          if (typeof value === 'string') {
+            sanitizedUpdate[key] = value;
+          }
+        } else if (key === 'isRequired') {
+          if (typeof value === 'boolean') {
+            sanitizedUpdate[key] = value;
+          }
+        } else if (key === 'options') {
+          if (Array.isArray(value)) {
+            sanitizedUpdate[key] = value;
+          }
+        }
       }
     }
     
