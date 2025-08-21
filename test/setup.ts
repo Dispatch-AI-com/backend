@@ -4,6 +4,10 @@ import mongoose from 'mongoose';
 beforeAll(async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
+  
+  // Set mock Twilio credentials for testing
+  process.env.TWILIO_ACCOUNT_SID = 'AC_test_account_sid';
+  process.env.TWILIO_AUTH_TOKEN = 'test_auth_token';
 
   // Connect to test database
   try {
