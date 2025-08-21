@@ -47,7 +47,11 @@
     "start": "node dist/main",
     "type-check": "tsc --noEmit",
     "test": "jest --config jest.config.json",
+    "test:unit": "jest --config jest.config.json --testPathPattern=test/unit",
+    "test:e2e": "jest --config jest.config.json --testPathPattern=\"test/(calllog|transcript|transcript-chunk)/\"",
     "lint": "prettier --write \"src/**/*.ts\" && eslint --fix \"src/**/*.ts\"",
+    "lint:test": "prettier --write \"test/**/*.ts\" && eslint --fix --config eslint.test.config.mjs \"test/**/*.ts\"",
+    "lint:all": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" && eslint --fix \"src/**/*.ts\" \"test/**/*.ts\"",
     "seed": "ts-node -r tsconfig-paths/register scripts/seeds/index.ts",
     "seed:calllog": "ts-node -r tsconfig-paths/register scripts/seeds/run-calllog-seed.ts",
     "seed:telephony": "ts-node -r tsconfig-paths/register scripts/seeds/run-telephony-seed.ts"

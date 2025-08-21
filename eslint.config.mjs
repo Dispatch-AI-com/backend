@@ -58,12 +58,38 @@ export default tseslint.config(
 
   /* ---------- Jest 测试文件块 ---------- */
   {
-    files: ["tests/**/*.spec.ts", "**/*.test.ts"],
+    files: ["tests/**/*.spec.ts", "**/*.test.ts", "test/**/*.ts"],
+    languageOptions: {
+      globals: { ...globals.jest },
+      parser,
+      ecmaVersion: 2022,
+      sourceType: "module",
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     plugins: { jest: jestPlugin },
-    languageOptions: { globals: { ...globals.jest } },
     rules: {
       "jest/no-disabled-tests": "warn",
       "jest/expect-expect": "warn",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/return-await": "off",
+      "@typescript-eslint/strict-boolean-expressions": "off",
+      "@typescript-eslint/member-ordering": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/restrict-plus-operands": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@darraghor/nestjs-typed/should-specify-forbid-unknown-values": "off",
     },
   },
 

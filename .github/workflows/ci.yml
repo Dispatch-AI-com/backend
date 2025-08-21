@@ -11,10 +11,10 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🧰 Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -29,6 +29,9 @@ jobs:
 
       - name: 🔎 Run Type Check (tsc)
         run: pnpm run type-check
+
+      - name: 🧪 Run Tests
+        run: pnpm test
 
       - name: 🐍 Setup Python 3.11
         uses: actions/setup-python@v5

@@ -52,6 +52,7 @@ pipeline {
                                 sh "pnpm install --frozen-lockfile"
                                 sh "pnpm run type-check"
                                 sh "pnpm run lint"
+                                sh "pnpm test"
                                 sh "pnpm run build"
                             }
                         }
