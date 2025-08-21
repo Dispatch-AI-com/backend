@@ -52,6 +52,7 @@ export default tseslint.config(
       "@typescript-eslint/no-require-imports": "off",
       "@typescript-eslint/prefer-nullish-coalescing": "off",
       "@typescript-eslint/no-unnecessary-condition": "off",
+      "@darraghor/nestjs-typed/should-specify-forbid-unknown-values": "off",
     },
   },
 );
