@@ -10,7 +10,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
