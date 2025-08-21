@@ -30,8 +30,17 @@ jobs:
       - name: 🔎 Run Type Check (tsc)
         run: pnpm run type-check
 
-      - name: 🧪 Run Tests
+      - name: 🗄️ Start MongoDB
+        uses: supercharge/mongodb-github-action@1.10.0
+        with:
+          mongodb-version: '7.0'
+
+      - name: 🧪 Run All Tests
         run: pnpm test
+        env:
+          CI: true
+          MONGODB_URI: mongodb://localhost:27017/test
+          NODE_ENV: test
 
       - name: 🐍 Setup Python 3.11
         uses: actions/setup-python@v5

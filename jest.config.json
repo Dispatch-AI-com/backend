@@ -8,8 +8,9 @@
     "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
     "setupFiles": ["dotenv/config"],
     "testEnvironment": "node",
-    "testTimeout": 30000,
-    "moduleNameMapper": {
+      "testTimeout": 60000,
+  "forceExit": true,
+  "moduleNameMapper": {
       "^@/(.*)$": "<rootDir>/src/$1",
       "^@modules/(.*)$": "<rootDir>/src/modules/$1"
     },
