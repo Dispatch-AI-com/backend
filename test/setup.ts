@@ -1,18 +1,14 @@
 import mongoose from 'mongoose';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from .env.example
+config({ path: resolve(__dirname, '../.env.example') });
 
 // Global test setup
 beforeAll(async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
-  
-  // Set mock Twilio credentials for testing
-  process.env.TWILIO_ACCOUNT_SID = 'AC_test_account_sid';
-  process.env.TWILIO_AUTH_TOKEN = 'test_auth_token';
-  
-  // Set mock Stripe credentials for testing
-  process.env.STRIPE_SECRET_KEY = 'sk_test_mock_stripe_secret_key';
-  process.env.STRIPE_WEBHOOK_SECRET = 'whsec_mock_webhook_secret';
-  process.env.APP_URL = 'http://localhost:3000';
 
   // Connect to test database
   try {

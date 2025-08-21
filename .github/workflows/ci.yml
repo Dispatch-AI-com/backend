@@ -35,6 +35,9 @@ jobs:
         with:
           mongodb-version: '7.0'
 
+      - name: 📋 Copy .env.example to .env for tests
+        run: cp .env.example .env
+
       - name: 🧪 Run All Tests
         run: pnpm test
         env:
