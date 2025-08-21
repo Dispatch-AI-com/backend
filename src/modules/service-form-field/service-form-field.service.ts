@@ -226,6 +226,7 @@ export class ServiceFormFieldService {
   }
 
   // Batch save form fields (delete old ones first, then insert new ones)
+  // Batch save form fields (delete old ones first, then insert new ones)
   async saveBatch(
     serviceId: string,
     fields: FormFieldInput[],
@@ -261,15 +262,30 @@ export class ServiceFormFieldService {
             typeof field.isRequired === 'boolean' &&
             Array.isArray(field.options),
         )
-        .map(field => ({
-          serviceId: serviceId.trim(),
-          fieldName: field.fieldName.trim(),
-          fieldType: field.fieldType.trim(),
-          isRequired: field.isRequired,
-          options: field.options.filter(
-            item => typeof item === 'string' && item.trim().length > 0,
-          ),
-        }));
+        .map(field => {
+          // Use type guards to ensure properties exist, instead of using non-null assertions
+          const { fieldName, fieldType, isRequired, options } = field;
+
+          // These checks are already validated in the filter, but TypeScript still needs explicit checking
+          if (
+            typeof fieldName !== 'string' ||
+            typeof fieldType !== 'string' ||
+            typeof isRequired !== 'boolean' ||
+            !Array.isArray(options)
+          ) {
+            throw new Error('Invalid field data after validation');
+          }
+
+          return {
+            serviceId: serviceId.trim(),
+            fieldName: fieldName.trim(),
+            fieldType: fieldType.trim(),
+            isRequired: isRequired,
+            options: options.filter(
+              item => typeof item === 'string' && item.trim().length > 0,
+            ),
+          };
+        });
 
       if (validatedFields.length === 0) {
         return [];
