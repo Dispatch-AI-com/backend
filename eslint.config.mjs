@@ -6,7 +6,6 @@ import tseslint, { parser } from "typescript-eslint";
 import nestjsTyped from "@darraghor/eslint-plugin-nestjs-typed";
 import prettier from "eslint-plugin-prettier";
 import importSort from "eslint-plugin-simple-import-sort";   // ← 新增
-import jestPlugin from "eslint-plugin-jest";                 // ← 新增
 
 export default tseslint.config(
   /* 基础推荐 + type‑aware 推荐 */
@@ -56,16 +55,7 @@ export default tseslint.config(
     },
   },
 
-  /* ---------- Jest 测试文件块 ---------- */
-  {
-    files: ["tests/**/*.spec.ts", "**/*.test.ts"],
-    plugins: { jest: jestPlugin },
-    languageOptions: { globals: { ...globals.jest } },
-    rules: {
-      "jest/no-disabled-tests": "warn",
-      "jest/expect-expect": "warn",
-    },
-  },
+
 
   /* 关闭 Nest 模块空壳类误报 */
   {

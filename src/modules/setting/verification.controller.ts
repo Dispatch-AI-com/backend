@@ -9,7 +9,7 @@ import {
 } from '@nestjs/swagger';
 
 import {
-  UpdateVerificationDto,
+  type UpdateVerificationDto,
   VerificationService,
 } from '@/modules/setting/verification.service';
 

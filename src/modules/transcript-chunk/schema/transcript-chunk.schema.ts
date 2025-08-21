@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-import { SpeakerType } from '../../../common/constants/transcript-chunk.constant';
+import type { SpeakerType } from '../../../common/constants/transcript-chunk.constant';
 
 export type TranscriptChunkDocument = TranscriptChunk & Document;
 

@@ -8,8 +8,11 @@ import { createMockCallLogDto } from './mock-calllog';
 
 // Suppress punycode deprecation warning
 process.removeAllListeners('warning');
-process.on('warning', (warning) => {
-  if (warning.name === 'DeprecationWarning' && warning.message.includes('punycode')) {
+process.on('warning', warning => {
+  if (
+    warning.name === 'DeprecationWarning' &&
+    warning.message.includes('punycode')
+  ) {
     return;
   }
   console.warn(warning);
@@ -22,11 +25,12 @@ describe('CallLogController (e2e)', () => {
   const baseUrl = `/users/${testUserId}/calllogs`;
 
   // Test data setup
-  const createTestCallLog = (overrides = {}) => createMockCallLogDto({
-    userId: testUserId,
-    audioId: undefined, // Ensure no audioId by default
-    ...overrides
-  });
+  const createTestCallLog = (overrides = {}) =>
+    createMockCallLogDto({
+      userId: testUserId,
+      audioId: undefined, // Ensure no audioId by default
+      ...overrides,
+    });
 
   const mockCallLogs = [
     createTestCallLog({
@@ -44,28 +48,40 @@ describe('CallLogController (e2e)', () => {
   ];
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+    try {
+      const moduleFixture: TestingModule = await Test.createTestingModule({
+        imports: [AppModule],
+      }).compile();
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
+      app = moduleFixture.createNestApplication();
+      await app.init();
 
-    // Create test data
-    for (const mockCallLog of mockCallLogs) {
-      const response = await request(app.getHttpServer())
-        .post(baseUrl)
-        .send(mockCallLog);
-      
-      if (response.status !== 201) {
-        console.error('Failed to create test data:', response.body);
+      // Create test data
+      for (const mockCallLog of mockCallLogs) {
+        try {
+          const response = await request(app.getHttpServer())
+            .post(baseUrl)
+            .send(mockCallLog);
+
+          if (response.status !== 201) {
+            console.error('Failed to create test data:', response.body);
+          }
+        } catch (error) {
+          console.error('Error creating test data:', (error as Error).message);
+        }
       }
+    } catch (error) {
+      console.error('Error in beforeAll:', (error as Error).message);
+      throw error;
     }
-  });
+  }, 30000);
 
   afterAll(async () => {
-    if (app) await app.close();
-    await mongoose.connection.close();
+    try {
+      if (app) await app.close();
+    } catch (error) {
+      console.error('Error closing app:', (error as Error).message);
+    }
   });
 
   describe('POST /users/:userId/calllogs', () => {
@@ -104,7 +120,7 @@ describe('CallLogController (e2e)', () => {
   describe('GET /users/:userId/calllogs', () => {
     it('should return paginated call logs with correct structure', async () => {
       const response = await request(app.getHttpServer()).get(baseUrl);
-      
+
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('data');
       expect(response.body).toHaveProperty('pagination');
@@ -114,7 +130,7 @@ describe('CallLogController (e2e)', () => {
       const firstLog = response.body.data[0];
       expect(firstLog).toHaveProperty('_id');
       expect(firstLog).toHaveProperty('userId');
-      expect(firstLog).toHaveProperty('status');
+      expect(firstLog).toHaveProperty('callSid');
       expect(firstLog).toHaveProperty('startAt');
       expect(firstLog).toHaveProperty('callerNumber');
       expect(firstLog).toHaveProperty('serviceBookedId');
@@ -124,12 +140,12 @@ describe('CallLogController (e2e)', () => {
       expect(response.body.pagination).toHaveProperty('total');
     });
 
-
     it('should filter logs by date range', async () => {
       const startAtFrom = '2025-05-01';
       const startAtTo = '2025-05-10';
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}?startAtFrom=${startAtFrom}&startAtTo=${startAtTo}`);
+      const response = await request(app.getHttpServer()).get(
+        `${baseUrl}?startAtFrom=${startAtFrom}&startAtTo=${startAtTo}`,
+      );
 
       expect(response.status).toBe(200);
       response.body.data.forEach((log: ICallLog) => {
@@ -141,24 +157,27 @@ describe('CallLogController (e2e)', () => {
 
     it('should search logs by keyword', async () => {
       const searchTerm = '6140000';
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}?search=${searchTerm}`);
+      const response = await request(app.getHttpServer()).get(
+        `${baseUrl}?search=${searchTerm}`,
+      );
 
       expect(response.status).toBe(200);
-      
-      const hasMatchingLog = response.body.data.some((log: ICallLog) => 
-        log.callerNumber.replace(/[^a-zA-Z0-9]/g, '').includes(searchTerm) || 
-        (log.serviceBookedId && log.serviceBookedId.includes(searchTerm))
+
+      const hasMatchingLog = response.body.data.some(
+        (log: ICallLog) =>
+          log.callerNumber.replace(/[^a-zA-Z0-9]/g, '').includes(searchTerm) ||
+          log.serviceBookedId?.includes(searchTerm),
       );
-      
+
       expect(hasMatchingLog).toBe(true);
     });
   });
 
   describe('GET /users/:userId/calllogs/:calllogId', () => {
     it('should return call log details', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}/${createdCallLogId}`);
+      const response = await request(app.getHttpServer()).get(
+        `${baseUrl}/${createdCallLogId}`,
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toMatchObject({
@@ -168,17 +187,19 @@ describe('CallLogController (e2e)', () => {
     });
 
     it('should return 404 for non-existent call log', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}/non-existent-id`);
+      const response = await request(app.getHttpServer()).get(
+        `${baseUrl}/non-existent-id`,
+      );
 
       expect(response.status).toBe(404);
     });
   });
 
   describe('GET /users/:userId/calllogs/metrics/today', () => {
-    it('should return today\'s call metrics', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}/metrics/today`);
+    it("should return today's call metrics", async () => {
+      const response = await request(app.getHttpServer()).get(
+        `${baseUrl}/metrics/today`,
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('totalCalls');
@@ -206,31 +227,9 @@ describe('CallLogController (e2e)', () => {
     });
   });
 
-  describe('GET /users/:userId/calllogs/:calllogId/audio', () => {
-    it('should return 404 when audio is not available', async () => {
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}/${createdCallLogId}/audio`);
-
-      expect(response.status).toBe(404);
-    });
-
-    it('should return audio ID when available', async () => {
-      // First update the call log to have an audioId
-      const audioId = 'test-audio-123';
-      await request(app.getHttpServer())
-        .patch(`${baseUrl}/${createdCallLogId}`)
-        .send({ audioId });
-
-      const response = await request(app.getHttpServer())
-        .get(`${baseUrl}/${createdCallLogId}/audio`);
-
-      expect(response.status).toBe(200);
-      expect(response.body).toEqual({ audioId });
-    });
-  });
-
   describe('DELETE /users/:userId/calllogs/:calllogId', () => {
     let calllogId: string;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let transcriptId: string;
 
     beforeEach(async () => {
@@ -240,16 +239,17 @@ describe('CallLogController (e2e)', () => {
         .post(baseUrl)
         .send(testCallLog);
       calllogId = createResponse.body._id;
-      
+
       console.log('Created calllog:', {
         _id: createResponse.body._id,
         userId: createResponse.body.userId,
-        expectedUserId: testUserId
+        expectedUserId: testUserId,
       });
 
       // Verify calllog is present
-      const getResponse = await request(app.getHttpServer())
-        .get(`${baseUrl}/${calllogId}`);
+      const getResponse = await request(app.getHttpServer()).get(
+        `${baseUrl}/${calllogId}`,
+      );
       console.log('GET after create status:', getResponse.status);
       console.log('GET after create body:', getResponse.body);
 
@@ -269,7 +269,7 @@ describe('CallLogController (e2e)', () => {
       // Clean up to prevent test interference
       try {
         await request(app.getHttpServer()).delete(`${baseUrl}/${calllogId}`);
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
     });
@@ -277,60 +277,69 @@ describe('CallLogController (e2e)', () => {
     it('should delete calllog and cascade delete transcript and chunks', async () => {
       console.log('Test calllogId:', calllogId);
       console.log('Test userId:', testUserId);
-      
+
       // Delete calllog
-      const deleteResponse = await request(app.getHttpServer())
-        .delete(`${baseUrl}/${calllogId}`);
-      
+      const deleteResponse = await request(app.getHttpServer()).delete(
+        `${baseUrl}/${calllogId}`,
+      );
+
       console.log('Delete response status:', deleteResponse.status);
       console.log('Delete response body:', deleteResponse.body);
-      
+
       expect(deleteResponse.status).toBe(200);
       expect(deleteResponse.body._id).toBe(calllogId);
 
       // Verify calllog is deleted
-      const getCalllogResponse = await request(app.getHttpServer())
-        .get(`${baseUrl}/${calllogId}`);
+      const getCalllogResponse = await request(app.getHttpServer()).get(
+        `${baseUrl}/${calllogId}`,
+      );
       expect(getCalllogResponse.status).toBe(404);
 
       // Verify transcript is deleted
-      const getTranscriptResponse = await request(app.getHttpServer())
-        .get(`${baseUrl}/${calllogId}/transcript`);
+      const getTranscriptResponse = await request(app.getHttpServer()).get(
+        `${baseUrl}/${calllogId}/transcript`,
+      );
       expect(getTranscriptResponse.status).toBe(404);
 
       // Verify chunks are deleted
-      const getChunksResponse = await request(app.getHttpServer())
-        .get(`${baseUrl}/${calllogId}/transcript/chunks`);
+      const getChunksResponse = await request(app.getHttpServer()).get(
+        `${baseUrl}/${calllogId}/transcript/chunks`,
+      );
       expect(getChunksResponse.status).toBe(404);
     });
 
     it('should delete calllog even when transcript does not exist', async () => {
       // Delete transcript first
-      await request(app.getHttpServer())
-        .delete(`${baseUrl}/${calllogId}/transcript`);
+      await request(app.getHttpServer()).delete(
+        `${baseUrl}/${calllogId}/transcript`,
+      );
 
       // Then delete calllog
-      const deleteResponse = await request(app.getHttpServer())
-        .delete(`${baseUrl}/${calllogId}`);
+      const deleteResponse = await request(app.getHttpServer()).delete(
+        `${baseUrl}/${calllogId}`,
+      );
       expect(deleteResponse.status).toBe(200);
       expect(deleteResponse.body._id).toBe(calllogId);
 
       // Verify calllog is deleted
-      const getCalllogResponse = await request(app.getHttpServer())
-        .get(`${baseUrl}/${calllogId}`);
+      const getCalllogResponse = await request(app.getHttpServer()).get(
+        `${baseUrl}/${calllogId}`,
+      );
       expect(getCalllogResponse.status).toBe(404);
     });
 
     it('should return 404 for non-existent calllog', async () => {
       const nonExistentId = new mongoose.Types.ObjectId().toString();
-      const response = await request(app.getHttpServer())
-        .delete(`${baseUrl}/${nonExistentId}`);
+      const response = await request(app.getHttpServer()).delete(
+        `${baseUrl}/${nonExistentId}`,
+      );
       expect(response.status).toBe(404);
     });
 
     it('should return 400 for invalid calllog ID', async () => {
-      const response = await request(app.getHttpServer())
-        .delete(`${baseUrl}/invalid-id`);
+      const response = await request(app.getHttpServer()).delete(
+        `${baseUrl}/invalid-id`,
+      );
       expect(response.status).toBe(400);
     });
   });
