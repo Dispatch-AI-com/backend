@@ -4,8 +4,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import {
   ServiceFormField,
   ServiceFormFieldSchema,
-} from '@/modules/service-form-field/schema/service-form-field.schema';
-import { ServiceFormFieldController } from '@/modules/service-form-field/service-form-field.controller';
+} from './schema/service-form-field.schema';
+import { ServiceFormFieldController } from './service-form-field.controller';
+import { ServiceFormFieldService } from './service-form-field.service';
 
 @Module({
   imports: [
@@ -14,5 +15,7 @@ import { ServiceFormFieldController } from '@/modules/service-form-field/service
     ]),
   ],
   controllers: [ServiceFormFieldController],
+  providers: [ServiceFormFieldService],
+  exports: [ServiceFormFieldService],
 })
 export class ServiceFormFieldModule {}
