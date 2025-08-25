@@ -18,19 +18,33 @@ export class CSRFGuard implements CanActivate {
       return true;
     }
 
-    // Try to get CSRF token from header first, then from cookie
-    let csrfToken = request.headers['x-csrf-token'] as string;
+    // Double submit pattern: require CSRF token in both cookie and header
+    const csrfTokenFromHeader = request.headers['x-csrf-token'] as string;
+    const csrfTokenFromCookie = request.cookies.csrfToken as string;
 
-    if (!csrfToken) {
-      csrfToken = request.cookies.csrfToken as string;
+    // Both cookie and header must be present
+    if (!csrfTokenFromHeader) {
+      throw new ForbiddenException(
+        'CSRF token is required in X-CSRF-Token header',
+      );
     }
 
-    if (!csrfToken) {
-      throw new ForbiddenException('CSRF token is required');
+    if (!csrfTokenFromCookie) {
+      throw new ForbiddenException('CSRF token cookie is required');
     }
 
-    if (!validateCSRFToken(csrfToken)) {
-      throw new ForbiddenException('Invalid CSRF token');
+    // Both tokens must be valid
+    if (!validateCSRFToken(csrfTokenFromHeader)) {
+      throw new ForbiddenException('Invalid CSRF token in header');
+    }
+
+    if (!validateCSRFToken(csrfTokenFromCookie)) {
+      throw new ForbiddenException('Invalid CSRF token in cookie');
+    }
+
+    // Both tokens must match (double submit validation)
+    if (csrfTokenFromHeader !== csrfTokenFromCookie) {
+      throw new ForbiddenException('CSRF tokens do not match');
     }
 
     return true;

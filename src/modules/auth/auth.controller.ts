@@ -70,7 +70,7 @@ export class AuthController {
       path: '/',
     });
 
-    // Set CSRF token as httpOnly cookie
+    // Set CSRF token as httpOnly cookie for double submit pattern
     res.cookie('csrfToken', csrfToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -120,9 +120,9 @@ export class AuthController {
       path: '/',
     });
 
-    // Set CSRF token as regular cookie (not httpOnly)
+    // Set CSRF token as httpOnly cookie for double submit pattern
     res.cookie('csrfToken', csrfToken, {
-      httpOnly: false, 
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -169,9 +169,9 @@ export class AuthController {
       path: '/',
     });
 
-    // Set CSRF token as regular cookie (not httpOnly)
+    // Set CSRF token as httpOnly cookie for double submit pattern
     res.cookie('csrfToken', csrfToken, {
-      httpOnly: false, // 允许 JavaScript 读取
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
@@ -203,7 +203,7 @@ export class AuthController {
 
     // Clear the CSRF token cookie
     res.clearCookie('csrfToken', {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       path: '/',
@@ -223,19 +223,22 @@ export class AuthController {
   refreshCSRFToken(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): { message: string } {
+  ): { message: string; csrfToken: string } {
     const newCsrfToken = generateCSRFToken();
 
-    // Set new CSRF token as regular cookie (not httpOnly)
+    // Set new CSRF token as httpOnly cookie for double submit pattern
     res.cookie('csrfToken', newCsrfToken, {
-      httpOnly: false, // 允许 JavaScript 读取
+      httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
       path: '/',
     });
 
-    return { message: 'CSRF token refreshed successfully' };
+    return {
+      message: 'CSRF token refreshed successfully',
+      csrfToken: newCsrfToken,
+    };
   }
 
   @ApiOperation({
