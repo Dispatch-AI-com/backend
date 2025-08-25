@@ -4,6 +4,7 @@ import type { INestApplication } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import * as bodyParser from 'body-parser';
+import cookieParser from 'cookie-parser';
 import * as express from 'express';
 import morgan from 'morgan';
 
@@ -26,8 +27,10 @@ async function bootstrap(): Promise<void> {
   );
   app.enableCors({
     origin: process.env.CORS_ORIGIN ?? '*',
+    credentials: true, // Enable cookies in CORS
   });
 
+  app.use(cookieParser()); // Add cookie parser middleware
   app.useGlobalFilters(new GlobalExceptionFilter());
   app.use(morgan('combined'));
   app.use(bodyParser.urlencoded({ extended: false }));

@@ -7,8 +7,12 @@ import {
   HttpCode,
   Param,
   Patch,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { CSRFProtected } from '@/common/decorators/csrf-protected.decorator';
 
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { User } from './schema/user.schema';
@@ -16,6 +20,7 @@ import { UserService } from './user.service';
 
 @ApiTags('Users')
 @Controller('users')
+@UseGuards(AuthGuard('jwt'))
 export class UserController {
   constructor(private readonly users: UserService) {}
 
@@ -36,6 +41,7 @@ export class UserController {
   }
 
   @Patch(':id')
+  @CSRFProtected()
   @ApiOperation({ summary: 'Patch a user by ID' })
   @ApiResponse({ status: 200, description: 'User updated', type: User })
   @ApiResponse({ status: 400, description: 'Validation error' })
@@ -48,6 +54,7 @@ export class UserController {
   }
 
   @Delete(':id')
+  @CSRFProtected()
   @ApiOperation({ summary: 'Delete a user by ID' })
   @ApiResponse({ status: 204, description: 'Deleted successfully' })
   @HttpCode(204)

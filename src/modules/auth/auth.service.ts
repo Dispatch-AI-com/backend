@@ -13,6 +13,7 @@ import { SALT_ROUNDS } from '@/modules/auth/auth.config';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
+import { generateCSRFToken } from '@/utils/csrf.util';
 @Injectable()
 export class AuthService {
   constructor(
@@ -35,7 +36,9 @@ export class AuthService {
     return user.toObject() as User;
   }
 
-  async login(loginDto: LoginDto): Promise<{ user: User; token: string }> {
+  async login(
+    loginDto: LoginDto,
+  ): Promise<{ user: User; token: string; csrfToken: string }> {
     const foundUser = await this.userModel
       .findOne({ email: loginDto.email })
       .select('+password');
@@ -54,13 +57,15 @@ export class AuthService {
       sub: user._id,
       email: user.email,
       role: user.role,
+      status: user.status,
     });
-    return { user, token };
+    const csrfToken = generateCSRFToken();
+    return { user, token, csrfToken };
   }
 
   async createUser(
     userData: CreateUserDto,
-  ): Promise<{ user: User; token: string }> {
+  ): Promise<{ user: User; token: string; csrfToken: string }> {
     if (await this.checkUserExists(userData.email)) {
       throw new ConflictException('User already exists');
     }
@@ -81,8 +86,10 @@ export class AuthService {
       sub: newUser._id,
       email: newUser.email,
       role: newUser.role,
+      status: newUser.status,
     });
-    return { user: newUser.toObject() as User, token };
+    const csrfToken = generateCSRFToken();
+    return { user: newUser.toObject() as User, token, csrfToken };
   }
 
   async checkUserExists(email: string): Promise<boolean> {
@@ -96,7 +103,7 @@ export class AuthService {
     firstName: string;
     lastName: string;
     avatar: string;
-  }): Promise<{ user: User; token: string }> {
+  }): Promise<{ user: User; token: string; csrfToken: string }> {
     let user = await this.userModel.findOne({
       $or: [{ email: googleUser.email }, { googleId: googleUser.googleId }],
     });
@@ -125,6 +132,7 @@ export class AuthService {
       role: user.role,
     });
 
-    return { user: user.toObject() as User, token };
+    const csrfToken = generateCSRFToken();
+    return { user: user.toObject() as User, token, csrfToken };
   }
 }

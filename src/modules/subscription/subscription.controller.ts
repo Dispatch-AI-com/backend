@@ -9,7 +9,9 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBody,
   ApiOperation,
@@ -24,6 +26,7 @@ import { SubscriptionService } from './subscription.service';
 
 @ApiTags('subscriptions')
 @Controller('subscriptions')
+@UseGuards(AuthGuard('jwt'))
 export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) {}
 

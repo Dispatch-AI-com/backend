@@ -7,7 +7,9 @@ import {
   HttpStatus,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBody,
   ApiOperation,
@@ -27,6 +29,7 @@ import type {
 
 @ApiTags('onboarding')
 @Controller('onboarding')
+@UseGuards(AuthGuard('jwt'))
 export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
 

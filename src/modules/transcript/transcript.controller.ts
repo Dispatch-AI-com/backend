@@ -6,7 +6,9 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBadRequestResponse,
   ApiCreatedResponse,
@@ -25,6 +27,7 @@ import { TranscriptService } from './transcript.service';
 
 @ApiTags('transcripts')
 @Controller('calllogs/:calllogId/transcript')
+@UseGuards(AuthGuard('jwt'))
 export class TranscriptController {
   constructor(private readonly transcriptService: TranscriptService) {}
 

@@ -8,7 +8,9 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
@@ -21,6 +23,7 @@ import { SettingService } from './setting.service';
 
 @ApiTags('Settings')
 @Controller('settings')
+@UseGuards(AuthGuard('jwt'))
 export class SettingController {
   constructor(private readonly settingService: SettingService) {}
 

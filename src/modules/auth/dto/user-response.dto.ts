@@ -1,6 +1,7 @@
 import { Expose } from 'class-transformer';
 
 import { EUserRole } from '@/common/constants/user.constant';
+import { UserStatus } from '@/modules/user/enum/userStatus.enum';
 
 export class UserResponseDto {
   @Expose()
@@ -17,4 +18,7 @@ export class UserResponseDto {
 
   @Expose()
   role!: EUserRole;
+
+  @Expose()
+  status!: UserStatus;
 }

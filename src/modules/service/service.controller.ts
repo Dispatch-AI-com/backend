@@ -8,8 +8,12 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { CSRFProtected } from '@/common/decorators/csrf-protected.decorator';
 
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
@@ -18,10 +22,12 @@ import { ServiceService } from './service.service';
 
 @ApiTags('service')
 @Controller('service')
+@UseGuards(AuthGuard('jwt'))
 export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 
   @Post()
+  @CSRFProtected()
   @ApiOperation({ summary: 'Create a new service' })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -79,6 +85,7 @@ export class ServiceController {
   }
 
   @Patch(':id')
+  @CSRFProtected()
   @ApiOperation({ summary: 'Update a service' })
   @ApiParam({ name: 'id', description: 'Service ID' })
   @ApiResponse({
@@ -102,6 +109,7 @@ export class ServiceController {
   }
 
   @Delete(':id')
+  @CSRFProtected()
   @ApiOperation({ summary: 'Delete a service' })
   @ApiParam({ name: 'id', description: 'Service ID' })
   @ApiResponse({
