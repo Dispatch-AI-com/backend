@@ -1,4 +1,3 @@
-
 describe('Health Check (Unit)', () => {
   it('should be defined', () => {
     expect(true).toBe(true);

@@ -4,7 +4,11 @@ import { Model, Types } from 'mongoose';
 import { CallLog } from '../../src/modules/calllog/schema/calllog.schema';
 import { Transcript } from '../../src/modules/transcript/schema/transcript.schema';
 import { TranscriptChunk } from '../../src/modules/transcript-chunk/schema/transcript-chunk.schema';
-import { mockCallLog, mockTranscript, mockTranscriptChunks } from '../fixtures/mock-data';
+import {
+  mockCallLog,
+  mockTranscript,
+  mockTranscriptChunks,
+} from '../fixtures/mock-data';
 
 export class DatabaseTestHelper {
   private callLogModel: Model<CallLog>;
@@ -13,8 +17,12 @@ export class DatabaseTestHelper {
 
   constructor(private moduleRef: TestingModule) {
     this.callLogModel = moduleRef.get<Model<CallLog>>(getModelToken('CallLog'));
-    this.transcriptModel = moduleRef.get<Model<Transcript>>(getModelToken('Transcript'));
-    this.transcriptChunkModel = moduleRef.get<Model<TranscriptChunk>>(getModelToken('TranscriptChunk'));
+    this.transcriptModel = moduleRef.get<Model<Transcript>>(
+      getModelToken('Transcript'),
+    );
+    this.transcriptChunkModel = moduleRef.get<Model<TranscriptChunk>>(
+      getModelToken('TranscriptChunk'),
+    );
   }
 
   async cleanupAll(): Promise<void> {
@@ -28,7 +36,7 @@ export class DatabaseTestHelper {
   async seedBasicData(): Promise<void> {
     // Create CallLog first (dependency for Transcript)
     await this.callLogModel.create(mockCallLog);
-    
+
     // Create Transcript (dependency for TranscriptChunk)
     await this.transcriptModel.create(mockTranscript);
   }
@@ -56,7 +64,10 @@ export class DatabaseTestHelper {
   }
 
   // Helper to create duplicate chunk for testing
-  async createDuplicateStartTimeChunk(transcriptId: string, startAt: number): Promise<any> {
+  async createDuplicateStartTimeChunk(
+    transcriptId: string,
+    startAt: number,
+  ): Promise<any> {
     return await this.transcriptChunkModel.create({
       transcriptId: new Types.ObjectId(transcriptId),
       speakerType: 'AI',

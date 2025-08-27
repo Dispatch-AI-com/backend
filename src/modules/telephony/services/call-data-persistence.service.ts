@@ -12,7 +12,6 @@ import {
   ServiceBookingStatus,
 } from '@/modules/service-booking/dto/create-service-booking.dto';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
-import { CreateTranscriptDto } from '@/modules/transcript/dto/create-transcript.dto';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { CreateTranscriptChunkDto } from '@/modules/transcript-chunk/dto/create-transcript-chunk.dto';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';

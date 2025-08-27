@@ -169,7 +169,9 @@ describe('CallLogController (e2e)', () => {
       const testCallLog = createTestCallLog({
         callerName: 'Details Test User',
       });
-      const createResponse = await request(app.getHttpServer()).post(baseUrl).send(testCallLog);
+      const createResponse = await request(app.getHttpServer())
+        .post(baseUrl)
+        .send(testCallLog);
       const calllogId = createResponse.body._id;
 
       const response = await request(app.getHttpServer()).get(
@@ -210,7 +212,9 @@ describe('CallLogController (e2e)', () => {
       const testCallLog = createTestCallLog({
         callerName: 'Original Name',
       });
-      const createResponse = await request(app.getHttpServer()).post(baseUrl).send(testCallLog);
+      const createResponse = await request(app.getHttpServer())
+        .post(baseUrl)
+        .send(testCallLog);
       const calllogId = createResponse.body._id;
 
       const response = await request(app.getHttpServer())

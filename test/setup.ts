@@ -5,7 +5,7 @@ jest.mock('@nestjs/passport', () => {
   const originalModule = jest.requireActual('@nestjs/passport');
   return {
     ...originalModule,
-    AuthGuard: (strategy?: string) => {
+    AuthGuard: (_strategy?: string) => {
       return class MockAuthGuard {
         canActivate(): boolean {
           return true; // Always allow access in tests
@@ -88,7 +88,7 @@ afterAll(async () => {
       const collection = collections[key];
       await collection.deleteMany({});
     }
-    
+
     await mongoose.connection.close();
     console.log('Disconnected from test database');
   } catch (error) {
@@ -109,7 +109,10 @@ beforeEach(async () => {
       await collection.deleteMany({});
     }
   } catch (error) {
-    console.error('Error cleaning database before test:', (error as Error).message);
+    console.error(
+      'Error cleaning database before test:',
+      (error as Error).message,
+    );
   }
 });
 

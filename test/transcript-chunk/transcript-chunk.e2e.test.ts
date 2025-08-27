@@ -3,21 +3,20 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../src/modules/app.module';
 import { DatabaseTestHelper } from '../helpers/database.helper';
-import { 
-  mockObjectIds, 
-  mockCreateChunkDto, 
-  mockCreateMultipleChunksDto, 
-  mockCreateDuplicateChunksDto 
+import {
+  mockCreateChunkDto,
+  mockCreateMultipleChunksDto,
+  mockCreateDuplicateChunksDto,
 } from '../fixtures/mock-data';
 
 describe('TranscriptChunk (e2e)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
   let dbHelper: DatabaseTestHelper;
-  
+
   const testUserId = 'test-user';
   const nonExistentId = '507f1f77bcf86cd799439999';
-  
+
   // Helper to create calllog and transcript for chunk tests
   const createCalllogAndTranscript = async () => {
     const callSid = 'CA' + require('crypto').randomBytes(16).toString('hex');
@@ -32,14 +31,14 @@ describe('TranscriptChunk (e2e)', () => {
         startAt: new Date(),
       });
     const calllogId = callLogRes.body._id;
-    
+
     const transcriptRes = await request(app.getHttpServer())
       .post(`/calllogs/${calllogId}/transcript`)
       .send({
         summary: 'Test summary',
         keyPoints: ['Test key point'],
       });
-    
+
     return {
       calllogId,
       transcriptId: transcriptRes.body._id,
@@ -85,12 +84,12 @@ describe('TranscriptChunk (e2e)', () => {
   });
 
   it('should create multiple chunks', async () => {
-    const { calllogId, transcriptId } = await createCalllogAndTranscript();
-    
+    const { transcriptId } = await createCalllogAndTranscript();
+
     const res = await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
       .send(mockCreateMultipleChunksDto);
-      
+
     expect(res.status).toBe(201);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBe(2);
@@ -100,8 +99,8 @@ describe('TranscriptChunk (e2e)', () => {
   });
 
   it('should not allow creating chunk with duplicate startAt', async () => {
-    const { calllogId, transcriptId } = await createCalllogAndTranscript();
-    
+    const { transcriptId } = await createCalllogAndTranscript();
+
     // First create a chunk via API
     await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
@@ -111,25 +110,27 @@ describe('TranscriptChunk (e2e)', () => {
     const res = await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
       .send([mockCreateChunkDto]); // This has startAt: 0
-      
+
     expect(res.status).toBe(400);
-    expect(res.body.message).toBe('Some chunks with the same start times already exist');
+    expect(res.body.message).toBe(
+      'Some chunks with the same start times already exist',
+    );
   });
 
   it('should not allow creating multiple chunks with duplicate startAt', async () => {
     const { transcriptId } = await createCalllogAndTranscript();
-    
+
     const res = await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
       .send(mockCreateDuplicateChunksDto);
-      
+
     expect(res.status).toBe(400);
     expect(res.body.message).toBe('Duplicate start times are not allowed');
   });
 
   it('should get all chunks for a transcript', async () => {
     const { transcriptId } = await createCalllogAndTranscript();
-    
+
     // First create some chunks via API
     await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
@@ -148,7 +149,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should get chunks with filters', async () => {
     const { transcriptId } = await createCalllogAndTranscript();
-    
+
     // First create some chunks via API
     await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
@@ -167,7 +168,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should get a single chunk', async () => {
     const { transcriptId } = await createCalllogAndTranscript();
-    
+
     // First create some chunks via API
     const createRes = await request(app.getHttpServer())
       .post(`/transcripts/${transcriptId}/chunks`)
@@ -185,7 +186,7 @@ describe('TranscriptChunk (e2e)', () => {
 
   it('should return 404 for non-existent chunk', async () => {
     const { transcriptId } = await createCalllogAndTranscript();
-    
+
     const res = await request(app.getHttpServer()).get(
       `/transcripts/${transcriptId}/chunks/${nonExistentId}`,
     );

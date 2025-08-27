@@ -28,7 +28,7 @@ export default tseslint.config(
     rules: {
       /* 代码风格 */
       "prettier/prettier": "error",
-      "no-console": "warn",
+      "no-console": "off", // 允许 console 语句在测试文件中使用
       "no-debugger": "error",
 
       /* Jest 规则 */

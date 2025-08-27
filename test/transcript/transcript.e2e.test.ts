@@ -3,7 +3,6 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from '../../src/modules/app.module';
 import { DatabaseTestHelper } from '../helpers/database.helper';
-import { mockObjectIds, mockCallLog } from '../fixtures/mock-data';
 
 describe('Transcript (e2e)', () => {
   let app: INestApplication;
@@ -87,14 +86,14 @@ describe('Transcript (e2e)', () => {
         startAt: new Date(),
       });
     const calllogId = callLogRes.body._id;
-    
+
     const res = await request(app.getHttpServer())
       .post(`/calllogs/${calllogId}/transcript`)
       .send({
         summary: 'Test summary',
         keyPoints: keyPointsExample,
       });
-    
+
     expect(res.status).toBe(201);
     expect(res.body._id).toBeDefined();
     expect(res.body.callSid).toBe(callSid);
@@ -116,14 +115,14 @@ describe('Transcript (e2e)', () => {
         startAt: new Date(),
       });
     const calllogId = callLogRes.body._id;
-    
+
     await request(app.getHttpServer())
       .post(`/calllogs/${calllogId}/transcript`)
       .send({
         summary: 'Test summary for transcript',
         keyPoints: keyPointsExample,
       });
-    
+
     const res = await request(app.getHttpServer()).get(
       `/calllogs/${calllogId}/transcript`,
     );
@@ -155,16 +154,16 @@ describe('Transcript (e2e)', () => {
         startAt: new Date(),
       });
     const calllogId = callLogRes.body._id;
-    
+
     await request(app.getHttpServer())
       .post(`/calllogs/${calllogId}/transcript`)
       .send({
         summary: 'Original summary',
         keyPoints: keyPointsExample,
       });
-      
+
     const updatedKeyPoints = ['Updated key point 1', 'Updated key point 2'];
-    
+
     const res = await request(app.getHttpServer())
       .patch(`/calllogs/${calllogId}/transcript`)
       .send({ summary: 'Updated summary', keyPoints: updatedKeyPoints });
@@ -188,14 +187,14 @@ describe('Transcript (e2e)', () => {
         startAt: new Date(),
       });
     const calllogId = callLogRes.body._id;
-    
+
     await request(app.getHttpServer())
       .post(`/calllogs/${calllogId}/transcript`)
       .send({
         summary: 'Test summary',
         keyPoints: keyPointsExample,
       });
-    
+
     const res = await request(app.getHttpServer()).delete(
       `/calllogs/${calllogId}/transcript`,
     );
@@ -206,7 +205,7 @@ describe('Transcript (e2e)', () => {
   it('should return 404 after deleting the Transcript', async () => {
     // This test is independent - no transcript exists
     const nonExistentId = '507f1f77bcf86cd799439998';
-    
+
     const res = await request(app.getHttpServer()).get(
       `/calllogs/${nonExistentId}/transcript`,
     );
