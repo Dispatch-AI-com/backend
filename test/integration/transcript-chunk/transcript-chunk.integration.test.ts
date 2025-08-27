@@ -1,15 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/modules/app.module';
-import { DatabaseTestHelper } from '../helpers/database.helper';
+import { AppModule } from '../../../src/modules/app.module';
+import { DatabaseTestHelper } from '../../helpers/database.helper';
 import {
   mockCreateChunkDto,
   mockCreateMultipleChunksDto,
   mockCreateDuplicateChunksDto,
-} from '../fixtures/mock-data';
+} from '../../fixtures/static/transcript';
 
-describe('TranscriptChunk (e2e)', () => {
+describe('TranscriptChunk (integration)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
   let dbHelper: DatabaseTestHelper;

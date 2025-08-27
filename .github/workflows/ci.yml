@@ -39,7 +39,7 @@ jobs:
         run: cp .env.example .env
 
       - name: 🧪 Run All Tests
-        run: pnpm test
+        run: pnpm test:ci
         env:
           CI: true
           MONGODB_URI: mongodb://localhost:27017/test

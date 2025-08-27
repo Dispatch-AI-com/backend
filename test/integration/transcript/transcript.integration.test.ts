@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/modules/app.module';
-import { DatabaseTestHelper } from '../helpers/database.helper';
+import { AppModule } from '../../../src/modules/app.module';
+import { DatabaseTestHelper } from '../../helpers/database.helper';
 
-describe('Transcript (e2e)', () => {
+describe('Transcript (integration)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
   let dbHelper: DatabaseTestHelper;

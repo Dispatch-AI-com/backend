@@ -2,11 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import mongoose from 'mongoose';
-import { AppModule } from '../../src/modules/app.module';
-import { DatabaseTestHelper } from '../helpers/database.helper';
-import { createMockCallLogDto } from './mock-calllog';
+import { AppModule } from '../../../src/modules/app.module';
+import { DatabaseTestHelper } from '../../helpers/database.helper';
+import { createMockCallLogDto } from '../../fixtures/dynamic/calllog';
 
-describe('CallLogController (e2e)', () => {
+describe('CallLogController (integration)', () => {
   let app: INestApplication;
   let moduleFixture: TestingModule;
   let dbHelper: DatabaseTestHelper;

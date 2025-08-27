@@ -4,11 +4,11 @@ import { Model, Types } from 'mongoose';
 import { CallLog } from '../../src/modules/calllog/schema/calllog.schema';
 import { Transcript } from '../../src/modules/transcript/schema/transcript.schema';
 import { TranscriptChunk } from '../../src/modules/transcript-chunk/schema/transcript-chunk.schema';
-import {
-  mockCallLog,
-  mockTranscript,
-  mockTranscriptChunks,
-} from '../fixtures/mock-data';
+import { 
+  staticCallLog as mockCallLog, 
+  staticTranscript as mockTranscript, 
+  staticTranscriptChunks as mockTranscriptChunks 
+} from '../fixtures';
 
 export class DatabaseTestHelper {
   private callLogModel: Model<CallLog>;
