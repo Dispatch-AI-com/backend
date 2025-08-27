@@ -1,4 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
 import { CalllogController } from '../../../src/modules/calllog/calllog.controller';
 import { CalllogService } from '../../../src/modules/calllog/calllog.service';
 import { createMockCallLogDto, staticCallLog } from '../../fixtures';
@@ -45,7 +47,10 @@ describe('CalllogController (Unit)', () => {
 
       const result = await controller.create('user-123', createCallLogDto);
 
-      expect(service.create).toHaveBeenCalledWith({ ...createCallLogDto, userId: 'user-123' });
+      expect(service.create).toHaveBeenCalledWith({
+        ...createCallLogDto,
+        userId: 'user-123',
+      });
       expect(result).toEqual(expectedResult);
     });
   });
@@ -102,7 +107,16 @@ describe('CalllogController (Unit)', () => {
 
       service.findAll.mockResolvedValue(expectedResult as any);
 
-      const result = await controller.findAll('user-123', queryParams.search, queryParams.startAtFrom, queryParams.startAtTo, queryParams.sort, queryParams.page, queryParams.limit, queryParams.fields);
+      const result = await controller.findAll(
+        'user-123',
+        queryParams.search,
+        queryParams.startAtFrom,
+        queryParams.startAtTo,
+        queryParams.sort,
+        queryParams.page,
+        queryParams.limit,
+        queryParams.fields,
+      );
 
       expect(service.findAll).toHaveBeenCalledWith({
         userId: 'user-123',
@@ -142,7 +156,11 @@ describe('CalllogController (Unit)', () => {
 
       const result = await controller.update('user-123', calllogId, updateDto);
 
-      expect(service.update).toHaveBeenCalledWith('user-123', calllogId, updateDto);
+      expect(service.update).toHaveBeenCalledWith(
+        'user-123',
+        calllogId,
+        updateDto,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -174,7 +192,11 @@ describe('CalllogController (Unit)', () => {
 
       const result = await controller.getSummary('user-123');
 
-      expect(service.getSummary).toHaveBeenCalledWith('user-123', undefined, undefined);
+      expect(service.getSummary).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        undefined,
+      );
       expect(result).toEqual(expectedResult);
     });
 
@@ -189,9 +211,17 @@ describe('CalllogController (Unit)', () => {
 
       service.getSummary.mockResolvedValue(expectedResult);
 
-      const result = await controller.getSummary('user-123', startAtFrom, startAtTo);
+      const result = await controller.getSummary(
+        'user-123',
+        startAtFrom,
+        startAtTo,
+      );
 
-      expect(service.getSummary).toHaveBeenCalledWith('user-123', startAtFrom, startAtTo);
+      expect(service.getSummary).toHaveBeenCalledWith(
+        'user-123',
+        startAtFrom,
+        startAtTo,
+      );
       expect(result).toEqual(expectedResult);
     });
   });

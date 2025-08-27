@@ -1,4 +1,6 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
 import { TranscriptController } from '../../../src/modules/transcript/transcript.controller';
 import { TranscriptService } from '../../../src/modules/transcript/transcript.service';
 import { createMockTranscriptDto, staticTranscript } from '../../fixtures';
@@ -38,16 +40,16 @@ describe('TranscriptController (Unit)', () => {
     it('should create a transcript', async () => {
       const calllogId = 'calllog-123';
       const createTranscriptDto = createMockTranscriptDto();
-      const mockCallLog = { 
+      const mockCallLog = {
         callSid: 'CA1234567890abcdef',
         userId: 'user-123',
         callerNumber: '1234567890',
-        startAt: new Date()
+        startAt: new Date(),
       };
-      const expectedResult = { 
-        ...staticTranscript, 
+      const expectedResult = {
+        ...staticTranscript,
         ...createTranscriptDto,
-        _id: staticTranscript._id.toString()
+        _id: staticTranscript._id.toString(),
       } as any;
 
       service.findCallLogById.mockResolvedValue(mockCallLog as any);
@@ -83,24 +85,30 @@ describe('TranscriptController (Unit)', () => {
     it('should update transcript by call log ID', async () => {
       const calllogId = 'calllog-123';
       const updateTranscriptDto = { summary: 'Updated summary' };
-      const mockTranscript = { 
+      const mockTranscript = {
         _id: 'transcript-123',
         callSid: 'CA1234567890abcdef',
-        summary: 'Test summary'
+        summary: 'Test summary',
       };
-      const expectedResult = { 
-        ...staticTranscript, 
+      const expectedResult = {
+        ...staticTranscript,
         ...updateTranscriptDto,
-        _id: staticTranscript._id.toString()
+        _id: staticTranscript._id.toString(),
       };
 
       service.findByCallLogId.mockResolvedValue(mockTranscript as any);
       service.update.mockResolvedValue(expectedResult as any);
 
-      const result = await controller.updateByCalllogId(calllogId, updateTranscriptDto);
+      const result = await controller.updateByCalllogId(
+        calllogId,
+        updateTranscriptDto,
+      );
 
       expect(service.findByCallLogId).toHaveBeenCalledWith(calllogId);
-      expect(service.update).toHaveBeenCalledWith(mockTranscript._id.toString(), updateTranscriptDto);
+      expect(service.update).toHaveBeenCalledWith(
+        mockTranscript._id.toString(),
+        updateTranscriptDto,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -108,14 +116,14 @@ describe('TranscriptController (Unit)', () => {
   describe('deleteByCalllogId', () => {
     it('should delete transcript by call log ID', async () => {
       const calllogId = 'calllog-123';
-      const mockTranscript = { 
+      const mockTranscript = {
         _id: 'transcript-123',
         callSid: 'CA1234567890abcdef',
-        summary: 'Test summary'
+        summary: 'Test summary',
       };
       const expectedResult = {
         ...staticTranscript,
-        _id: staticTranscript._id.toString()
+        _id: staticTranscript._id.toString(),
       };
 
       service.findByCallLogId.mockResolvedValue(mockTranscript as any);
@@ -124,7 +132,9 @@ describe('TranscriptController (Unit)', () => {
       const result = await controller.deleteByCalllogId(calllogId);
 
       expect(service.findByCallLogId).toHaveBeenCalledWith(calllogId);
-      expect(service.delete).toHaveBeenCalledWith(mockTranscript._id.toString());
+      expect(service.delete).toHaveBeenCalledWith(
+        mockTranscript._id.toString(),
+      );
       expect(result).toEqual(expectedResult);
     });
   });

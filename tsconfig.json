@@ -18,8 +18,9 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["jest", "node"]
   },
-  "include": ["src", "scripts"],
+  "include": ["src", "scripts", "types"],
   "exclude": ["node_modules", "dist"]
 }

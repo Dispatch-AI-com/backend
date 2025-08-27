@@ -3,14 +3,14 @@
 // ============================================================================
 
 // Static mock data exports
-export * from './static/common';
 export * from './static/calllog';
+export * from './static/common';
 export * from './static/transcript';
 export * from './static/user';
 
 // Dynamic mock data generator exports
-export * from './dynamic/common';
 export * from './dynamic/calllog';
+export * from './dynamic/common';
 export * from './dynamic/transcript';
 export * from './dynamic/user';
 
@@ -19,13 +19,11 @@ export {
   createMockCallLogDto as createCallLog,
   createMockCallLogDtos as createCallLogs,
 } from './dynamic/calllog';
-
 export {
-  createMockTranscriptDto as createTranscript,
   createMockTranscriptChunkDto as createChunk,
   createMockTranscriptChunkDtos as createChunks,
+  createMockTranscriptDto as createTranscript,
 } from './dynamic/transcript';
-
 export {
   createMockUserDto as createUser,
   createMockUserDtos as createUsers,

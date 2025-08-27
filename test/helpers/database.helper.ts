@@ -1,13 +1,15 @@
 import { getModelToken } from '@nestjs/mongoose';
-import { TestingModule } from '@nestjs/testing';
-import { Model, Types } from 'mongoose';
-import { CallLog } from '../../src/modules/calllog/schema/calllog.schema';
-import { Transcript } from '../../src/modules/transcript/schema/transcript.schema';
-import { TranscriptChunk } from '../../src/modules/transcript-chunk/schema/transcript-chunk.schema';
-import { 
-  staticCallLog as mockCallLog, 
-  staticTranscript as mockTranscript, 
-  staticTranscriptChunks as mockTranscriptChunks 
+import type { TestingModule } from '@nestjs/testing';
+import type { Model } from 'mongoose';
+import { Types } from 'mongoose';
+
+import type { CallLog } from '../../src/modules/calllog/schema/calllog.schema';
+import type { Transcript } from '../../src/modules/transcript/schema/transcript.schema';
+import type { TranscriptChunk } from '../../src/modules/transcript-chunk/schema/transcript-chunk.schema';
+import {
+  staticCallLog as mockCallLog,
+  staticTranscript as mockTranscript,
+  staticTranscriptChunks as mockTranscriptChunks,
 } from '../fixtures';
 
 export class DatabaseTestHelper {

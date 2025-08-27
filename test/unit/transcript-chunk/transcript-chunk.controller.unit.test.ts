@@ -1,13 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
+
 import { TranscriptChunkController } from '../../../src/modules/transcript-chunk/transcript-chunk.controller';
 import { TranscriptChunkService } from '../../../src/modules/transcript-chunk/transcript-chunk.service';
-import { 
-  createMockTranscriptChunkDto, 
-  staticTranscriptChunks,
-  mockCreateChunkDto,
+import {
+  createMockTranscriptChunkDto,
   mockCreateMultipleChunksDto,
+  mockPaginationResponse,
   mockQueryParams,
-  mockPaginationResponse
+  staticTranscriptChunks,
 } from '../../fixtures';
 
 // ============================================================================
@@ -38,7 +39,9 @@ describe('TranscriptChunkController (Unit)', () => {
       ],
     }).compile();
 
-    controller = module.get<TranscriptChunkController>(TranscriptChunkController);
+    controller = module.get<TranscriptChunkController>(
+      TranscriptChunkController,
+    );
     service = module.get(TranscriptChunkService);
   });
 
@@ -65,7 +68,10 @@ describe('TranscriptChunkController (Unit)', () => {
 
       const result = await controller.create(transcriptId, createChunksDto);
 
-      expect(service.createMany).toHaveBeenCalledWith(transcriptId, createChunksDto);
+      expect(service.createMany).toHaveBeenCalledWith(
+        transcriptId,
+        createChunksDto,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -121,7 +127,6 @@ describe('TranscriptChunkController (Unit)', () => {
 
   describe('update', () => {
     it('should update a transcript chunk', async () => {
-      const transcriptId = 'transcript-123';
       const chunkId = 'chunk-123';
       const updateDto = { text: 'Updated text' };
       const expectedResult = { ...staticTranscriptChunks[0], ...updateDto };
@@ -137,7 +142,6 @@ describe('TranscriptChunkController (Unit)', () => {
 
   describe('delete', () => {
     it('should delete a transcript chunk', async () => {
-      const transcriptId = 'transcript-123';
       const chunkId = 'chunk-123';
       const expectedResult = staticTranscriptChunks[0];
 

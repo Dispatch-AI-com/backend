@@ -1,10 +1,12 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
+import type { INestApplication } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import mongoose from 'mongoose';
+import request from 'supertest';
+
 import { AppModule } from '../../../src/modules/app.module';
-import { DatabaseTestHelper } from '../../helpers/database.helper';
 import { createMockCallLogDto } from '../../fixtures/dynamic/calllog';
+import { DatabaseTestHelper } from '../../helpers/database.helper';
 
 describe('CallLogController (integration)', () => {
   let app: INestApplication;
