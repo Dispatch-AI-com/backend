@@ -49,15 +49,6 @@ export class User extends Document {
 
   @Prop({ default: EUserRole.user })
   role!: EUserRole;
-
-  @Prop()
-  googleId?: string;
-
-  @Prop()
-  avatar?: string;
-
-  @Prop({ default: 'local' })
-  provider!: string;
 }
 
 export type UserDocument = User & Document;

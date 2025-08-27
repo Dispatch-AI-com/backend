@@ -97,42 +97,8 @@ export class AuthService {
     return !!user;
   }
 
-  async validateGoogleUser(googleUser: {
-    googleId: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    avatar: string;
-  }): Promise<{ user: User; token: string; csrfToken: string }> {
-    let user = await this.userModel.findOne({
-      $or: [{ email: googleUser.email }, { googleId: googleUser.googleId }],
-    });
-
-    if (!user) {
-      user = new this.userModel({
-        email: googleUser.email,
-        firstName: googleUser.firstName,
-        lastName: googleUser.lastName,
-        googleId: googleUser.googleId,
-        avatar: googleUser.avatar,
-        provider: 'google',
-        role: EUserRole.user,
-      });
-      await user.save();
-    } else if (user.googleId == null) {
-      user.googleId = googleUser.googleId;
-      user.avatar = googleUser.avatar;
-      user.provider = 'google';
-      await user.save();
-    }
-
-    const token = this.jwtService.sign({
-      sub: user._id,
-      email: user.email,
-      role: user.role,
-    });
-
-    const csrfToken = generateCSRFToken();
-    return { user: user.toObject() as User, token, csrfToken };
+  async getUserById(userId: string): Promise<User | null> {
+    const user = await this.userModel.findById(userId).exec();
+    return user ? (user.toObject() as User) : null;
   }
 }
