@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBadRequestResponse,
   ApiNotFoundResponse,
@@ -27,6 +29,7 @@ import { CallLog, CallLogDocument } from './schema/calllog.schema';
 
 @ApiTags('calllog')
 @Controller('users/:userId/calllogs')
+@UseGuards(AuthGuard('jwt'))
 export class CalllogController {
   constructor(private readonly calllogService: CalllogService) {}
 
