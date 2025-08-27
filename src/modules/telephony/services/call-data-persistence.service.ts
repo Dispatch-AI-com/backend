@@ -199,15 +199,12 @@ export class CallDataPersistenceService {
     keyPoints: string[],
     history: Message[],
   ): Promise<void> {
-    // Create transcript DTO
-    const transcriptDto: CreateTranscriptDto = {
+    // Create transcript record with AI-generated summary
+    const transcript = await this.transcriptService.create({
       callSid,
       summary,
       keyPoints,
-    };
-
-    // Create transcript record with AI-generated summary
-    const transcript = await this.transcriptService.create(transcriptDto);
+    });
 
     // Create transcript chunk DTOs from conversation history
     const chunkDtos: CreateTranscriptChunkDto[] =
