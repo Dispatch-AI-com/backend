@@ -73,7 +73,7 @@ describe('TranscriptChunkController (Unit)', () => {
   describe('findAll', () => {
     it('should return paginated transcript chunks', async () => {
       const transcriptId = 'transcript-123';
-      const query = mockQueryParams;
+      const query = mockQueryParams as any;
       const expectedResult = {
         data: staticTranscriptChunks,
         pagination: mockPaginationResponse,

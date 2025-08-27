@@ -30,6 +30,9 @@ jobs:
       - name: 🔎 Run Type Check (tsc)
         run: pnpm run type-check
 
+      - name: 🔍 Run Test Type Check
+        run: pnpm run type-check:test
+
       - name: 🗄️ Start MongoDB
         uses: supercharge/mongodb-github-action@1.10.0
         with:

@@ -100,7 +100,7 @@ describe('CalllogController (Unit)', () => {
         },
       };
 
-      service.findAll.mockResolvedValue(expectedResult);
+      service.findAll.mockResolvedValue(expectedResult as any);
 
       const result = await controller.findAll('user-123', queryParams.search, queryParams.startAtFrom, queryParams.startAtTo, queryParams.sort, queryParams.page, queryParams.limit, queryParams.fields);
 
@@ -152,7 +152,7 @@ describe('CalllogController (Unit)', () => {
       const calllogId = 'calllog-123';
       const expectedResult = staticCallLog;
 
-      service.delete.mockResolvedValue(expectedResult);
+      service.delete.mockResolvedValue(expectedResult as any);
 
       const result = await controller.delete('user-123', calllogId);
 
@@ -167,9 +167,10 @@ describe('CalllogController (Unit)', () => {
         totalCalls: 10,
         totalDuration: 3600,
         averageDuration: 360,
+        averageCallDuration: 360,
       };
 
-      service.getSummary.mockResolvedValue(expectedResult);
+      service.getSummary.mockResolvedValue(expectedResult as any);
 
       const result = await controller.getSummary('user-123');
 

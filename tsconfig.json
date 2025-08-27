@@ -20,6 +20,6 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src", "scripts", "test", "test/seeds/test-login.test.ts"],
+  "include": ["src", "scripts"],
   "exclude": ["node_modules", "dist"]
 }
