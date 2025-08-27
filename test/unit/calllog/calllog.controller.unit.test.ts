@@ -41,7 +41,7 @@ describe('CalllogController (Unit)', () => {
       const createCallLogDto = createMockCallLogDto();
       const expectedResult = { ...staticCallLog, ...createCallLogDto };
 
-      service.create.mockResolvedValue(expectedResult);
+      service.create.mockResolvedValue(expectedResult as any);
 
       const result = await controller.create('user-123', createCallLogDto);
 
@@ -102,7 +102,7 @@ describe('CalllogController (Unit)', () => {
 
       service.findAll.mockResolvedValue(expectedResult);
 
-      const result = await controller.findAll('user-123', ...Object.values(queryParams));
+      const result = await controller.findAll('user-123', queryParams.search, queryParams.startAtFrom, queryParams.startAtTo, queryParams.sort, queryParams.page, queryParams.limit, queryParams.fields);
 
       expect(service.findAll).toHaveBeenCalledWith({
         userId: 'user-123',
@@ -123,7 +123,7 @@ describe('CalllogController (Unit)', () => {
       const calllogId = 'calllog-123';
       const expectedResult = staticCallLog;
 
-      service.findOne.mockResolvedValue(expectedResult);
+      service.findOne.mockResolvedValue(expectedResult as any);
 
       const result = await controller.findOne('user-123', calllogId);
 
@@ -135,10 +135,10 @@ describe('CalllogController (Unit)', () => {
   describe('update', () => {
     it('should update a call log', async () => {
       const calllogId = 'calllog-123';
-      const updateDto = { callerName: 'Updated Name' };
+      const updateDto = { callerName: 'Updated Name' } as any;
       const expectedResult = { ...staticCallLog, ...updateDto };
 
-      service.update.mockResolvedValue(expectedResult);
+      service.update.mockResolvedValue(expectedResult as any);
 
       const result = await controller.update('user-123', calllogId, updateDto);
 

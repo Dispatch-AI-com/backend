@@ -45,10 +45,10 @@ describe('TranscriptChunkController (Unit)', () => {
   describe('create', () => {
     it('should create a single transcript chunk', async () => {
       const transcriptId = 'transcript-123';
-      const createChunkDto = createMockTranscriptChunkDto();
+      const createChunkDto = createMockTranscriptChunkDto() as any;
       const expectedResult = staticTranscriptChunks[0];
 
-      service.create.mockResolvedValue(expectedResult);
+      service.create.mockResolvedValue(expectedResult as any);
 
       const result = await controller.create(transcriptId, createChunkDto);
 
@@ -61,7 +61,7 @@ describe('TranscriptChunkController (Unit)', () => {
       const createChunksDto = mockCreateMultipleChunksDto;
       const expectedResult = staticTranscriptChunks;
 
-      service.createMany.mockResolvedValue(expectedResult);
+      service.createMany.mockResolvedValue(expectedResult as any);
 
       const result = await controller.create(transcriptId, createChunksDto);
 
