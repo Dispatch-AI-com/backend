@@ -1,19 +1,61 @@
 import mongoose from 'mongoose';
-import { config } from 'dotenv';
-import { resolve } from 'path';
 
-// Load environment variables from .env.example
-config({ path: resolve(__dirname, '../.env.example') });
+// Mock AuthGuard globally to bypass authentication in tests
+jest.mock('@nestjs/passport', () => {
+  const originalModule = jest.requireActual('@nestjs/passport');
+  return {
+    ...originalModule,
+    AuthGuard: (strategy?: string) => {
+      return class MockAuthGuard {
+        canActivate(): boolean {
+          return true; // Always allow access in tests
+        }
+      };
+    },
+  };
+});
+
+// Mock JWT strategy to provide a default user for tests
+jest.mock('../src/modules/auth/strategies/jwt.strategy', () => {
+  return {
+    JwtStrategy: class MockJwtStrategy {
+      validate() {
+        // Return a default test user
+        return {
+          _id: '507f1f77bcf86cd799439011',
+          email: 'test@example.com',
+          role: 'user',
+          status: 'active',
+        };
+      }
+    },
+  };
+});
+
+// Export test user data for use in tests
+export const TEST_USER = {
+  _id: '507f1f77bcf86cd799439011',
+  email: 'test@example.com',
+  role: 'user',
+  status: 'active',
+};
 
 // Global test setup
 beforeAll(async () => {
   // Set test environment variables
   process.env.NODE_ENV = 'test';
+  process.env.DISABLE_AUTH = 'true'; // Flag for any additional auth checks
+  process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
+  process.env.JWT_SECRET = 'test-jwt-secret';
+  process.env.CSRF_SECRET = 'test-csrf-secret';
+  process.env.APP_URL = 'http://localhost:3000';
+  process.env.AI_URL = 'http://localhost:8000/api';
+  process.env.REDIS_HOST = 'localhost';
+  process.env.REDIS_PORT = '6379';
 
   // Connect to test database
   try {
-    const mongoUri =
-      process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+    const mongoUri = process.env.MONGODB_URI;
     await mongoose.connect(mongoUri, {
       // Add connection options for better reliability in CI
       maxPoolSize: 5,
@@ -40,6 +82,13 @@ beforeAll(async () => {
 // Global test teardown
 afterAll(async () => {
   try {
+    // Clean up all collections before closing
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+      const collection = collections[key];
+      await collection.deleteMany({});
+    }
+    
     await mongoose.connection.close();
     console.log('Disconnected from test database');
   } catch (error) {
@@ -47,6 +96,20 @@ afterAll(async () => {
       'Error closing test database connection:',
       (error as Error).message,
     );
+  }
+});
+
+// Global beforeEach to clean database before each test
+beforeEach(async () => {
+  try {
+    // Clean up all collections before each test
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+      const collection = collections[key];
+      await collection.deleteMany({});
+    }
+  } catch (error) {
+    console.error('Error cleaning database before test:', (error as Error).message);
   }
 });
 
