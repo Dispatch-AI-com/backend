@@ -46,7 +46,14 @@ class Address(BaseModel):
 class UserInfo(BaseModel):
     name: Optional[str] = None
     phone: Optional[str] = None
-    address: Optional[str] = None  # Simplified to store address as string
+    address: Optional[str] = (
+        None  # Complete address string (for backward compatibility)
+    )
+    street_number: Optional[str] = None  # House/unit number
+    street_name: Optional[str] = None  # Street name including type
+    suburb: Optional[str] = None  # Suburb/city name
+    postcode: Optional[str] = None  # 4-digit postal code
+    state: Optional[str] = None  # Australian state/territory abbreviation
 
 
 class Company(BaseModel):

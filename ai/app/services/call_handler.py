@@ -11,10 +11,19 @@ from langgraph.graph import END, START, StateGraph
 from custom_types import CustomerServiceState
 from .redis_service import (
     update_user_info_field,
+    update_address_components,
     update_service_selection,
     update_booking_status,
     get_message_history,
 )
+from .retrieve.customer_info_extractors import (
+    extract_name_from_conversation,
+    extract_phone_from_conversation,
+    extract_address_from_conversation,
+    extract_service_from_conversation,
+    extract_time_from_conversation,
+)
+from .llm_speech_corrector import SimplifiedSpeechCorrector
 from config import settings
 
 
@@ -60,8 +69,198 @@ PHONE_REGEX = re.compile(r"^\+?\d{7,15}$")
 
 
 class CustomerServiceLangGraph:
-    """Customer service workflow controller using LangGraph - 5-Step Workflow"""
-    
+    """Customer service workflow controller - 5-Step Simplified Workflow
+
+    Main responsibility is to manage the entire customer information collection process:
+    1. Name Collection
+    2. Phone Collection
+    3. Address Collection (single string with speech correction)
+    4. Service Selection
+    5. Time/Booking Completion
+    """
+
+    def _replace_service_placeholders(
+        self, response_text: str, state: CustomerServiceState
+    ) -> str:
+        """Replace service-related placeholders in LLM response with actual values"""
+        if not response_text:
+            return response_text
+
+        # Get available services
+        available_services = state.get("available_services", [])
+
+        print(f"🔍 [PLACEHOLDER_REPLACEMENT] Processing response: '{response_text}'")
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Available services count: {len(available_services)}"
+        )
+        if available_services:
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Available services: {[s['name'] for s in available_services]}"
+            )
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{{{services_list}}}}: {'{{services_list}}' in response_text}"
+        )
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Contains {{services_list}}: {'{services_list}' in response_text}"
+        )
+
+        # Replace {{services_list}} placeholder (double braces)
+        if "{{services_list}}" in response_text:
+            services_list = ""
+            for i, service in enumerate(available_services, 1):
+                price_text = (
+                    f"{service['price']} dollars"
+                    if service.get("price")
+                    else "Price on request"
+                )
+                services_list += f"{i}. {service['name']} for {price_text}. "
+
+            response_text = response_text.replace(
+                "{{services_list}}", services_list.strip()
+            )
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{services_list}} with: '{services_list.strip()}'"
+            )
+
+        # Replace {{{{services_list}}}} placeholder (quadruple braces)
+        if "{{{{services_list}}}}" in response_text:
+            services_list = ""
+            for i, service in enumerate(available_services, 1):
+                price_text = (
+                    f"{service['price']} dollars"
+                    if service.get("price")
+                    else "Price on request"
+                )
+                services_list += f"{i}. {service['name']} for {price_text}. "
+
+            response_text = response_text.replace(
+                "{{{{services_list}}}}", services_list.strip()
+            )
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {{{{services_list}}}} with: '{services_list.strip()}'"
+            )
+
+        # Replace {services_list} placeholder (single braces) - fallback for LLM variations
+        if "{services_list}" in response_text:
+            services_list = ""
+            for i, service in enumerate(available_services, 1):
+                price_text = (
+                    f"{service['price']} dollars"
+                    if service.get("price")
+                    else "Price on request"
+                )
+                services_list += f"{i}. {service['name']} for {price_text}. "
+
+            response_text = response_text.replace(
+                "{services_list}", services_list.strip()
+            )
+            print(
+                f"🔍 [PLACEHOLDER_REPLACEMENT] Replaced {services_list} with: '{services_list.strip()}'"
+            )
+
+        # Replace selected service placeholders (both 2-brace and 4-brace patterns)
+        if (
+            "{{selected_service_name}}" in response_text
+            or "{{selected_service_price}}" in response_text
+            or "{{{{selected_service_name}}}}" in response_text
+            or "{{{{selected_service_price}}}}" in response_text
+        ):
+            # Try to find the selected service from available services
+            extracted_service = state.get("service")
+            selected_service = None
+
+            if extracted_service:
+                extracted_lower = extracted_service.lower()
+                print(f"🔍 [PLACEHOLDER_REPLACEMENT] Looking for extracted service: '{extracted_service}'")
+                
+                # First try exact match
+                for service in available_services:
+                    if service["name"].lower() == extracted_lower:
+                        selected_service = service
+                        print(f"✅ [PLACEHOLDER_REPLACEMENT] Exact match found: {service['name']}")
+                        break
+                
+                # If no exact match, try partial matching
+                if not selected_service:
+                    for service in available_services:
+                        service_name_lower = service["name"].lower()
+                        # Check if extracted service contains service name or vice versa
+                        if (extracted_lower in service_name_lower or 
+                            service_name_lower in extracted_lower or
+                            # Also check word-level matching
+                            any(word in service_name_lower for word in extracted_lower.split())):
+                            selected_service = service
+                            print(f"✅ [PLACEHOLDER_REPLACEMENT] Partial match found: {service['name']} for '{extracted_service}'")
+                            break
+                
+                if not selected_service:
+                    print(f"⚠️ [PLACEHOLDER_REPLACEMENT] No match found for service: '{extracted_service}'")
+
+            if selected_service:
+                # Replace 2-brace patterns
+                response_text = response_text.replace(
+                    "{{selected_service_name}}", selected_service["name"]
+                )
+                # Replace 4-brace patterns
+                response_text = response_text.replace(
+                    "{{{{selected_service_name}}}}", selected_service["name"]
+                )
+                
+                price_text = (
+                    f"{selected_service['price']}"
+                    if selected_service.get("price")
+                    else "Price on request"
+                )
+                response_text = response_text.replace(
+                    "{{selected_service_price}}", price_text
+                )
+                response_text = response_text.replace(
+                    "{{{{selected_service_price}}}}", price_text
+                )
+            else:
+                # Fallback if service not found
+                fallback_service_name = extracted_service or "the selected service"
+                response_text = response_text.replace(
+                    "{{selected_service_name}}", fallback_service_name
+                )
+                response_text = response_text.replace(
+                    "{{{{selected_service_name}}}}", fallback_service_name
+                )
+                response_text = response_text.replace(
+                    "{{selected_service_price}}", "Price on request"
+                )
+                response_text = response_text.replace(
+                    "{{{{selected_service_price}}}}", "Price on request"
+                )
+
+        print(
+            f"🔍 [PLACEHOLDER_REPLACEMENT] Final response: '{response_text[:100]}...'"
+        )
+        return response_text
+
+    def _generate_closing_message(
+        self, state: CustomerServiceState, booking_failed: bool = False
+    ) -> str:
+        """Generate closing message when conversation is completed"""
+        # Extract booking information
+        customer_name = state.get("name", "")
+        service_name = state.get("service", "")
+        service_time = state.get("service_time", "")
+
+        if booking_failed:
+            # Message for failed booking (usually due to time collection failure)
+            return (
+                f"Thank you {customer_name}! I have your contact information and service preference for {service_name}. "
+                f"Our team will contact you shortly to confirm the booking details and schedule. "
+                f"Thank you for calling us today. Have a great day and goodbye!"
+            )
+        else:
+            # Message for successful booking
+            return (
+                f"Perfect! Thank you {customer_name}. I have successfully recorded your booking for {service_name} "
+                f"on {service_time}. Your booking is confirmed and we will send you a confirmation shortly. "
+                f"Thank you for choosing our service today. Have a great day and goodbye!"
+            )
     def __init__(self, api_key=None):
         """Initialize customer service system"""
         if api_key:
@@ -69,281 +268,813 @@ class CustomerServiceLangGraph:
         else:
             self.client = OpenAI(api_key=settings.openai_api_key)
         
-        # Build LangGraph workflow
-        self.workflow = self._build_graph()
-    
-    def _build_graph(self):
-        """Build the LangGraph workflow"""
-        graph = StateGraph(CustomerServiceState)
-        graph.add_node("conversation", self._smart_conversation_node)
-        graph.add_edge(START, "conversation")
-        graph.add_edge("conversation", END)
-        return graph.compile()
-    
-    async def process_customer_workflow(self, state: CustomerServiceState, call_sid: Optional[str] = None):
-        """Main entry point for external API calls"""
-        # Add call_sid to state for Redis operations
-        if call_sid:
-            state = state.copy()  # Don't modify original
-            state["call_sid"] = call_sid
-        
-        # Process through LangGraph directly with CustomerServiceState
-        updated_state = self.workflow.invoke(state)
-        
-        return updated_state
+        # Initialize speech corrector
+        self.speech_corrector = SimplifiedSpeechCorrector(api_key=api_key)
 
-    def _smart_conversation_node(self, state: CustomerServiceState) -> CustomerServiceState:
-        """Smart conversation node with Redis integration"""
-        user_input = state.get("last_user_input", "")
-        call_sid = state.get("call_sid")
-        
-        # Get message history from Redis if call_sid is available
+        # Create LangGraph workflow - using simplified approach
+        self.workflow = None
+
+    # ================== Information Collection Processing Functions ==================
+
+    async def process_name_collection(
+        self, state: CustomerServiceState, call_sid: Optional[str] = None
+    ):
+        """Process name collection step"""
+        # Initialize attempts counter if not present
+        if "name_attempts" not in state or state["name_attempts"] is None:
+            state["name_attempts"] = 0
+
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+
+        # Get message history from Redis
         message_history = []
         if call_sid:
-            try:
-                message_history = get_message_history(call_sid)
-                print(f"🔍 Retrieved {len(message_history)} messages from Redis for call_sid: {call_sid}")
-            except Exception as e:
-                print(f"⚠️ Failed to get message history: {e}")
-        
-        # 动态确定缺失的信息（按优先级顺序）
-        missing_fields = []
-        if not state.get('name'): missing_fields.append('姓名')
-        if not state.get('phone'): missing_fields.append('电话')
-        if not state.get('address'): missing_fields.append('地址')
-        if not state.get('service'): missing_fields.append('服务选择')
-        if not state.get('service_time'): missing_fields.append('服务时间')
-        
-        # 动态状态显示
-        name_status = state.get('name') or '未收集'
-        phone_status = state.get('phone') or '未收集'
-        address_status = state.get('address') or '未收集'
-        service_status = state.get('service') or '未收集'
-        service_time_status = state.get('service_time') or '未收集'
-        missing_status = ', '.join(missing_fields) if missing_fields else '全部收集完成'
-        
-        # 获取可用服务列表
-        available_services = state.get('available_services', [])
-        services_text = ""
-        if available_services:
-            services_text = '\n'.join([
-                f"- {service.get('name', service)}: ${service.get('price', 'N/A')}"
-                if isinstance(service, dict) else f"- {service}"
-                for service in available_services
-            ])
-        
-        # 如果是第一次交互（没有用户输入），直接开始对话
-        if not user_input:
-            response_text = "你好！我需要收集一些基本信息来为您提供服务。请问你的姓名是？"
-            state["last_llm_response"] = {
-                "response": response_text,
-                "info_extracted": {},
-                "info_complete": False,
-                "analysis": "Initial greeting"
-            }
-            return state
-        
-        system_prompt = f"""
-        你是一个友好的服务预约助手。
+            message_history = get_message_history(call_sid)
 
-        【当前收集状态】
-        - 姓名：{name_status}
-        - 电话：{phone_status}  
-        - 地址：{address_status}
-        - 服务选择：{service_status}
-        - 服务时间：{service_time_status}
-        - 还需收集：{missing_status}
+        # Call LLM to extract name
+        result = await extract_name_from_conversation(state, message_history)
+        state["last_llm_response"] = result
 
-        【可用服务列表】
-        {services_text}
+        # Check if name was extracted
+        extracted_name = result["info_extracted"].get("name")
+        is_complete = result["info_complete"]
 
-        【用户最新输入】
-        "{user_input}"
+        if is_complete and extracted_name:
+            # Clean and standardize name
+            cleaned_name = extracted_name.strip()
 
-        【对话策略】
-        1. 收集顺序：姓名→电话→地址→服务选择→服务时间
-        2. 如果成功提取到新信息，要确认并感谢，然后引导到下一个缺失字段
-        3. 当需要收集服务选择时，先展示可用服务列表，然后让用户选择
-        4. 服务时间支持多种格式：具体日期、时间段、相对时间等
-        5. 保持对话自然流畅，避免机械提问
-        6. 多个信息要逐一确认
-        7. 电话号码格式：数字，可选前缀+，长度7-15位
-
-        【输出格式】
-        返回严格的JSON格式：
-        {{
-            "response": "基于当前状态的自然对话回应",
-            "extracted": {{
-                "name": "新提取的姓名或null",
-                "phone": "新提取的电话或null", 
-                "address": "新提取的地址或null",
-                "service": "新提取的服务选择或null",
-                "service_time": "新提取的服务时间或null"
-            }},
-            "next_action": "{'complete' if not missing_fields else 'continue'}",
-            "show_services": {str('服务选择' in missing_fields and not state.get('service')).lower()}
-        }}
-
-        不要添加任何解释，只返回JSON。
-        """
-
-        try:
-            resp = self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    *message_history,  # Add message history to context
-                    {"role": "user", "content": user_input}
-                ],
-                temperature=0.3,
-                max_tokens=500,
-            )
-            text = resp.choices[0].message.content or ""
-            data = _extract_first_json_blob(text) or {}
-        except Exception as e:
-            print(f"❌ OpenAI API call failed: {e}")
-            data = {}
-        
-        # 处理LLM回应
-        response_text = data.get("response", "抱歉，我没有理解。请再次提供信息。")
-        extracted = data.get("extracted", {}) if isinstance(data, dict) else {}
-        
-        # 处理提取的信息并更新到 Redis
-        redis_updates = {}
-        info_extracted = {}
-        
-        # 处理提取的姓名
-        name = extracted.get("name") if isinstance(extracted, dict) else None
-        if name and not state.get("name"):
-            cleaned_name = str(name).strip()
+            # Local state update
             state["name"] = cleaned_name
             state["name_complete"] = True
-            redis_updates["name"] = cleaned_name
-            info_extracted["name"] = cleaned_name
-            
-        # 处理提取的电话
-        phone = extracted.get("phone") if isinstance(extracted, dict) else None
-        if phone and not state.get("phone"):
-            ok, normalized, error_msg = validate_and_normalize_phone(str(phone))
-            if ok:
-                state["phone"] = normalized
-                state["phone_complete"] = True
-                redis_updates["phone"] = normalized
-                info_extracted["phone"] = normalized
-            else:
-                response_text = f"电话号码格式不正确。{error_msg or '请提供7-15位数字，可选前缀+。'}"
-        
-        # 处理提取的地址
-        address = extracted.get("address") if isinstance(extracted, dict) else None
-        if address and not state.get("address"):
-            cleaned_address = str(address).strip()
-            state["address"] = cleaned_address
-            state["address_complete"] = True
-            redis_updates["address"] = cleaned_address
-            info_extracted["address"] = cleaned_address
-            
-        # 处理提取的服务选择
-        service = extracted.get("service") if isinstance(extracted, dict) else None
-        if service and not state.get("service"):
-            service_name = str(service).strip()
-            # 验证服务是否在可用列表中
-            valid_service = False
-            service_details = None
-            
-            for available_service in available_services:
-                if isinstance(available_service, dict):
-                    if available_service.get("name", "").lower() == service_name.lower():
-                        valid_service = True
-                        service_details = available_service
-                        break
-                elif str(available_service).lower() == service_name.lower():
-                    valid_service = True
-                    break
-            
-            if valid_service:
-                state["service"] = service_name
-                state["service_complete"] = True
-                if service_details:
-                    state["service_id"] = service_details.get("id")
-                    state["service_price"] = service_details.get("price")
-                info_extracted["service"] = service_name
-                
-                # Update service selection in Redis
-                if call_sid and service_details:
-                    try:
-                        update_service_selection(
-                            call_sid=call_sid,
-                            service_name=service_name,
-                            service_id=service_details.get("id"),
-                            service_price=service_details.get("price"),
-                            service_time=None,
-                        )
-                        print(f"✅ Service updated in Redis: {service_name}")
-                    except Exception as e:
-                        print(f"⚠️ Failed to update service in Redis: {e}")
-            else:
-                response_text = f"您选择的服务不在我们的服务列表中。请从以下服务中选择：\n{services_text}"
-        
-        # 处理提取的服务时间
-        service_time = extracted.get("service_time") if isinstance(extracted, dict) else None
-        if service_time and not state.get("service_time"):
-            cleaned_time = str(service_time).strip()
-            state["service_time"] = cleaned_time
-            state["time_complete"] = True
-            info_extracted["service_time"] = cleaned_time
-            
-            # Update service time in Redis if service is also selected
-            if call_sid and state.get("service"):
-                try:
-                    update_service_selection(
-                        call_sid=call_sid,
-                        service_name=state["service"],
-                        service_id=state.get("service_id"),
-                        service_price=state.get("service_price"),
-                        service_time=cleaned_time,
+            state["current_step"] = "collect_phone"
+
+            # Real-time Redis update
+            if call_sid:
+                redis_success = update_user_info_field(
+                    call_sid=call_sid, field_name="name", field_value=cleaned_name
+                )
+
+                if redis_success:
+                    print(f"✅ Name extracted and saved successfully: {cleaned_name}")
+                else:
+                    print(
+                        f"⚠️ Name extracted successfully but Redis save failed: {cleaned_name}"
                     )
-                    print(f"✅ Service time updated in Redis: {cleaned_time}")
-                except Exception as e:
-                    print(f"⚠️ Failed to update service time in Redis: {e}")
-        
-        # Update user info fields in Redis
+
+            print(f"✅ Name collection completed: {cleaned_name}")
+        else:
+            # Increment attempt count
+            state["name_attempts"] += 1
+
+            if state["name_attempts"] >= state["max_attempts"]:
+                print(
+                    f"❌ Name collection failed, reached maximum attempts ({state['max_attempts']})"
+                )
+                state["current_step"] = "collect_phone"  # Skip to next step
+            else:
+                print(
+                    f"⚠️ Name extraction failed, attempt: {state['name_attempts']}/{state['max_attempts']}"
+                )
+
+        return state
+
+    async def process_phone_collection(
+        self, state: CustomerServiceState, call_sid: Optional[str] = None
+    ):
+        """Process phone collection step"""
+        # Initialize attempts counter if not present
+        if "phone_attempts" not in state or state["phone_attempts"] is None:
+            state["phone_attempts"] = 0
+
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+
+        # Get message history from Redis
+        message_history = []
         if call_sid:
-            for field_name, field_value in redis_updates.items():
-                try:
-                    success = update_user_info_field(call_sid, field_name, field_value)
-                    if success:
-                        print(f"✅ Updated {field_name} in Redis: {field_value}")
-                    else:
-                        print(f"⚠️ Failed to update {field_name} in Redis")
-                except Exception as e:
-                    print(f"❌ Error updating {field_name} in Redis: {e}")
-        
-        # 判断是否完成收集
-        all_complete = (state.get("name_complete") and 
-                       state.get("phone_complete") and 
-                       state.get("address_complete") and 
-                       state.get("service_complete") and 
-                       state.get("time_complete"))
-        
-        if all_complete:
+            message_history = get_message_history(call_sid)
+
+        # Call LLM to extract phone
+        result = await extract_phone_from_conversation(state, message_history)
+        state["last_llm_response"] = result
+
+        # Check if phone was extracted
+        extracted_phone = result["info_extracted"].get("phone")
+        is_complete = result["info_complete"]
+
+        if is_complete and extracted_phone:
+            # Clean and standardize phone
+            cleaned_phone = extracted_phone.strip()
+
+            # Local state update
+            state["phone"] = cleaned_phone
+            state["phone_complete"] = True
+            state["current_step"] = "collect_address"
+
+            # Real-time Redis update
+            if call_sid:
+                redis_success = update_user_info_field(
+                    call_sid=call_sid, field_name="phone", field_value=cleaned_phone
+                )
+
+                if redis_success:
+                    print(f"✅ Phone extracted and saved successfully: {cleaned_phone}")
+                else:
+                    print(
+                        f"⚠️ Phone extracted successfully but Redis save failed: {cleaned_phone}"
+                    )
+
+            print(f"✅ Phone collection completed: {cleaned_phone}")
+        else:
+            # Increment attempt count
+            state["phone_attempts"] += 1
+
+            if state["phone_attempts"] >= state["max_attempts"]:
+                print(
+                    f"❌ Phone collection failed, reached maximum attempts ({state['max_attempts']})"
+                )
+                state["current_step"] = "collect_address"  # Skip to next step
+            else:
+                print(
+                    f"⚠️ Phone extraction failed, attempt: {state['phone_attempts']}/{state['max_attempts']}"
+                )
+
+        return state
+
+    async def process_address_collection(
+        self, state: CustomerServiceState, call_sid: Optional[str] = None
+    ):
+        """Process address collection step with speech correction for Australian addresses"""
+        # Initialize attempts counter if not present
+        if "address_attempts" not in state or state["address_attempts"] is None:
+            state["address_attempts"] = 0
+
+        # Initialize max_attempts if not present
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+
+        # Apply speech correction for Australian address input (NSW/NSEW fix)
+        original_input = state.get("last_user_input", "")
+        print(
+            f"🔧 [SPEECH_DEBUG] Starting speech correction for address input: '{original_input}'"
+        )
+
+        # Check if this looks like a confirmation
+        confirmation_words = [
+            "yes",
+            "correct",
+            "right",
+            "that's right",
+            "that's correct",
+            "yeah",
+        ]
+        is_likely_confirmation = any(
+            word in original_input.lower() for word in confirmation_words
+        )
+        print(
+            f"🔧 [ADDRESS_DEBUG] Input type analysis - likely confirmation: {is_likely_confirmation}"
+        )
+
+        if original_input:
+            try:
+                correction_result = await self.speech_corrector.correct_speech_input(
+                    text=original_input, context="address_collection"
+                )
+
+                print(f"🔧 [SPEECH_DEBUG] Speech corrector result: {correction_result}")
+
+                # Apply correction if confidence is sufficient
+                if self.speech_corrector.should_apply_correction(correction_result):
+                    corrected_input = correction_result["corrected"]
+                    state["last_user_input"] = corrected_input
+                    print(
+                        f"✅ [SPEECH_DEBUG] Speech correction applied: '{original_input}' -> '{corrected_input}'"
+                    )
+                    print(
+                        f"   Method: {correction_result['method']}, Confidence: {correction_result['confidence']:.2f}"
+                    )
+                    print(f"   Reasoning: {correction_result['reasoning']}")
+                else:
+                    print(
+                        f"🔧 [SPEECH_DEBUG] No speech correction applied for: '{original_input}'"
+                    )
+                    print(
+                        f"   Confidence too low: {correction_result['confidence']:.2f} (threshold: 0.6)"
+                    )
+                    print(f"   Method: {correction_result['method']}")
+                    print(f"   Reasoning: {correction_result['reasoning']}")
+
+            except Exception as e:
+                print(f"❌ [SPEECH_DEBUG] Speech correction failed: {str(e)}")
+                # Continue with original input if correction fails
+
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+
+        # Call LLM to extract address
+        result = await extract_address_from_conversation(state, message_history)
+        state["last_llm_response"] = result
+
+        # Check if address was extracted
+        extracted_address = result["info_extracted"].get("address")
+
+        # Check for address confirmation
+        extracted_info = result["info_extracted"]
+        user_confirmed = extracted_info.get("confirmed")
+
+        # Handle confirmation workflow
+        if user_confirmed:
+            # User confirmed the address - use existing address from state
+            print("✅ [ADDRESS_COLLECTION] User confirmed address")
+            existing_address = state.get("address", "")
+            existing_components = {
+                "street_number": state.get("street_number"),
+                "street_name": state.get("street_name"),
+                "suburb": state.get("suburb"),
+                "postcode": state.get("postcode"),
+                "state": state.get("state"),
+            }
+
+            if existing_address and all(existing_components.values()):
+                state["address_complete"] = True
+                state["current_step"] = "collect_service"
+                
+                # Create natural transition message thanking user and introducing services
+                available_services = state.get("available_services", [])
+                services_list = ""
+                for i, service in enumerate(available_services, 1):
+                    price_text = (
+                        f"{service['price']} dollars"
+                        if service.get("price")
+                        else "Price on request"
+                    )
+                    services_list += f"{i}. {service['name']} for {price_text}. "
+                
+                transition_message = f"Thank you for providing your information! Now, here are our available services: {services_list.strip()}. Which service would you like to book today?"
+                
+                # Update the response to include the transition message
+                state["last_llm_response"] = {
+                    "response": transition_message,
+                    "info_extracted": {"confirmed": True},
+                    "info_complete": True,
+                    "analysis": "Address confirmed, transitioning to service selection"
+                }
+                
+                print(f"✅ Address confirmed and completed: {existing_address}")
+                print("🔄 Created transition message to service selection")
+                return state
+
+        # Check if we have complete address information (all 5 components required)
+        street_number = extracted_info.get("street_number")
+        street_name = extracted_info.get("street_name")
+        suburb = extracted_info.get("suburb")
+        postcode = extracted_info.get("postcode")
+        state_abbrev = extracted_info.get("state")
+
+        has_complete_address = all(
+            [
+                street_number and str(street_number).strip(),
+                street_name and str(street_name).strip(),
+                suburb and str(suburb).strip(),
+                postcode and str(postcode).strip(),
+                state_abbrev and str(state_abbrev).strip(),
+            ]
+        )
+
+        # Only update and save address components, but don't mark as complete yet
+        # Wait for user confirmation
+        if has_complete_address:
+            # Clean address string
+            cleaned_address = extracted_address.strip() if extracted_address else ""
+
+            # If no complete address string but we have all components, build one
+            if not cleaned_address:
+                address_parts = [
+                    str(street_number),
+                    str(street_name),
+                    str(suburb),
+                    str(postcode),
+                    str(state_abbrev),
+                ]
+                cleaned_address = ", ".join(address_parts)
+                print(
+                    f"🔧 [ADDRESS_COLLECTION] Built complete address from components: {cleaned_address}"
+                )
+
+            # Check if we already have some address information
+            existing_address = state.get("address", "")
+            if existing_address and existing_address != cleaned_address:
+                print(
+                    f"🔍 [ADDRESS_COLLECTION] Updating address: '{existing_address}' -> '{cleaned_address}'"
+                )
+
+            # Local state update - store both complete address and components
+            state["address"] = cleaned_address
+            state["street_number"] = street_number
+            state["street_name"] = street_name
+            state["suburb"] = suburb
+            state["postcode"] = postcode
+            state["state"] = state_abbrev
+
+            # Update completion flags for components
+            state["street_number_complete"] = bool(street_number)
+            state["street_name_complete"] = bool(street_name)
+            state["suburb_complete"] = bool(suburb)
+            state["postcode_complete"] = bool(postcode)
+            state["state_complete"] = bool(state_abbrev)
+
+            # Don't mark as complete yet - wait for user confirmation
+            # Only save the components for now
+            print(
+                "📝 [ADDRESS_COLLECTION] Address components saved, waiting for user confirmation"
+            )
+
+            # Real-time Redis update with address components
+            if call_sid:
+                redis_success = update_address_components(
+                    call_sid=call_sid,
+                    address=cleaned_address,
+                    street_number=street_number,
+                    street_name=street_name,
+                    suburb=suburb,
+                    postcode=postcode,
+                    state=state_abbrev,
+                )
+
+                if redis_success:
+                    print(
+                        f"✅ Address and components extracted and saved successfully: {cleaned_address}"
+                    )
+                    print(
+                        f"🏠 Components: {street_number}, {street_name}, {suburb}, {postcode}, {state_abbrev}"
+                    )
+                else:
+                    print(
+                        f"⚠️ Address extracted successfully but Redis save failed: {cleaned_address}"
+                    )
+
+            print(f"✅ Address collection completed: {cleaned_address}")
+        else:
+            # Increment attempt count
+            state["address_attempts"] += 1
+
+            if state["address_attempts"] >= state["max_attempts"]:
+                print(
+                    f"❌ Address collection failed, reached maximum attempts ({state['max_attempts']})"
+                )
+                state["current_step"] = "collect_service"  # Skip to next step
+            else:
+                print(
+                    f"⚠️ Address extraction failed, attempt: {state['address_attempts']}/{state['max_attempts']}"
+                )
+
+        return state
+
+    async def process_service_collection(
+        self, state: CustomerServiceState, call_sid: Optional[str] = None
+    ):
+        """Process service collection step"""
+        # Initialize attempts counter if not present
+        if "service_attempts" not in state or state["service_attempts"] is None:
+            state["service_attempts"] = 0
+
+        # Initialize service_max_attempts if not present
+        if "service_max_attempts" not in state or state["service_max_attempts"] is None:
+            state["service_max_attempts"] = settings.service_max_attempts
+
+        # Check available services in state
+        available_services = state.get("available_services", [])
+        if not available_services:
+            print("⚠️ [SERVICE_COLLECTION] No available services found in state!")
+
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+
+        # Call LLM to extract service
+        result = await extract_service_from_conversation(state, message_history)
+
+        # Replace placeholders in the response with actual service information
+        if result and "response" in result:
+            result["response"] = self._replace_service_placeholders(
+                result["response"], state
+            )
+
+        state["last_llm_response"] = result
+
+        # Check if service was extracted
+        extracted_service = result["info_extracted"].get("service")
+        is_complete = result["info_complete"]
+
+        if is_complete and extracted_service:
+            # Clean and standardize service
+            cleaned_service = extracted_service.strip()
+
+            # Match extracted service with available services to get full details
+            available_services = state.get("available_services", [])
+            matched_service = None
+
+            for service in available_services:
+                if service["name"].lower() == cleaned_service.lower():
+                    matched_service = service
+                    break
+
+            # Local state update with full service information
+            state["service"] = cleaned_service
+            if matched_service:
+                state["service_id"] = matched_service.get("id")
+                state["service_price"] = matched_service.get("price")
+                print(
+                    f"🎯 Matched service: {matched_service['name']} (ID: {matched_service.get('id')}, Price: ${matched_service.get('price', 'N/A')})"
+                )
+            else:
+                print(
+                    f"⚠️ Could not match extracted service '{cleaned_service}' with available services"
+                )
+
+            state["service_complete"] = True
+            state["service_available"] = True  # Assume available for now
+            state["current_step"] = "collect_time"
+
+            # Real-time Redis update
+            if call_sid:
+                redis_success = update_service_selection(
+                    call_sid=call_sid,
+                    service_name=cleaned_service,
+                    service_id=state.get("service_id"),
+                    service_price=state.get("service_price"),
+                    service_time=None,
+                )
+
+                if redis_success:
+                    print(
+                        f"✅ Service extracted and saved successfully: {cleaned_service}"
+                    )
+                else:
+                    print(
+                        f"⚠️ Service extracted successfully but Redis save failed: {cleaned_service}"
+                    )
+
+            print(f"✅ Service collection completed: {cleaned_service}")
+        else:
+            # Increment attempt count
+            state["service_attempts"] += 1
+
+            if state["service_attempts"] >= state["service_max_attempts"]:
+                print(
+                    f"❌ Service collection failed, reached maximum attempts ({state['service_max_attempts']})"
+                )
+                state["current_step"] = "collect_time"  # Skip to next step
+            else:
+                print(
+                    f"⚠️ Service extraction failed, attempt: {state['service_attempts']}/{state['service_max_attempts']}"
+                )
+
+        return state
+
+    async def process_time_collection(
+        self, state: CustomerServiceState, call_sid: Optional[str] = None
+    ):
+        """Process time collection step - Simplified with AI direct MongoDB output"""
+        # Initialize attempts counter
+        if "time_attempts" not in state or state["time_attempts"] is None:
+            state["time_attempts"] = 0
+        if "max_attempts" not in state or state["max_attempts"] is None:
+            state["max_attempts"] = settings.max_attempts
+
+        # Get message history from Redis
+        message_history = []
+        if call_sid:
+            message_history = get_message_history(call_sid)
+
+        # Call AI to extract and convert time in one step
+        result = await extract_time_from_conversation(state, message_history)
+        state["last_llm_response"] = result
+
+        # Extract AI results
+        extracted_time = result["info_extracted"].get("time")
+        mongodb_time = result["info_extracted"].get("time_mongodb")
+        is_complete = result["info_complete"]
+
+        if is_complete and extracted_time:
+            # AI successfully extracted and converted time
+            cleaned_time = extracted_time.strip()
+
+            # Use AI MongoDB format or fallback
+            if mongodb_time and mongodb_time != "null":
+                final_mongodb_time = mongodb_time
+                print(
+                    f"✨ AI extracted time with MongoDB format: {cleaned_time} -> {final_mongodb_time}"
+                )
+            else:
+                # Fallback: use the extracted time as-is
+                final_mongodb_time = cleaned_time
+                print(f"🔄 Using extracted time as fallback: {cleaned_time}")
+
+            # Update state
+            state["service_time"] = cleaned_time
+            state["service_time_mongodb"] = final_mongodb_time
+            state["time_complete"] = True
+            state["time_available"] = True
+
+            # Complete booking process
+            if call_sid:
+                self._complete_booking(
+                    state, call_sid, final_mongodb_time or cleaned_time
+                )
+        else:
+            # Handle failed extraction
+            state["time_attempts"] += 1
+            if state["time_attempts"] >= state["max_attempts"]:
+                self._complete_booking_failed(state, call_sid)
+            else:
+                print(
+                    f"⚠️ Time extraction failed, attempt: {state['time_attempts']}/{state['max_attempts']}"
+                )
+
+        return state
+
+    def _complete_booking(
+        self, state: CustomerServiceState, call_sid: str, time_for_storage: str
+    ):
+        """Complete successful booking"""
+        # Update Redis with service and time
+        redis_success = update_service_selection(
+            call_sid=call_sid,
+            service_name=state.get("service") or "",
+            service_id=state.get("service_id"),
+            service_price=state.get("service_price"),
+            service_time=time_for_storage,
+        )
+
+        if redis_success:
+            print(
+                f"✅ Booking completed successfully: {state.get('service')} at {state.get('service_time')}"
+            )
+        else:
+            print("⚠️ Booking info extracted but Redis save failed")
+
+        # Mark conversation complete
+        state["conversation_complete"] = True
+        state["current_step"] = "completed"
+        update_booking_status(call_sid, is_booked=True, email_sent=False)
+
+        # Generate closing message
+        closing_message = self._generate_closing_message(state)
+        state["last_llm_response"] = {
+            "response": closing_message,
+            "info_extracted": {},
+            "info_complete": True,
+            "analysis": "Conversation completed successfully",
+        }
+        print("✅ All information collected, booking completed")
+
+    def _complete_booking_failed(
+        self, state: CustomerServiceState, call_sid: Optional[str]
+    ):
+        """Complete booking when time collection failed"""
+        print(f"❌ Time collection failed after {state['max_attempts']} attempts")
+        state["conversation_complete"] = True
+        state["current_step"] = "completed"
+
+        if call_sid:
+            update_booking_status(call_sid, is_booked=False, email_sent=False)
+            closing_message = self._generate_closing_message(state, booking_failed=True)
+            state["last_llm_response"] = {
+                "response": closing_message,
+                "info_extracted": {},
+                "info_complete": True,
+                "analysis": "Booking failed, time collection unsuccessful"
+            }
+            print("⚠️ Partial booking completed, time collection failed")
+
+    # ================== Unified Workflow Entry Function ==================
+
+    async def process_customer_workflow(
+        self, state: CustomerServiceState, call_sid: Optional[str] = None
+    ):
+        """Unified customer information collection workflow - 5-Step Process
+
+        Main entry point for external API calls. Executes the appropriate collection step
+        based on current state completion status.
+
+        Workflow: Name → Phone → Address → Service → Time
+
+        Args:
+            state: Customer service state object
+            call_sid: Optional call ID for Redis real-time updates
+        """
+        # Determine current step to execute based on completion status
+        print(
+            f"🔍 Workflow state: name={state['name_complete']}, phone={state['phone_complete']}, address={state['address_complete']}"
+        )
+
+        if not state["name_complete"]:
+            state = await self.process_name_collection(state, call_sid)
+        elif not state["phone_complete"]:
+            state = await self.process_phone_collection(state, call_sid)
+        elif not state["address_complete"]:
+            state = await self.process_address_collection(state, call_sid)
+        elif not state["service_complete"]:
+            state = await self.process_service_collection(state, call_sid)
+        elif not state["time_complete"]:
+            state = await self.process_time_collection(state, call_sid)
+        else:
+            # All information collection completed - fallback path
+            print(
+                "⚠️ Unexpected workflow completion path - all info complete but no specific handler"
+            )
             state["conversation_complete"] = True
             state["current_step"] = "completed"
-            # Update booking status in Redis
-            if call_sid:
-                try:
-                    update_booking_status(call_sid, is_booked=True, email_sent=False)
-                    print("✅ Booking status updated in Redis: completed")
-                except Exception as e:
-                    print(f"⚠️ Failed to update booking status in Redis: {e}")
-        
-        # Set LLM response
-        state["last_llm_response"] = {
-            "response": response_text,
-            "info_extracted": info_extracted,
-            "info_complete": all_complete,
-            "analysis": "LangGraph processing completed"
+
+            # Generate appropriate closing message for this fallback case
+            closing_message = self._generate_closing_message(state)
+            state["last_llm_response"] = {
+                "response": closing_message,
+                "info_extracted": {},
+                "info_complete": True,
+                "analysis": "Conversation completed via fallback path",
+            }
+            print("✅ All customer information collection completed")
+
+        return state
+
+    # ================== Utility Functions ==================
+
+    def print_results(self, state: CustomerServiceState):
+        """Print summary of collection results - 5-Step Workflow"""
+        print("\n" + "=" * 50)
+        print("📋 Customer Information Collection Results Summary (5-Step)")
+        print("=" * 50)
+
+        # Basic information
+        print(
+            f"👤 Name: {state.get('name', 'Not collected')} {'✅' if state.get('name_complete') else '❌'}"
+        )
+        print(
+            f"📞 Phone: {state.get('phone', 'Not collected')} {'✅' if state.get('phone_complete') else '❌'}"
+        )
+        print(
+            f"🏠 Address: {state.get('address', 'Not collected')} {'✅' if state.get('address_complete') else '❌'}"
+        )
+
+        # Show address components if available
+        if state.get("address_complete"):
+            print(f"   • Street Number: {state.get('street_number', 'N/A')}")
+            print(f"   • Street Name: {state.get('street_name', 'N/A')}")
+            print(f"   • Suburb: {state.get('suburb', 'N/A')}")
+            print(f"   • Postcode: {state.get('postcode', 'N/A')}")
+            print(f"   • State: {state.get('state', 'N/A')}")
+
+        # Service information
+        service_status = ""
+        if state.get("service_complete"):
+            if state.get("service_available"):
+                service_status = "✅ (Available)"
+            else:
+                service_status = "⚠️ (Not available)"
+        else:
+            service_status = "❌"
+
+        time_status = ""
+        if state.get("time_complete"):
+            if state.get("time_available"):
+                time_status = "✅ (Available)"
+            else:
+                time_status = "⚠️ (Not available)"
+        else:
+            time_status = "❌"
+
+        print(f"🔧 Service: {state.get('service', 'Not collected')} {service_status}")
+        print(f"⏰ Time: {state.get('service_time', 'Not collected')} {time_status}")
+
+        # Conversation statistics
+        print(f"📊 Current step: {state.get('current_step', 'Unknown')}")
+        print(
+            f"✅ Process completed: {'Yes' if state.get('conversation_complete') else 'No'}"
+        )
+
+        # Attempt count statistics
+        print("\n📈 Attempt Count Statistics:")
+        print(
+            f"  • Name: {state.get('name_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
+        print(
+            f"  • Phone: {state.get('phone_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
+        print(
+            f"  • Address: {state.get('address_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
+        print(
+            f"  • Service: {state.get('service_attempts', 0)}/{state.get('service_max_attempts', 3)}"
+        )
+        print(
+            f"  • Time: {state.get('time_attempts', 0)}/{state.get('max_attempts', 3)}"
+        )
+
+        print("=" * 50)
+
+    def save_to_file(self, state: CustomerServiceState, filename: Optional[str] = None):
+        """Save conversation to file - 5-Step Workflow"""
+        if filename is None:
+            filename = "customer_service_conversation.json"
+
+        # Prepare data to save
+        save_data = {
+            "metadata": {
+                "conversation_complete": state.get("conversation_complete", False)
+            },
+            "customer_info": {
+                "name": state.get("name"),
+                "phone": state.get("phone"),
+                "address": state.get("address"),
+                "street_number": state.get("street_number"),
+                "street_name": state.get("street_name"),
+                "suburb": state.get("suburb"),
+                "postcode": state.get("postcode"),
+                "state": state.get("state"),
+                "service": state.get("service"),
+                "service_time": state.get("service_time"),
+            },
+            "collection_status": {
+                "name_complete": state.get("name_complete", False),
+                "phone_complete": state.get("phone_complete", False),
+                "address_complete": state.get("address_complete", False),
+                "street_number_complete": state.get("street_number_complete", False),
+                "street_name_complete": state.get("street_name_complete", False),
+                "suburb_complete": state.get("suburb_complete", False),
+                "postcode_complete": state.get("postcode_complete", False),
+                "state_complete": state.get("state_complete", False),
+                "service_complete": state.get("service_complete", False),
+                "time_complete": state.get("time_complete", False),
+            },
+            "attempts": {
+                "name_attempts": state.get("name_attempts", 0),
+                "phone_attempts": state.get("phone_attempts", 0),
+                "address_attempts": state.get("address_attempts", 0),
+                "service_attempts": state.get("service_attempts", 0),
+                "time_attempts": state.get("time_attempts", 0),
+            },
+        }
+
+        try:
+            with open(filename, 'w') as f:
+                json.dump(save_data, f, indent=2, ensure_ascii=False)
+            print(f"💾 Conversation saved to: {filename}")
+            return filename
+        except Exception as e:
+            print(f"❌ Failed to save file: {e}")
+            return None
+
+    async def start_conversation(
+        self,
+        initial_message: str = "Hello! I'm the AI customer service assistant. What is your name?",
+    ):
+        """Start conversation process (for standalone testing) - 5-Step Workflow"""
+        # Initialize state for 5-step workflow
+        state: CustomerServiceState = {
+            "name": None,
+            "phone": None,
+            "address": None,
+            "street_number": None,
+            "street_name": None,
+            "suburb": None,
+            "postcode": None,
+            "state": None,
+            "service": None,
+            "service_time": None,
+            "current_step": "collect_name",
+            "name_attempts": 0,
+            "phone_attempts": 0,
+            "address_attempts": 0,
+            "service_attempts": 0,
+            "time_attempts": 0,
+            "max_attempts": settings.max_attempts,
+            "service_max_attempts": settings.service_max_attempts,
+            "last_user_input": None,
+            "last_llm_response": None,
+            "name_complete": False,
+            "phone_complete": False,
+            "address_complete": False,
+            "street_number_complete": False,
+            "street_name_complete": False,
+            "suburb_complete": False,
+            "postcode_complete": False,
+            "state_complete": False,
+            "service_complete": False,
+            "time_complete": False,
+            "conversation_complete": False,
+            "service_available": True,
+            "time_available": True,
         }
         
+        print(f"🤖 {initial_message}")
         return state
 
 

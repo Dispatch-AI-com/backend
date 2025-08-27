@@ -10,6 +10,10 @@ import { UserModule } from '@/modules/user/user.module';
 
 import { SessionHelper } from './helpers/session.helper';
 import { SessionRepository } from './repositories/session.repository';
+import { AiIntegrationService } from './services/ai-integration.service';
+import { AiSummaryService } from './services/ai-summary.service';
+import { CallDataPersistenceService } from './services/call-data-persistence.service';
+import { CallProcessorService } from './services/call-processor.service';
 import { TelephonyController } from './telephony.controller';
 import { TelephonyService } from './telephony.service';
 
@@ -24,7 +28,15 @@ import { TelephonyService } from './telephony.service';
     CompanyModule,
   ],
   controllers: [TelephonyController],
-  providers: [TelephonyService, SessionRepository, SessionHelper],
-  exports: [TelephonyService],
+  providers: [
+    TelephonyService,
+    CallProcessorService,
+    AiIntegrationService,
+    AiSummaryService,
+    CallDataPersistenceService,
+    SessionRepository,
+    SessionHelper,
+  ],
+  exports: [TelephonyService, AiSummaryService],
 })
 export class TelephonyModule {}

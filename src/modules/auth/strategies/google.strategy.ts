@@ -12,6 +12,7 @@ import {
 
 import { EUserRole } from '@/common/constants/user.constant';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
+import { generateCSRFToken } from '@/utils/csrf.util';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -78,7 +79,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         role: user.role,
       });
 
-      const result = { user: user.toObject() as User, token };
+      const csrfToken = generateCSRFToken();
+      const result = { user: user.toObject() as User, token, csrfToken };
       done(null, result);
     } catch {
       done(new UnauthorizedException('Google authentication failed'), false);

@@ -81,11 +81,13 @@ async def ai_conversation(data: ConversationInput):
     message_history = []
     if callskeleton.history:
         for msg in callskeleton.history[-8:]:  # Last 8 messages for context
-            message_history.append({
-                "role": "user" if msg.speaker == "customer" else "assistant",
-                "content": msg.message
-            })
-    
+            message_history.append(
+                {
+                    "role": "user" if msg.speaker == "customer" else "assistant",
+                    "content": msg.message,
+                }
+            )
+
     state: CustomerServiceState = {
         "name": user_info.name if user_info else None,
         "phone": user_info.phone if user_info else None,
@@ -121,14 +123,21 @@ async def ai_conversation(data: ConversationInput):
     state["last_user_input"] = data.customerMessage.message
 
     # 4. Call unified workflow processing - all business logic delegated to call_handler
-    updated_state = await cs_agent.process_customer_workflow(state, call_sid=data.callSid)
+    updated_state = await cs_agent.process_customer_workflow(
+        state, call_sid=data.callSid
+    )
 
-    # 5. Generate AI response
+    # 5. Generate AI response and apply placeholder replacement
     ai_message = (
         updated_state["last_llm_response"]["response"]
         if updated_state["last_llm_response"]
         else "Sorry, system is busy, please try again later."
     )
+    
+    # Apply service placeholder replacement to ensure voice responses have correct service names
+    print(f"🔍 [API_ENDPOINT] Pre-replacement response: '{ai_message}'")
+    ai_message = cs_agent._replace_service_placeholders(ai_message, updated_state)
+    print(f"🔍 [API_ENDPOINT] Post-replacement response: '{ai_message}'")
     ai_response = {
         "speaker": "AI",
         "message": ai_message,

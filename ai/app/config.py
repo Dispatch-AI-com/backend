@@ -1,7 +1,6 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings
 from typing import Optional, List
-from enum import Enum
 
 
 class Settings(BaseSettings):
@@ -63,7 +62,6 @@ class Settings(BaseSettings):
             "sunday",
         ]
     )
-
 
     # Conversation History Configuration
     max_conversation_context: int = Field(default=3)

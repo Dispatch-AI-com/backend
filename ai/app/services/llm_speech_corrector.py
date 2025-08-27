@@ -24,7 +24,7 @@ class SimplifiedSpeechCorrector:
     def __init__(self, api_key=None):
         # MVP: Disable LLM client - only use dictionary corrections
         self.client = None
-        
+
         # Performance settings (kept for future use)
         self.timeout_seconds = 3.0
         self.max_retries = 2
@@ -68,38 +68,46 @@ class SimplifiedSpeechCorrector:
             # Common place names
             "Para Mata": "Parramatta",
             "Para-mata": "Parramatta",
-            "Paramatta": "Parramatta"
+            "Paramatta": "Parramatta",
         }
 
     def _apply_critical_corrections(self, text: str) -> Dict:
         """Apply critical corrections using dictionary mapping with word boundaries"""
-        logger.info(f"[SPEECH_CORRECTION] Starting critical corrections for text: '{text}'")
-        
+        logger.info(
+            f"[SPEECH_CORRECTION] Starting critical corrections for text: '{text}'"
+        )
+
         corrected = text
         changed = False
         corrections_applied = []
 
         for wrong, correct in self.critical_corrections.items():
             # Check for exact word boundaries to avoid partial replacements
-            pattern = r'\b' + re.escape(wrong) + r'\b'
+            pattern = r"\b" + re.escape(wrong) + r"\b"
             if re.search(pattern, text, re.IGNORECASE):
                 corrected = re.sub(pattern, correct, corrected, flags=re.IGNORECASE)
                 changed = True
                 corrections_applied.append(f"{wrong} → {correct}")
-                logger.info(f"[SPEECH_CORRECTION] Applied correction: '{wrong}' → '{correct}'")
+                logger.info(
+                    f"[SPEECH_CORRECTION] Applied correction: '{wrong}' → '{correct}'"
+                )
 
         result = {
             "original": text,
             "corrected": corrected,
             "confidence": 0.9 if changed else 0.1,
             "method": "critical_corrections" if changed else "no_correction",
-            "reasoning": f"Applied: {', '.join(corrections_applied)}" if corrections_applied else "No critical corrections needed"
+            "reasoning": f"Applied: {', '.join(corrections_applied)}"
+            if corrections_applied
+            else "No critical corrections needed",
         }
-        
+
         if changed:
-            logger.info(f"[SPEECH_CORRECTION] Applied corrections: {', '.join(corrections_applied)}")
+            logger.info(
+                f"[SPEECH_CORRECTION] Applied corrections: {', '.join(corrections_applied)}"
+            )
             logger.info(f"[SPEECH_CORRECTION] '{text}' → '{corrected}'")
-        
+
         return result
 
     def _should_use_llm(self, text: str) -> bool:
@@ -114,7 +122,7 @@ class SimplifiedSpeechCorrector:
                 "corrected": text,
                 "confidence": 0.5,
                 "reasoning": "Mock LLM - no correction applied",
-                "method": "mock_llm"
+                "method": "mock_llm",
             }
 
         if self.client is None:
@@ -123,7 +131,7 @@ class SimplifiedSpeechCorrector:
                 "corrected": text,
                 "confidence": 0.0,
                 "reasoning": "LLM client not available",
-                "method": "no_client"
+                "method": "no_client",
             }
 
         # Simplified, more reliable prompt for production
@@ -145,13 +153,16 @@ Return ONLY: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.
                     self.client.chat.completions.create(
                         model=settings.openai_model,
                         messages=[
-                            {"role": "system", "content": "Fix Australian address speech errors. Return only JSON."},
-                            {"role": "user", "content": correction_prompt}
+                            {
+                                "role": "system",
+                                "content": "Fix Australian address speech errors. Return only JSON.",
+                            },
+                            {"role": "user", "content": correction_prompt},
                         ],
                         max_tokens=100,
-                        temperature=0.0  # More deterministic
+                        temperature=0.0,  # More deterministic
                     ),
-                    timeout=self.timeout_seconds
+                    timeout=self.timeout_seconds,
                 )
 
                 if not response.choices or not response.choices[0].message.content:
@@ -168,33 +179,44 @@ Return ONLY: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.
                             if line.strip().startswith("{"):
                                 content = line.strip()
                                 break
-                    
+
                     # Remove trailing text after JSON
                     if "}" in content:
-                        content = content[:content.rfind("}") + 1]
-                    
+                        content = content[: content.rfind("}") + 1]
+
                     result = json.loads(content)
-                    
+
                     # Validate required fields
-                    if not all(key in result for key in ["original", "corrected", "confidence", "reasoning"]):
+                    if not all(
+                        key in result
+                        for key in ["original", "corrected", "confidence", "reasoning"]
+                    ):
                         continue  # Retry if missing fields
-                    
+
                     # Ensure safe values
                     result["method"] = "llm_correction"
-                    result["confidence"] = min(max(float(result.get("confidence", 0.5)), 0.0), 1.0)
-                    result["reasoning"] = str(result.get("reasoning", "LLM correction applied"))[:100]  # Limit length
-                    
+                    result["confidence"] = min(
+                        max(float(result.get("confidence", 0.5)), 0.0), 1.0
+                    )
+                    result["reasoning"] = str(
+                        result.get("reasoning", "LLM correction applied")
+                    )[:100]  # Limit length
+
                     return result
-                    
+
                 except (json.JSONDecodeError, ValueError, TypeError) as parse_error:
-                    print(f"Speech corrector JSON parse error (attempt {attempt + 1}): {parse_error}")
+                    print(
+                        f"Speech corrector JSON parse error (attempt {attempt + 1}): {parse_error}"
+                    )
                     continue  # Retry on parse error
 
             except asyncio.TimeoutError:
                 print(f"Speech corrector timeout (attempt {attempt + 1})")
                 continue
             except Exception as api_error:
-                print(f"Speech corrector API error (attempt {attempt + 1}): {str(api_error)[:50]}")
+                print(
+                    f"Speech corrector API error (attempt {attempt + 1}): {str(api_error)[:50]}"
+                )
                 continue
 
         # All retries failed - return safe fallback
@@ -204,13 +226,15 @@ Return ONLY: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.
             "corrected": text,
             "confidence": 0.0,
             "reasoning": "LLM service temporarily unavailable",
-            "method": "llm_error"
+            "method": "llm_error",
         }
 
-    async def correct_speech_input(self, text: str, context: str = "address_collection") -> Dict:
+    async def correct_speech_input(
+        self, text: str, context: str = "address_collection"
+    ) -> Dict:
         """
         MVP Speech correction - only fix obvious issues, keep it simple
-        
+
         For MVP: Focus on critical Australian address corrections only.
         No complex LLM calls, just dictionary-based fixes.
 
@@ -227,13 +251,13 @@ Return ONLY: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.
                 "corrected": text or "",
                 "confidence": 1.0,
                 "reasoning": "Empty input",
-                "method": "no_correction"
+                "method": "no_correction",
             }
 
         try:
             # MVP: Only apply critical corrections (fast, reliable)
             return self._apply_critical_corrections(text)
-            
+
         except Exception as e:
             # MVP: Simple fallback, no complex error handling
             logger.error(f"[SPEECH_CORRECTION] Error during correction: {e}")
@@ -242,7 +266,7 @@ Return ONLY: {{"original": "{text}", "corrected": "fixed_text", "confidence": 0.
                 "corrected": text,
                 "confidence": 0.0,
                 "reasoning": "Using original text",
-                "method": "error_fallback"
+                "method": "error_fallback",
             }
 
     def should_apply_correction(self, result: Dict, threshold: float = 0.6) -> bool:

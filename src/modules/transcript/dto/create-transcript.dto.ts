@@ -3,6 +3,14 @@ import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateTranscriptDto {
   @ApiProperty({
+    description: 'Call SID from Twilio',
+    example: 'CA1234567890abcdef1234567890abcdef',
+  })
+  @IsString()
+  @IsNotEmpty()
+  callSid!: string;
+
+  @ApiProperty({
     description: 'Summary of the call transcript',
     example: 'Lee requests emergency repair after hailstorm...',
   })
