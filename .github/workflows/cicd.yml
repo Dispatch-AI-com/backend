@@ -1,14 +1,17 @@
 name: CI/CD pipeline
 run-name: >
-  ${{ github.event_name == 'pull_request' && format('Pipeline is triggered by PR by {0}', github.actor) || 
-      github.event_name == 'push' && format('Pipeline is triggered by PUSH by {0}', github.actor) || 
-      'Pipeline' }}
+  ${{ github.event_name == 'pull_request' && format('Pipeline is triggered by PR by {0}', github.actor) ||
+      github.event_name == 'push' && format('Pipeline is triggered by PUSH by {0}', github.actor) ||
+      github.event_name == 'workflow_dispatch' && 'Pipeline is trigger manually.' }}
+
+
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
@@ -74,64 +77,73 @@ jobs:
         working-directory: ./ai
         run: make format
 
+  build_api_image:
+    # if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    needs: ci_api
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-          
-  # build_api_image:
-  #   if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-  #   needs: ci_api
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-  #     - name: Configure AWS credentials (OIDC)
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-  #     - name: Login to Amazon ECR
-  #       uses: aws-actions/amazon-ecr-login@v2
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          file: ./Dockerfile.uat
+          tags: ${{ secrets.BACKEND_API_ECR_URI }}:${{ env.IMAGE_TAG }}
+          platforms: linux/amd64
+          provenance: false
 
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
+  build_ai_image:
+    # if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    needs: ci_ai
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  #     - name: check repo
-  #       run: |
-  #         echo "PWD:"
-  #         pwd
-  #         echo "List:"
-  #         ls -la
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  #     - name: Download Next.js artefact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: frontend-build
-  #         path: .
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
 
-  #     - name: check artefact
-  #       run: |
-  #         echo "PWD:"
-  #         pwd
-  #         echo "List:"
-  #         ls -la
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-  #     - name: Build & push
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         push: true
-  #         context: .
-  #         file: ./dockerfile
-  #         tags: |
-  #           ${{ secrets.FRONTEND_ECR }}:${{ env.IMAGE_TAG }}
-  #         platforms: linux/amd64
-  #         provenance: false
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          context: .
+          file: ./ai/Dockerfile.uat
+          tags: ${{ secrets.BACKEND_AI_ECR_URI }}:${{ env.IMAGE_TAG }}
+          platforms: linux/amd64
+          provenance: false
 
-  # cd_api:
+  # cd:
   #   needs: build_api_image
   #   if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
   #   runs-on: ubuntu-latest
