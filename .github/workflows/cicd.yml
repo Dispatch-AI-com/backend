@@ -141,40 +141,36 @@ jobs:
           platforms: linux/amd64
           provenance: false
 
-  # cd:
-  #   needs: build_api_image
-  #   if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     id-token: write
-  #     contents: read
-  #   steps:
-  #     - name: Configure AWS credentials (OIDC)
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
+  cd:
+    needs: [build_api_image, build_ai_image]
+    # if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  #     - name: Ensure jq installed Install jq (ensure present)
-  #       run: |
-  #         if ! command -v jq >/dev/null 2>&1; then
-  #           echo "jq not found, installing..."
-  #           sudo apt-get update && sudo apt-get install -y jq
-  #         else
-  #           echo "jq already installed"
-  #         fi
+      - name: Ensure jq installed Install jq (ensure present)
+        run: |
+          if ! command -v jq >/dev/null 2>&1; then
+            echo "jq not found, installing..."
+            sudo apt-get update && sudo apt-get install -y jq
+          else
+            echo "jq already installed"
+          fi
       
-  #     - name: Deploy via SSM SendCommand
-  #       id: ssm
-  #       run: |
-  #         aws ssm send-command \
-  #           --document-name "AWS-RunShellScript" \
-  #           --comment "GitHub Actions deploy ${{ secrets.FRONTEND_ECR }}:${{ env.IMAGE_TAG }}." \
-  #           --parameters "commands=['sudo bash /home/ubuntu/devops/deploy-frontend.sh ${{ env.IMAGE_TAG }}']" \
-  #           --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
-  #           --region "${{ secrets.AWS_REGION }}" \
-  #           --output json > ssm.json
-
-  #         cat ssm.json
-  #         COMMAND_ID=$(jq -r '.Command.CommandId' ssm.json)
-  #         echo "COMMAND_ID=$COMMAND_ID" >> $GITHUB_OUTPUT
+      - name: Deploy via SSM SendCommand
+        id: ssm
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --comment "GitHub Actions deploy Image:${{ env.IMAGE_TAG }}." \
+            --parameters "commands=['sudo bash /home/ubuntu/devops/deploy-backend-uat.sh ${{ env.IMAGE_TAG }}']" \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --region "${{ secrets.AWS_REGION }}" \
+            --output json
