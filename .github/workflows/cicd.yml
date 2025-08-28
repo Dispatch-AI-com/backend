@@ -1,7 +1,7 @@
 name: CI/CD pipeline
 run-name: >
-  ${{ github.event_name == 'pull_request' && format('CI Pipeline is triggered by PR by {0}', github.actor) ||
-      github.event_name == 'push' && format('CI&CD Pipeline is triggered by PUSH by {0}', github.actor) ||
+  ${{ github.event_name == 'pull_request' && format('CI Pipeline is triggered by PR (by {0})', github.actor) ||
+      github.event_name == 'push' && format('CI&CD Pipeline is triggered by PUSH (by {0})', github.actor) ||
       github.event_name == 'workflow_dispatch' && 'Pipeline is trigger manually.' }}
 
 on:
@@ -76,7 +76,7 @@ jobs:
         run: make format
 
   build_api_image:
-    # if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     needs: ci_api
     runs-on: ubuntu-latest
     permissions:
@@ -109,7 +109,7 @@ jobs:
           provenance: false
 
   build_ai_image:
-    # if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     needs: ci_ai
     runs-on: ubuntu-latest
     permissions:
@@ -143,7 +143,7 @@ jobs:
 
   cd:
     needs: [build_api_image, build_ai_image]
-    # if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -169,8 +169,8 @@ jobs:
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --comment "GitHub Actions deploy Image:${{ env.IMAGE_TAG }}." \
-            --parameters '{"workingDirectory":["/home/ubuntu/devops"],"commands":["sudo bash ./deploy-backend-uat.sh '"${{ env.IMAGE_TAG }}"'"]}' \
+            --comment "GitHub Actions deploy Backend Image:${{ env.IMAGE_TAG }}." \
+            --parameters '{"workingDirectory":["/home/ubuntu/devops/deploy"],"commands":["sudo bash ./deploy-backend-uat.sh '"${{ env.IMAGE_TAG }}"'"]}' \
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --region "${{ secrets.AWS_REGION }}" \
             --output json
