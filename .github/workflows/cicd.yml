@@ -136,7 +136,7 @@ jobs:
         with:
           push: true
           context: ./ai
-          file: ./Dockerfile.uat
+          file: ./ai/Dockerfile.uat
           tags: ${{ secrets.BACKEND_AI_ECR_URI }}:${{ env.IMAGE_TAG }}
           platforms: linux/amd64
           provenance: false
