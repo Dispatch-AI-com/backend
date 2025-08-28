@@ -1,7 +1,7 @@
 name: CI/CD pipeline
 run-name: >
-  ${{ github.event_name == 'pull_request' && format('Pipeline is triggered by PR by {0}', github.actor) ||
-      github.event_name == 'push' && format('Pipeline is triggered by PUSH by {0}', github.actor) ||
+  ${{ github.event_name == 'pull_request' && format('CI Pipeline is triggered by PR by {0}', github.actor) ||
+      github.event_name == 'push' && format('CI&CD Pipeline is triggered by PUSH by {0}', github.actor) ||
       github.event_name == 'workflow_dispatch' && 'Pipeline is trigger manually.' }}
 
 on:
@@ -170,7 +170,7 @@ jobs:
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
             --comment "GitHub Actions deploy Image:${{ env.IMAGE_TAG }}." \
-            --parameters "commands=['sudo bash /home/ubuntu/devops/deploy-backend-uat.sh ${{ env.IMAGE_TAG }}']" \
+            --parameters '{"workingDirectory":["/home/ubuntu/devops"],"commands":["sudo bash ./deploy-backend-uat.sh '"${{ env.IMAGE_TAG }}"'"]}' \
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --region "${{ secrets.AWS_REGION }}" \
             --output json
