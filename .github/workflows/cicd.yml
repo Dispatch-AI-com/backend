@@ -4,8 +4,6 @@ run-name: >
       github.event_name == 'push' && format('Pipeline is triggered by PUSH by {0}', github.actor) ||
       github.event_name == 'workflow_dispatch' && 'Pipeline is trigger manually.' }}
 
-
-
 on:
   push:
     branches: [main]
@@ -134,12 +132,11 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build & push
-        working-directory: ./ai
         uses: docker/build-push-action@v6
         with:
           push: true
-          context: .
-          file: ./ai/Dockerfile.uat
+          context: ./ai
+          file: ./Dockerfile.uat
           tags: ${{ secrets.BACKEND_AI_ECR_URI }}:${{ env.IMAGE_TAG }}
           platforms: linux/amd64
           provenance: false
