@@ -1,4 +1,9 @@
 import mongoose from 'mongoose';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load test environment variables from .env.example
+config({ path: resolve(__dirname, '../.env.example') });
 
 // Mock Twilio module globally to bypass Twilio initialization in tests
 jest.mock('../src/lib/twilio/twilio.module', () => {
@@ -83,34 +88,26 @@ export const TEST_USER = {
 
 // Global test setup
 beforeAll(async () => {
-  // Set test environment variables
+  // Override environment variables for test environment
   process.env.NODE_ENV = 'test';
-  process.env.DISABLE_AUTH = 'true'; // Flag for any additional auth checks
-
-  // Database configuration
-  process.env.MONGODB_URI = process.env.CI
-    ? 'mongodb://localhost:27017/test-ci'
+  process.env.DISABLE_AUTH = 'true';
+  
+  // Override database URI for test environment
+  process.env.MONGODB_URI = process.env.CI 
+    ? 'mongodb://localhost:27017/test-ci' 
     : 'mongodb://localhost:27017/test';
-
-  // Security secrets
+  
+  // Override security secrets for test environment
   process.env.JWT_SECRET = 'test-jwt-secret';
   process.env.CSRF_SECRET = 'test-csrf-secret';
-
-  // Service URLs
+  
+  // Override service URLs for test environment
   process.env.APP_URL = 'http://localhost:3000';
   process.env.AI_URL = 'http://localhost:8000/api';
-
-  // Redis configuration
-  process.env.REDIS_HOST = 'localhost';
-  process.env.REDIS_PORT = '6379';
-
-  // Twilio configuration (mocked, but set to avoid errors)
+  
+  // Override Twilio credentials for test environment
   process.env.TWILIO_ACCOUNT_SID = 'test-account-sid';
   process.env.TWILIO_AUTH_TOKEN = 'test-auth-token';
-  
-  // Stripe configuration (mocked, but set to avoid errors)
-  process.env.STRIPE_SECRET_KEY = 'sk_test_mock_stripe_secret_key';
-  process.env.STRIPE_WEBHOOK_SECRET = 'whsec_mock_stripe_webhook_secret';
 
   // Connect to test database
   try {
