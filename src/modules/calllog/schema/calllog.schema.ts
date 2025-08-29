@@ -27,4 +27,3 @@ export class CallLog {
 export const CallLogSchema = SchemaFactory.createForClass(CallLog);
 
 CallLogSchema.index({ userId: 1, startAt: -1 });
-CallLogSchema.index({ callSid: 1 });

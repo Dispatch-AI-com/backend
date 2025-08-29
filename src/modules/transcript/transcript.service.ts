@@ -98,16 +98,21 @@ export class TranscriptService {
     return this.convertToITranscript(deleted);
   }
 
-  async findByCallLogId(calllogId: string): Promise<ITranscript> {
+  async findCallLogById(calllogId: string): Promise<CallLog> {
     if (!Types.ObjectId.isValid(calllogId)) {
       throw new BadRequestException('Invalid calllogId');
     }
 
-    // First find the CallLog by its ID
     const calllog = await this.callLogModel.findById(calllogId);
     if (!calllog) {
       throw new NotFoundException(`CallLog not found for id: ${calllogId}`);
     }
+
+    return calllog;
+  }
+
+  async findByCallLogId(calllogId: string): Promise<ITranscript> {
+    const calllog = await this.findCallLogById(calllogId);
 
     // Then find the Transcript using the CallLog's callSid
     const transcript = await this.transcriptModel.findOne({

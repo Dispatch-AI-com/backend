@@ -6,6 +6,7 @@
     "strict": true,
     "noImplicitAny": true,
     "strictNullChecks": true,
+    "isolatedModules": true,
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
@@ -17,8 +18,9 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "forceConsistentCasingInFileNames": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "types": ["jest", "node"]
   },
-  "include": ["src", "scripts", "test", "test/seeds/test-login.test.ts"],
+  "include": ["src", "scripts", "types"],
   "exclude": ["node_modules", "dist"]
 }

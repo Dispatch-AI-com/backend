@@ -11,7 +11,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 import { CSRFProtected } from '@/common/decorators/csrf-protected.decorator';
 import { AuthService } from '@/modules/auth/auth.service';
@@ -267,8 +267,14 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'User is not authenticated' })
   @Get('me')
   @UseGuards(AuthGuard('jwt'))
-  getCurrentUser(@Req() req: Request): { user: UserResponseDto } {
-    const user = req.user as UserResponseDto;
-    return { user };
+  async getCurrentUser(
+    @Req() req: Request,
+  ): Promise<{ user: UserResponseDto }> {
+    const jwtUser = req.user as { _id: string };
+    const fullUser = await this.authService.getUserById(jwtUser._id);
+    const safeUser = plainToInstance(UserResponseDto, fullUser, {
+      excludeExtraneousValues: true,
+    });
+    return { user: safeUser };
   }
 }

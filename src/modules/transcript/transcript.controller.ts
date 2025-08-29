@@ -40,11 +40,13 @@ export class TranscriptController {
   @ApiBadRequestResponse({ description: 'Invalid input data' })
   @ApiNotFoundResponse({ description: 'Call log not found' })
   async create(
-    @Param('calllogId') callSid: string,
+    @Param('calllogId') calllogId: string,
     @Body() createTranscriptDto: CreateTranscriptDto,
   ): Promise<ITranscript> {
+    // First find the CallLog to get its callSid
+    const calllog = await this.transcriptService.findCallLogById(calllogId);
     return this.transcriptService.create({
-      callSid,
+      callSid: calllog.callSid,
       summary: createTranscriptDto.summary,
       keyPoints: createTranscriptDto.keyPoints,
     });

@@ -2,13 +2,14 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateTranscriptDto {
-  @ApiProperty({
-    description: 'Call SID from Twilio',
+  @ApiPropertyOptional({
+    description: 'Call SID from Twilio (optional when using calllogId in URL)',
     example: 'CA1234567890abcdef1234567890abcdef',
   })
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  callSid!: string;
+  callSid?: string;
 
   @ApiProperty({
     description: 'Summary of the call transcript',
