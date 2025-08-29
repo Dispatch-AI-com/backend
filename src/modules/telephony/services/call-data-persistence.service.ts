@@ -12,7 +12,6 @@ import {
   ServiceBookingStatus,
 } from '@/modules/service-booking/dto/create-service-booking.dto';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
-import { CreateTranscriptDto } from '@/modules/transcript/dto/create-transcript.dto';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { CreateTranscriptChunkDto } from '@/modules/transcript-chunk/dto/create-transcript-chunk.dto';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
@@ -199,15 +198,12 @@ export class CallDataPersistenceService {
     keyPoints: string[],
     history: Message[],
   ): Promise<void> {
-    // Create transcript DTO
-    const transcriptDto: CreateTranscriptDto = {
+    // Create transcript record with AI-generated summary
+    const transcript = await this.transcriptService.create({
       callSid,
       summary,
       keyPoints,
-    };
-
-    // Create transcript record with AI-generated summary
-    const transcript = await this.transcriptService.create(transcriptDto);
+    });
 
     // Create transcript chunk DTOs from conversation history
     const chunkDtos: CreateTranscriptChunkDto[] =

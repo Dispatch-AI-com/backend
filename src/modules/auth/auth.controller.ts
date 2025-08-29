@@ -11,7 +11,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { plainToInstance } from 'class-transformer';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 
 import { CSRFProtected } from '@/common/decorators/csrf-protected.decorator';
 import { AuthService } from '@/modules/auth/auth.service';
