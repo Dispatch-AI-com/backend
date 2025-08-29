@@ -23,7 +23,7 @@ env:
 
 jobs:
   ci_api:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -49,8 +49,6 @@ jobs:
         run: pnpm test:ci
         env:
           CI: true
-          MONGODB_URI: mongodb://localhost:27017/test
-          NODE_ENV: test
 
       - name: Type Check (tsc)
         run: pnpm run type-check
