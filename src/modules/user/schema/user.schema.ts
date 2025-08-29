@@ -47,7 +47,11 @@ export class User extends Document {
   @Prop()
   position!: string;
 
-  @Prop({ default: EUserRole.user })
+  @Prop({
+    type: String,
+    enum: EUserRole,
+    default: EUserRole.user,
+  })
   role!: EUserRole;
 
   @Prop()

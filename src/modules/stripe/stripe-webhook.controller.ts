@@ -8,7 +8,7 @@ import {
   Res,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import Stripe from 'stripe';
 
 import { SubscriptionService } from '../subscription/subscription.service';

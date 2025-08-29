@@ -2,8 +2,8 @@ import { Body, Controller, Header, HttpCode, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
-  VoiceGatherBody,
-  VoiceStatusBody,
+  type VoiceGatherBody,
+  type VoiceStatusBody,
 } from '@/common/interfaces/twilio-voice-webhook';
 import { TelephonyService } from '@/modules/telephony/telephony.service';
 
