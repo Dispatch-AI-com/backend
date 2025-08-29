@@ -1,4 +1,50 @@
 import mongoose from 'mongoose';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load test environment variables from .env.example
+config({ path: resolve(__dirname, '../.env.example') });
+
+// Mock Twilio module globally to bypass Twilio initialization in tests
+jest.mock('../src/lib/twilio/twilio.module', () => {
+  const mockTwilioClient = {
+    calls: {
+      create: jest.fn(),
+      list: jest.fn(),
+    },
+    messages: {
+      create: jest.fn(),
+      list: jest.fn(),
+    },
+  };
+
+  return {
+    TwilioModule: jest.fn().mockImplementation(() => ({
+      providers: [
+        {
+          provide: 'TWILIO_CLIENT',
+          useValue: mockTwilioClient,
+        },
+      ],
+    })),
+    TWILIO_CLIENT: 'TWILIO_CLIENT',
+  };
+});
+
+// Mock Twilio client
+jest.mock('twilio', () => {
+  return jest.fn().mockReturnValue({
+    // Add any Twilio methods that might be used in tests
+    calls: {
+      create: jest.fn(),
+      list: jest.fn(),
+    },
+    messages: {
+      create: jest.fn(),
+      list: jest.fn(),
+    },
+  });
+});
 
 // Mock AuthGuard globally to bypass authentication in tests
 jest.mock('@nestjs/passport', () => {
@@ -42,16 +88,14 @@ export const TEST_USER = {
 
 // Global test setup
 beforeAll(async () => {
-  // Set test environment variables
+  // Override only test-specific environment variables
   process.env.NODE_ENV = 'test';
-  process.env.DISABLE_AUTH = 'true'; // Flag for any additional auth checks
-  process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
-  process.env.JWT_SECRET = 'test-jwt-secret';
-  process.env.CSRF_SECRET = 'test-csrf-secret';
-  process.env.APP_URL = 'http://localhost:3000';
-  process.env.AI_URL = 'http://localhost:8000/api';
-  process.env.REDIS_HOST = 'localhost';
-  process.env.REDIS_PORT = '6379';
+  process.env.DISABLE_AUTH = 'true';
+  
+  // Override database URI for test environment
+  process.env.MONGODB_URI = process.env.CI 
+    ? 'mongodb://localhost:27017/test-ci' 
+    : 'mongodb://localhost:27017/test';
 
   // Connect to test database
   try {

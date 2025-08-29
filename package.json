@@ -55,7 +55,7 @@
     "test:unit": "jest --config jest.config.json --testPathPattern=\"test/unit\" --detectOpenHandles",
     "test:integration": "jest --config jest.config.json --testPathPattern=\"test/integration\" --detectOpenHandles",
     "test:e2e": "jest --config jest.config.json --testPathPattern=\"test/e2e\" --detectOpenHandles",
-    "test:ci": "jest --config jest.config.json --testPathPattern=\"test/(unit|integration)\" --coverage --detectOpenHandles --forceExit",
+    "test:ci": "jest --config jest.config.json --testPathPattern=\"test/(unit|integration)\" --detectOpenHandles --forceExit",
     "test:watch": "jest --config jest.config.json --watch --detectOpenHandles",
     "lint": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" && eslint --fix \"src/**/*.ts\" \"test/**/*.ts\"",
     "lint:src": "prettier --write \"src/**/*.ts\" && eslint --fix \"src/**/*.ts\"",
