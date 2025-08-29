@@ -107,6 +107,10 @@ beforeAll(async () => {
   // Twilio configuration (mocked, but set to avoid errors)
   process.env.TWILIO_ACCOUNT_SID = 'test-account-sid';
   process.env.TWILIO_AUTH_TOKEN = 'test-auth-token';
+  
+  // Stripe configuration (mocked, but set to avoid errors)
+  process.env.STRIPE_SECRET_KEY = 'sk_test_mock_stripe_secret_key';
+  process.env.STRIPE_WEBHOOK_SECRET = 'whsec_mock_stripe_webhook_secret';
 
   // Connect to test database
   try {
