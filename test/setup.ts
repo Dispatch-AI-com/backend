@@ -1,10 +1,30 @@
 import mongoose from 'mongoose';
 
 // Mock Twilio module globally to bypass Twilio initialization in tests
-jest.mock('../src/lib/twilio/twilio.module', () => ({
-  TwilioModule: jest.fn(),
-  TWILIO_CLIENT: 'MOCK_TWILIO_CLIENT',
-}));
+jest.mock('../src/lib/twilio/twilio.module', () => {
+  const mockTwilioClient = {
+    calls: {
+      create: jest.fn(),
+      list: jest.fn(),
+    },
+    messages: {
+      create: jest.fn(),
+      list: jest.fn(),
+    },
+  };
+
+  return {
+    TwilioModule: jest.fn().mockImplementation(() => ({
+      providers: [
+        {
+          provide: 'TWILIO_CLIENT',
+          useValue: mockTwilioClient,
+        },
+      ],
+    })),
+    TWILIO_CLIENT: 'TWILIO_CLIENT',
+  };
+});
 
 // Mock Twilio client
 jest.mock('twilio', () => {
