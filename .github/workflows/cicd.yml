@@ -45,6 +45,13 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      - name: Run Unit & Integration Tests
+        run: pnpm test:ci
+        env:
+          CI: true
+          MONGODB_URI: mongodb://localhost:27017/test
+          NODE_ENV: test
+
       - name: Type Check (tsc)
         run: pnpm run type-check
 
