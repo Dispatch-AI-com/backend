@@ -88,7 +88,7 @@ export const TEST_USER = {
 
 // Global test setup
 beforeAll(async () => {
-  // Override environment variables for test environment
+  // Override only test-specific environment variables
   process.env.NODE_ENV = 'test';
   process.env.DISABLE_AUTH = 'true';
   
@@ -96,18 +96,6 @@ beforeAll(async () => {
   process.env.MONGODB_URI = process.env.CI 
     ? 'mongodb://localhost:27017/test-ci' 
     : 'mongodb://localhost:27017/test';
-  
-  // Override security secrets for test environment
-  process.env.JWT_SECRET = 'test-jwt-secret';
-  process.env.CSRF_SECRET = 'test-csrf-secret';
-  
-  // Override service URLs for test environment
-  process.env.APP_URL = 'http://localhost:3000';
-  process.env.AI_URL = 'http://localhost:8000/api';
-  
-  // Override Twilio credentials for test environment
-  process.env.TWILIO_ACCOUNT_SID = 'test-account-sid';
-  process.env.TWILIO_AUTH_TOKEN = 'test-auth-token';
 
   // Connect to test database
   try {
