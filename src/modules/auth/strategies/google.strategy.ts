@@ -69,7 +69,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       const token = this.jwtService.sign({
-        sub: user._id,
+        sub: user._id?.toString() || user._id, // Ensure ObjectId is converted to string
         email: user.email,
         role: user.role,
       });

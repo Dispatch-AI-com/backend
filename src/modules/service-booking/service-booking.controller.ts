@@ -13,7 +13,6 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { CSRFProtected } from '@/common/decorators/csrf-protected.decorator';
 import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
 import { ServiceBooking } from '@/modules/service-booking/schema/service-booking.schema';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
@@ -25,7 +24,6 @@ export class ServiceBookingController {
   constructor(private readonly bookingService: ServiceBookingService) {}
 
   @Post()
-  @CSRFProtected()
   @ApiOperation({ summary: 'Create a new service booking' })
   @ApiResponse({
     status: 201,
@@ -68,7 +66,6 @@ export class ServiceBookingController {
   }
 
   @Delete(':id')
-  @CSRFProtected()
   @ApiResponse({
     status: 200,
     schema: { example: { message: 'Booking deleted successfully' } },
@@ -84,7 +81,6 @@ export class ServiceBookingController {
   }
 
   @Patch(':id')
-  @CSRFProtected()
   @ApiResponse({
     status: 200,
     type: ServiceBooking,

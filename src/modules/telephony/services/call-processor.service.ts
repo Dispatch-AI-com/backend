@@ -52,10 +52,14 @@ export class CallProcessorService {
     private readonly dataPersistence: CallDataPersistenceService,
   ) {}
 
-  async handleVoice({ CallSid, To }: VoiceGatherBody): Promise<string> {
+  async handleVoice(voiceData: VoiceGatherBody): Promise<string> {
+    const { CallSid, To } = voiceData;
+    winstonLogger.log(`[CallProcessorService][handleVoice] Full request data: ${JSON.stringify(voiceData)}`);
+    winstonLogger.log(`[CallProcessorService][handleVoice] CallSid=${CallSid}, Looking for user with twilioPhoneNumber=${To}`);
     await this.sessionHelper.ensureSession(CallSid);
     const user = await this.userService.findByTwilioPhoneNumber(To);
     if (user == null) {
+      winstonLogger.warn(`[CallProcessorService][handleVoice] No user found with twilioPhoneNumber=${To}`);
       return this.speakAndLog(CallSid, 'User not found', NextAction.HANGUP);
     }
     const services = await this.serviceService.findAllActiveByUserId(
