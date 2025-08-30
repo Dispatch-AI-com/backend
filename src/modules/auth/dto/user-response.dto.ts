@@ -5,7 +5,12 @@ import { UserStatus } from '@/modules/user/enum/userStatus.enum';
 
 export class UserResponseDto {
   @Expose()
-  @Transform(({ value }) => value?.toString() || value)
+  @Transform(({ value }) => {
+    if (value != null) {
+      return String(value);
+    }
+    return undefined;
+  })
   _id!: string;
 
   @Expose()

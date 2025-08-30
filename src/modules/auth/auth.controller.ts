@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { plainToInstance } from 'class-transformer';
 import type { Request, Response } from 'express';
 
 import { EUserRole } from '@/common/constants/user.constant';
@@ -58,20 +57,16 @@ export class AuthController {
   ): Promise<{ user: UserResponseDto; csrfToken: string }> {
     const { user, token, csrfToken } =
       await this.authService.createUser(createUserDto);
-      
-    console.log(`[Signup] Original user ID: ${user._id}`);
-    
+
     // Manually construct safe user object to preserve ObjectId
     const safeUser: UserResponseDto = {
-      _id: user._id?.toString() || String(user._id),
-      email: user.email || '',
+      _id: user._id?.toString() ?? '',
+      email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role as EUserRole,
-      status: user.status as UserStatus,
+      role: user.role,
+      status: user.status,
     };
-    
-    console.log(`[Signup] Safe user ID: ${safeUser._id}`);
 
     // Set JWT token as httpOnly cookie
     res.cookie('jwtToken', token, {
@@ -119,19 +114,15 @@ export class AuthController {
   ): Promise<{ user: UserResponseDto; csrfToken: string }> {
     const { user, token, csrfToken } = await this.authService.login(loginDto);
 
-    console.log(`[RegularLogin] Original user ID: ${user._id}`);
-    
     // Manually construct safe user object to preserve ObjectId
     const safeUser: UserResponseDto = {
-      _id: user._id?.toString() || String(user._id),
-      email: user.email || '',
+      _id: user._id?.toString() ?? '',
+      email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      role: user.role as EUserRole,
-      status: user.status as UserStatus,
+      role: user.role,
+      status: user.status,
     };
-    
-    console.log(`[RegularLogin] Safe user ID: ${safeUser._id}`);
 
     // Set JWT token as httpOnly cookie
     res.cookie('jwtToken', token, {
@@ -184,18 +175,13 @@ export class AuthController {
 
     // Manually construct safe user object to preserve ObjectId
     const safeUser = {
-      _id: user._id?.toString() || user._id,
-      email: user.email,
+      _id: user._id?.toString() ?? user._id,
+      email: user.email ?? '',
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role as EUserRole,
       status: user.status as UserStatus,
     };
-
-    // Debug log to verify correct user ID
-    console.log(`[GoogleAuth] Original user ID: ${user._id}`);
-    console.log(`[GoogleAuth] Safe user ID: ${safeUser._id}`);
-    console.log(`[GoogleAuth] URL redirect will contain: ${JSON.stringify(safeUser)}`);
 
     // Set JWT token as httpOnly cookie
     res.cookie('jwtToken', token, {
@@ -307,22 +293,18 @@ export class AuthController {
     @Req() req: Request,
   ): Promise<{ user: UserResponseDto }> {
     const jwtUser = req.user as { _id: string };
-    console.log(`[AuthMe] JWT user ID: ${jwtUser._id}`);
-    
+
     const fullUser = await this.authService.getUserById(jwtUser._id);
-    console.log(`[AuthMe] Full user ID: ${fullUser?._id}`);
-    
+
     // Manually construct safe user object to preserve ObjectId (same as Google OAuth)
     const safeUser: UserResponseDto = {
-      _id: fullUser?._id?.toString() || String(fullUser?._id),
-      email: fullUser?.email || '',
+      _id: fullUser?._id?.toString() ?? '',
+      email: fullUser?.email ?? '',
       firstName: fullUser?.firstName,
       lastName: fullUser?.lastName,
-      role: (fullUser?.role as EUserRole) || EUserRole.user,
-      status: (fullUser?.status as UserStatus) || UserStatus.active,
+      role: fullUser?.role ?? EUserRole.user,
+      status: fullUser?.status ?? UserStatus.active,
     };
-    
-    console.log(`[AuthMe] Safe user ID: ${safeUser._id}`);
     return { user: safeUser };
   }
 }
