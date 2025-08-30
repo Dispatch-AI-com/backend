@@ -11,6 +11,8 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import Stripe from 'stripe';
 
+import { SkipCSRF } from '@/common/decorators/skip-csrf.decorator';
+
 import { SubscriptionService } from '../subscription/subscription.service';
 import { StripeService } from './stripe.service';
 
@@ -26,6 +28,7 @@ export class StripeWebhookController {
 
   @ApiOkResponse({ description: 'Stripe webhook received' })
   @Post('stripe')
+  @SkipCSRF()
   @HttpCode(200)
   async handleStripeWebhook(
     @Req() req: Request,

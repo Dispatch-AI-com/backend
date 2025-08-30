@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
 import { config } from 'dotenv';
+import mongoose from 'mongoose';
 import { resolve } from 'path';
 
 // Load test environment variables from .env.example
@@ -78,6 +78,17 @@ jest.mock('../src/modules/auth/strategies/jwt.strategy', () => {
   };
 });
 
+// Mock CSRF Guard globally to bypass CSRF protection in tests
+jest.mock('../src/common/guards/csrf.guard', () => {
+  return {
+    CSRFGuard: class MockCSRFGuard {
+      canActivate(): boolean {
+        return true; // Always allow access in tests
+      }
+    },
+  };
+});
+
 // Export test user data for use in tests
 export const TEST_USER = {
   _id: '507f1f77bcf86cd799439011',
@@ -91,10 +102,10 @@ beforeAll(async () => {
   // Override only test-specific environment variables
   process.env.NODE_ENV = 'test';
   process.env.DISABLE_AUTH = 'true';
-  
+
   // Override database URI for test environment
-  process.env.MONGODB_URI = process.env.CI 
-    ? 'mongodb://localhost:27017/test-ci' 
+  process.env.MONGODB_URI = process.env.CI
+    ? 'mongodb://localhost:27017/test-ci'
     : 'mongodb://localhost:27017/test';
 
   // Connect to test database
