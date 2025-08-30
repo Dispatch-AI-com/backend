@@ -78,6 +78,17 @@ jest.mock('../src/modules/auth/strategies/jwt.strategy', () => {
   };
 });
 
+// Mock CSRF Guard globally to bypass CSRF protection in tests
+jest.mock('../src/common/guards/csrf.guard', () => {
+  return {
+    CSRFGuard: class MockCSRFGuard {
+      canActivate(): boolean {
+        return true; // Always allow access in tests
+      }
+    },
+  };
+});
+
 // Export test user data for use in tests
 export const TEST_USER = {
   _id: '507f1f77bcf86cd799439011',
