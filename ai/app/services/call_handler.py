@@ -4,10 +4,9 @@ import json
 import os
 import re
 import sys
-from typing import Any, Dict, List, Literal, Optional, TypedDict
+from typing import Optional
 
 from openai import OpenAI
-from langgraph.graph import END, START, StateGraph
 from custom_types import CustomerServiceState
 from .redis_service import (
     update_user_info_field,
