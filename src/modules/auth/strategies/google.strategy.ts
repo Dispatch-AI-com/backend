@@ -12,6 +12,7 @@ import {
 
 import { EUserRole } from '@/common/constants/user.constant';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
+import { generateCSRFToken } from '@/utils/csrf.util';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -40,18 +41,16 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: VerifyCallback,
   ): Promise<void> {
     try {
-      const { id, name, emails, photos } = profile;
+      const { name, emails } = profile;
 
       const googleUser = {
-        googleId: id,
         email: emails[0].value,
         firstName: name.givenName,
         lastName: name.familyName,
-        avatar: photos[0].value,
       };
 
       let user = await this.userModel.findOne({
-        $or: [{ email: googleUser.email }, { googleId: googleUser.googleId }],
+        email: googleUser.email,
       });
 
       if (!user) {
@@ -59,16 +58,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
           email: googleUser.email,
           firstName: googleUser.firstName,
           lastName: googleUser.lastName,
-          googleId: googleUser.googleId,
-          avatar: googleUser.avatar,
-          provider: 'google',
           role: EUserRole.user,
         });
         await user.save();
-      } else if (user.googleId == null) {
-        user.googleId = googleUser.googleId;
-        user.avatar = googleUser.avatar;
-        user.provider = 'google';
+      } else {
+        // Update existing user with latest profile info
+        user.firstName = googleUser.firstName;
+        user.lastName = googleUser.lastName;
         await user.save();
       }
 
@@ -78,7 +74,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         role: user.role,
       });
 
-      const result = { user: user.toObject() as User, token };
+      const csrfToken = generateCSRFToken();
+      const result = { user: user.toObject() as User, token, csrfToken };
       done(null, result);
     } catch {
       done(new UnauthorizedException('Google authentication failed'), false);
