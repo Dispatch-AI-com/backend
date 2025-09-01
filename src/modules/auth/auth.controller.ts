@@ -11,8 +11,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-
 import { EUserRole } from '@/common/constants/user.constant';
+import { SkipCSRF } from '@/common/decorators/skip-csrf.decorator';
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
@@ -51,6 +51,7 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'User already exists' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   @Post('signup')
+  @SkipCSRF()
   async createUser(
     @Body() createUserDto: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
@@ -108,6 +109,7 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Email or password is incorrect' })
   @Post('login')
+  @SkipCSRF()
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
