@@ -32,11 +32,6 @@ export const staticBasicPlan: Plan = {
       price: 29,
       stripePriceId: 'price_basic_monthly',
     },
-    {
-      rrule: 'FREQ=YEARLY;INTERVAL=1',
-      price: 290,
-      stripePriceId: 'price_basic_yearly',
-    },
   ],
   features: {
     callMinutes: '500 minutes',
@@ -54,11 +49,6 @@ export const staticProPlan: Plan = {
       rrule: 'FREQ=MONTHLY;INTERVAL=1',
       price: 99,
       stripePriceId: 'price_pro_monthly',
-    },
-    {
-      rrule: 'FREQ=YEARLY;INTERVAL=1',
-      price: 990,
-      stripePriceId: 'price_pro_yearly',
     },
   ],
   features: {

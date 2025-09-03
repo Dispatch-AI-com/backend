@@ -4,7 +4,8 @@ import { Test } from '@nestjs/testing';
 
 import { PlanController } from '../../../src/modules/plan/plan.controller';
 import { PlanService } from '../../../src/modules/plan/plan.service';
-import { createMockPlanDto, createMockUpdatePlanDto, staticPlan } from '../../fixtures';
+import { createMockPlanDto, createMockUpdatePlanDto } from '../../fixtures/dynamic/plan';
+import { staticBasicPlan, staticInactivePlan, staticProPlan, staticPlan } from '../../fixtures/static/plan';
 
 // ============================================================================
 // Plan Controller Unit Tests - Testing individual methods with mocked dependencies
@@ -115,7 +116,7 @@ describe('PlanController (Unit)', () => {
 
       service.deletePlan.mockResolvedValue(undefined);
 
-      await controller.delete(planId);
+      await controller.remove(planId);
 
       expect(service.deletePlan).toHaveBeenCalledWith(planId);
     });

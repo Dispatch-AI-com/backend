@@ -6,6 +6,9 @@ import { Types } from 'mongoose';
 import type { CallLog } from '../../src/modules/calllog/schema/calllog.schema';
 import type { Transcript } from '../../src/modules/transcript/schema/transcript.schema';
 import type { TranscriptChunk } from '../../src/modules/transcript-chunk/schema/transcript-chunk.schema';
+import type { Plan } from '../../src/modules/plan/schema/plan.schema';
+import type { Subscription } from '../../src/modules/subscription/schema/subscription.schema';
+import type { User } from '../../src/modules/user/schema/user.schema';
 import {
   staticCallLog as mockCallLog,
   staticTranscript as mockTranscript,
@@ -16,6 +19,9 @@ export class DatabaseTestHelper {
   private callLogModel: Model<CallLog>;
   private transcriptModel: Model<Transcript>;
   private transcriptChunkModel: Model<TranscriptChunk>;
+  private planModel: Model<Plan>;
+  private subscriptionModel: Model<Subscription>;
+  private userModel: Model<User>;
 
   constructor(private moduleRef: TestingModule) {
     this.callLogModel = moduleRef.get<Model<CallLog>>(getModelToken('CallLog'));
@@ -25,6 +31,9 @@ export class DatabaseTestHelper {
     this.transcriptChunkModel = moduleRef.get<Model<TranscriptChunk>>(
       getModelToken('TranscriptChunk'),
     );
+    this.planModel = moduleRef.get<Model<Plan>>(getModelToken('Plan'));
+    this.subscriptionModel = moduleRef.get<Model<Subscription>>(getModelToken('Subscription'));
+    this.userModel = moduleRef.get<Model<User>>(getModelToken('User'));
   }
 
   async cleanupAll(): Promise<void> {
@@ -32,6 +41,9 @@ export class DatabaseTestHelper {
       this.transcriptChunkModel.deleteMany({}),
       this.transcriptModel.deleteMany({}),
       this.callLogModel.deleteMany({}),
+      this.planModel.deleteMany({}),
+      this.subscriptionModel.deleteMany({}),
+      this.userModel.deleteMany({}),
     ]);
   }
 

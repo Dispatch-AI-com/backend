@@ -21,6 +21,6 @@
     "resolveJsonModule": true,
     "types": ["jest", "node"]
   },
-  "include": ["src", "scripts", "types"],
+  "include": ["src", "scripts", "types", "test"],
   "exclude": ["node_modules", "dist"]
 }
