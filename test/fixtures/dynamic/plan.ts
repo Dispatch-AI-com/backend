@@ -79,17 +79,27 @@ export const PLAN_NAME_TEMPLATES = {
 /**
  * Generate a random plan name based on tier
  */
+function secureRandomIndex(arrayLength: number): number {
+  // Find the largest byte value less than 256 that maps evenly to arrayLength
+  const max = Math.floor(256 / arrayLength) * arrayLength;
+  let byte;
+  do {
+    byte = randomBytes(1)[0];
+  } while (byte >= max);
+  return byte % arrayLength;
+}
+
 function generatePlanName(tier: PlanTier): string {
   const templates = PLAN_NAME_TEMPLATES[tier];
   if (!templates) {
     return 'Unknown Plan';
   }
-  const randomIndex = generateRandomNumber(templates.length);
+  const randomIndex = secureRandomIndex(templates.length);
   const baseName = templates[randomIndex];
   
   // Add some variety with random suffixes
   const suffixes = ['', ' Plus', ' Advanced', ' Deluxe', ' Premium'];
-  const randomSuffix = suffixes[generateRandomNumber(suffixes.length)];
+  const randomSuffix = suffixes[secureRandomIndex(suffixes.length)];
   
   return baseName + randomSuffix;
 }
