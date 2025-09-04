@@ -1,6 +1,7 @@
 import { Body, Controller, Header, HttpCode, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { SkipCSRF } from '@/common/decorators/skip-csrf.decorator';
 import {
   type VoiceGatherBody,
   type VoiceStatusBody,
@@ -9,6 +10,7 @@ import { TelephonyService } from '@/modules/telephony/telephony.service';
 
 @ApiTags('telephony')
 @Controller('telephony')
+@SkipCSRF()
 export class TelephonyController {
   constructor(private readonly telephonyService: TelephonyService) {}
 
