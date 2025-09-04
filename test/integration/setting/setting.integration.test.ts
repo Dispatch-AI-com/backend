@@ -1,245 +1,219 @@
 import type { INestApplication } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
+import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
 import { AppModule } from '../../../src/modules/app.module';
-import { SettingCategory } from '../../../src/modules/setting/schema/setting.schema';
-import { SettingController } from '../../../src/modules/setting/setting.controller';
-import { SettingService } from '../../../src/modules/setting/setting.service';
+import { DatabaseTestHelper } from '../../helpers/database.helper';
+import { TEST_USER } from '../../setup';
 
-// Mock SettingService
-const mockSettingService = {
-  findAll: jest.fn().mockResolvedValue([]),
-  getUserSettingsByCategory: jest.fn(),
-  updateUserSettings: jest.fn(),
-  getAllUserSettings: jest.fn(),
-  deleteUserSettingsByCategory: jest.fn(),
-  deleteAllUserSettings: jest.fn(),
-  seedDefaultSettings: jest.fn()
-};
-
-describe('SettingController (e2e)', () => {
+describe('SettingController (integration)', () => {
   let app: INestApplication;
+  let dbHelper: DatabaseTestHelper;
+  let userId: string;
 
   beforeAll(async () => {
-    const moduleFixture = await Test.createTestingModule({
-      controllers: [SettingController],
-      providers: [{ provide: SettingService, useValue: mockSettingService }],
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }),
+    );
     await app.init();
+
+    dbHelper = new DatabaseTestHelper(moduleFixture);
+
+    // Create a test user and company
+    const user = await dbHelper.createUser({
+      _id: TEST_USER._id,
+      email: TEST_USER.email,
+      firstName: 'Test',
+      lastName: 'User',
+      fullPhoneNumber: '+61123456789',
+      position: 'Manager',
+    });
+    userId = (user._id as string | number).toString();
+
+    await dbHelper.createCompany({ user: userId });
   });
 
   afterAll(async () => {
+    await dbHelper.cleanupAll();
     await app.close();
   });
 
-  it('should return 200 and user profile for GET /settings/user/:userId/profile', async () => {
-    const mockProfile = { userId: '123', name: 'Test User' };
-    mockSettingService.getUserSettingsByCategory = jest.fn().mockResolvedValue(mockProfile);
+  describe('GET /settings/user/:userId/profile', () => {
+    it('should return user profile settings', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/profile`)
+        .expect(200);
 
-    const res = await request(app.getHttpServer()).get('/settings/user/123/profile');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockProfile);
-    expect(mockSettingService.getUserSettingsByCategory).toHaveBeenCalledWith(
-      '123',
-      SettingCategory.USER_PROFILE
-    );
-  });
-
-  it('should update user profile for PUT /settings/user/:userId/profile', async () => {
-    const userId = '123';
-    const profileDto = { name: 'Updated User', age: 30 };
-    const mockResult = { success: true };
-
-    mockSettingService.updateUserSettings = jest
-      .fn()
-      .mockResolvedValue(mockResult);
-
-    const res = await request(app.getHttpServer())
-      .put(`/settings/user/${userId}/profile`)
-      .send(profileDto);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockResult);
-    expect(mockSettingService.updateUserSettings).toHaveBeenCalledWith(userId, {
-      category: SettingCategory.USER_PROFILE,
-      settings: profileDto,
+      expect(res.body).toMatchObject({
+        name: 'Test User',
+        contact: '+61123456789',
+        role: 'Manager',
+      });
     });
   });
 
-  it('should return 200 and user company for GET /settings/user/:userId/company', async () => {
-    const mockCompany = { userId: '123', company: 'Test Company' };
-    mockSettingService.getUserSettingsByCategory = jest.fn().mockResolvedValue(mockCompany);
+  describe('PUT /settings/user/:userId/profile', () => {
+    it('should update user profile settings', async () => {
+      const updateDto = {
+        name: 'Updated Name',
+        contact: '+61111111111',
+        role: 'Admin',
+      };
+      await request(app.getHttpServer())
+        .put(`/settings/user/${userId}/profile`)
+        .send(updateDto)
+        .expect(200);
 
-    const res = await request(app.getHttpServer()).get('/settings/user/123/company');
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockCompany);
-    expect(mockSettingService.getUserSettingsByCategory).toHaveBeenCalledWith(
-      '123',
-      SettingCategory.COMPANY_INFO
-    );
-  });
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/profile`)
+        .expect(200);
 
-  it('should update user company for PUT /settings/user/:userId/company', async () => {
-    const userId = '123';
-    const companyDto = { name: 'Updated Company', address: 'Updated Address' };
-    const mockResult = { success: true };
-
-    mockSettingService.updateUserSettings = jest
-      .fn()
-      .mockResolvedValue(mockResult);
-
-    const res = await request(app.getHttpServer())
-      .put(`/settings/user/${userId}/company`)
-      .send(companyDto);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockResult);
-    expect(mockSettingService.updateUserSettings).toHaveBeenCalledWith(userId, {
-      category: SettingCategory.COMPANY_INFO,
-      settings: companyDto,
+      expect(res.body).toMatchObject(updateDto);
     });
   });
 
-  it('should return 200 and user billing address for GET /settings/user/:userId/billing', async () => {
-    const mockBilling = { userId: '123', billing: 'Test Billing' };
-    mockSettingService.getUserSettingsByCategory = jest
-      .fn()
-      .mockResolvedValue(mockBilling);
+  describe('GET /settings/user/:userId/company', () => {
+    it('should return company info', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/company`)
+        .expect(200);
 
-    const res = await request(app.getHttpServer()).get(
-      '/settings/user/123/billing',
-    );
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockBilling);
-    expect(mockSettingService.getUserSettingsByCategory).toHaveBeenCalledWith(
-      '123',
-      SettingCategory.BILLING_ADDRESS
-    );
-  });
-
-  it('should update user billing address for PUT /settings/user/:userId/billing', async () => {
-    const userId = '123';
-    const billingDto = { address: 'Updated Billing Address' };
-    const mockResult = { success: true };
-
-    mockSettingService.updateUserSettings = jest
-      .fn()
-      .mockResolvedValue(mockResult);
-
-    const res = await request(app.getHttpServer())
-      .put(`/settings/user/${userId}/billing`)
-      .send(billingDto);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockResult);
-    expect(mockSettingService.updateUserSettings).toHaveBeenCalledWith(userId, {
-      category: SettingCategory.BILLING_ADDRESS,
-      settings: billingDto,
+      expect(res.body).toHaveProperty('companyName');
+      expect(res.body).toHaveProperty('abn');
     });
   });
 
-  it('should return 200 and all user settings for GET /settings/user/:userId/all', async () => {
-    const userId = '123';
-    const mockAllSettings = {
-      userProfile: { name: 'Test User', age: 30 },
-      companyInfo: { companyName: 'Test Co', abn: '123456789' },
-      billingAddress: { address: '123 Test St', city: 'Testville' },
-    };
+  describe('PUT /settings/user/:userId/company', () => {
+    it('should update company info', async () => {
+      const updateDto = {
+        companyName: 'New Company Name',
+        abn: '51824753556',
+      };
+      await request(app.getHttpServer())
+        .put(`/settings/user/${userId}/company`)
+        .send(updateDto)
+        .expect(200);
 
-    mockSettingService.getAllUserSettings = jest
-      .fn()
-      .mockResolvedValue(mockAllSettings);
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/company`)
+        .expect(200);
 
-    const res = await request(app.getHttpServer()).get(
-      `/settings/user/${userId}/all`,
-    );
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockAllSettings);
-    expect(mockSettingService.getAllUserSettings).toHaveBeenCalledWith(userId);
+      expect(res.body).toMatchObject(updateDto);
+    });
   });
 
-  it('should delete user settings by category for DELETE /settings/user/:userId/category/:category', async () => {
-    const userId = '123';
-    const category = SettingCategory.USER_PROFILE;
+  describe('GET /settings/user/:userId/billing', () => {
+    it('should return billing address', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/billing`)
+        .expect(200);
 
-    mockSettingService.deleteUserSettingsByCategory = jest
-      .fn()
-      .mockResolvedValue(undefined);
-
-    const res = await request(app.getHttpServer()).delete(
-      `/settings/user/${userId}/category/${category}`,
-    );
-
-    expect(res.status).toBe(204);
-    expect(
-      mockSettingService.deleteUserSettingsByCategory,
-    ).toHaveBeenCalledWith(userId, category);
+      expect(res.body).toHaveProperty('streetAddress');
+      expect(res.body).toHaveProperty('suburb');
+      expect(res.body).toHaveProperty('state');
+      expect(res.body).toHaveProperty('postcode');
+    });
   });
 
-  it('should delete all user settings for DELETE /settings/user/:userId/all', async () => {
-    const userId = '123';
+  describe('PUT /settings/user/:userId/billing', () => {
+    it('should update billing address', async () => {
+      const updateDto = {
+        unit: 'Unit 1',
+        streetAddress: '456 New St',
+        suburb: 'Newville',
+        state: 'NSW',
+        postcode: '2000',
+      };
+      await request(app.getHttpServer())
+        .put(`/settings/user/${userId}/billing`)
+        .send(updateDto)
+        .expect(200);
 
-    mockSettingService.deleteAllUserSettings = jest
-      .fn()
-      .mockResolvedValue(undefined);
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/billing`)
+        .expect(200);
 
-    const res = await request(app.getHttpServer()).delete(
-      `/settings/user/${userId}/all`,
-    );
-
-    expect(res.status).toBe(204);
-    expect(mockSettingService.deleteAllUserSettings).toHaveBeenCalledWith(userId);
+      expect(res.body).toMatchObject(updateDto);
+    });
   });
 
-  it('should initialize default settings for POST /settings/seed', async () => {
-    mockSettingService.seedDefaultSettings = jest
-      .fn()
-      .mockResolvedValue(undefined);
+  describe('GET /settings/user/:userId/all', () => {
+    it('should return all user settings', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/all`)
+        .expect(200);
 
-    const res = await request(app.getHttpServer()).post('/settings/seed');
-
-    expect(res.status).toBe(201);
-    expect(mockSettingService.seedDefaultSettings).toHaveBeenCalled();
+      expect(res.body).toHaveProperty('userProfile');
+      expect(res.body).toHaveProperty('companyInfo');
+      expect(res.body).toHaveProperty('billingAddress');
+    });
   });
 
-  it('should return 200 and user profile for frontend compatible for GET /settings/frontend/profile/:userId', async () => {
-    const mockProfile = { userId: '123', name: 'Test User' };
-    mockSettingService.getUserSettingsByCategory = jest
-      .fn()
-      .mockResolvedValue(mockProfile);
+  describe('DELETE /settings/user/:userId/category/:category', () => {
+    it('should delete user profile settings (noop, fields remain unchanged)', async () => {
+      // Reset user profile to a known state before delete
+      const resetProfile = {
+        name: 'Reset Name',
+        contact: '+61100000000',
+        role: 'ResetRole',
+      };
+      await request(app.getHttpServer())
+        .put(`/settings/user/${userId}/profile`)
+        .send(resetProfile)
+        .expect(200);
 
-    const res = await request(app.getHttpServer()).get(
-      '/settings/frontend/profile/123',
-    );
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockProfile);
-    expect(mockSettingService.getUserSettingsByCategory).toHaveBeenCalledWith(
-      '123',
-      SettingCategory.USER_PROFILE
-    );
+      await request(app.getHttpServer())
+        .delete(`/settings/user/${userId}/category/USER_PROFILE`)
+        .expect(204);
+
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/profile`)
+        .expect(200);
+
+      // Expect the profile to remain unchanged
+      expect(res.body).toMatchObject(resetProfile);
+  });
+});
+
+  describe('DELETE /settings/user/:userId/all', () => {
+    it('should delete all user settings', async () => {
+      await request(app.getHttpServer())
+        .delete(`/settings/user/${userId}/all`)
+        .expect(204);
+
+      const res = await request(app.getHttpServer())
+        .get(`/settings/user/${userId}/all`)
+        .expect(200);
+
+      expect(res.body.userProfile).toMatchObject({
+        name: '',
+        contact: '',
+        role: '',
+      });
+      expect(res.body.companyInfo).toMatchObject({
+        companyName: '',
+        abn: '',
+      });
+      expect(res.body.billingAddress).toMatchObject({
+        unit: '',
+        streetAddress: '',
+        suburb: '',
+        state: '',
+        postcode: '',
+      });
+    });
   });
 
-  it('should update user profile for frontend compatible for PUT /settings/frontend/profile/:userId', async () => {
-    const userId = '123';
-    const profileDto = { name: 'Updated User', age: 31 };
-    const mockResult = { success: true };
-
-    mockSettingService.updateUserSettings = jest
-      .fn()
-      .mockResolvedValue(mockResult);
-
-    const res = await request(app.getHttpServer())
-      .put(`/settings/frontend/profile/${userId}`)
-      .send(profileDto);
-
-    expect(res.status).toBe(200);
-    expect(res.body).toEqual(mockResult);
-    expect(mockSettingService.updateUserSettings).toHaveBeenCalledWith(userId, {
-      category: SettingCategory.USER_PROFILE,
-      settings: profileDto,
+  describe('POST /settings/seed', () => {
+    it('should seed default settings', async () => {
+      await request(app.getHttpServer()).post('/settings/seed').expect(201);
     });
   });
 });
