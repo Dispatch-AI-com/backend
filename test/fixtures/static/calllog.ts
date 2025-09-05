@@ -6,7 +6,7 @@ import { mockObjectIds, testDates, testStrings } from './common';
 
 // Static CallLog data for unit tests
 export const staticCallLog = {
-  _id: mockObjectIds.calllogId,
+  _id: mockObjectIds.calllogId.toString(),
   callSid: testStrings.callSid,
   userId: mockObjectIds.userId.toString(),
   serviceBookedId: testStrings.serviceId,

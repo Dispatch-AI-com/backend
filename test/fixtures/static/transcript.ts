@@ -6,7 +6,7 @@ import { mockObjectIds, testDates, testStrings } from './common';
 
 // Static Transcript data for unit tests
 export const staticTranscript = {
-  _id: mockObjectIds.transcriptId,
+  _id: mockObjectIds.transcriptId.toString(),
   callSid: testStrings.callSid,
   summary: 'Test summary for transcript',
   keyPoints: [
@@ -23,8 +23,8 @@ export const staticTranscript = {
 // Static TranscriptChunk data for unit tests
 export const staticTranscriptChunks = [
   {
-    _id: mockObjectIds.chunkId1,
-    transcriptId: mockObjectIds.transcriptId,
+    _id: mockObjectIds.chunkId1.toString(),
+    transcriptId: mockObjectIds.transcriptId.toString(),
     speakerType: 'AI' as const,
     text: 'Hello, this is AI.',
     startAt: 0,
@@ -32,8 +32,8 @@ export const staticTranscriptChunks = [
     updatedAt: testDates.baseDate,
   },
   {
-    _id: mockObjectIds.chunkId2,
-    transcriptId: mockObjectIds.transcriptId,
+    _id: mockObjectIds.chunkId2.toString(),
+    transcriptId: mockObjectIds.transcriptId.toString(),
     speakerType: 'User' as const,
     text: 'Hi, this is user.',
     startAt: 61,
