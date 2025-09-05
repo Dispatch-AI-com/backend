@@ -89,4 +89,17 @@ export class DatabaseTestHelper {
       startAt,
     });
   }
+
+  // Public accessors for models
+  get userModelAccessor() {
+    return this.userModel;
+  }
+
+  get planModelAccessor() {
+    return this.planModel;
+  }
+
+  get subscriptionModelAccessor() {
+    return this.subscriptionModel;
+  }
 }
