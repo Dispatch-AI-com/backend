@@ -11,6 +11,9 @@ export const mockObjectIds = {
   transcriptId: new Types.ObjectId('507f1f77bcf86cd799439013'),
   chunkId1: new Types.ObjectId('507f1f77bcf86cd799439014'),
   chunkId2: new Types.ObjectId('507f1f77bcf86cd799439015'),
+  serviceBookingId: new Types.ObjectId('507f1f77bcf86cd799439019'),
+  serviceBookingId2: new Types.ObjectId('507f1f77bcf86cd799439020'),
+  serviceBookingId3: new Types.ObjectId('507f1f77bcf86cd799439021'),
   nonExistentId: new Types.ObjectId('507f1f77bcf86cd799439999'),
 };
 
