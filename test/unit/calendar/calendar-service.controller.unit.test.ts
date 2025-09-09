@@ -59,6 +59,7 @@ describe('ServiceController (Unit) - Calendar Focus', () => {
           name: 'Test Service 1',
           price: 100,
           isAvailable: true,
+          userId: 'default-user',
         },
       ];
       

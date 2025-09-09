@@ -16,10 +16,14 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
   let model: jest.Mocked<Model<any>>;
 
   beforeEach(async () => {
-    const mockModel = jest.fn();
-    mockModel.find = jest.fn().mockReturnValue({
-      exec: jest.fn(),
+    const mockExec = jest.fn();
+    const mockFind = jest.fn().mockReturnValue({
+      exec: mockExec,
     });
+    
+    const mockModel = {
+      find: mockFind,
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -40,7 +44,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
       const userId = 'test-user';
       const expectedResult = [staticServiceBooking];
       
-      model.find().exec.mockResolvedValue(expectedResult);
+      (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
 
@@ -51,7 +55,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
     it('should return all service bookings when no userId provided', async () => {
       const expectedResult = [staticServiceBooking];
       
-      model.find().exec.mockResolvedValue(expectedResult);
+      (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll();
 
@@ -63,7 +67,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
       const userId = 'test-user';
       const expectedResult: any[] = [];
       
-      model.find().exec.mockResolvedValue(expectedResult);
+      (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
 
@@ -75,7 +79,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
       const userId = 'test-user';
       const error = new Error('Database connection failed');
       
-      model.find().exec.mockRejectedValue(error);
+      (model.find().exec as jest.Mock).mockRejectedValue(error);
 
       await expect(service.findAll(userId)).rejects.toThrow('Database connection failed');
     });
