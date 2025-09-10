@@ -1,9 +1,8 @@
 export function createMockUserProfileDto() {
   return {
-    firstName: 'Jane',
-    lastName: 'Smith',
-    email: 'jane@example.com',
-    phone: '0987654321',
+    name: 'Jane Smith',
+    contact: '0987654321',
+    role: 'User',
   };
 }
 
@@ -17,11 +16,10 @@ export function createMockCompanyInfoDto() {
 
 export function createMockBillingAddressDto() {
   return {
-    addressLine1: '1010 Invoice Ave',
-    addressLine2: 'Suite 5',
-    city: 'Melbourne',
+    unit: 'Suite 5',
+    streetAddress: '1010 Invoice Ave',
+    suburb: 'Melbourne',
     state: 'VIC',
     postcode: '3000',
-    country: 'Australia',
   };
 }

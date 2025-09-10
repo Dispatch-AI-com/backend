@@ -1,8 +1,7 @@
 export const staticUserProfile = {
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@email.com',
-  phone: '0400123456',
+  name: 'John Doe',
+  contact: '0400123456',
+  role: 'User',
 };
 
 export const staticCompanyInfo = {
@@ -12,10 +11,9 @@ export const staticCompanyInfo = {
 };
 
 export const staticBillingAddress = {
-  addressLine1: '3-5 Underwood Road',
-  addressLine2: 'Unit 5',
-  city: 'Parramatta',
-  state: 'New South Wales',
+  unit: 'Unit 5',
+  streetAddress: '3-5 Underwood Road',
+  suburb: 'Parramatta',
+  state: 'NSW',
   postcode: '2140',
-  country: 'Australia',
 };

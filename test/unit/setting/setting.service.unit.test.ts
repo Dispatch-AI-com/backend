@@ -47,9 +47,9 @@ describe('SettingService (Unit)', () => {
     it('should return user profile for valid userId and USER_PROFILE category', async () => {
       userModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
-          firstName: staticUserProfile.firstName,
-          lastName: staticUserProfile.lastName,
-          fullPhoneNumber: staticUserProfile.phone,
+          firstName: 'John',
+          lastName: 'Doe',
+          fullPhoneNumber: staticUserProfile.contact,
           position: 'Manager',
         }),
       });
@@ -59,8 +59,8 @@ describe('SettingService (Unit)', () => {
         SettingCategory.USER_PROFILE,
       );
       expect(result).toEqual({
-        name: `${staticUserProfile.firstName} ${staticUserProfile.lastName}`,
-        contact: staticUserProfile.phone,
+        name: staticUserProfile.name,
+        contact: staticUserProfile.contact,
         role: 'Manager',
       });
     });
@@ -87,9 +87,9 @@ describe('SettingService (Unit)', () => {
       companyModel.findOne.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
           address: {
-            unitAptPOBox: staticBillingAddress.addressLine2 || '12A',
-            streetAddress: staticBillingAddress.addressLine1,
-            suburb: staticBillingAddress.city,
+            unitAptPOBox: staticBillingAddress.unit || '12A',
+            streetAddress: staticBillingAddress.streetAddress,
+            suburb: staticBillingAddress.suburb,
             state: staticBillingAddress.state,
             postcode: staticBillingAddress.postcode,
           },
@@ -101,9 +101,9 @@ describe('SettingService (Unit)', () => {
         SettingCategory.BILLING_ADDRESS,
       );
       expect(result).toEqual({
-        unit: staticBillingAddress.addressLine2 || '12A',
-        streetAddress: staticBillingAddress.addressLine1,
-        suburb: staticBillingAddress.city,
+        unit: staticBillingAddress.unit || '12A',
+        streetAddress: staticBillingAddress.streetAddress,
+        suburb: staticBillingAddress.suburb,
         state: staticBillingAddress.state,
         postcode: staticBillingAddress.postcode,
       });
@@ -114,9 +114,9 @@ describe('SettingService (Unit)', () => {
     it('should return all user settings for valid userId', async () => {
       userModel.findById.mockReturnValue({
         exec: jest.fn().mockResolvedValue({
-          firstName: staticUserProfile.firstName,
-          lastName: staticUserProfile.lastName,
-          fullPhoneNumber: staticUserProfile.phone,
+          firstName: 'John',
+          lastName: 'Doe',
+          fullPhoneNumber: staticUserProfile.contact,
           position: 'Manager',
         }),
       });
@@ -128,18 +128,18 @@ describe('SettingService (Unit)', () => {
             businessName: staticCompanyInfo.companyName,
             abn: staticCompanyInfo.abn,
             address: {
-              unitAptPOBox: staticBillingAddress.addressLine2 || '12A',
-              streetAddress: staticBillingAddress.addressLine1,
-              suburb: staticBillingAddress.city,
+              unitAptPOBox: staticBillingAddress.unit || '12A',
+              streetAddress: staticBillingAddress.streetAddress,
+              suburb: staticBillingAddress.suburb,
               state: staticBillingAddress.state,
               postcode: staticBillingAddress.postcode,
             },
           })
           .mockResolvedValueOnce({
             address: {
-              unitAptPOBox: staticBillingAddress.addressLine2 || '12A',
-              streetAddress: staticBillingAddress.addressLine1,
-              suburb: staticBillingAddress.city,
+              unitAptPOBox: staticBillingAddress.unit || '12A',
+              streetAddress: staticBillingAddress.streetAddress,
+              suburb: staticBillingAddress.suburb,
               state: staticBillingAddress.state,
               postcode: staticBillingAddress.postcode,
             },
@@ -151,8 +151,8 @@ describe('SettingService (Unit)', () => {
       );
       expect(result).toEqual({
         userProfile: {
-          name: `${staticUserProfile.firstName} ${staticUserProfile.lastName}`,
-          contact: staticUserProfile.phone,
+          name: staticUserProfile.name,
+          contact: staticUserProfile.contact,
           role: 'Manager',
         },
         companyInfo: {
@@ -160,9 +160,9 @@ describe('SettingService (Unit)', () => {
           abn: staticCompanyInfo.abn,
         },
         billingAddress: {
-          unit: staticBillingAddress.addressLine2 || '12A',
-          streetAddress: staticBillingAddress.addressLine1,
-          suburb: staticBillingAddress.city,
+          unit: staticBillingAddress.unit || '12A',
+          streetAddress: staticBillingAddress.streetAddress,
+          suburb: staticBillingAddress.suburb,
           state: staticBillingAddress.state,
           postcode: staticBillingAddress.postcode,
         },

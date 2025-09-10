@@ -139,7 +139,9 @@ export class DatabaseTestHelper {
   }
 
   // Company helper
-  async createCompany(company: Partial<Company> = {}) {
+  async createCompany(
+    company: Partial<Omit<Company, 'user'>> & { user?: any } = {} as any,
+  ) {
     const uniqueAbn = (
       Date.now().toString() + Math.floor(Math.random() * 1000).toString()
     ).slice(0, 11);
@@ -156,7 +158,10 @@ export class DatabaseTestHelper {
         postcode: address.postcode || '1234',
       },
       abn: company.abn || uniqueAbn,
-      user: company.user || new Types.ObjectId(),
+      user:
+        typeof company.user === 'string'
+          ? new Types.ObjectId(company.user)
+          : company.user || new Types.ObjectId(),
     };
 
     if (
