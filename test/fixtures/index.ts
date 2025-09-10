@@ -6,6 +6,7 @@
 export * from './static/calllog';
 export * from './static/common';
 export * from './static/setting';
+export * from './static/calendar';
 export * from './static/transcript';
 export * from './static/user';
 
@@ -14,6 +15,7 @@ export * from './static/user';
 export * from './dynamic/calllog';
 export * from './dynamic/common';
 export * from './dynamic/setting';
+export * from './dynamic/calendar';
 export * from './dynamic/transcript';
 export * from './dynamic/user';
 
@@ -22,6 +24,10 @@ export {
   createMockCallLogDto as createCallLog,
   createMockCallLogDtos as createCallLogs,
 } from './dynamic/calllog';
+export {
+  createMockServiceBookingDto as createServiceBooking,
+  createMockServiceBookings as createServiceBookings,
+} from './dynamic/calendar';
 export {
   createMockTranscriptChunkDto as createChunk,
   createMockTranscriptChunkDtos as createChunks,

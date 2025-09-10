@@ -64,6 +64,8 @@ describe('CalllogController (Unit)', () => {
           limit: 10,
           total: 1,
           totalPages: 1,
+          hasNextPage: false,
+          hasPreviousPage: false,
         },
       };
 
@@ -205,8 +207,7 @@ describe('CalllogController (Unit)', () => {
       const startAtTo = '2025-01-31';
       const expectedResult = {
         totalCalls: 5,
-        totalDuration: 1800,
-        averageDuration: 360,
+        averageCallDuration: 360,
       };
 
       service.getSummary.mockResolvedValue(expectedResult);
