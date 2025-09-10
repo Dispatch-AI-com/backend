@@ -26,7 +26,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? '*',
+    origin: process.env.CORS_ORIGIN ,
     credentials: true, // Enable cookies in CORS
   });
 

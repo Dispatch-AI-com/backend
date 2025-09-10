@@ -15,10 +15,14 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
   let model: jest.Mocked<Model<any>>;
 
   beforeEach(async () => {
-    const mockModel = jest.fn();
-    mockModel.find = jest.fn().mockReturnValue({
-      exec: jest.fn(),
+    const mockExec = jest.fn();
+    const mockFind = jest.fn().mockReturnValue({
+      exec: mockExec,
     });
+    
+    const mockModel = {
+      find: mockFind,
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -54,7 +58,7 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
         },
       ];
       
-      model.find().exec.mockResolvedValue(expectedResult);
+      (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
 
@@ -72,10 +76,11 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
           name: 'Test Service 1',
           price: 100,
           isAvailable: true,
+          userId: 'default-user',
         },
       ];
       
-      model.find().exec.mockResolvedValue(expectedResult);
+      (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll();
 
@@ -87,7 +92,7 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
       const userId = 'test-user';
       const expectedResult: any[] = [];
       
-      model.find().exec.mockResolvedValue(expectedResult);
+      (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
 
@@ -102,7 +107,7 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
       const userId = 'test-user';
       const error = new Error('Database connection failed');
       
-      model.find().exec.mockRejectedValue(error);
+      (model.find().exec as jest.Mock).mockRejectedValue(error);
 
       await expect(service.findAll(userId)).rejects.toThrow('Database connection failed');
     });
