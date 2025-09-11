@@ -52,9 +52,9 @@ export class VerificationCodeService {
     
     const verificationCode = await this.verificationCodeModel.findOne({
       userId: new Types.ObjectId(userId),
-      contact,
-      code,
-      type,
+      contact: { $eq: contact },
+      code: { $eq: code },
+      type: { $eq: type },
       expiresAt: { $gt: new Date() },
     });
 
