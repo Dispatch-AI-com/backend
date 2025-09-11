@@ -8,6 +8,7 @@ import { AuthModule } from '@/modules/auth/auth.module';
 import { AvailabilityModule } from '@/modules/availability/availability.module';
 import { BlogModule } from '@/modules/blog/blog.module';
 import { CalllogModule } from '@/modules/calllog/calllog.module';
+import { CalendarModule } from '@/modules/calendar/calendar.module';
 import { CompanyModule } from '@/modules/company/company.module';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { HealthModule } from '@/modules/health/health.module';
@@ -37,6 +38,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     PlanModule,
     LocationModule,
     CalllogModule,
+    CalendarModule,
     BlogModule,
     CompanyModule,
     TranscriptModule,
