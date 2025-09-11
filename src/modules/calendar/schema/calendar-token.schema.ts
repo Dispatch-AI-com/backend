@@ -7,7 +7,12 @@ export type CalendarTokenDocument = CalendarToken & Document;
 
 @Schema({ timestamps: true })
 export class CalendarToken {
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true, unique: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    unique: true,
+  })
   userId!: Types.ObjectId;
 
   @Prop({ required: true })
@@ -48,4 +53,7 @@ CalendarTokenSchema.index({ userId: 1 });
 CalendarTokenSchema.index({ expiresAt: 1 });
 CalendarTokenSchema.index({ provider: 1 });
 // 确保每个用户的每个提供商只有一个活跃令牌
-CalendarTokenSchema.index({ userId: 1, provider: 1, isActive: 1 }, { unique: true });
+CalendarTokenSchema.index(
+  { userId: 1, provider: 1, isActive: 1 },
+  { unique: true },
+);

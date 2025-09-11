@@ -2,8 +2,9 @@ import { Controller, Get, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
-import { CalendarOAuthService } from './services/calendar-oauth.service';
 import { CalendarTokenService } from './calendar-token.service';
+import { CalendarProvider } from './dto/create-calendar-token.dto';
+import { CalendarOAuthService } from './services/calendar-oauth.service';
 
 @ApiTags('calendar-oauth')
 @Controller('calendar/oauth')
@@ -18,15 +19,21 @@ export class CalendarOAuthController {
   @Get('google')
   redirectToGoogle(
     @Query('userId') userId: string,
-    @Query('state') state: string,
     @Res() res: Response,
+    @Query('state') state?: string,
   ): void {
-    const url = this.oauthService.buildGoogleAuthUrl({ state: state ?? 'calendar', userId });
+    const url = this.oauthService.buildGoogleAuthUrl({
+      state: state ?? 'calendar',
+      userId,
+    });
     res.redirect(url);
   }
 
   @ApiOperation({ summary: 'Google OAuth callback for Calendar' })
-  @ApiResponse({ status: 302, description: 'Persists token and redirects to frontend' })
+  @ApiResponse({
+    status: 302,
+    description: 'Persists token and redirects to frontend',
+  })
   @Get('google/callback')
   async googleCallback(
     @Query('code') code: string,
@@ -49,10 +56,12 @@ export class CalendarOAuthController {
     const userId = parsedUserId ?? userIdFromQuery;
 
     // Persist token using existing storage logic
-    const expiresAt = new Date(Date.now() + token.expiresIn * 1000).toISOString();
+    const expiresAt = new Date(
+      Date.now() + token.expiresIn * 1000,
+    ).toISOString();
     await this.calendarTokenService.createOrUpdateToken({
       userId,
-      provider: 'google',
+      provider: CalendarProvider.GOOGLE,
       accessToken: token.accessToken,
       refreshToken: token.refreshToken ?? '',
       expiresAt,
@@ -65,5 +74,3 @@ export class CalendarOAuthController {
     res.redirect(`${frontendUrl}/settings/calendar?connected=google`);
   }
 }
-
-

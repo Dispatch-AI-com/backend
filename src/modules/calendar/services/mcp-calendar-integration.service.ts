@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { CalendarTokenService } from '../calendar-token.service';
 
 /**
@@ -22,7 +23,7 @@ export class McpCalendarIntegrationService {
       to: string;
       subject: string;
       body: string;
-      
+
       // Calendar event
       summary: string;
       start: string;
@@ -32,7 +33,7 @@ export class McpCalendarIntegrationService {
       attendees?: string[];
       alarm_minutes_before?: number;
       timezone?: string;
-    }
+    },
   ): Promise<{
     // MCP API params
     accessToken: string;
@@ -42,20 +43,33 @@ export class McpCalendarIntegrationService {
   }> {
     try {
       // 1) Get valid access token (auto refresh if near expiry)
-      const tokenInfo = await this.calendarTokenService.getValidToken(userId, 'google');
-      
+      const tokenInfo = await this.calendarTokenService.getValidToken(
+        userId,
+        'google',
+      );
+
       // 2) Refresh if token needs refresh
       let accessToken = tokenInfo.accessToken;
       if (tokenInfo.needsRefresh) {
-        this.logger.log(`User ${userId} Google Calendar token expiring soon, refreshing...`);
-        const refreshedToken = await this.calendarTokenService.refreshToken(userId, 'google');
+        this.logger.log(
+          `User ${userId} Google Calendar token expiring soon, refreshing...`,
+        );
+        const refreshedToken = await this.calendarTokenService.refreshToken(
+          userId,
+          'google',
+        );
         accessToken = refreshedToken.accessToken;
-        this.logger.log(`Token refreshed. New expiry: ${refreshedToken.expiresAt}`);
+        this.logger.log(
+          `Token refreshed. New expiry: ${refreshedToken.expiresAt.toISOString()}`,
+        );
       }
 
       // 3) Get user calendar configuration
-      const userToken = await this.calendarTokenService.getUserToken(userId, 'google');
-      
+      const userToken = await this.calendarTokenService.getUserToken(
+        userId,
+        'google',
+      );
+
       return {
         accessToken,
         calendarId: userToken?.calendarId || 'primary',
@@ -66,8 +80,12 @@ export class McpCalendarIntegrationService {
         },
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to prepare MCP calendar event for user ${userId}:`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to prepare MCP calendar event for user ${userId}:`,
+        error,
+      );
       throw new Error(`Failed to prepare calendar event: ${errorMessage}`);
     }
   }
@@ -77,11 +95,15 @@ export class McpCalendarIntegrationService {
    */
   async canUserCreateCalendarEvent(userId: string): Promise<boolean> {
     try {
-      const token = await this.calendarTokenService.getUserToken(userId, 'google');
+      const token = await this.calendarTokenService.getUserToken(
+        userId,
+        'google',
+      );
       if (!token) return false;
-      
+
       // Check whether token is expiring soon
-      const isExpiringSoon = await this.calendarTokenService.isTokenExpiringSoon(userId, 'google');
+      const isExpiringSoon =
+        await this.calendarTokenService.isTokenExpiringSoon(userId, 'google');
       return !isExpiringSoon;
     } catch {
       return false;
@@ -99,8 +121,11 @@ export class McpCalendarIntegrationService {
     canCreateEvents: boolean;
   }> {
     try {
-      const token = await this.calendarTokenService.getUserToken(userId, 'google');
-      
+      const token = await this.calendarTokenService.getUserToken(
+        userId,
+        'google',
+      );
+
       if (!token) {
         return {
           hasValidToken: false,
@@ -111,8 +136,9 @@ export class McpCalendarIntegrationService {
         };
       }
 
-      const isExpiringSoon = await this.calendarTokenService.isTokenExpiringSoon(userId, 'google');
-      
+      const isExpiringSoon =
+        await this.calendarTokenService.isTokenExpiringSoon(userId, 'google');
+
       return {
         hasValidToken: true,
         provider: token.provider,
@@ -121,7 +147,10 @@ export class McpCalendarIntegrationService {
         canCreateEvents: !isExpiringSoon,
       };
     } catch (error) {
-      this.logger.error(`Failed to get calendar config for user ${userId}:`, error);
+      this.logger.error(
+        `Failed to get calendar config for user ${userId}:`,
+        error,
+      );
       return {
         hasValidToken: false,
         provider: 'google',
@@ -143,7 +172,7 @@ export class McpCalendarIntegrationService {
       serviceType: string;
       preferredTime: string;
       customerEmail?: string;
-    }
+    },
   ): Promise<{
     // Email content
     emailData: {
@@ -170,16 +199,25 @@ export class McpCalendarIntegrationService {
   }> {
     try {
       // 1) Get valid access token
-      const tokenInfo = await this.calendarTokenService.getValidToken(userId, 'google');
-      
+      const tokenInfo = await this.calendarTokenService.getValidToken(
+        userId,
+        'google',
+      );
+
       let accessToken = tokenInfo.accessToken;
       if (tokenInfo.needsRefresh) {
-        const refreshedToken = await this.calendarTokenService.refreshToken(userId, 'google');
+        const refreshedToken = await this.calendarTokenService.refreshToken(
+          userId,
+          'google',
+        );
         accessToken = refreshedToken.accessToken;
       }
 
       // 2) Get user calendar config
-      const userToken = await this.calendarTokenService.getUserToken(userId, 'google');
+      const userToken = await this.calendarTokenService.getUserToken(
+        userId,
+        'google',
+      );
 
       // 3) Build email content
       const emailData = {
@@ -205,7 +243,10 @@ Best regards,
       const calendarData = {
         summary: `Customer Appointment - ${callData.serviceType}`,
         start: callData.preferredTime,
-        end: this.calculateEndTime(callData.preferredTime, callData.serviceType),
+        end: this.calculateEndTime(
+          callData.preferredTime,
+          callData.serviceType,
+        ),
         description: `
 Customer: ${callData.customerName}
 Phone: ${callData.customerPhone}
@@ -229,8 +270,12 @@ Service: ${callData.serviceType}
         mcpParams,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to prepare Telephony MCP call for user ${userId}:`, error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      this.logger.error(
+        `Failed to prepare Telephony MCP call for user ${userId}:`,
+        error,
+      );
       throw new Error(`Failed to prepare MCP call: ${errorMessage}`);
     }
   }
@@ -242,7 +287,7 @@ Service: ${callData.serviceType}
     userId: string,
     mcpParams: any,
     emailData: any,
-    calendarData: any
+    calendarData: any,
   ): Promise<any> {
     try {
       // Build MCP API request payload
@@ -265,7 +310,7 @@ Service: ${callData.serviceType}
       // Temporarily return mock data for now.
       const result = {
         success: true,
-        eventId: `event_${Date.now()}`,
+        eventId: `event_${String(Date.now())}`,
         emailSent: true,
         message: 'Calendar event created and email sent',
         timestamp: new Date().toISOString(),
@@ -274,7 +319,8 @@ Service: ${callData.serviceType}
       this.logger.log(`MCP AI backend call succeeded:`, result);
       return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to call MCP AI backend:`, error);
       throw new Error(`Failed to call MCP AI backend: ${errorMessage}`);
     }

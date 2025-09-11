@@ -1,5 +1,5 @@
-import mongoose from 'mongoose';
 import { config } from 'dotenv';
+import mongoose from 'mongoose';
 import { resolve } from 'path';
 
 // Load test environment variables from .env.example
@@ -91,10 +91,10 @@ beforeAll(async () => {
   // Override only test-specific environment variables
   process.env.NODE_ENV = 'test';
   process.env.DISABLE_AUTH = 'true';
-  
+
   // Override database URI for test environment
-  process.env.MONGODB_URI = process.env.CI 
-    ? 'mongodb://localhost:27017/test-ci' 
+  process.env.MONGODB_URI = process.env.CI
+    ? 'mongodb://localhost:27017/test-ci'
     : 'mongodb://localhost:27017/test';
 
   // Connect to test database

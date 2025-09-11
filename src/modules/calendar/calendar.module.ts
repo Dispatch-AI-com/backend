@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
-import { CalendarTokenController } from './calendar-token.controller';
 import { CalendarOAuthController } from './calendar-oauth.controller';
+import { CalendarTokenController } from './calendar-token.controller';
 import { CalendarTokenService } from './calendar-token.service';
-import { McpCalendarIntegrationService } from './services/mcp-calendar-integration.service';
+import {
+  CalendarToken,
+  CalendarTokenSchema,
+} from './schema/calendar-token.schema';
 import { CalendarOAuthService } from './services/calendar-oauth.service';
-import { CalendarToken, CalendarTokenSchema } from './schema/calendar-token.schema';
+import { McpCalendarIntegrationService } from './services/mcp-calendar-integration.service';
 
 @Module({
   imports: [
@@ -15,7 +18,15 @@ import { CalendarToken, CalendarTokenSchema } from './schema/calendar-token.sche
     ]),
   ],
   controllers: [CalendarTokenController, CalendarOAuthController],
-  providers: [CalendarTokenService, McpCalendarIntegrationService, CalendarOAuthService],
-  exports: [CalendarTokenService, McpCalendarIntegrationService, CalendarOAuthService],
+  providers: [
+    CalendarTokenService,
+    McpCalendarIntegrationService,
+    CalendarOAuthService,
+  ],
+  exports: [
+    CalendarTokenService,
+    McpCalendarIntegrationService,
+    CalendarOAuthService,
+  ],
 })
 export class CalendarModule {}

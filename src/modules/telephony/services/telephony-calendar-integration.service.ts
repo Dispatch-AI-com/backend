@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+
 import { McpCalendarIntegrationService } from '@/modules/calendar/services/mcp-calendar-integration.service';
 
 /**
@@ -7,7 +8,9 @@ import { McpCalendarIntegrationService } from '@/modules/calendar/services/mcp-c
  */
 @Injectable()
 export class TelephonyCalendarIntegrationService {
-  private readonly logger = new Logger(TelephonyCalendarIntegrationService.name);
+  private readonly logger = new Logger(
+    TelephonyCalendarIntegrationService.name,
+  );
 
   constructor(
     private readonly mcpCalendarIntegration: McpCalendarIntegrationService,
@@ -26,7 +29,7 @@ export class TelephonyCalendarIntegrationService {
       serviceType: string;
       preferredTime: string;
       customerEmail?: string;
-    }
+    },
   ): Promise<{
     success: boolean;
     eventId?: string;
@@ -34,13 +37,18 @@ export class TelephonyCalendarIntegrationService {
     message: string;
   }> {
     try {
-      this.logger.log(`处理通话日历事件，用户: ${userId}, 通话: ${callData.callSid}`);
+      this.logger.log(
+        `处理通话日历事件，用户: ${userId}, 通话: ${callData.callSid}`,
+      );
 
       // 1. 检查用户是否可以创建日历事件
-      const canCreate = await this.mcpCalendarIntegration.canUserCreateCalendarEvent(userId);
-      
+      const canCreate =
+        await this.mcpCalendarIntegration.canUserCreateCalendarEvent(userId);
+
       if (!canCreate) {
-        this.logger.warn(`用户 ${userId} 无法创建日历事件，可能没有连接Google Calendar`);
+        this.logger.warn(
+          `用户 ${userId} 无法创建日历事件，可能没有连接Google Calendar`,
+        );
         return {
           success: false,
           message: '请先连接Google Calendar以创建预约',
@@ -48,15 +56,18 @@ export class TelephonyCalendarIntegrationService {
       }
 
       // 2. 准备MCP调用参数
-      const { emailData, calendarData, mcpParams } = 
-        await this.mcpCalendarIntegration.prepareTelephonyMcpCall(userId, callData);
+      const { emailData, calendarData, mcpParams } =
+        await this.mcpCalendarIntegration.prepareTelephonyMcpCall(
+          userId,
+          callData,
+        );
 
       // 3. 调用MCP AI后端
       const result = await this.mcpCalendarIntegration.callMcpAiBackend(
         userId,
         mcpParams,
         emailData,
-        calendarData
+        calendarData,
       );
 
       this.logger.log(`通话日历事件创建成功:`, {
@@ -72,9 +83,9 @@ export class TelephonyCalendarIntegrationService {
         emailSent: result.emailSent,
         message: '预约已创建，确认邮件已发送',
       };
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       this.logger.error(`处理通话日历事件失败:`, error);
       return {
         success: false,
@@ -93,8 +104,9 @@ export class TelephonyCalendarIntegrationService {
     message: string;
   }> {
     try {
-      const config = await this.mcpCalendarIntegration.getUserCalendarConfig(userId);
-      
+      const config =
+        await this.mcpCalendarIntegration.getUserCalendarConfig(userId);
+
       if (!config.hasValidToken) {
         return {
           connected: false,
@@ -135,12 +147,14 @@ export class TelephonyCalendarIntegrationService {
     message: string;
   }> {
     try {
-      const config = await this.mcpCalendarIntegration.getUserCalendarConfig(userId);
-      
+      const config =
+        await this.mcpCalendarIntegration.getUserCalendarConfig(userId);
+
       if (!config.hasValidToken) {
         return {
           canCreateEvents: false,
-          message: '用户尚未连接Google Calendar，无法创建预约。请引导用户连接Google Calendar。',
+          message:
+            '用户尚未连接Google Calendar，无法创建预约。请引导用户连接Google Calendar。',
         };
       }
 
@@ -176,11 +190,12 @@ export class TelephonyCalendarIntegrationService {
       serviceType: string;
       appointmentTime: string;
       customerEmail?: string;
-    }
+    },
   ): Promise<string> {
     try {
-      const config = await this.mcpCalendarIntegration.getUserCalendarConfig(userId);
-      
+      const config =
+        await this.mcpCalendarIntegration.getUserCalendarConfig(userId);
+
       if (!config.canCreateEvents) {
         return `抱歉，${appointmentData.customerName}，我无法为您创建预约，因为Google Calendar尚未连接。请稍后联系我们的客服人员。`;
       }

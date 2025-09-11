@@ -1,10 +1,17 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { CalendarToken, CalendarTokenDocument } from './schema/calendar-token.schema';
-import { CalendarOAuthService } from './services/calendar-oauth.service';
 import { CreateCalendarTokenDto } from './dto/create-calendar-token.dto';
+import {
+  CalendarToken,
+  CalendarTokenDocument,
+} from './schema/calendar-token.schema';
+import { CalendarOAuthService } from './services/calendar-oauth.service';
 
 @Injectable()
 export class CalendarTokenService {
@@ -18,7 +25,10 @@ export class CalendarTokenService {
    * Get a valid access token by user ID.
    * If the token expires in less than 15 minutes, mark it as needing refresh.
    */
-  async getValidToken(userId: string, provider: string = 'google'): Promise<{
+  async getValidToken(
+    userId: string,
+    provider = 'google',
+  ): Promise<{
     accessToken: string;
     needsRefresh: boolean;
     expiresAt: Date;
@@ -30,7 +40,9 @@ export class CalendarTokenService {
     });
 
     if (!token) {
-      throw new NotFoundException(`No ${provider} calendar token found for user ${userId}`);
+      throw new NotFoundException(
+        `No ${provider} calendar token found for user ${userId}`,
+      );
     }
 
     const now = new Date();
@@ -51,7 +63,10 @@ export class CalendarTokenService {
   /**
    * Refresh access token.
    */
-  async refreshToken(userId: string, provider: string = 'google'): Promise<{
+  async refreshToken(
+    userId: string,
+    provider = 'google',
+  ): Promise<{
     accessToken: string;
     expiresAt: Date;
   }> {
@@ -62,18 +77,23 @@ export class CalendarTokenService {
     });
 
     if (!token) {
-      throw new NotFoundException(`No ${provider} calendar token found for user ${userId}`);
+      throw new NotFoundException(
+        `No ${provider} calendar token found for user ${userId}`,
+      );
     }
 
     if (!token.refreshToken) {
-      throw new UnauthorizedException('No refresh token available. Please re-authorize Calendar.');
+      throw new UnauthorizedException(
+        'No refresh token available. Please re-authorize Calendar.',
+      );
     }
 
     try {
       if (provider === 'google') {
-        const refreshed = await this.calendarOAuthService.refreshGoogleAccessToken(
-          token.refreshToken,
-        );
+        const refreshed =
+          await this.calendarOAuthService.refreshGoogleAccessToken(
+            token.refreshToken,
+          );
         const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
 
         await this.calendarTokenModel.findByIdAndUpdate(token._id, {
@@ -91,19 +111,25 @@ export class CalendarTokenService {
       }
 
       // Future: add outlook support here
-      throw new UnauthorizedException(`Unsupported provider for refresh: ${provider}`);
+      throw new UnauthorizedException(
+        `Unsupported provider for refresh: ${provider}`,
+      );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       // Optional: mark token inactive on hard failures
       // await this.calendarTokenModel.findByIdAndUpdate(token._id, { isActive: false, updatedAt: new Date() });
-      throw new UnauthorizedException(`Failed to refresh access token: ${message}`);
+      throw new UnauthorizedException(
+        `Failed to refresh access token: ${message}`,
+      );
     }
   }
 
   /**
    * Create or update calendar token.
    */
-  async createOrUpdateToken(createDto: CreateCalendarTokenDto): Promise<CalendarToken> {
+  async createOrUpdateToken(
+    createDto: CreateCalendarTokenDto,
+  ): Promise<CalendarToken> {
     const { userId, provider } = createDto;
 
     // Find existing token
@@ -132,12 +158,21 @@ export class CalendarTokenService {
       }
       return updatedToken;
     } else {
-      // Create new token
-      const newToken = new this.calendarTokenModel({
-        ...createDto,
+      // Create new token (avoid spreading class instance to preserve prototype)
+      const newTokenPayload: Partial<CalendarToken> & {
+        userId: Types.ObjectId;
+        expiresAt: Date;
+      } = {
         userId: new Types.ObjectId(createDto.userId),
+        provider: (createDto as any).provider ?? 'google',
+        accessToken: createDto.accessToken,
+        refreshToken: createDto.refreshToken,
         expiresAt: new Date(createDto.expiresAt),
-      });
+        tokenType: createDto.tokenType,
+        scope: createDto.scope,
+        calendarId: (createDto as any).calendarId,
+      };
+      const newToken = new this.calendarTokenModel(newTokenPayload);
       return await newToken.save();
     }
   }
@@ -145,7 +180,10 @@ export class CalendarTokenService {
   /**
    * Get user's calendar token.
    */
-  async getUserToken(userId: string, provider: string = 'google'): Promise<CalendarToken | null> {
+  async getUserToken(
+    userId: string,
+    provider = 'google',
+  ): Promise<CalendarToken | null> {
     return await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
       provider,
@@ -156,7 +194,7 @@ export class CalendarTokenService {
   /**
    * Soft-delete user's calendar token.
    */
-  async deleteUserToken(userId: string, provider: string = 'google'): Promise<void> {
+  async deleteUserToken(userId: string, provider = 'google'): Promise<void> {
     await this.calendarTokenModel.findOneAndUpdate(
       {
         userId: new Types.ObjectId(userId),
@@ -172,7 +210,10 @@ export class CalendarTokenService {
   /**
    * Check if token is expiring soon (less than 15 minutes).
    */
-  async isTokenExpiringSoon(userId: string, provider: string = 'google'): Promise<boolean> {
+  async isTokenExpiringSoon(
+    userId: string,
+    provider = 'google',
+  ): Promise<boolean> {
     const token = await this.getUserToken(userId, provider);
     if (!token) return false;
 
