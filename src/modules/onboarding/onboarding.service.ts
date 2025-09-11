@@ -12,6 +12,7 @@ import { Model, UpdateQuery } from 'mongoose';
 import { CompanyService } from '../company/company.service';
 import { CreateCompanyDto } from '../company/dto/create-company.dto';
 import { UserService } from '../user/user.service';
+import { VerificationService } from '../setting/verification.service';
 import {
   OnboardingAnswers,
   OnboardingSession,
@@ -63,6 +64,7 @@ export class OnboardingService {
     private readonly sessionModel: Model<OnboardingSessionDocument>,
     private readonly companyService: CompanyService,
     private readonly userService: UserService,
+    private readonly verificationService: VerificationService,
   ) {}
 
   /**
@@ -179,6 +181,21 @@ export class OnboardingService {
       { userId },
       { status: 'completed', updatedAt: new Date() },
     );
+
+    // Create verification record for the user
+    try {
+      await this.verificationService.updateVerification(userId, {
+        type: 'Both',
+        email: user.email,
+        mobile: user.fullPhoneNumber || '',
+        emailVerified: false,
+        mobileVerified: false,
+        marketingPromotions: false,
+      });
+    } catch (error) {
+      // Log error but don't fail onboarding completion
+      console.error('Failed to create verification record:', error);
+    }
 
     return { success: true };
   }

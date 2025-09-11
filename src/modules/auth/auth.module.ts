@@ -12,6 +12,7 @@ import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { User, userSchema } from '@/modules/user/schema/user.schema';
 import { UserModule } from '@/modules/user/user.module';
+import { VerificationGuard } from '@/common/guards/verification.guard';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { UserModule } from '@/modules/user/user.module';
     UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, VerificationGuard],
+  exports: [AuthService, VerificationGuard],
 })
 export class AuthModule {}
