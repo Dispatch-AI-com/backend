@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { VerificationGuard } from '@/common/guards/verification.guard';
 import { UserModule } from '@/modules/user/user.module';
+
 import { Service, ServiceSchema } from './schema/service.schema';
 import { ServiceController } from './service.controller';
 import { ServiceService } from './service.service';

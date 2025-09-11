@@ -20,8 +20,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { VerificationRequired } from '@/common/decorators/verification-required.decorator';
 import { VerificationGuard } from '@/common/guards/verification.guard';
+
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import { SubscriptionDocument } from './schema/subscription.schema';
 import { SubscriptionService } from './subscription.service';

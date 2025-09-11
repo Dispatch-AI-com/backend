@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
-import { VerificationCode, VerificationCodeDocument } from '../schema/verification-code.schema';
+import {
+  VerificationCode,
+  VerificationCodeDocument,
+} from '../schema/verification-code.schema';
 
 @Injectable()
 export class VerificationCodeService {
@@ -19,8 +22,10 @@ export class VerificationCodeService {
     code: string,
     type: 'email' | 'phone' = 'email',
   ): Promise<VerificationCode> {
-    this.logger.log(`Creating verification code for user ${userId}, email ${email}, code ${code}`);
-    
+    this.logger.log(
+      `Creating verification code for user ${userId}, email ${email}, code ${code}`,
+    );
+
     // Remove any existing codes for this user and email/phone
     await this.verificationCodeModel.deleteMany({
       userId: new Types.ObjectId(userId),
@@ -38,7 +43,9 @@ export class VerificationCodeService {
     });
 
     const savedCode = await verificationCode.save();
-    this.logger.log(`Verification code saved with ID: ${savedCode._id}`);
+    this.logger.log(
+      `Verification code saved with ID: ${String(savedCode._id)}`,
+    );
     return savedCode;
   }
 
@@ -48,8 +55,10 @@ export class VerificationCodeService {
     code: string,
     type: 'email' | 'phone' = 'email',
   ): Promise<boolean> {
-    this.logger.log(`Verifying code for user ${userId}, contact ${contact}, code ${code}, type ${type}`);
-    
+    this.logger.log(
+      `Verifying code for user ${userId}, contact ${contact}, code ${code}, type ${type}`,
+    );
+
     const verificationCode = await this.verificationCodeModel.findOne({
       userId: new Types.ObjectId(userId),
       contact: { $eq: contact },
@@ -58,7 +67,9 @@ export class VerificationCodeService {
       expiresAt: { $gt: new Date() },
     });
 
-    this.logger.log(`Found verification code: ${verificationCode ? 'YES' : 'NO'}`);
+    this.logger.log(
+      `Found verification code: ${verificationCode ? 'YES' : 'NO'}`,
+    );
 
     if (verificationCode) {
       // Remove the used code
@@ -75,9 +86,11 @@ export class VerificationCodeService {
     const result = await this.verificationCodeModel.deleteMany({
       expiresAt: { $lt: new Date() },
     });
-    
+
     if (result.deletedCount > 0) {
-      this.logger.log(`Cleaned up ${result.deletedCount} expired verification codes`);
+      this.logger.log(
+        `Cleaned up ${String(result.deletedCount)} expired verification codes`,
+      );
     }
   }
 }

@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 
+import { VerificationGuard } from '@/common/guards/verification.guard';
 import { JWT_EXPIRATION_TIME } from '@/modules/auth/auth.config';
 import { AuthController } from '@/modules/auth/auth.controller';
 import { AuthService } from '@/modules/auth/auth.service';
@@ -12,7 +13,6 @@ import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { User, userSchema } from '@/modules/user/schema/user.schema';
 import { UserModule } from '@/modules/user/user.module';
-import { VerificationGuard } from '@/common/guards/verification.guard';
 
 @Module({
   imports: [

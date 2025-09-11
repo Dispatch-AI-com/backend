@@ -4,13 +4,12 @@ import type { Model } from 'mongoose';
 import { Types } from 'mongoose';
 
 import type { CallLog } from '../../src/modules/calllog/schema/calllog.schema';
+import type { Plan } from '../../src/modules/plan/schema/plan.schema';
 import type { Service } from '../../src/modules/service/schema/service.schema';
 import type { ServiceBooking } from '../../src/modules/service-booking/schema/service-booking.schema';
+import type { Subscription } from '../../src/modules/subscription/schema/subscription.schema';
 import type { Transcript } from '../../src/modules/transcript/schema/transcript.schema';
 import type { TranscriptChunk } from '../../src/modules/transcript-chunk/schema/transcript-chunk.schema';
-import type { Plan } from '../../src/modules/plan/schema/plan.schema';
-import type { Subscription } from '../../src/modules/subscription/schema/subscription.schema';
-
 import type { User } from '../../src/modules/user/schema/user.schema';
 import {
   staticCallLog as mockCallLog,
@@ -37,7 +36,9 @@ export class DatabaseTestHelper {
       getModelToken('TranscriptChunk'),
     );
     this.planModel = moduleRef.get<Model<Plan>>(getModelToken('Plan'));
-    this.subscriptionModel = moduleRef.get<Model<Subscription>>(getModelToken('Subscription'));
+    this.subscriptionModel = moduleRef.get<Model<Subscription>>(
+      getModelToken('Subscription'),
+    );
     this.serviceBookingModel = moduleRef.get<Model<ServiceBooking>>(
       getModelToken('ServiceBooking'),
     );

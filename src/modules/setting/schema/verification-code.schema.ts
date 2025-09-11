@@ -26,7 +26,8 @@ export class VerificationCode extends Document {
 }
 
 export type VerificationCodeDocument = VerificationCode & Document;
-export const VerificationCodeSchema = SchemaFactory.createForClass(VerificationCode);
+export const VerificationCodeSchema =
+  SchemaFactory.createForClass(VerificationCode);
 
 // Add TTL index for automatic cleanup
 VerificationCodeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

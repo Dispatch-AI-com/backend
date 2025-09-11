@@ -1,6 +1,6 @@
+import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
 
 @Injectable()
 export class AwsSesEmailVerificationService {
@@ -11,23 +11,31 @@ export class AwsSesEmailVerificationService {
   private readonly appName: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.region = this.configService.get<string>('AWS_REGION') || 'us-east-1';
-    this.emailFrom = this.configService.get<string>('SES_FROM') || 'noreply@dispatchai.com';
-    this.appName = this.configService.get<string>('APP_NAME') || 'DispatchAI';
-    
-    const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
+    this.region = this.configService.get<string>('AWS_REGION') ?? 'us-east-1';
+    this.emailFrom =
+      this.configService.get<string>('SES_FROM') ?? 'noreply@dispatchai.com';
+    this.appName = this.configService.get<string>('APP_NAME') ?? 'DispatchAI';
 
-    if (!accessKeyId || !secretAccessKey) {
-      this.logger.warn('AWS credentials not found in environment variables - using mock mode');
+    const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
+    const secretAccessKey = this.configService.get<string>(
+      'AWS_SECRET_ACCESS_KEY',
+    );
+
+    if (accessKeyId === undefined || secretAccessKey === undefined) {
+      this.logger.warn(
+        'AWS credentials not found in environment variables - using mock mode',
+      );
     }
 
     this.sesClient = new SESv2Client({
       region: this.region,
-      credentials: accessKeyId && secretAccessKey ? {
-        accessKeyId,
-        secretAccessKey,
-      } : undefined,
+      credentials:
+        accessKeyId !== undefined && secretAccessKey !== undefined
+          ? {
+              accessKeyId,
+              secretAccessKey,
+            }
+          : undefined,
     });
   }
 
@@ -38,11 +46,15 @@ export class AwsSesEmailVerificationService {
   ): Promise<{ success: boolean; message?: string }> {
     try {
       const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
-      const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY');
-      
+      const secretAccessKey = this.configService.get<string>(
+        'AWS_SECRET_ACCESS_KEY',
+      );
+
       // If no API key, use mock mode for testing
-      if (!accessKeyId || !secretAccessKey) {
-        this.logger.log(`[MOCK MODE] Verification email would be sent to ${email} with code: ${verificationCode}`);
+      if (accessKeyId === undefined || secretAccessKey === undefined) {
+        this.logger.log(
+          `[MOCK MODE] Verification email would be sent to ${email} with code: ${verificationCode}`,
+        );
         return { success: true, message: 'Mock email sent successfully' };
       }
 
@@ -58,10 +70,16 @@ export class AwsSesEmailVerificationService {
             },
             Body: {
               Text: {
-                Data: this.generateVerificationEmailText(verificationCode, firstName),
+                Data: this.generateVerificationEmailText(
+                  verificationCode,
+                  firstName,
+                ),
               },
               Html: {
-                Data: this.generateVerificationEmailHtml(verificationCode, firstName),
+                Data: this.generateVerificationEmailHtml(
+                  verificationCode,
+                  firstName,
+                ),
               },
             },
           },
@@ -70,23 +88,33 @@ export class AwsSesEmailVerificationService {
 
       const result = await this.sesClient.send(command);
 
-      this.logger.log(`Verification email sent to ${email}: ${result.MessageId}`);
+      this.logger.log(
+        `Verification email sent to ${email}: ${result.MessageId ?? 'unknown'}`,
+      );
       return { success: true };
     } catch (error) {
-      this.logger.error(`Failed to send verification email to ${email}:`, error);
-      return { 
-        success: false, 
-        message: error instanceof Error ? error.message : 'Unknown error' 
+      this.logger.error(
+        `Failed to send verification email to ${email}:`,
+        error,
+      );
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error',
       };
     }
+  }
+
+  generateVerificationCode(): string {
+    // Generate a 6-digit verification code
+    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
   private generateVerificationEmailHtml(
     verificationCode: string,
     firstName?: string,
   ): string {
-    const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
-    
+    const greeting = firstName !== undefined ? `Hi ${firstName},` : 'Hi there,';
+
     return `
       <!DOCTYPE html>
       <html>
@@ -130,8 +158,8 @@ export class AwsSesEmailVerificationService {
     verificationCode: string,
     firstName?: string,
   ): string {
-    const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
-    
+    const greeting = firstName !== undefined ? `Hi ${firstName},` : 'Hi there,';
+
     return `
 ${this.appName} Email Verification
 
@@ -147,10 +175,5 @@ If you didn't create an account with ${this.appName}, please ignore this email.
 
 © 2024 ${this.appName}. All rights reserved.
     `.trim();
-  }
-
-  generateVerificationCode(): string {
-    // Generate a 6-digit verification code
-    return Math.floor(100000 + Math.random() * 900000).toString();
   }
 }

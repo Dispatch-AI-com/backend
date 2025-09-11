@@ -9,14 +9,17 @@ import { User, userSchema } from '@/modules/user/schema/user.schema';
 
 import { Setting, settingSchema } from './schema/setting.schema';
 import { Verification, VerificationSchema } from './schema/verification.schema';
-import { VerificationCode, VerificationCodeSchema } from './schema/verification-code.schema';
+import {
+  VerificationCode,
+  VerificationCodeSchema,
+} from './schema/verification-code.schema';
+import { AwsSesEmailVerificationService } from './services/aws-ses-email-verification.service';
+import { AwsSnsSmsVerificationService } from './services/aws-sns-sms-verification.service';
+import { VerificationCodeService } from './services/verification-code.service';
 import { SettingController } from './setting.controller';
 import { SettingService } from './setting.service';
 import { VerificationController } from './verification.controller';
 import { VerificationService } from './verification.service';
-import { AwsSesEmailVerificationService } from './services/aws-ses-email-verification.service';
-import { VerificationCodeService } from './services/verification-code.service';
-import { AwsSnsSmsVerificationService } from './services/aws-sns-sms-verification.service';
 
 @Module({
   imports: [
@@ -29,7 +32,13 @@ import { AwsSnsSmsVerificationService } from './services/aws-sns-sms-verificatio
     ]),
   ],
   controllers: [SettingController, VerificationController],
-  providers: [SettingService, VerificationService, AwsSesEmailVerificationService, VerificationCodeService, AwsSnsSmsVerificationService],
+  providers: [
+    SettingService,
+    VerificationService,
+    AwsSesEmailVerificationService,
+    VerificationCodeService,
+    AwsSnsSmsVerificationService,
+  ],
   exports: [SettingService, VerificationService, MongooseModule],
 })
 export class SettingModule {}

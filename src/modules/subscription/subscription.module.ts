@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
 import { VerificationGuard } from '@/common/guards/verification.guard';
+
 import { Plan, planSchema } from '../plan/schema/plan.schema';
 import { StripeModule } from '../stripe/stripe.module';
 import { User, userSchema } from '../user/schema/user.schema';
