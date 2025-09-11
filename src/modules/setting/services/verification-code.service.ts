@@ -25,7 +25,7 @@ export class VerificationCodeService {
     await this.verificationCodeModel.deleteMany({
       userId: new Types.ObjectId(userId),
       contact: { $eq: email },
-      type,
+      type: { $eq: type },
     });
 
     // Create new verification code
