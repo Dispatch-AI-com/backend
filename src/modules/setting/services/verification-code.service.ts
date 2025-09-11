@@ -24,7 +24,7 @@ export class VerificationCodeService {
     // Remove any existing codes for this user and email/phone
     await this.verificationCodeModel.deleteMany({
       userId: new Types.ObjectId(userId),
-      contact: email,
+      contact: { $eq: email },
       type,
     });
 
