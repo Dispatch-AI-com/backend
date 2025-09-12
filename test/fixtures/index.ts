@@ -6,13 +6,17 @@
 export * from './static/calendar';
 export * from './static/calllog';
 export * from './static/common';
+export * from './static/setting';
 export * from './static/transcript';
 export * from './static/user';
+
+
 
 // Dynamic mock data generator exports
 export * from './dynamic/calendar';
 export * from './dynamic/calllog';
 export * from './dynamic/common';
+export * from './dynamic/setting';
 export * from './dynamic/transcript';
 export * from './dynamic/user';
 
