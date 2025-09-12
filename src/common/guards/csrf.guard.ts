@@ -4,14 +4,28 @@ import {
   ForbiddenException,
   Injectable,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 
+import { SKIP_CSRF_KEY } from '@/common/decorators/skip-csrf.decorator';
 import { validateCSRFToken } from '@/utils/csrf.util';
 
 @Injectable()
 export class CSRFGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<Request>();
+
+    // Check if CSRF should be skipped for this endpoint
+    const skipCSRF = this.reflector.getAllAndOverride<boolean>(SKIP_CSRF_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+
+    if (skipCSRF) {
+      return true;
+    }
 
     // Skip CSRF validation for GET, HEAD, OPTIONS requests
     if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {

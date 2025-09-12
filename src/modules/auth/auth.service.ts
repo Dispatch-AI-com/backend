@@ -54,7 +54,7 @@ export class AuthService {
     }
     const user = foundUser.toObject({ virtuals: false });
     const token = this.jwtService.sign({
-      sub: user._id,
+      sub: user._id?.toString() ?? user._id, // Ensure ObjectId is converted to string
       email: user.email,
       role: user.role,
       status: user.status,
@@ -83,7 +83,7 @@ export class AuthService {
     await newUser.save();
 
     const token = this.jwtService.sign({
-      sub: newUser._id,
+      sub: newUser._id?.toString() ?? newUser._id, // Ensure ObjectId is converted to string
       email: newUser.email,
       role: newUser.role,
       status: newUser.status,

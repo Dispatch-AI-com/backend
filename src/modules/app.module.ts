@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 
+import { CSRFGuard } from '@/common/guards/csrf.guard';
 import { AiHttpModule } from '@/lib/ai/ai-http.module';
 import { RedisModule } from '@/lib/redis/redis.module';
 import { TwilioModule } from '@/lib/twilio/twilio.module';
@@ -24,6 +26,7 @@ import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
+import { UserModule } from '@/modules/user/user.module';
 
 import { OnboardingModule } from './onboarding/onboarding.module';
 
@@ -54,9 +57,15 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     AiHttpModule,
     SubscriptionModule,
     StripeModule,
-    CompanyModule,
+    UserModule,
     OnboardingModule,
     SettingModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: CSRFGuard,
+    },
   ],
 })
 export class AppModule {}

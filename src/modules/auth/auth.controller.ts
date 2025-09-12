@@ -10,14 +10,15 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { plainToInstance } from 'class-transformer';
 import type { Request, Response } from 'express';
 
-import { CSRFProtected } from '@/common/decorators/csrf-protected.decorator';
+import { EUserRole } from '@/common/constants/user.constant';
+import { SkipCSRF } from '@/common/decorators/skip-csrf.decorator';
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
+import { UserStatus } from '@/modules/user/enum/userStatus.enum';
 import { generateCSRFToken } from '@/utils/csrf.util';
 
 @ApiTags('auth')
@@ -51,15 +52,23 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'User already exists' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
   @Post('signup')
+  @SkipCSRF()
   async createUser(
     @Body() createUserDto: CreateUserDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: UserResponseDto; csrfToken: string }> {
     const { user, token, csrfToken } =
       await this.authService.createUser(createUserDto);
-    const safeUser = plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
+
+    // Manually construct safe user object to preserve ObjectId
+    const safeUser: UserResponseDto = {
+      _id: user._id?.toString() ?? '',
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      status: user.status,
+    };
 
     // Set JWT token as httpOnly cookie
     res.cookie('jwtToken', token, {
@@ -101,15 +110,22 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Email or password is incorrect' })
   @Post('login')
+  @SkipCSRF()
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ user: UserResponseDto; csrfToken: string }> {
     const { user, token, csrfToken } = await this.authService.login(loginDto);
 
-    const safeUser = plainToInstance(UserResponseDto, user, {
-      excludeExtraneousValues: true,
-    });
+    // Manually construct safe user object to preserve ObjectId
+    const safeUser: UserResponseDto = {
+      _id: user._id?.toString() ?? '',
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      status: user.status,
+    };
 
     // Set JWT token as httpOnly cookie
     res.cookie('jwtToken', token, {
@@ -160,6 +176,16 @@ export class AuthController {
       csrfToken: string;
     };
 
+    // Manually construct safe user object to preserve ObjectId
+    const safeUser = {
+      _id: user._id?.toString() ?? user._id,
+      email: user.email ?? '',
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role as EUserRole,
+      status: user.status as UserStatus,
+    };
+
     // Set JWT token as httpOnly cookie
     res.cookie('jwtToken', token, {
       httpOnly: true,
@@ -181,7 +207,7 @@ export class AuthController {
     // Redirect to frontend with user data (CSRF token is in regular cookie)
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
-      `${frontendUrl}/auth/callback?user=${encodeURIComponent(JSON.stringify(user))}&csrfToken=${encodeURIComponent(csrfToken)}`,
+      `${frontendUrl}/auth/callback?user=${encodeURIComponent(JSON.stringify(safeUser))}&csrfToken=${encodeURIComponent(csrfToken)}`,
     );
   }
 
@@ -191,7 +217,6 @@ export class AuthController {
   })
   @ApiResponse({ status: 200, description: 'Logout successful' })
   @Post('logout')
-  @CSRFProtected()
   logout(@Res({ passthrough: true }) res: Response): { message: string } {
     // Clear the JWT token cookie
     res.clearCookie('jwtToken', {
@@ -271,10 +296,18 @@ export class AuthController {
     @Req() req: Request,
   ): Promise<{ user: UserResponseDto }> {
     const jwtUser = req.user as { _id: string };
+
     const fullUser = await this.authService.getUserById(jwtUser._id);
-    const safeUser = plainToInstance(UserResponseDto, fullUser, {
-      excludeExtraneousValues: true,
-    });
+
+    // Manually construct safe user object to preserve ObjectId (same as Google OAuth)
+    const safeUser: UserResponseDto = {
+      _id: fullUser?._id?.toString() ?? '',
+      email: fullUser?.email ?? '',
+      firstName: fullUser?.firstName,
+      lastName: fullUser?.lastName,
+      role: fullUser?.role ?? EUserRole.user,
+      status: fullUser?.status ?? UserStatus.active,
+    };
     return { user: safeUser };
   }
 }
