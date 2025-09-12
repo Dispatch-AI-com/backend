@@ -13,6 +13,8 @@ interface JwtPayload {
   email: string;
   role: string;
   status: UserStatus;
+  emailVerified: boolean;
+  phoneVerified: boolean;
 }
 
 @Injectable()
@@ -41,6 +43,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email: payload.email,
       role: payload.role,
       status: payload.status,
+      emailVerified: payload.emailVerified,
+      phoneVerified: payload.phoneVerified,
     };
   }
 }

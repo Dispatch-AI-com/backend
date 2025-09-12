@@ -4,7 +4,6 @@ import { Test } from '@nestjs/testing';
 import { Types } from 'mongoose';
 import request from 'supertest';
 
-
 import { AppModule } from '../../../src/modules/app.module';
 import { createMockServiceBookingDto } from '../../fixtures';
 import { DatabaseTestHelper } from '../../helpers/database.helper';

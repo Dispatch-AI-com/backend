@@ -4,7 +4,6 @@ import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
-
 import { AppModule } from '../../../src/modules/app.module';
 import { DatabaseTestHelper } from '../../helpers/database.helper';
 import { TEST_USER } from '../../setup';

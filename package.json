@@ -41,6 +41,8 @@
     "stripe": "^18.1.1",
     "swagger-jsdoc": "^6.2.8",
     "twilio": "^5.7.0",
+    "@aws-sdk/client-sesv2": "^3.0.0",
+    "@aws-sdk/client-sns": "^3.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0",
     "winston-transport": "^4.9.0"

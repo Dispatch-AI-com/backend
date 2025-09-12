@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -11,6 +12,7 @@ import { Model, UpdateQuery } from 'mongoose';
 
 import { CompanyService } from '../company/company.service';
 import { CreateCompanyDto } from '../company/dto/create-company.dto';
+import { VerificationService } from '../setting/verification.service';
 import { UserService } from '../user/user.service';
 import {
   OnboardingAnswers,
@@ -20,10 +22,12 @@ import {
 
 @Injectable()
 export class OnboardingService {
-  AU_ADDR_REGEX =
+  private readonly logger = new Logger(OnboardingService.name);
+
+  private readonly AU_ADDR_REGEX =
     /^(?<street>[^,]+),\s*(?<suburb>[^,]+),\s*(?<state>[A-Z]{2,3})\s+(?<postcode>\d{4})$/;
 
-  fieldValidators: Partial<
+  private readonly fieldValidators: Partial<
     Record<
       string,
       (
@@ -63,6 +67,7 @@ export class OnboardingService {
     private readonly sessionModel: Model<OnboardingSessionDocument>,
     private readonly companyService: CompanyService,
     private readonly userService: UserService,
+    private readonly verificationService: VerificationService,
   ) {}
 
   /**
@@ -179,6 +184,21 @@ export class OnboardingService {
       { userId },
       { status: 'completed', updatedAt: new Date() },
     );
+
+    // Create verification record for the user
+    try {
+      await this.verificationService.updateVerification(userId, {
+        type: 'Both',
+        email: user.email,
+        mobile: user.fullPhoneNumber || '',
+        emailVerified: false,
+        mobileVerified: false,
+        marketingPromotions: false,
+      });
+    } catch (error) {
+      // Log error but don't fail onboarding completion
+      this.logger.error('Failed to create verification record:', error);
+    }
 
     return { success: true };
   }

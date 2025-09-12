@@ -1,10 +1,10 @@
+import { getModelToken } from '@nestjs/mongoose';
 import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 
-import { ServiceService } from '../../../src/modules/service/service.service';
 import { Service } from '../../../src/modules/service/schema/service.schema';
+import { ServiceService } from '../../../src/modules/service/service.service';
 
 // ============================================================================
 // Service Service Unit Tests - Only testing methods used by frontend calendar
@@ -19,7 +19,7 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
     const mockFind = jest.fn().mockReturnValue({
       exec: mockExec,
     });
-    
+
     const mockModel = {
       find: mockFind,
     } as any;
@@ -50,21 +50,21 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
           userId: userId,
         },
         {
-          _id: 'service-2', 
+          _id: 'service-2',
           name: 'Test Service 2',
           price: 200,
           isAvailable: false,
           userId: userId,
         },
       ];
-      
+
       (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
 
-      expect(model.find).toHaveBeenCalledWith({ 
+      expect(model.find).toHaveBeenCalledWith({
         userId: { $eq: userId },
-        isDeleted: { $ne: true }
+        isDeleted: { $ne: true },
       });
       expect(result).toEqual(expectedResult);
     });
@@ -79,7 +79,7 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
           userId: 'default-user',
         },
       ];
-      
+
       (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll();
@@ -91,14 +91,14 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
     it('should handle empty results', async () => {
       const userId = 'test-user';
       const expectedResult: any[] = [];
-      
+
       (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
 
-      expect(model.find).toHaveBeenCalledWith({ 
+      expect(model.find).toHaveBeenCalledWith({
         userId: { $eq: userId },
-        isDeleted: { $ne: true }
+        isDeleted: { $ne: true },
       });
       expect(result).toEqual([]);
     });
@@ -106,10 +106,12 @@ describe('ServiceService (Unit) - Calendar Focus', () => {
     it('should handle database errors', async () => {
       const userId = 'test-user';
       const error = new Error('Database connection failed');
-      
+
       (model.find().exec as jest.Mock).mockRejectedValue(error);
 
-      await expect(service.findAll(userId)).rejects.toThrow('Database connection failed');
+      await expect(service.findAll(userId)).rejects.toThrow(
+        'Database connection failed',
+      );
     });
   });
 });

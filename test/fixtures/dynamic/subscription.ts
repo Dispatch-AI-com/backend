@@ -3,17 +3,17 @@
 // ============================================================================
 
 import { Types } from 'mongoose';
-import { generateRandomNumber, randomString } from './common';
 
 import type { CreateSubscriptionDto } from '../../../src/modules/subscription/dto/create-subscription.dto';
 import type { Subscription } from '../../../src/modules/subscription/schema/subscription.schema';
+import { generateRandomNumber, randomString } from './common';
 
 // ============================================================================
 // Subscription Status Types
 // ============================================================================
 
 export const SUBSCRIPTION_STATUSES = ['active', 'failed', 'cancelled'] as const;
-export type SubscriptionStatus = typeof SUBSCRIPTION_STATUSES[number];
+export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
 // ============================================================================
 // Dynamic Data Generators
@@ -44,8 +44,10 @@ function generateChargeId(): string {
  * Generate random dates for subscription period
  */
 function generateSubscriptionDates(): { startAt: Date; endAt: Date } {
-  const startAt = new Date(Date.now() - generateRandomNumber(365 * 24 * 60 * 60 * 1000));
-  const endAt = new Date(startAt.getTime() + (365 * 24 * 60 * 60 * 1000));
+  const startAt = new Date(
+    Date.now() - generateRandomNumber(365 * 24 * 60 * 60 * 1000),
+  );
+  const endAt = new Date(startAt.getTime() + 365 * 24 * 60 * 60 * 1000);
   return { startAt, endAt };
 }
 
@@ -56,7 +58,9 @@ function generateSubscriptionDates(): { startAt: Date; endAt: Date } {
 /**
  * Create a mock subscription DTO with realistic data
  */
-export function createMockSubscriptionDto(overrides: Partial<CreateSubscriptionDto> = {}): CreateSubscriptionDto {
+export function createMockSubscriptionDto(
+  overrides: Partial<CreateSubscriptionDto> = {},
+): CreateSubscriptionDto {
   return {
     userId: overrides.userId || new Types.ObjectId().toString(),
     planId: overrides.planId || new Types.ObjectId().toString(),
@@ -67,16 +71,20 @@ export function createMockSubscriptionDto(overrides: Partial<CreateSubscriptionD
 /**
  * Create a mock subscription entity with realistic data
  */
-export function createMockSubscription(overrides: Partial<Subscription> = {}): Subscription {
+export function createMockSubscription(
+  overrides: Partial<Subscription> = {},
+): Subscription {
   const { startAt, endAt } = generateSubscriptionDates();
-  
+
   return {
     userId: overrides.userId || new Types.ObjectId(),
     planId: overrides.planId || new Types.ObjectId(),
     subscriptionId: overrides.subscriptionId || generateSubscriptionId(),
     stripeCustomerId: overrides.stripeCustomerId || generateStripeCustomerId(),
     chargeId: overrides.chargeId || generateChargeId(),
-    status: overrides.status || SUBSCRIPTION_STATUSES[generateRandomNumber(SUBSCRIPTION_STATUSES.length)],
+    status:
+      overrides.status ||
+      SUBSCRIPTION_STATUSES[generateRandomNumber(SUBSCRIPTION_STATUSES.length)],
     startAt: overrides.startAt || startAt,
     endAt: overrides.endAt || endAt,
     createdAt: overrides.createdAt || startAt,
@@ -88,8 +96,11 @@ export function createMockSubscription(overrides: Partial<Subscription> = {}): S
 /**
  * Create multiple mock subscription entities with variety
  */
-export function createMockSubscriptions(count: number, overrides: Partial<Subscription> = {}): Subscription[] {
-  return Array.from({ length: count }, (_, index) => {
+export function createMockSubscriptions(
+  count: number,
+  overrides: Partial<Subscription> = {},
+): Subscription[] {
+  return Array.from({ length: count }, () => {
     return createMockSubscription({
       ...overrides,
       userId: overrides.userId || new Types.ObjectId(),
@@ -105,7 +116,9 @@ export function createMockSubscriptions(count: number, overrides: Partial<Subscr
 /**
  * Create an active subscription
  */
-export function createActiveSubscription(overrides: Partial<Subscription> = {}): Subscription {
+export function createActiveSubscription(
+  overrides: Partial<Subscription> = {},
+): Subscription {
   return createMockSubscription({
     status: 'active',
     ...overrides,
@@ -115,7 +128,9 @@ export function createActiveSubscription(overrides: Partial<Subscription> = {}):
 /**
  * Create a failed subscription
  */
-export function createFailedSubscription(overrides: Partial<Subscription> = {}): Subscription {
+export function createFailedSubscription(
+  overrides: Partial<Subscription> = {},
+): Subscription {
   return createMockSubscription({
     status: 'failed',
     ...overrides,
@@ -125,7 +140,9 @@ export function createFailedSubscription(overrides: Partial<Subscription> = {}):
 /**
  * Create a cancelled subscription
  */
-export function createCancelledSubscription(overrides: Partial<Subscription> = {}): Subscription {
+export function createCancelledSubscription(
+  overrides: Partial<Subscription> = {},
+): Subscription {
   return createMockSubscription({
     status: 'cancelled',
     ...overrides,

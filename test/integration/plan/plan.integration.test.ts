@@ -4,7 +4,11 @@ import { Test } from '@nestjs/testing';
 import request from 'supertest';
 
 import { AppModule } from '../../../src/modules/app.module';
-import { createFreePlan, createBasicPlan, createProPlan } from '../../fixtures/dynamic/plan';
+import {
+  createBasicPlan,
+  createFreePlan,
+  createProPlan,
+} from '../../fixtures/dynamic/plan';
 import { DatabaseTestHelper } from '../../helpers/database.helper';
 
 describe('PlanController (Basic Integration)', () => {
@@ -19,7 +23,7 @@ describe('PlanController (Basic Integration)', () => {
 
     app = moduleFixture.createNestApplication();
     await app.init();
-    
+
     dbHelper = new DatabaseTestHelper(moduleFixture);
   });
 
@@ -88,7 +92,7 @@ describe('PlanController (Basic Integration)', () => {
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body)).toBe(true);
-      
+
       if (response.body.length > 0) {
         const firstPlan = response.body[0];
         expect(firstPlan).toHaveProperty('_id');

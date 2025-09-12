@@ -4,6 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { PassportModule } from '@nestjs/passport';
 
+import { VerificationGuard } from '@/common/guards/verification.guard';
 import { JWT_EXPIRATION_TIME } from '@/modules/auth/auth.config';
 import { AuthController } from '@/modules/auth/auth.controller';
 import { AuthService } from '@/modules/auth/auth.service';
@@ -29,7 +30,7 @@ import { UserModule } from '@/modules/user/user.module';
     UserModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, GoogleStrategy],
-  exports: [AuthService],
+  providers: [AuthService, JwtStrategy, GoogleStrategy, VerificationGuard],
+  exports: [AuthService, VerificationGuard],
 })
 export class AuthModule {}

@@ -13,13 +13,14 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { VerificationGuard } from '@/common/guards/verification.guard';
 import { CreateServiceBookingDto } from '@/modules/service-booking/dto/create-service-booking.dto';
 import { ServiceBooking } from '@/modules/service-booking/schema/service-booking.schema';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
 
 @ApiTags('service-bookings')
 @Controller('bookings')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), VerificationGuard)
 export class ServiceBookingController {
   constructor(private readonly bookingService: ServiceBookingService) {}
 

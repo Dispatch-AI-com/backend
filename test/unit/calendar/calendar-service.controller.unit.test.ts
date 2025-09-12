@@ -43,7 +43,7 @@ describe('ServiceController (Unit) - Calendar Focus', () => {
           userId: userId,
         },
       ];
-      
+
       service.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAll(userId);
@@ -62,7 +62,7 @@ describe('ServiceController (Unit) - Calendar Focus', () => {
           userId: 'default-user',
         },
       ];
-      
+
       service.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAll();
@@ -74,7 +74,7 @@ describe('ServiceController (Unit) - Calendar Focus', () => {
     it('should handle empty results', async () => {
       const userId = 'test-user';
       const expectedResult: any[] = [];
-      
+
       service.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAll(userId);
@@ -86,7 +86,7 @@ describe('ServiceController (Unit) - Calendar Focus', () => {
     it('should handle service errors', async () => {
       const userId = 'test-user';
       const error = new Error('Service error');
-      
+
       service.findAll.mockRejectedValue(error);
 
       await expect(controller.findAll(userId)).rejects.toThrow('Service error');

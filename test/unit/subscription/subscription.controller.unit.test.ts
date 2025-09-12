@@ -4,7 +4,10 @@ import { Test } from '@nestjs/testing';
 import { SubscriptionController } from '../../../src/modules/subscription/subscription.controller';
 import { SubscriptionService } from '../../../src/modules/subscription/subscription.service';
 import { createMockSubscriptionDto } from '../../fixtures/dynamic/subscription';
-import { staticSubscription, staticActiveSubscription } from '../../fixtures/static/subscription';
+import {
+  staticActiveSubscription,
+  staticSubscription,
+} from '../../fixtures/static/subscription';
 
 // ============================================================================
 // Subscription Controller Unit Tests - Testing individual methods with mocked dependencies
@@ -53,7 +56,9 @@ describe('SubscriptionController (Unit)', () => {
 
       const result = await controller.create(createSubscriptionDto);
 
-      expect(service.createSubscription).toHaveBeenCalledWith(createSubscriptionDto);
+      expect(service.createSubscription).toHaveBeenCalledWith(
+        createSubscriptionDto,
+      );
       expect(result).toEqual(expectedResult);
       expect(result.checkoutUrl).toBeDefined();
       expect(result.message).toBeDefined();
@@ -91,7 +96,10 @@ describe('SubscriptionController (Unit)', () => {
 
       const result = await controller.changePlan(changePlanDto);
 
-      expect(service.changePlan).toHaveBeenCalledWith(changePlanDto.userId, changePlanDto.planId);
+      expect(service.changePlan).toHaveBeenCalledWith(
+        changePlanDto.userId,
+        changePlanDto.planId,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -205,5 +213,3 @@ describe('SubscriptionController (Unit)', () => {
     });
   });
 });
-
-

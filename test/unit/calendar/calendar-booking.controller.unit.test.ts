@@ -36,7 +36,7 @@ describe('ServiceBookingController (Unit) - Calendar Focus', () => {
     it('should return all service bookings for a user', async () => {
       const userId = 'test-user';
       const expectedResult = [staticServiceBooking];
-      
+
       service.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAllBookings(userId);
@@ -47,7 +47,7 @@ describe('ServiceBookingController (Unit) - Calendar Focus', () => {
 
     it('should return all service bookings when no userId provided', async () => {
       const expectedResult = [staticServiceBooking];
-      
+
       service.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAllBookings();
@@ -59,7 +59,7 @@ describe('ServiceBookingController (Unit) - Calendar Focus', () => {
     it('should handle empty results', async () => {
       const userId = 'test-user';
       const expectedResult: any[] = [];
-      
+
       service.findAll.mockResolvedValue(expectedResult);
 
       const result = await controller.findAllBookings(userId);
@@ -71,10 +71,12 @@ describe('ServiceBookingController (Unit) - Calendar Focus', () => {
     it('should handle service errors', async () => {
       const userId = 'test-user';
       const error = new Error('Service error');
-      
+
       service.findAll.mockRejectedValue(error);
 
-      await expect(controller.findAllBookings(userId)).rejects.toThrow('Service error');
+      await expect(controller.findAllBookings(userId)).rejects.toThrow(
+        'Service error',
+      );
     });
   });
 });
