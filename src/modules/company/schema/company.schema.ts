@@ -43,6 +43,9 @@ export class Company {
   @Prop({ unique: true })
   twilioPhoneNumber?: string;
 
+  @Prop()
+  calendar_access_token?: string;
+
   @Prop({
     type: {
       message: {
