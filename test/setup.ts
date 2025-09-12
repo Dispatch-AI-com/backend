@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 import { resolve } from 'path';
 
 // Load test environment variables from .env.example
@@ -97,16 +98,42 @@ export const TEST_USER = {
   status: 'active',
 };
 
+// Mock Redis (ioredis) globally to avoid external Redis during tests
+jest.mock('ioredis', () => {
+  const mockRedis = jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
+    del: jest.fn().mockResolvedValue(1),
+    quit: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn(),
+  }));
+  // also export Cluster constructor if used anywhere
+  (mockRedis as any).Cluster = jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
+    quit: jest.fn(),
+    disconnect: jest.fn(),
+  }));
+  return mockRedis;
+});
+
+let mongoServer: MongoMemoryServer | null = null;
+
 // Global test setup
 beforeAll(async () => {
   // Override only test-specific environment variables
   process.env.NODE_ENV = 'test';
   process.env.DISABLE_AUTH = 'true';
 
-  // Override database URI for test environment
-  process.env.MONGODB_URI = process.env.CI
-    ? 'mongodb://localhost:27017/test-ci'
-    : 'mongodb://localhost:27017/test';
+  // Use in-memory MongoDB in CI or when explicitly requested
+  const useInMemory = process.env.CI === 'true' || process.env.USE_IN_MEMORY_DB === 'true';
+  if (useInMemory) {
+    mongoServer = await MongoMemoryServer.create();
+    process.env.MONGODB_URI = mongoServer.getUri();
+  } else {
+    // Fallback to local Mongo
+    process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+  }
 
   // Connect to test database
   try {
@@ -145,6 +172,10 @@ afterAll(async () => {
     }
 
     await mongoose.connection.close();
+    if (mongoServer) {
+      await mongoServer.stop();
+      mongoServer = null;
+    }
     console.log('Disconnected from test database');
   } catch (error) {
     console.error(
