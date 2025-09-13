@@ -146,7 +146,7 @@ export class DatabaseTestHelper {
       Date.now().toString() + Math.floor(Math.random() * 1000).toString()
     ).slice(0, 11);
 
-    const address = (company.address as any) || {};
+    const address = (company as any).address || {};
 
     const companyObj: any = {
       businessName: company.businessName || 'Test Business',
