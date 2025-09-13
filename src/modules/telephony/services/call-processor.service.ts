@@ -73,12 +73,13 @@ export class CallProcessorService {
     );
     await this.sessionHelper.fillCompanyServices(CallSid, services);
     const company = await this.companyService.findByUserId(user._id as string);
+    const userGreeting = await this.userService.getGreeting(user._id as string);
     await this.sessionHelper.fillCompany(CallSid, company, user);
 
     const welcome = WelcomeMessageHelper.buildWelcomeMessage(
       company.businessName,
       services,
-      company.greeting,
+      userGreeting, // Use user greeting instead of company greeting
     );
 
     return this.speakAndLog(CallSid, welcome, NextAction.GATHER);

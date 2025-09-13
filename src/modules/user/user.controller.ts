@@ -10,11 +10,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { User } from './schema/user.schema';
 import { UserService } from './user.service';
+import { AddressDto } from './dto/address.dto';
+import { GreetingDto } from './dto/greeting.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -48,6 +50,62 @@ export class UserController {
     @Body() dto: UpdateUserDto,
   ): Promise<User> {
     return this.users.patch(id, dto);
+  }
+
+  @Patch(':id/address')
+  @ApiOperation({ summary: 'Update user billing address' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Address updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid userId or address data.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async updateAddress(
+    @Param('id') userId: string,
+    @Body() address: AddressDto,
+  ): Promise<User> {
+    return this.users.updateAddress(userId, address);
+  }
+
+  @Get(':id/address')
+  @ApiOperation({ summary: 'Get user billing address' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Address retrieved successfully.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async getAddress(
+    @Param('id') userId: string,
+  ): Promise<AddressDto> {
+    const address = await this.users.getAddress(userId);
+    if (!address) {
+      throw new Error('Address not found.');
+    }
+    return address;
+  }
+
+  @Patch(':id/greeting')
+  @ApiOperation({ summary: 'Update user greeting message' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Greeting updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid userId or greeting data.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async updateGreeting(
+    @Param('id') userId: string,
+    @Body() greeting: GreetingDto,
+  ): Promise<User> {
+    return this.users.updateGreeting(userId, greeting);
+  }
+
+  @Get(':id/greeting')
+  @ApiOperation({ summary: 'Get user greeting message' })
+  @ApiParam({ name: 'id', description: 'User ID' })
+  @ApiResponse({ status: 200, description: 'Greeting retrieved successfully.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async getGreeting(
+    @Param('id') userId: string,
+  ): Promise<GreetingDto> {
+    const greeting = await this.users.getGreeting(userId);
+    if (!greeting) {
+      throw new Error('Greeting not found.');
+    }
+    return greeting;
   }
 
   @Delete(':id')

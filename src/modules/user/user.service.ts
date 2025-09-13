@@ -12,6 +12,8 @@ import { isValidObjectId } from 'mongoose';
 import { SALT_ROUNDS } from '@/modules/auth/auth.config';
 
 import { UpdateUserDto } from './dto/UpdateUser.dto';
+import { AddressDto } from './dto/address.dto';
+import { GreetingDto } from './dto/greeting.dto';
 import { User, UserDocument } from './schema/user.schema';
 @Injectable()
 export class UserService {
@@ -103,5 +105,57 @@ export class UserService {
   async findEmailByUserId(userId: string): Promise<string | null> {
     const user = await this.userModel.findById(userId).exec();
     return user?.email ?? null;
+  }
+
+  async updateAddress(
+    userId: string,
+    address: AddressDto,
+  ): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.address = address;
+    return await user.save();
+  }
+
+  async getAddress(userId: string): Promise<AddressDto | undefined> {
+    const user = await this.userModel.findById(userId).select('address');
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user.address;
+  }
+
+  async updateGreeting(
+    userId: string,
+    greeting: GreetingDto,
+  ): Promise<User> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.greeting = {
+      message: greeting.message.trim(),
+      isCustom: greeting.isCustom,
+    };
+
+    return await user.save();
+  }
+
+  async getGreeting(
+    userId: string,
+  ): Promise<GreetingDto | undefined> {
+    const user = await this.userModel
+      .findById(userId)
+      .select('greeting');
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user.greeting;
   }
 }
