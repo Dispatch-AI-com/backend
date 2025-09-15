@@ -25,24 +25,18 @@ export class CalendarTokenService {
    * Get a valid access token by user ID.
    * If the token expires in less than 15 minutes, mark it as needing refresh.
    */
-  async getValidToken(
-    userId: string,
-    provider = 'google',
-  ): Promise<{
+  async getValidToken(userId: string): Promise<{
     accessToken: string;
     needsRefresh: boolean;
     expiresAt: Date;
   }> {
     const token = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
-      provider,
       isActive: true,
     });
 
     if (!token) {
-      throw new NotFoundException(
-        `No ${provider} calendar token found for user ${userId}`,
-      );
+      throw new NotFoundException(`No calendar token found for user ${userId}`);
     }
 
     const now = new Date();
@@ -63,23 +57,17 @@ export class CalendarTokenService {
   /**
    * Refresh access token.
    */
-  async refreshToken(
-    userId: string,
-    provider = 'google',
-  ): Promise<{
+  async refreshToken(userId: string): Promise<{
     accessToken: string;
     expiresAt: Date;
   }> {
     const token = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
-      provider,
       isActive: true,
     });
 
     if (!token) {
-      throw new NotFoundException(
-        `No ${provider} calendar token found for user ${userId}`,
-      );
+      throw new NotFoundException(`No calendar token found for user ${userId}`);
     }
 
     if (!token.refreshToken) {
@@ -89,31 +77,24 @@ export class CalendarTokenService {
     }
 
     try {
-      if (provider === 'google') {
-        const refreshed =
-          await this.calendarOAuthService.refreshGoogleAccessToken(
-            token.refreshToken,
-          );
-        const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
+      const refreshed =
+        await this.calendarOAuthService.refreshGoogleAccessToken(
+          token.refreshToken,
+        );
+      const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
 
-        await this.calendarTokenModel.findByIdAndUpdate(token._id, {
-          accessToken: refreshed.accessToken,
-          expiresAt: newExpiresAt,
-          tokenType: refreshed.tokenType ?? token.tokenType,
-          scope: refreshed.scope ?? token.scope,
-          updatedAt: new Date(),
-        });
+      await this.calendarTokenModel.findByIdAndUpdate(token._id, {
+        accessToken: refreshed.accessToken,
+        expiresAt: newExpiresAt,
+        tokenType: refreshed.tokenType ?? token.tokenType,
+        scope: refreshed.scope ?? token.scope,
+        updatedAt: new Date(),
+      });
 
-        return {
-          accessToken: refreshed.accessToken,
-          expiresAt: newExpiresAt,
-        };
-      }
-
-      // Future: add outlook support here
-      throw new UnauthorizedException(
-        `Unsupported provider for refresh: ${provider}`,
-      );
+      return {
+        accessToken: refreshed.accessToken,
+        expiresAt: newExpiresAt,
+      };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       // Optional: mark token inactive on hard failures
@@ -130,12 +111,12 @@ export class CalendarTokenService {
   async createOrUpdateToken(
     createDto: CreateCalendarTokenDto,
   ): Promise<CalendarToken> {
-    const { userId, provider } = createDto;
+    const { userId } = createDto;
 
     // Find existing token
     const existingToken = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
-      provider,
+      isActive: true,
     });
 
     if (existingToken) {
@@ -164,7 +145,7 @@ export class CalendarTokenService {
         expiresAt: Date;
       } = {
         userId: new Types.ObjectId(createDto.userId),
-        provider: (createDto as any).provider ?? 'google',
+        provider: 'google',
         accessToken: createDto.accessToken,
         refreshToken: createDto.refreshToken,
         expiresAt: new Date(createDto.expiresAt),

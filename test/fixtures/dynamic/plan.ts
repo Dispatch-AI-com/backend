@@ -3,18 +3,18 @@
 // ============================================================================
 
 import { randomBytes } from 'crypto';
-import { generateRandomNumber, randomString } from './common';
 
 import type { CreatePlanDto } from '../../../src/modules/plan/dto/create-plan.dto';
 import type { UpdatePlanDto } from '../../../src/modules/plan/dto/update-plan.dto';
 import type { Plan } from '../../../src/modules/plan/schema/plan.schema';
+import { generateRandomNumber, randomString } from './common';
 
 // ============================================================================
 // Plan Tier Definitions
 // ============================================================================
 
 export const PLAN_TIERS = ['FREE', 'BASIC', 'PRO'] as const;
-export type PlanTier = typeof PLAN_TIERS[number];
+export type PlanTier = (typeof PLAN_TIERS)[number];
 
 // ============================================================================
 // Pricing Strategy Templates
@@ -96,29 +96,32 @@ function generatePlanName(tier: PlanTier): string {
   }
   const randomIndex = secureRandomIndex(templates.length);
   const baseName = templates[randomIndex];
-  
+
   // Add some variety with random suffixes
   const suffixes = ['', ' Plus', ' Advanced', ' Deluxe', ' Premium'];
   const randomSuffix = suffixes[secureRandomIndex(suffixes.length)];
-  
+
   return baseName + randomSuffix;
 }
 
 /**
  * Generate random pricing options for a plan
  */
-function generatePricingOptions(tier: PlanTier): Array<{
+function generatePricingOptions(tier: PlanTier): {
   rrule: string;
   price: number;
   stripePriceId: string;
-}> {
+}[] {
   const pricingOptions = [];
-  
+
   // Always include monthly pricing
-  const monthlyPrice = tier === 'FREE' ? 0 : 
-                      tier === 'BASIC' ? generateRandomNumber(20) + 20 : // 20-40
-                      generateRandomNumber(50) + 50; // 50-100
-  
+  const monthlyPrice =
+    tier === 'FREE'
+      ? 0
+      : tier === 'BASIC'
+        ? generateRandomNumber(20) + 20 // 20-40
+        : generateRandomNumber(50) + 50; // 50-100
+
   pricingOptions.push({
     rrule: PRICING_STRATEGIES.monthly.rrule,
     price: monthlyPrice,
@@ -146,7 +149,8 @@ function generatePricingOptions(tier: PlanTier): Array<{
   }
 
   // Add weekly pricing for PRO plans (enterprise use cases)
-  if (tier === 'PRO' && generateRandomNumber(100) < 30) { // 30% chance
+  if (tier === 'PRO' && generateRandomNumber(100) < 30) {
+    // 30% chance
     const weeklyPrice = Math.round(monthlyPrice / 4);
     pricingOptions.push({
       rrule: PRICING_STRATEGIES.weekly.rrule,
@@ -166,20 +170,32 @@ function generateFeatures(tier: PlanTier): {
   support: string;
 } {
   const baseFeatures = FEATURE_TEMPLATES[tier];
-  
+
   // Add some randomization to make features more realistic
   const features = { ...baseFeatures } as {
     callMinutes: string;
     support: string;
   };
-  
+
   // Randomize call minutes slightly for BASIC and PRO
   if (tier === 'BASIC') {
-    const minuteVariations = ['250 minutes', '300 minutes', '350 minutes', '400 minutes'];
-    features.callMinutes = minuteVariations[generateRandomNumber(minuteVariations.length)];
+    const minuteVariations = [
+      '250 minutes',
+      '300 minutes',
+      '350 minutes',
+      '400 minutes',
+    ];
+    features.callMinutes =
+      minuteVariations[generateRandomNumber(minuteVariations.length)];
   } else if (tier === 'PRO') {
-    const unlimitedVariations = ['Unlimited', 'Unlimited +', 'Unlimited Pro', 'Unlimited Enterprise'];
-    features.callMinutes = unlimitedVariations[generateRandomNumber(unlimitedVariations.length)];
+    const unlimitedVariations = [
+      'Unlimited',
+      'Unlimited +',
+      'Unlimited Pro',
+      'Unlimited Enterprise',
+    ];
+    features.callMinutes =
+      unlimitedVariations[generateRandomNumber(unlimitedVariations.length)];
   }
 
   return features;
@@ -199,15 +215,21 @@ function generatePlanId(): string {
 /**
  * Create a mock plan DTO with realistic data
  */
-export function createMockPlanDto(overrides: Partial<CreatePlanDto> = {}): CreatePlanDto {
-  const tier = overrides.tier || PLAN_TIERS[generateRandomNumber(PLAN_TIERS.length)];
-  
+export function createMockPlanDto(
+  overrides: Partial<CreatePlanDto> = {},
+): CreatePlanDto {
+  const tier =
+    overrides.tier || PLAN_TIERS[generateRandomNumber(PLAN_TIERS.length)];
+
   return {
     name: overrides.name || generatePlanName(tier),
     tier,
     pricing: overrides.pricing || generatePricingOptions(tier),
     features: overrides.features || generateFeatures(tier),
-    isActive: overrides.isActive !== undefined ? overrides.isActive : generateRandomNumber(100) < 90, // 90% chance of being active
+    isActive:
+      overrides.isActive !== undefined
+        ? overrides.isActive
+        : generateRandomNumber(100) < 90, // 90% chance of being active
     ...overrides,
   };
 }
@@ -215,7 +237,10 @@ export function createMockPlanDto(overrides: Partial<CreatePlanDto> = {}): Creat
 /**
  * Create multiple mock plan DTOs with variety
  */
-export function createMockPlanDtos(count: number, overrides: Partial<CreatePlanDto> = {}): CreatePlanDto[] {
+export function createMockPlanDtos(
+  count: number,
+  overrides: Partial<CreatePlanDto> = {},
+): CreatePlanDto[] {
   return Array.from({ length: count }, (_, index) => {
     // Ensure variety in tiers across multiple plans
     const tier = overrides.tier || PLAN_TIERS[index % PLAN_TIERS.length];
@@ -230,15 +255,21 @@ export function createMockPlanDtos(count: number, overrides: Partial<CreatePlanD
 /**
  * Create a mock update plan DTO
  */
-export function createMockUpdatePlanDto(overrides: Partial<UpdatePlanDto> = {}): UpdatePlanDto {
-  const tier = overrides.tier || PLAN_TIERS[generateRandomNumber(PLAN_TIERS.length)];
-  
+export function createMockUpdatePlanDto(
+  overrides: Partial<UpdatePlanDto> = {},
+): UpdatePlanDto {
+  const tier =
+    overrides.tier || PLAN_TIERS[generateRandomNumber(PLAN_TIERS.length)];
+
   return {
     name: overrides.name || `Updated ${generatePlanName(tier)}`,
     tier,
     pricing: overrides.pricing || generatePricingOptions(tier),
     features: overrides.features || generateFeatures(tier),
-    isActive: overrides.isActive !== undefined ? overrides.isActive : generateRandomNumber(100) < 80, // 80% chance of being active
+    isActive:
+      overrides.isActive !== undefined
+        ? overrides.isActive
+        : generateRandomNumber(100) < 80, // 80% chance of being active
     ...overrides,
   };
 }
@@ -247,14 +278,18 @@ export function createMockUpdatePlanDto(overrides: Partial<UpdatePlanDto> = {}):
  * Create a mock plan entity with realistic data
  */
 export function createMockPlan(overrides: Partial<Plan> = {}): Plan {
-  const tier = overrides.tier || PLAN_TIERS[generateRandomNumber(PLAN_TIERS.length)];
-  
+  const tier =
+    overrides.tier || PLAN_TIERS[generateRandomNumber(PLAN_TIERS.length)];
+
   return {
     name: overrides.name || generatePlanName(tier),
     tier,
     pricing: overrides.pricing || generatePricingOptions(tier),
     features: overrides.features || generateFeatures(tier),
-    isActive: overrides.isActive !== undefined ? overrides.isActive : generateRandomNumber(100) < 90,
+    isActive:
+      overrides.isActive !== undefined
+        ? overrides.isActive
+        : generateRandomNumber(100) < 90,
     ...overrides,
   } as Plan;
 }
@@ -262,7 +297,10 @@ export function createMockPlan(overrides: Partial<Plan> = {}): Plan {
 /**
  * Create multiple mock plan entities with variety
  */
-export function createMockPlans(count: number, overrides: Partial<Plan> = {}): Plan[] {
+export function createMockPlans(
+  count: number,
+  overrides: Partial<Plan> = {},
+): Plan[] {
   return Array.from({ length: count }, (_, index) => {
     const tier = overrides.tier || PLAN_TIERS[index % PLAN_TIERS.length];
     return createMockPlan({
@@ -281,15 +319,19 @@ export function createMockPlans(count: number, overrides: Partial<Plan> = {}): P
 /**
  * Create a free plan with minimal features
  */
-export function createFreePlan(overrides: Partial<CreatePlanDto> = {}): CreatePlanDto {
+export function createFreePlan(
+  overrides: Partial<CreatePlanDto> = {},
+): CreatePlanDto {
   return createMockPlanDto({
     tier: 'FREE',
     name: 'Free Plan',
-    pricing: [{
-      rrule: PRICING_STRATEGIES.monthly.rrule,
-      price: 0,
-      stripePriceId: `price_free_monthly_${randomString(8)}`,
-    }],
+    pricing: [
+      {
+        rrule: PRICING_STRATEGIES.monthly.rrule,
+        price: 0,
+        stripePriceId: `price_free_monthly_${randomString(8)}`,
+      },
+    ],
     features: {
       callMinutes: '60 minutes',
       support: 'Community support',
@@ -302,7 +344,9 @@ export function createFreePlan(overrides: Partial<CreatePlanDto> = {}): CreatePl
 /**
  * Create a basic plan with standard features
  */
-export function createBasicPlan(overrides: Partial<CreatePlanDto> = {}): CreatePlanDto {
+export function createBasicPlan(
+  overrides: Partial<CreatePlanDto> = {},
+): CreatePlanDto {
   return createMockPlanDto({
     tier: 'BASIC',
     name: 'Basic Plan',
@@ -321,7 +365,6 @@ export function createBasicPlan(overrides: Partial<CreatePlanDto> = {}): CreateP
     features: {
       callMinutes: '300 minutes',
       support: 'Email support',
-    
     },
     isActive: true,
     ...overrides,
@@ -331,7 +374,9 @@ export function createBasicPlan(overrides: Partial<CreatePlanDto> = {}): CreateP
 /**
  * Create a pro plan with premium features
  */
-export function createProPlan(overrides: Partial<CreatePlanDto> = {}): CreatePlanDto {
+export function createProPlan(
+  overrides: Partial<CreatePlanDto> = {},
+): CreatePlanDto {
   return createMockPlanDto({
     tier: 'PRO',
     name: 'Pro Plan',
@@ -355,7 +400,6 @@ export function createProPlan(overrides: Partial<CreatePlanDto> = {}): CreatePla
     features: {
       callMinutes: 'Unlimited',
       support: 'Priority support',
-    
     },
     isActive: true,
     ...overrides,
@@ -365,7 +409,9 @@ export function createProPlan(overrides: Partial<CreatePlanDto> = {}): CreatePla
 /**
  * Create an enterprise plan with maximum features
  */
-export function createEnterprisePlan(overrides: Partial<CreatePlanDto> = {}): CreatePlanDto {
+export function createEnterprisePlan(
+  overrides: Partial<CreatePlanDto> = {},
+): CreatePlanDto {
   return createMockPlanDto({
     tier: 'PRO', // Using PRO tier but with enterprise features
     name: 'Enterprise Plan',
@@ -393,7 +439,9 @@ export function createEnterprisePlan(overrides: Partial<CreatePlanDto> = {}): Cr
 /**
  * Create a trial plan for testing purposes
  */
-export function createTrialPlan(overrides: Partial<CreatePlanDto> = {}): CreatePlanDto {
+export function createTrialPlan(
+  overrides: Partial<CreatePlanDto> = {},
+): CreatePlanDto {
   return createMockPlanDto({
     tier: 'BASIC',
     name: 'Trial Plan',

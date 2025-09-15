@@ -48,12 +48,9 @@ export class CalendarToken {
 
 export const CalendarTokenSchema = SchemaFactory.createForClass(CalendarToken);
 
-// 创建索引以提高查询性能
+// Create indexes to improve query performance
 CalendarTokenSchema.index({ userId: 1 });
 CalendarTokenSchema.index({ expiresAt: 1 });
 CalendarTokenSchema.index({ provider: 1 });
-// 确保每个用户的每个提供商只有一个活跃令牌
-CalendarTokenSchema.index(
-  { userId: 1, provider: 1, isActive: 1 },
-  { unique: true },
-);
+// Ensure each user has only one active token (provider-agnostic, currently Google only)
+CalendarTokenSchema.index({ userId: 1, isActive: 1 }, { unique: true });

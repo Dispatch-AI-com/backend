@@ -3,7 +3,6 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
 import { CalendarTokenService } from './calendar-token.service';
-import { CalendarProvider } from './dto/create-calendar-token.dto';
 import { CalendarOAuthService } from './services/calendar-oauth.service';
 
 @ApiTags('calendar-oauth')
@@ -61,7 +60,6 @@ export class CalendarOAuthController {
     ).toISOString();
     await this.calendarTokenService.createOrUpdateToken({
       userId,
-      provider: CalendarProvider.GOOGLE,
       accessToken: token.accessToken,
       refreshToken: token.refreshToken ?? '',
       expiresAt,

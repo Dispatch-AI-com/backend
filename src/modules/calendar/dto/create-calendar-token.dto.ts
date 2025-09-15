@@ -1,16 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsDateString,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
 
-export enum CalendarProvider {
-  GOOGLE = 'google',
-  OUTLOOK = 'outlook',
-}
+// Single-provider (google) for now
 
 export class CreateCalendarTokenDto {
   @ApiProperty({ description: 'User ID' })
@@ -42,15 +38,6 @@ export class CreateCalendarTokenDto {
   @IsString()
   @IsNotEmpty()
   scope!: string;
-
-  @ApiProperty({
-    description: 'Calendar provider',
-    enum: CalendarProvider,
-    default: CalendarProvider.GOOGLE,
-  })
-  @IsEnum(CalendarProvider)
-  @IsOptional()
-  provider?: CalendarProvider = CalendarProvider.GOOGLE;
 
   @ApiProperty({ description: 'Calendar ID', required: false })
   @IsString()

@@ -30,22 +30,16 @@ export class CalendarTokenController {
   @ApiResponse({ status: 200, description: 'Token fetched successfully' })
   @ApiResponse({ status: 404, description: 'Token not found' })
   @Get('user/:userId/valid')
-  async getValidToken(
-    @Param('userId') userId: string,
-    @Query('provider') provider = 'google',
-  ) {
-    return await this.calendarTokenService.getValidToken(userId, provider);
+  async getValidToken(@Param('userId') userId: string) {
+    return await this.calendarTokenService.getValidToken(userId);
   }
 
   @ApiOperation({ summary: 'Refresh access token' })
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 404, description: 'Token not found' })
   @Post('user/:userId/refresh')
-  async refreshToken(
-    @Param('userId') userId: string,
-    @Query('provider') provider = 'google',
-  ) {
-    return await this.calendarTokenService.refreshToken(userId, provider);
+  async refreshToken(@Param('userId') userId: string) {
+    return await this.calendarTokenService.refreshToken(userId);
   }
 
   @ApiOperation({ summary: 'Create or update calendar token' })
@@ -61,35 +55,24 @@ export class CalendarTokenController {
   @ApiOperation({ summary: 'Get user calendar token' })
   @ApiResponse({ status: 200, description: 'Token fetched successfully' })
   @Get('user/:userId')
-  async getUserToken(
-    @Param('userId') userId: string,
-    @Query('provider') provider = 'google',
-  ) {
-    return await this.calendarTokenService.getUserToken(userId, provider);
+  async getUserToken(@Param('userId') userId: string) {
+    return await this.calendarTokenService.getUserToken(userId);
   }
 
   @ApiOperation({ summary: 'Delete user calendar token' })
   @ApiResponse({ status: 200, description: 'Token deleted successfully' })
   @Delete('user/:userId')
-  async deleteUserToken(
-    @Param('userId') userId: string,
-    @Query('provider') provider = 'google',
-  ) {
-    await this.calendarTokenService.deleteUserToken(userId, provider);
+  async deleteUserToken(@Param('userId') userId: string) {
+    await this.calendarTokenService.deleteUserToken(userId);
     return { message: 'Token deleted' };
   }
 
   @ApiOperation({ summary: 'Check if token is expiring soon' })
   @ApiResponse({ status: 200, description: 'Check result' })
   @Get('user/:userId/expiring')
-  async isTokenExpiringSoon(
-    @Param('userId') userId: string,
-    @Query('provider') provider = 'google',
-  ) {
-    const isExpiring = await this.calendarTokenService.isTokenExpiringSoon(
-      userId,
-      provider,
-    );
+  async isTokenExpiringSoon(@Param('userId') userId: string) {
+    const isExpiring =
+      await this.calendarTokenService.isTokenExpiringSoon(userId);
     return { isExpiringSoon: isExpiring };
   }
 }

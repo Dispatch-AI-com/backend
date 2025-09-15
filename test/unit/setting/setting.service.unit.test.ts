@@ -40,7 +40,10 @@ describe('SettingService (Unit)', () => {
   describe('getUserSettingsByCategory', () => {
     it('should throw BadRequestException for invalid userId', async () => {
       await expect(
-        service.getUserSettingsByCategory('invalid-id', SettingCategory.USER_PROFILE),
+        service.getUserSettingsByCategory(
+          'invalid-id',
+          SettingCategory.USER_PROFILE,
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
