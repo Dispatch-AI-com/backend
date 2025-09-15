@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
-import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import mongoose from 'mongoose';
 import { resolve } from 'path';
 
 // Load test environment variables from .env.example
@@ -126,13 +126,15 @@ beforeAll(async () => {
   process.env.DISABLE_AUTH = 'true';
 
   // Use in-memory MongoDB in CI or when explicitly requested
-  const useInMemory = process.env.CI === 'true' || process.env.USE_IN_MEMORY_DB === 'true';
+  const useInMemory =
+    process.env.CI === 'true' || process.env.USE_IN_MEMORY_DB === 'true';
   if (useInMemory) {
     mongoServer = await MongoMemoryServer.create();
     process.env.MONGODB_URI = mongoServer.getUri();
   } else {
     // Fallback to local Mongo
-    process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+    process.env.MONGODB_URI =
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
   }
 
   // Connect to test database
