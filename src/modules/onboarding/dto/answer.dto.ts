@@ -15,8 +15,8 @@ export class AnswerDto {
   answer!: string;
 
   @ApiProperty({
-    example: 'company.businessName',
-    description: 'The business field this answer should be written to',
+    example: 'user.position',
+    description: 'The user field this answer should be written to',
   })
   @IsString()
   field!: string;

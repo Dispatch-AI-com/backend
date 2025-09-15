@@ -1,16 +1,11 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { plainToInstance } from 'class-transformer';
-import { validateOrReject } from 'class-validator';
 import { Model, UpdateQuery } from 'mongoose';
 
-import { CompanyService } from '../company/company.service';
-import { CreateCompanyDto } from '../company/dto/create-company.dto';
 import { UserService } from '../user/user.service';
 import {
   OnboardingAnswers,
@@ -33,35 +28,25 @@ export class OnboardingService {
       ) => void | Promise<void>
     >
   > = {
-    'company.address.full': function (answer, update) {
+    'user.address.full': function (answer, update) {
       const match = this.AU_ADDR_REGEX.exec(answer.trim());
       if (!match?.groups) {
         throw new BadRequestException(
           'Unable to parse address; please check the format.',
         );
       }
-      update.$set['answers.company.address.streetAddress'] =
+      update.$set['answers.user.address.streetAddress'] =
         match.groups.street.trim();
-      update.$set['answers.company.address.suburb'] =
-        match.groups.suburb.trim();
-      update.$set['answers.company.address.state'] = match.groups.state;
-      update.$set['answers.company.address.postcode'] = match.groups.postcode;
-      update.$set['answers.company.address.full'] = answer; // raw string
-    },
-
-    'company.abn': async function (answer, update) {
-      const exists = await this.companyService.existsByAbn(answer.trim());
-      if (exists) {
-        throw new ConflictException('Company with this ABN already exists.');
-      }
-      update.$set['answers.company.abn'] = answer.trim();
+      update.$set['answers.user.address.suburb'] = match.groups.suburb.trim();
+      update.$set['answers.user.address.state'] = match.groups.state;
+      update.$set['answers.user.address.postcode'] = match.groups.postcode;
+      update.$set['answers.user.address.full'] = answer; // raw string
     },
   };
 
   constructor(
     @InjectModel(OnboardingSession.name)
     private readonly sessionModel: Model<OnboardingSessionDocument>,
-    private readonly companyService: CompanyService,
     private readonly userService: UserService,
   ) {}
 
@@ -92,7 +77,12 @@ export class OnboardingService {
 
     await this.sessionModel.updateOne({ userId }, update, { upsert: true });
 
-    if (field.startsWith('user.')) {
+    // Handle direct user field updates (phone, position)
+    if (
+      field.startsWith('user.') &&
+      !field.includes('address') &&
+      !field.includes('greeting')
+    ) {
       const [, key] = field.split('.');
       await this.userService.patch(userId, { [key]: answer.trim() });
     }
@@ -135,44 +125,46 @@ export class OnboardingService {
     const session = await this.sessionModel.findOne({ userId }).lean();
     if (!session) throw new NotFoundException('session not found');
 
-    const companyAns = session.answers.company;
-    if (!companyAns) {
-      throw new BadRequestException('company answers not found in session');
+    const userAns = session.answers.user;
+    if (!userAns) {
+      throw new BadRequestException('user answers not found in session');
     }
 
-    const user = await this.userService.findOne(userId);
-    const email = user.email;
+    // Update user with collected information
+    const updateData: {
+      address?: {
+        unitAptPOBox?: string;
+        streetAddress: string;
+        suburb: string;
+        state: string;
+        postcode: string;
+      };
+      greeting?: {
+        message: string;
+        isCustom: boolean;
+      };
+    } = {};
 
-    const companyPayload = {
-      businessName: companyAns.businessName,
-      address: {
-        unitAptPOBox: companyAns.address.unitAptPOBox ?? '',
-        streetAddress: companyAns.address.streetAddress,
-        suburb: companyAns.address.suburb,
-        state: companyAns.address.state,
-        postcode: companyAns.address.postcode,
-      },
-      email: email,
-      abn: companyAns.abn,
-      user: userId,
-    };
+    if (userAns.address !== undefined) {
+      updateData.address = {
+        unitAptPOBox: userAns.address.unitAptPOBox ?? '',
+        streetAddress: userAns.address.streetAddress,
+        suburb: userAns.address.suburb,
+        state: userAns.address.state,
+        postcode: userAns.address.postcode,
+      };
+    }
 
-    try {
-      const dto = plainToInstance(CreateCompanyDto, companyPayload);
-      await validateOrReject(dto);
-      await this.companyService.create(dto);
-    } catch (err: unknown) {
-      // handle index uniqueness conflict
-      if (
-        err !== null &&
-        err !== undefined &&
-        typeof err === 'object' &&
-        'code' in err &&
-        (err as { code: number }).code === 11000
-      ) {
-        throw new ConflictException('Company email/abn/phone already exists');
-      }
-      throw err;
+    if (userAns.greeting !== undefined) {
+      updateData.greeting = {
+        message: userAns.greeting.message,
+        isCustom: userAns.greeting.isCustom,
+      };
+    }
+
+    // Update user with address and greeting if they exist
+    if (Object.keys(updateData).length > 0) {
+      await this.userService.patch(userId, updateData);
     }
 
     await this.sessionModel.updateOne(

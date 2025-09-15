@@ -18,6 +18,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import { SkipCSRF } from '@/common/decorators/skip-csrf.decorator';
+
 import { AnswerDto } from './dto/answer.dto';
 import { CompleteDto } from './dto/complete.dto';
 import { DeleteSessionDto } from './dto/delete.dto';
@@ -34,6 +36,7 @@ export class OnboardingController {
   constructor(private readonly onboardingService: OnboardingService) {}
 
   @Post('answer')
+  @SkipCSRF()
   @ApiOperation({ summary: 'Save user answer for current onboarding step' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -75,8 +78,10 @@ export class OnboardingController {
       example: {
         currentStep: 3,
         answers: {
-          '1': 'Kenves',
-          '2': 'Xie',
+          user: {
+            phone: '+61412345678',
+            position: 'Manager',
+          },
         },
         status: 'in_progress',
       },
@@ -95,6 +100,7 @@ export class OnboardingController {
   }
 
   @Post('complete')
+  @SkipCSRF()
   @ApiOperation({ summary: 'Mark onboarding session as completed' })
   @ApiResponse({
     status: HttpStatus.OK,
@@ -115,6 +121,7 @@ export class OnboardingController {
 
   @Delete('delete')
   @HttpCode(HttpStatus.OK)
+  @SkipCSRF()
   @ApiOperation({ summary: 'Delete onboarding session' })
   @ApiBody({
     type: DeleteSessionDto,
@@ -151,8 +158,18 @@ export class OnboardingController {
           currentStep: { type: 'number', example: 2 },
           answers: {
             type: 'object',
-            additionalProperties: { type: 'string' },
-            example: { '1': 'John', '2': 'Acme Inc.' },
+            example: {
+              user: {
+                phone: '+61412345678',
+                position: 'Manager',
+                address: {
+                  streetAddress: '123 Collins St',
+                  suburb: 'Melbourne',
+                  state: 'VIC',
+                  postcode: '3000',
+                },
+              },
+            },
           },
           status: {
             type: 'string',

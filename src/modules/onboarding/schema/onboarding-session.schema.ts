@@ -11,19 +11,19 @@ export interface AddressAnswers {
   postcode: string;
 }
 
-export interface CompanyAnswers {
-  businessName: string;
-  abn: string;
-  address: AddressAnswers;
+export interface GreetingAnswers {
+  message: string;
+  isCustom: boolean;
 }
 
 export interface UserAnswers {
   phone?: string;
   position?: string;
+  address?: AddressAnswers;
+  greeting?: GreetingAnswers;
 }
 
 export interface OnboardingAnswers {
-  company?: CompanyAnswers;
   user?: UserAnswers;
 }
 
