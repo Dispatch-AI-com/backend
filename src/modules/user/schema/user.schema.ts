@@ -62,7 +62,7 @@ export class User extends Document {
     default: EUserRole.user,
   })
   role!: EUserRole;
-  
+
   // Add billing address
   @Prop({
     type: {

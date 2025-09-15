@@ -11,9 +11,9 @@ import { isValidObjectId } from 'mongoose';
 
 import { SALT_ROUNDS } from '@/modules/auth/auth.config';
 
-import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { AddressDto } from './dto/address.dto';
 import { GreetingDto } from './dto/greeting.dto';
+import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { User, UserDocument } from './schema/user.schema';
 @Injectable()
 export class UserService {
@@ -107,10 +107,7 @@ export class UserService {
     return user?.email ?? null;
   }
 
-  async updateAddress(
-    userId: string,
-    address: AddressDto,
-  ): Promise<User> {
+  async updateAddress(userId: string, address: AddressDto): Promise<User> {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -128,10 +125,7 @@ export class UserService {
     return user.address;
   }
 
-  async updateGreeting(
-    userId: string,
-    greeting: GreetingDto,
-  ): Promise<User> {
+  async updateGreeting(userId: string, greeting: GreetingDto): Promise<User> {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -145,12 +139,8 @@ export class UserService {
     return await user.save();
   }
 
-  async getGreeting(
-    userId: string,
-  ): Promise<GreetingDto | undefined> {
-    const user = await this.userModel
-      .findById(userId)
-      .select('greeting');
+  async getGreeting(userId: string): Promise<GreetingDto | undefined> {
+    const user = await this.userModel.findById(userId).select('greeting');
 
     if (!user) {
       throw new NotFoundException('User not found');

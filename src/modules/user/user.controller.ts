@@ -12,11 +12,11 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { AddressDto } from './dto/address.dto';
+import { GreetingDto } from './dto/greeting.dto';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
 import { User } from './schema/user.schema';
 import { UserService } from './user.service';
-import { AddressDto } from './dto/address.dto';
-import { GreetingDto } from './dto/greeting.dto';
 
 @ApiTags('Users')
 @Controller('users')
@@ -70,9 +70,7 @@ export class UserController {
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({ status: 200, description: 'Address retrieved successfully.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async getAddress(
-    @Param('id') userId: string,
-  ): Promise<AddressDto> {
+  async getAddress(@Param('id') userId: string): Promise<AddressDto> {
     const address = await this.users.getAddress(userId);
     if (!address) {
       throw new Error('Address not found.');
@@ -98,9 +96,7 @@ export class UserController {
   @ApiParam({ name: 'id', description: 'User ID' })
   @ApiResponse({ status: 200, description: 'Greeting retrieved successfully.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
-  async getGreeting(
-    @Param('id') userId: string,
-  ): Promise<GreetingDto> {
+  async getGreeting(@Param('id') userId: string): Promise<GreetingDto> {
     const greeting = await this.users.getGreeting(userId);
     if (!greeting) {
       throw new Error('Greeting not found.');

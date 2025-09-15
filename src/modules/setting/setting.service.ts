@@ -390,16 +390,13 @@ export class SettingService {
   }
 
   private async clearBillingAddress(userId: string): Promise<void> {
-    await this.userModel.findByIdAndUpdate(
-      userId,
-      {
-        'address.unitAptPOBox': '',
-        'address.streetAddress': '',
-        'address.suburb': '',
-        'address.state': '',
-        'address.postcode': '',
-      },
-    );
+    await this.userModel.findByIdAndUpdate(userId, {
+      'address.unitAptPOBox': '',
+      'address.streetAddress': '',
+      'address.suburb': '',
+      'address.state': '',
+      'address.postcode': '',
+    });
   }
 
   private validateABN(abn: string): boolean {
