@@ -43,10 +43,7 @@ export class McpCalendarIntegrationService {
   }> {
     try {
       // 1) Get valid access token (auto refresh if near expiry)
-      const tokenInfo = await this.calendarTokenService.getValidToken(
-        userId,
-        'google',
-      );
+      const tokenInfo = await this.calendarTokenService.getValidToken(userId);
 
       // 2) Refresh if token needs refresh
       let accessToken = tokenInfo.accessToken;
@@ -54,10 +51,8 @@ export class McpCalendarIntegrationService {
         this.logger.log(
           `User ${userId} Google Calendar token expiring soon, refreshing...`,
         );
-        const refreshedToken = await this.calendarTokenService.refreshToken(
-          userId,
-          'google',
-        );
+        const refreshedToken =
+          await this.calendarTokenService.refreshToken(userId);
         accessToken = refreshedToken.accessToken;
         this.logger.log(
           `Token refreshed. New expiry: ${refreshedToken.expiresAt.toISOString()}`,
@@ -65,10 +60,7 @@ export class McpCalendarIntegrationService {
       }
 
       // 3) Get user calendar configuration
-      const userToken = await this.calendarTokenService.getUserToken(
-        userId,
-        'google',
-      );
+      const userToken = await this.calendarTokenService.getUserToken(userId);
 
       return {
         accessToken,
@@ -95,15 +87,12 @@ export class McpCalendarIntegrationService {
    */
   async canUserCreateCalendarEvent(userId: string): Promise<boolean> {
     try {
-      const token = await this.calendarTokenService.getUserToken(
-        userId,
-        'google',
-      );
+      const token = await this.calendarTokenService.getUserToken(userId);
       if (!token) return false;
 
       // Check whether token is expiring soon
       const isExpiringSoon =
-        await this.calendarTokenService.isTokenExpiringSoon(userId, 'google');
+        await this.calendarTokenService.isTokenExpiringSoon(userId);
       return !isExpiringSoon;
     } catch {
       return false;
@@ -121,10 +110,7 @@ export class McpCalendarIntegrationService {
     canCreateEvents: boolean;
   }> {
     try {
-      const token = await this.calendarTokenService.getUserToken(
-        userId,
-        'google',
-      );
+      const token = await this.calendarTokenService.getUserToken(userId);
 
       if (!token) {
         return {
@@ -137,7 +123,7 @@ export class McpCalendarIntegrationService {
       }
 
       const isExpiringSoon =
-        await this.calendarTokenService.isTokenExpiringSoon(userId, 'google');
+        await this.calendarTokenService.isTokenExpiringSoon(userId);
 
       return {
         hasValidToken: true,
@@ -199,25 +185,17 @@ export class McpCalendarIntegrationService {
   }> {
     try {
       // 1) Get valid access token
-      const tokenInfo = await this.calendarTokenService.getValidToken(
-        userId,
-        'google',
-      );
+      const tokenInfo = await this.calendarTokenService.getValidToken(userId);
 
       let accessToken = tokenInfo.accessToken;
       if (tokenInfo.needsRefresh) {
-        const refreshedToken = await this.calendarTokenService.refreshToken(
-          userId,
-          'google',
-        );
+        const refreshedToken =
+          await this.calendarTokenService.refreshToken(userId);
         accessToken = refreshedToken.accessToken;
       }
 
       // 2) Get user calendar config
-      const userToken = await this.calendarTokenService.getUserToken(
-        userId,
-        'google',
-      );
+      const userToken = await this.calendarTokenService.getUserToken(userId);
 
       // 3) Build email content
       const emailData = {
