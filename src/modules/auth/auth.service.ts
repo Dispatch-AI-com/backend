@@ -58,6 +58,8 @@ export class AuthService {
       email: user.email,
       role: user.role,
       status: user.status,
+      emailVerified: user.emailVerified,
+      phoneVerified: user.phoneVerified,
     });
     const csrfToken = generateCSRFToken();
     return { user, token, csrfToken };
@@ -87,6 +89,8 @@ export class AuthService {
       email: newUser.email,
       role: newUser.role,
       status: newUser.status,
+      emailVerified: newUser.emailVerified,
+      phoneVerified: newUser.phoneVerified,
     });
     const csrfToken = generateCSRFToken();
     return { user: newUser.toObject() as User, token, csrfToken };

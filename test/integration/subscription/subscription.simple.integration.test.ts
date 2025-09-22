@@ -5,8 +5,8 @@ import mongoose from 'mongoose';
 import request from 'supertest';
 
 import { AppModule } from '../../../src/modules/app.module';
-import { createMockSubscriptionDto } from '../../fixtures/dynamic/subscription';
 import { createBasicPlan } from '../../fixtures/dynamic/plan';
+import { createMockSubscriptionDto } from '../../fixtures/dynamic/subscription';
 import { DatabaseTestHelper } from '../../helpers/database.helper';
 
 // Mock Stripe service to avoid real API calls in tests
@@ -16,7 +16,9 @@ jest.mock('../../../src/modules/stripe/stripe.service', () => ({
       id: 'cs_test_123',
       url: 'https://checkout.stripe.com/c/pay/cs_test_123',
     }),
-    createBillingPortalSession: jest.fn().mockResolvedValue('https://billing.stripe.com/session_123'),
+    createBillingPortalSession: jest
+      .fn()
+      .mockResolvedValue('https://billing.stripe.com/session_123'),
     refundPayment: jest.fn().mockResolvedValue({ id: 're_123' }),
     listInvoicesByCustomerId: jest.fn().mockResolvedValue([]),
     listRefundsByChargeId: jest.fn().mockResolvedValue([]),
@@ -126,7 +128,9 @@ describe('SubscriptionController (Simple Integration)', () => {
     expect(response.body).toHaveProperty('message');
     expect(response.body).toHaveProperty('checkoutUrl');
     expect(response.body.message).toContain('Stripe checkout session created');
-    expect(response.body.checkoutUrl).toMatch(/^https:\/\/checkout\.stripe\.com/);
+    expect(response.body.checkoutUrl).toMatch(
+      /^https:\/\/checkout\.stripe\.com/,
+    );
   }, 20000);
 
   it('should fail to create subscription with invalid data', async () => {

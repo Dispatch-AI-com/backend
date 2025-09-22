@@ -53,6 +53,12 @@ export class User extends Document {
     default: EUserRole.user,
   })
   role!: EUserRole;
+
+  @Prop({ default: false })
+  emailVerified!: boolean;
+
+  @Prop({ default: false })
+  phoneVerified!: boolean;
 }
 
 export type UserDocument = User & Document;

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -7,6 +11,10 @@ import {
   VerificationDocument,
 } from '@/modules/setting/schema/verification.schema';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
+
+import { AwsSesEmailVerificationService } from './services/aws-ses-email-verification.service';
+import { AwsSnsSmsVerificationService } from './services/aws-sns-sms-verification.service';
+import { VerificationCodeService } from './services/verification-code.service';
 
 export interface UpdateVerificationDto {
   type: 'SMS' | 'Email' | 'Both';
@@ -24,6 +32,9 @@ export class VerificationService {
     private verificationModel: Model<VerificationDocument>,
     @InjectModel(User.name)
     private userModel: Model<UserDocument>,
+    private readonly awsSesEmailVerificationService: AwsSesEmailVerificationService,
+    private readonly verificationCodeService: VerificationCodeService,
+    private readonly awsSnsSmsVerificationService: AwsSnsSmsVerificationService,
   ) {}
 
   async getVerification(userId: string): Promise<Verification | null> {
@@ -88,18 +99,186 @@ export class VerificationService {
     return verification;
   }
 
-  async verifyEmail(userId: string, _email: string): Promise<Verification> {
-    const verification = await this.verificationModel
-      .findOneAndUpdate(
-        { userId: new Types.ObjectId(userId) },
-        { emailVerified: true },
-        { new: true },
-      )
+  async sendEmailVerification(
+    userId: string,
+    email: string,
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      // Generate verification code
+      const verificationCode =
+        this.awsSesEmailVerificationService.generateVerificationCode();
+
+      // Store verification code
+      await this.verificationCodeService.createVerificationCode(
+        userId,
+        email,
+        verificationCode,
+        'email',
+      );
+
+      // Get user info for personalized email
+      const user = await this.userModel.findById(userId).exec();
+
+      // Send verification email
+      const result =
+        await this.awsSesEmailVerificationService.sendVerificationEmail(
+          email,
+          verificationCode,
+          user?.firstName,
+        );
+
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to send verification email',
+      };
+    }
+  }
+
+  async verifyEmail(
+    userId: string,
+    email: string,
+    code: string,
+  ): Promise<Verification> {
+    // Verify the code
+    const isValidCode = await this.verificationCodeService.verifyCode(
+      userId,
+      email,
+      code,
+      'email',
+    );
+
+    if (!isValidCode) {
+      throw new BadRequestException('Invalid or expired verification code');
+    }
+
+    // Get user info
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Try to find existing verification record
+    let verification = await this.verificationModel
+      .findOne({ userId: new Types.ObjectId(userId) })
       .exec();
 
     if (!verification) {
-      throw new NotFoundException('Verification record not found');
+      // Create new verification record if it doesn't exist
+      verification = new this.verificationModel({
+        userId: new Types.ObjectId(userId),
+        type: 'Both',
+        email: user.email,
+        mobile: user.fullPhoneNumber || '',
+        emailVerified: true,
+        mobileVerified: false,
+        marketingPromotions: false,
+      });
+      await verification.save();
+    } else {
+      // Update existing verification record
+      verification.emailVerified = true;
+      await verification.save();
     }
+
+    // Update user model
+    await this.userModel
+      .findByIdAndUpdate(userId, { emailVerified: true })
+      .exec();
+
+    return verification;
+  }
+
+  async sendSmsVerification(
+    userId: string,
+    phoneNumber: string,
+  ): Promise<{ success: boolean; message?: string }> {
+    try {
+      // Generate verification code
+      const verificationCode =
+        this.awsSnsSmsVerificationService.generateVerificationCode();
+
+      // Store verification code
+      await this.verificationCodeService.createVerificationCode(
+        userId,
+        phoneNumber,
+        verificationCode,
+        'phone',
+      );
+
+      // Send verification SMS
+      const result =
+        await this.awsSnsSmsVerificationService.sendVerificationSms(
+          phoneNumber,
+          verificationCode,
+        );
+      return result;
+    } catch (error) {
+      return {
+        success: false,
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to send SMS verification',
+      };
+    }
+  }
+
+  async verifySms(
+    userId: string,
+    phoneNumber: string,
+    code: string,
+  ): Promise<Verification> {
+    // Verify the SMS code using verification code service
+    const isValidCode = await this.verificationCodeService.verifyCode(
+      userId,
+      phoneNumber,
+      code,
+      'phone',
+    );
+
+    if (!isValidCode) {
+      throw new BadRequestException('Invalid or expired SMS verification code');
+    }
+
+    // Get user info
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Try to find existing verification record
+    let verification = await this.verificationModel
+      .findOne({ userId: new Types.ObjectId(userId) })
+      .exec();
+
+    if (!verification) {
+      // Create new verification record if it doesn't exist
+      verification = new this.verificationModel({
+        userId: new Types.ObjectId(userId),
+        type: 'Both',
+        email: user.email,
+        mobile: phoneNumber,
+        emailVerified: false,
+        mobileVerified: true,
+        marketingPromotions: false,
+      });
+      await verification.save();
+    } else {
+      // Update existing verification record
+      verification.mobileVerified = true;
+      verification.mobile = phoneNumber;
+      await verification.save();
+    }
+
+    // Update user model
+    await this.userModel
+      .findByIdAndUpdate(userId, { phoneVerified: true })
+      .exec();
 
     return verification;
   }

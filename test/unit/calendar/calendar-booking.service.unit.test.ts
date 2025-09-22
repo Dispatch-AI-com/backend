@@ -1,10 +1,10 @@
+import { getModelToken } from '@nestjs/mongoose';
 import type { TestingModule } from '@nestjs/testing';
 import { Test } from '@nestjs/testing';
-import { getModelToken } from '@nestjs/mongoose';
 import type { Model } from 'mongoose';
 
-import { ServiceBookingService } from '../../../src/modules/service-booking/service-booking.service';
 import { ServiceBooking } from '../../../src/modules/service-booking/schema/service-booking.schema';
+import { ServiceBookingService } from '../../../src/modules/service-booking/service-booking.service';
 import { staticServiceBooking } from '../../fixtures';
 
 // ============================================================================
@@ -20,7 +20,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
     const mockFind = jest.fn().mockReturnValue({
       exec: mockExec,
     });
-    
+
     const mockModel = {
       find: mockFind,
     } as any;
@@ -43,7 +43,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
     it('should return service bookings for a user', async () => {
       const userId = 'test-user';
       const expectedResult = [staticServiceBooking];
-      
+
       (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
@@ -54,7 +54,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
 
     it('should return all service bookings when no userId provided', async () => {
       const expectedResult = [staticServiceBooking];
-      
+
       (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll();
@@ -66,7 +66,7 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
     it('should handle empty results', async () => {
       const userId = 'test-user';
       const expectedResult: any[] = [];
-      
+
       (model.find().exec as jest.Mock).mockResolvedValue(expectedResult);
 
       const result = await service.findAll(userId);
@@ -78,10 +78,12 @@ describe('ServiceBookingService (Unit) - Calendar Focus', () => {
     it('should handle database errors', async () => {
       const userId = 'test-user';
       const error = new Error('Database connection failed');
-      
+
       (model.find().exec as jest.Mock).mockRejectedValue(error);
 
-      await expect(service.findAll(userId)).rejects.toThrow('Database connection failed');
+      await expect(service.findAll(userId)).rejects.toThrow(
+        'Database connection failed',
+      );
     });
   });
 });

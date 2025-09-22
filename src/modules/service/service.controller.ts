@@ -13,6 +13,8 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { VerificationGuard } from '@/common/guards/verification.guard';
+
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { Service } from './schema/service.schema';
@@ -20,7 +22,7 @@ import { ServiceService } from './service.service';
 
 @ApiTags('service')
 @Controller('service')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), VerificationGuard)
 export class ServiceController {
   constructor(private readonly serviceService: ServiceService) {}
 

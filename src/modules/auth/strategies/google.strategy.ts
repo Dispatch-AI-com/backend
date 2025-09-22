@@ -72,6 +72,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         sub: user._id?.toString() ?? user._id, // Ensure ObjectId is converted to string
         email: user.email,
         role: user.role,
+        status: user.status,
+        emailVerified: user.emailVerified,
+        phoneVerified: user.phoneVerified,
       });
 
       const csrfToken = generateCSRFToken();
