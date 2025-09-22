@@ -10,8 +10,6 @@ export * from './static/setting';
 export * from './static/transcript';
 export * from './static/user';
 
-
-
 // Dynamic mock data generator exports
 export * from './dynamic/calendar';
 export * from './dynamic/calllog';

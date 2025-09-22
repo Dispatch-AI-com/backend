@@ -4,16 +4,15 @@ import type { Model } from 'mongoose';
 import { Types } from 'mongoose';
 
 import type { CallLog } from '../../src/modules/calllog/schema/calllog.schema';
-import type { Company } from '../../src/modules/company/schema/company.schema';  // 添加
+import type { Company } from '../../src/modules/company/schema/company.schema'; // 添加
 import type { Plan } from '../../src/modules/plan/schema/plan.schema';
 import type { Service } from '../../src/modules/service/schema/service.schema';
 import type { ServiceBooking } from '../../src/modules/service-booking/schema/service-booking.schema';
-import type { Setting } from '../../src/modules/setting/schema/setting.schema';  // 添加
+import type { Setting } from '../../src/modules/setting/schema/setting.schema'; // 添加
 import type { Subscription } from '../../src/modules/subscription/schema/subscription.schema';
 import type { Transcript } from '../../src/modules/transcript/schema/transcript.schema';
 import type { TranscriptChunk } from '../../src/modules/transcript-chunk/schema/transcript-chunk.schema';
 import type { User } from '../../src/modules/user/schema/user.schema';
-
 import {
   staticCallLog as mockCallLog,
   staticTranscript as mockTranscript,
@@ -176,5 +175,3 @@ export class DatabaseTestHelper {
     return await this.companyModel.create(companyObj);
   }
 }
-
-

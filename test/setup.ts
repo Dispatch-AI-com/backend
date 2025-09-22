@@ -131,13 +131,15 @@ beforeAll(async () => {
   //   mongoServer = await MongoMemoryServer.create();
   //   process.env.MONGODB_URI = mongoServer.getUri();
   // } else {
-    // Fallback to local Mongo
-    process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+  // Fallback to local Mongo
+  process.env.MONGODB_URI =
+    process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
   // }
 
   // Connect to test database
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
+    const mongoUri =
+      process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
     await mongoose.connect(mongoUri, {
       // Add connection options for better reliability in CI
       maxPoolSize: 5,
