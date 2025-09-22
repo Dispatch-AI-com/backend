@@ -70,7 +70,7 @@ export class AwsSnsSmsVerificationService {
       const result = await this.snsClient.send(command);
 
       this.logger.log(
-        `SMS verification sent to ${formattedPhone}: ${result.MessageId ?? 'unknown'}`,
+        `SMS verification sent to ${formattedPhone}: ${String(result.MessageId ?? 'unknown')}`,
       );
       return { success: true };
     } catch (error) {
