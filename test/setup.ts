@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+// import { MongoMemoryServer } from 'mongodb-memory-server';
 import { resolve } from 'path';
 
 // Load test environment variables from .env.example
@@ -117,7 +117,7 @@ jest.mock('ioredis', () => {
   return mockRedis;
 });
 
-let mongoServer: MongoMemoryServer | null = null;
+// let mongoServer: MongoMemoryServer | null = null;
 
 // Global test setup
 beforeAll(async () => {
@@ -126,18 +126,18 @@ beforeAll(async () => {
   process.env.DISABLE_AUTH = 'true';
 
   // Use in-memory MongoDB in CI or when explicitly requested
-  const useInMemory = process.env.CI === 'true' || process.env.USE_IN_MEMORY_DB === 'true';
-  if (useInMemory) {
-    mongoServer = await MongoMemoryServer.create();
-    process.env.MONGODB_URI = mongoServer.getUri();
-  } else {
+  // const useInMemory = process.env.CI === 'true' || process.env.USE_IN_MEMORY_DB === 'true';
+  // if (useInMemory) {
+  //   mongoServer = await MongoMemoryServer.create();
+  //   process.env.MONGODB_URI = mongoServer.getUri();
+  // } else {
     // Fallback to local Mongo
     process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
-  }
+  // }
 
   // Connect to test database
   try {
-    const mongoUri = process.env.MONGODB_URI;
+    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/test';
     await mongoose.connect(mongoUri, {
       // Add connection options for better reliability in CI
       maxPoolSize: 5,
@@ -172,10 +172,10 @@ afterAll(async () => {
     }
 
     await mongoose.connection.close();
-    if (mongoServer) {
-      await mongoServer.stop();
-      mongoServer = null;
-    }
+    // if (mongoServer) {
+    //   await mongoServer.stop();
+    //   mongoServer = null;
+    // }
     console.log('Disconnected from test database');
   } catch (error) {
     console.error(
