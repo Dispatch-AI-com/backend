@@ -165,13 +165,6 @@ export class DatabaseTestHelper {
           : company.user || new Types.ObjectId(),
     };
 
-    if (
-      company.twilioPhoneNumber !== undefined &&
-      company.twilioPhoneNumber !== null
-    ) {
-      companyObj.twilioPhoneNumber = company.twilioPhoneNumber;
-    }
-
     return await this.companyModel.create(companyObj);
   }
 }
