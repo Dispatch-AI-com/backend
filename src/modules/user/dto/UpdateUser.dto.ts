@@ -1,8 +1,7 @@
 //src/modules/user/dto/UpdateUser.dto.ts
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { PartialType } from '@nestjs/swagger';
+import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, ValidateNested } from 'class-validator';
 
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 
@@ -10,6 +9,14 @@ import { AddressDto } from './address.dto';
 import { GreetingDto } from './greeting.dto';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {
+  @ApiPropertyOptional({
+    description: 'User full phone number',
+    example: '+61412345678',
+  })
+  @IsOptional()
+  @IsString()
+  fullPhoneNumber?: string;
+
   @ApiPropertyOptional({
     description: 'User billing address',
     type: AddressDto,

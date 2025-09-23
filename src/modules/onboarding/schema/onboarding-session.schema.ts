@@ -12,12 +12,13 @@ export interface AddressAnswers {
 }
 
 export interface GreetingAnswers {
+  type?: 'Use Default Greeting' | 'Create Custom Greeting';
   message: string;
   isCustom: boolean;
 }
 
 export interface UserAnswers {
-  phone?: string;
+  fullPhoneNumber?: string; // phone number
   position?: string;
   address?: AddressAnswers;
   greeting?: GreetingAnswers;

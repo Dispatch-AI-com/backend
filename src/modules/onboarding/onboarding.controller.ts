@@ -76,11 +76,21 @@ export class OnboardingController {
     description: 'Returns current step and saved answers',
     schema: {
       example: {
-        currentStep: 3,
+        currentStep: 5,
         answers: {
           user: {
-            phone: '+61412345678',
+            fullPhoneNumber: '+61412345678',
             position: 'Manager',
+            address: {
+              full: '123 Collins St, Melbourne, VIC 3000',
+              streetAddress: '123 Collins St',
+              suburb: 'Melbourne',
+              state: 'VIC',
+              postcode: '3000',
+            },
+            greeting: {
+              type: 'Use Default Greeting',
+            },
           },
         },
         status: 'in_progress',
@@ -160,13 +170,18 @@ export class OnboardingController {
             type: 'object',
             example: {
               user: {
-                phone: '+61412345678',
+                fullPhoneNumber: '+61412345678',
                 position: 'Manager',
                 address: {
+                  full: '123 Collins St, Melbourne, VIC 3000',
                   streetAddress: '123 Collins St',
                   suburb: 'Melbourne',
                   state: 'VIC',
                   postcode: '3000',
+                },
+                greeting: {
+                  type: 'Create Custom Greeting',
+                  message: 'Hello! Thanks for calling our business...',
                 },
               },
             },

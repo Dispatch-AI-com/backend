@@ -42,6 +42,34 @@ export class OnboardingService {
       update.$set['answers.user.address.postcode'] = match.groups.postcode;
       update.$set['answers.user.address.full'] = answer; // raw string
     },
+
+    'user.greeting.type': function (answer, update) {
+      const trimmedAnswer = answer.trim();
+      if (
+        !['Use Default Greeting', 'Create Custom Greeting'].includes(
+          trimmedAnswer,
+        )
+      ) {
+        throw new BadRequestException(
+          'Invalid greeting type. Must be "Use Default Greeting" or "Create Custom Greeting".',
+        );
+      }
+      update.$set['answers.user.greeting.type'] = trimmedAnswer;
+
+      // Step skipping logic is handled in the main saveAnswer method
+      // No need to set default greeting values - User schema already has defaults
+    },
+
+    'user.greeting.message': function (answer, update) {
+      const trimmedAnswer = answer.trim();
+      if (trimmedAnswer.length < 10 || trimmedAnswer.length > 500) {
+        throw new BadRequestException(
+          'Greeting message must be between 10 and 500 characters.',
+        );
+      }
+      update.$set['answers.user.greeting.message'] = trimmedAnswer;
+      update.$set['answers.user.greeting.isCustom'] = true;
+    },
   };
 
   constructor(
@@ -59,9 +87,20 @@ export class OnboardingService {
     answer: string,
     field: string,
   ): Promise<{ success: boolean; currentStep: number }> {
+    // Calculate next step - default is +1, but some fields may skip steps
+    let nextStep = stepId + 1;
+
+    // Special case: if user chooses default greeting, skip custom message step
+    if (
+      field === 'user.greeting.type' &&
+      answer.trim() === 'Use Default Greeting'
+    ) {
+      nextStep = stepId + 2; // Skip step 5 (custom message input)
+    }
+
     const update: UpdateQuery<OnboardingSessionDocument> = {
       $set: {
-        currentStep: stepId + 1,
+        currentStep: nextStep,
         status: 'in_progress',
         updatedAt: new Date(),
       },
@@ -87,9 +126,30 @@ export class OnboardingService {
       await this.userService.patch(userId, { [key]: answer.trim() });
     }
 
+    // Handle address update immediately after parsing
+    if (field === 'user.address.full') {
+      const addressData = {
+        unitAptPOBox: update.$set['answers.user.address.unitAptPOBox'] ?? '',
+        streetAddress: update.$set['answers.user.address.streetAddress'],
+        suburb: update.$set['answers.user.address.suburb'],
+        state: update.$set['answers.user.address.state'],
+        postcode: update.$set['answers.user.address.postcode'],
+      };
+      await this.userService.patch(userId, { address: addressData });
+    }
+
+    // Handle custom greeting message immediately
+    if (field === 'user.greeting.message') {
+      const greetingData = {
+        message: answer.trim(),
+        isCustom: true,
+      };
+      await this.userService.patch(userId, { greeting: greetingData });
+    }
+
     return {
       success: true,
-      currentStep: stepId + 1,
+      currentStep: nextStep,
     };
   }
 
@@ -130,42 +190,8 @@ export class OnboardingService {
       throw new BadRequestException('user answers not found in session');
     }
 
-    // Update user with collected information
-    const updateData: {
-      address?: {
-        unitAptPOBox?: string;
-        streetAddress: string;
-        suburb: string;
-        state: string;
-        postcode: string;
-      };
-      greeting?: {
-        message: string;
-        isCustom: boolean;
-      };
-    } = {};
-
-    if (userAns.address !== undefined) {
-      updateData.address = {
-        unitAptPOBox: userAns.address.unitAptPOBox ?? '',
-        streetAddress: userAns.address.streetAddress,
-        suburb: userAns.address.suburb,
-        state: userAns.address.state,
-        postcode: userAns.address.postcode,
-      };
-    }
-
-    if (userAns.greeting !== undefined) {
-      updateData.greeting = {
-        message: userAns.greeting.message,
-        isCustom: userAns.greeting.isCustom,
-      };
-    }
-
-    // Update user with address and greeting if they exist
-    if (Object.keys(updateData).length > 0) {
-      await this.userService.patch(userId, updateData);
-    }
+    // Address and greeting are now updated immediately in saveAnswer()
+    // No need to update user data here anymore
 
     await this.sessionModel.updateOne(
       { userId },
