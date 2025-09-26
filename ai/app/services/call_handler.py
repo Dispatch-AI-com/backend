@@ -1,41 +1,13 @@
-"""
-AI Customer Service Workflow Controller - 5-Step Simplified Version
-
-Focuses on workflow control and business logic processing, with prompts and validation functions decoupled to independent modules.
-
-Main Responsibilities:
-- Manage customer information collection workflow (5-step process: Name → Phone → Address → Service → Time)
-- Handle conversation state and transitions
-- Coordinate LLM interactions with speech correction
-- Manage Redis data updates
-- Handle exceptions and error recovery
-
-Architecture Description:
-- Prompt module: app.utils.prompts.customer_info_prompts
-- Extractors module: app.services.retrieve.customer_info_extractors
-- Speech correction: SimplifiedSpeechCorrector for Australian address accuracy
-- Workflow control: This file (call_handler.py)
-"""
+from __future__ import annotations
 
 import json
+import os
+import re
+import sys
 from typing import Optional
+
 from openai import OpenAI
-
-# Import shared types
 from custom_types import CustomerServiceState
-
-# Import decoupled modules
-from .retrieve.customer_info_extractors import (
-    extract_name_from_conversation,
-    extract_phone_from_conversation,
-    extract_address_from_conversation,
-    # extract_suburb_from_conversation,
-    # extract_state_from_conversation,
-    # extract_postcode_from_conversation,
-    extract_service_from_conversation,
-    extract_time_from_conversation,
-)
-
 from .redis_service import (
     update_user_info_field,
     update_address_components,
@@ -43,9 +15,56 @@ from .redis_service import (
     update_booking_status,
     get_message_history,
 )
-
+from .retrieve.customer_info_extractors import (
+    extract_name_from_conversation,
+    extract_phone_from_conversation,
+    extract_address_from_conversation,
+    extract_service_from_conversation,
+    extract_time_from_conversation,
+)
 from .llm_speech_corrector import SimplifiedSpeechCorrector
 from config import settings
+
+
+# Helper function to create default CustomerServiceState
+def create_default_customer_service_state() -> CustomerServiceState:
+    """Create a default CustomerServiceState for initialization"""
+    return {
+        "name": None,
+        "phone": None,
+        "address": None,
+        "service": None,
+        "service_id": None,
+        "service_price": None,
+        "service_description": None,
+        "available_services": [],
+        "service_time": None,
+        "service_time_mongodb": None,
+        "current_step": "collect_name",
+        "name_attempts": 0,
+        "phone_attempts": 0,
+        "address_attempts": 0,
+        "service_attempts": 0,
+        "time_attempts": 0,
+        "max_attempts": 3,
+        "service_max_attempts": 3,
+        "last_user_input": None,
+        "last_llm_response": None,
+        "name_complete": False,
+        "phone_complete": False,
+        "address_complete": False,
+        "service_complete": False,
+        "time_complete": False,
+        "conversation_complete": False,
+        "service_available": True,
+        "time_available": True,
+    }
+
+
+# Remove ConversationState - we'll use CustomerServiceState directly with LangGraph
+
+
+PHONE_REGEX = re.compile(r"^\+?\d{7,15}$")
 
 
 class CustomerServiceLangGraph:
@@ -241,14 +260,13 @@ class CustomerServiceLangGraph:
                 f"on {service_time}. Your booking is confirmed and we will send you a confirmation shortly. "
                 f"Thank you for choosing our service today. Have a great day and goodbye!"
             )
-
     def __init__(self, api_key=None):
         """Initialize customer service system"""
         if api_key:
             self.client = OpenAI(api_key=api_key)
         else:
             self.client = OpenAI(api_key=settings.openai_api_key)
-
+        
         # Initialize speech corrector
         self.speech_corrector = SimplifiedSpeechCorrector(api_key=api_key)
 
@@ -830,8 +848,8 @@ class CustomerServiceLangGraph:
             state["last_llm_response"] = {
                 "response": closing_message,
                 "info_extracted": {},
-                "info_complete": False,
-                "analysis": "Conversation completed with failed time collection",
+                "info_complete": True,
+                "analysis": "Booking failed, time collection unsuccessful"
             }
             print("⚠️ Partial booking completed, time collection failed")
 
@@ -850,9 +868,6 @@ class CustomerServiceLangGraph:
         Args:
             state: Customer service state object
             call_sid: Optional call ID for Redis real-time updates
-
-        Returns:
-            CustomerServiceState: Updated state object
         """
         # Determine current step to execute based on completion status
         print(
@@ -1008,9 +1023,9 @@ class CustomerServiceLangGraph:
         }
 
         try:
-            with open(filename, "w", encoding="utf-8") as f:
-                json.dump(save_data, f, ensure_ascii=False, indent=2)
-            print(f"✅ Conversation saved to file: {filename}")
+            with open(filename, 'w') as f:
+                json.dump(save_data, f, indent=2, ensure_ascii=False)
+            print(f"💾 Conversation saved to: {filename}")
             return filename
         except Exception as e:
             print(f"❌ Failed to save file: {e}")
@@ -1057,99 +1072,115 @@ class CustomerServiceLangGraph:
             "service_available": True,
             "time_available": True,
         }
-
-        print("🤖 AI Customer Service Assistant Started (5-Step Workflow)")
-        print("💡 Type 'quit' or 'exit' to exit conversation")
-        print("💡 Type 'status' to view current collection status")
-        print("💡 Type 'save' to save conversation to file")
-        print("-" * 50)
-
-        print(f"🤖 AI: {initial_message}")
-
-        # Main conversation loop
-        while not state["conversation_complete"]:
-            try:
-                # Get user input
-                user_input = input("\n👤 You: ").strip()
-
-                # Check special commands
-                if user_input.lower() in ["quit", "exit"]:
-                    print(
-                        "👋 Thank you for using AI customer service assistant, goodbye!"
-                    )
-                    break
-                elif user_input.lower() == "status":
-                    self.print_results(state)
-                    continue
-                elif user_input.lower() == "save":
-                    filename = self.save_to_file(state)
-                    if filename:
-                        print(f"📁 Conversation saved: {filename}")
-                    continue
-                elif not user_input:
-                    print("⚠️ Please enter valid content")
-                    continue
-
-                # Set user input
-                state["last_user_input"] = user_input
-
-                # Process based on current step using unified workflow
-                state = await self.process_customer_workflow(state)
-
-                # Display AI response
-                if state["last_llm_response"]:
-                    ai_response = state["last_llm_response"]["response"]
-                    print(f"🤖 AI: {ai_response}")
-
-                # Check if completed
-                if state["conversation_complete"]:
-                    print("\n🎉 Information collection completed!")
-                    self.print_results(state)
-
-                    # Ask whether to save
-                    save_choice = (
-                        input("\n💾 Save conversation record? (y/n): ").strip().lower()
-                    )
-                    if save_choice in ["y", "yes"]:
-                        self.save_to_file(state)
-
-                    break
-
-            except KeyboardInterrupt:
-                print("\n\n⚠️ Conversation interrupted")
-                save_choice = (
-                    input("💾 Save current conversation record? (y/n): ")
-                    .strip()
-                    .lower()
-                )
-                if save_choice in ["y", "yes"]:
-                    self.save_to_file(state)
-                break
-            except Exception as e:
-                print(f"❌ Error occurred during processing: {e}")
-                continue
-
+        
+        print(f"🤖 {initial_message}")
         return state
 
 
-# ================== Module Test Entry Point ==================
+def validate_and_normalize_phone(raw: str) -> tuple[bool, Optional[str], Optional[str]]:
+    if raw is None:
+        return False, None, "Empty phone number"
+    # remove spaces, hyphens, parentheses
+    cleaned = re.sub(r"[\s\-()]+", "", raw)
+    if PHONE_REGEX.match(cleaned):
+        return True, cleaned, None
+    return False, None, "Phone must be digits only with optional leading +, length 7-15"
 
 
-async def main():
-    """Module test entry point"""
-    print("🚀 Starting AI customer service system test (5-Step Workflow)...")
+# Removed unused helper functions - simplified design
 
-    # Create customer service instance
+
+def _extract_first_json_blob(text: str) -> Optional[dict]:
+    # Try to find the first {...} JSON object in the text and parse it
+    try:
+        import re as _re
+        match = _re.search(r"\{[\s\S]*\}", text)
+        if not match:
+            return None
+        return json.loads(match.group(0))
+    except Exception:
+        return None
+
+
+
+
+# Removed print_latest_assistant - no longer needed with simplified design
+
+
+async def main() -> None:
+    """Main function for standalone testing - uses new class structure"""
+    if not os.environ.get("OPENAI_API_KEY"):
+        print("OPENAI_API_KEY is not set. Please export it and try again.")
+        sys.exit(1)
+
+    # Create customer service instance using the new class
     cs_agent = CustomerServiceLangGraph()
 
-    # Start conversation
-    final_state = await cs_agent.start_conversation()
+    # Initialize CustomerServiceState for standalone testing
+    state: CustomerServiceState = create_default_customer_service_state()
+    state.update({
+        "available_services": [
+            {"id": "cleaning", "name": "房屋清洁", "price": 100.0},
+            {"id": "repair", "name": "维修服务", "price": 200.0},
+            {"id": "garden", "name": "园艺服务", "price": 150.0}
+        ]
+    })
 
-    print("\n📊 Final state summary:")
-    cs_agent.print_results(final_state)
+    print("🤖 AI Customer Service Assistant Started (LangGraph + Redis Integration)")
+    print("💡 Type 'quit' or 'exit' to exit conversation")
+    print("-" * 50)
+
+    # Initial greeting
+    state["last_user_input"] = ""  # Trigger initial greeting
+    state = await cs_agent.process_customer_workflow(state, call_sid=None)
+    
+    if state.get("last_llm_response"):
+        print(f"🤖 AI: {state['last_llm_response']['response']}")
+
+    # Main conversation loop
+    while not state.get("conversation_complete"):
+        try:
+            # Get user input
+            user_input = input("\n👤 You: ").strip()
+            
+            # Check for exit commands
+            if user_input.lower() in ["quit", "exit"]:
+                print("👋 Thank you for using AI customer service assistant, goodbye!")
+                break
+            elif not user_input:
+                print("⚠️ Please enter valid content")
+                continue
+
+            # Set user input and process
+            state["last_user_input"] = user_input
+            state = await cs_agent.process_customer_workflow(state, call_sid=None)
+            
+            # Display AI response
+            if state.get("last_llm_response"):
+                ai_response = state["last_llm_response"]["response"]
+                print(f"🤖 AI: {ai_response}")
+
+            # Check if completed
+            if state.get("conversation_complete"):
+                print("\n🎉 Information collection completed!")
+                print("📋 Final collected information:")
+                print(f"- 姓名: {state.get('name', 'Not collected')}")
+                print(f"- 电话: {state.get('phone', 'Not collected')}")
+                print(f"- 地址: {state.get('address', 'Not collected')}")
+                print(f"- 服务: {state.get('service', 'Not collected')}")
+                print(f"- 服务时间: {state.get('service_time', 'Not collected')}")
+                break
+
+        except KeyboardInterrupt:
+            print("\n\n⚠️ Conversation interrupted")
+            break
+        except Exception as e:
+            print(f"❌ Error occurred during processing: {e}")
+            continue
 
 
 if __name__ == "__main__":
     import asyncio
-
     asyncio.run(main())
+
+
