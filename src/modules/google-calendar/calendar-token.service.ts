@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -12,6 +13,31 @@ import {
   CalendarTokenDocument,
 } from './schema/calendar-token.schema';
 import { CalendarOAuthService } from './services/calendar-oauth.service';
+
+// Security helper functions to prevent NoSQL injection
+function assertString(name: string, v: unknown): string {
+  if (v == null) return v as any; // allow undefined/null if optional
+  if (typeof v !== 'string') throw new BadRequestException(`Field "${name}" must be a string.`);
+  if (v.startsWith?.('$')) throw new BadRequestException(`Field "${name}" cannot start with "$".`);
+  return v;
+}
+
+function toValidDate(name: string, v: unknown): Date {
+  const d = v instanceof Date ? v : new Date(String(v));
+  if (Number.isNaN(d.getTime())) throw new BadRequestException(`Field "${name}" must be a valid date.`);
+  return d;
+}
+
+// defensively reject any nested $-operators if you ever accept objects
+function rejectMongoOperators(obj: Record<string, unknown>) {
+  for (const k of Object.keys(obj)) {
+    if (k.startsWith('$')) throw new BadRequestException(`Illegal field: ${k}`);
+    const val = obj[k];
+    if (val && typeof val === 'object' && !Array.isArray(val)) {
+      rejectMongoOperators(val as Record<string, unknown>);
+    }
+  }
+}
 
 @Injectable()
 export class CalendarTokenService {
@@ -83,13 +109,19 @@ export class CalendarTokenService {
         );
       const newExpiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
 
-      await this.calendarTokenModel.findByIdAndUpdate(token._id, {
-        accessToken: refreshed.accessToken,
-        expiresAt: newExpiresAt,
-        tokenType: refreshed.tokenType ?? token.tokenType,
-        scope: refreshed.scope ?? token.scope,
-        updatedAt: new Date(),
-      });
+      await this.calendarTokenModel.findByIdAndUpdate(
+        token._id,
+        {
+          $set: {
+            accessToken: refreshed.accessToken,
+            expiresAt: newExpiresAt,
+            tokenType: refreshed.tokenType ?? token.tokenType,
+            scope: refreshed.scope ?? token.scope,
+            updatedAt: new Date(),
+          },
+        },
+        { new: false, runValidators: true, overwrite: false },
+      );
 
       return {
         accessToken: refreshed.accessToken,
@@ -111,47 +143,59 @@ export class CalendarTokenService {
   async createOrUpdateToken(
     createDto: CreateCalendarTokenDto,
   ): Promise<CalendarToken> {
-    const { userId } = createDto;
+    // (A) Optional deep guard (handles future DTO changes)
+    rejectMongoOperators(createDto as unknown as Record<string, unknown>);
+
+    // (B) Re-validate & normalize each field (whitelist only)
+    const userIdStr = assertString('userId', createDto.userId);
+    const accessToken = assertString('accessToken', createDto.accessToken);
+    const refreshToken = assertString('refreshToken', createDto.refreshToken);
+    const tokenType = assertString('tokenType', createDto.tokenType);
+    const scope = assertString('scope', createDto.scope);
+    const calendarId = assertString('calendarId', (createDto as any).calendarId);
+    const expiresAt = toValidDate('expiresAt', createDto.expiresAt);
 
     // Find existing token
     const existingToken = await this.calendarTokenModel.findOne({
-      userId: new Types.ObjectId(userId),
+      userId: new Types.ObjectId(userIdStr),
       isActive: true,
     });
 
     if (existingToken) {
-      // Update existing token
+      // Update existing token with $set and validators
       const updatedToken = await this.calendarTokenModel.findByIdAndUpdate(
         existingToken._id,
         {
-          accessToken: createDto.accessToken,
-          refreshToken: createDto.refreshToken,
-          expiresAt: new Date(createDto.expiresAt),
-          tokenType: createDto.tokenType,
-          scope: createDto.scope,
-          calendarId: createDto.calendarId,
-          updatedAt: new Date(),
+          $set: {
+            accessToken,
+            refreshToken,
+            expiresAt,
+            tokenType,
+            scope,
+            calendarId,
+            updatedAt: new Date(),
+          },
         },
-        { new: true },
+        { new: true, runValidators: true, overwrite: false },
       );
       if (!updatedToken) {
         throw new Error('Failed to update token');
       }
       return updatedToken;
     } else {
-      // Create new token (avoid spreading class instance to preserve prototype)
+      // Create new token (keep whitelist & types)
       const newTokenPayload: Partial<CalendarToken> & {
         userId: Types.ObjectId;
         expiresAt: Date;
       } = {
-        userId: new Types.ObjectId(createDto.userId),
+        userId: new Types.ObjectId(userIdStr),
         provider: 'google',
-        accessToken: createDto.accessToken,
-        refreshToken: createDto.refreshToken,
-        expiresAt: new Date(createDto.expiresAt),
-        tokenType: createDto.tokenType,
-        scope: createDto.scope,
-        calendarId: (createDto as any).calendarId,
+        accessToken,
+        refreshToken,
+        expiresAt,
+        tokenType,
+        scope,
+        calendarId,
       };
       const newToken = new this.calendarTokenModel(newTokenPayload);
       return await newToken.save();
@@ -167,7 +211,7 @@ export class CalendarTokenService {
   ): Promise<CalendarToken | null> {
     return await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
-      provider,
+      provider: { $eq: provider },
       isActive: true,
     });
   }
@@ -179,12 +223,12 @@ export class CalendarTokenService {
     await this.calendarTokenModel.findOneAndUpdate(
       {
         userId: new Types.ObjectId(userId),
-        provider,
+        provider: { $eq: provider },
       },
       {
-        isActive: false,
-        updatedAt: new Date(),
+        $set: { isActive: false, updatedAt: new Date() },
       },
+      { runValidators: true, overwrite: false },
     );
   }
 
