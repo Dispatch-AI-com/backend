@@ -16,9 +16,9 @@ import { CalendarOAuthService } from './services/calendar-oauth.service';
 
 // Security helper functions to prevent NoSQL injection
 function assertString(name: string, v: unknown): string {
-  if (v == null) return v as any; // allow undefined/null if optional
+  if (v == null) throw new BadRequestException(`Field "${name}" is required.`);
   if (typeof v !== 'string') throw new BadRequestException(`Field "${name}" must be a string.`);
-  if (v.startsWith?.('$')) throw new BadRequestException(`Field "${name}" cannot start with "$".`);
+  if (v.startsWith('$')) throw new BadRequestException(`Field "${name}" cannot start with "$".`);
   return v;
 }
 
