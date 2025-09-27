@@ -179,8 +179,8 @@ describe('SettingController (integration)', () => {
 
       // Expect the profile to remain unchanged
       expect(res.body).toMatchObject(resetProfile);
+    });
   });
-});
 
   describe('DELETE /settings/user/:userId/all', () => {
     it('should delete all user settings', async () => {

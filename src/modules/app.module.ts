@@ -9,6 +9,7 @@ import { TwilioModule } from '@/lib/twilio/twilio.module';
 import { AuthModule } from '@/modules/auth/auth.module';
 import { AvailabilityModule } from '@/modules/availability/availability.module';
 import { BlogModule } from '@/modules/blog/blog.module';
+import { CalendarModule } from '@/modules/google-calendar/calendar.module';
 import { CalllogModule } from '@/modules/calllog/calllog.module';
 import { CompanyModule } from '@/modules/company/company.module';
 import { DatabaseModule } from '@/modules/database/database.module';
@@ -40,6 +41,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     PlanModule,
     LocationModule,
     CalllogModule,
+    CalendarModule,
     BlogModule,
     CompanyModule,
     TranscriptModule,

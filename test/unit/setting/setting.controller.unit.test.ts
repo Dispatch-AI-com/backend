@@ -155,7 +155,10 @@ describe('SettingController (Unit)', () => {
     it('should delete user settings by category', async () => {
       service.deleteUserSettingsByCategory.mockResolvedValue(undefined);
 
-      await controller.deleteUserSettingsByCategory('user-123', SettingCategory.USER_PROFILE);
+      await controller.deleteUserSettingsByCategory(
+        'user-123',
+        SettingCategory.USER_PROFILE,
+      );
 
       expect(service.deleteUserSettingsByCategory).toHaveBeenCalledWith(
         'user-123',
