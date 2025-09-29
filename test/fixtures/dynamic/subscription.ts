@@ -100,7 +100,7 @@ export function createMockSubscriptions(
   count: number,
   overrides: Partial<Subscription> = {},
 ): Subscription[] {
-  return Array.from({ length: count }, (_, index) => {
+  return Array.from({ length: count }, () => {
     return createMockSubscription({
       ...overrides,
       userId: overrides.userId || new Types.ObjectId(),

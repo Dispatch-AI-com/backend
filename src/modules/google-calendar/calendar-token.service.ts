@@ -17,14 +17,17 @@ import { CalendarOAuthService } from './services/calendar-oauth.service';
 // Security helper functions to prevent NoSQL injection
 function assertString(name: string, v: unknown): string {
   if (v == null) throw new BadRequestException(`Field "${name}" is required.`);
-  if (typeof v !== 'string') throw new BadRequestException(`Field "${name}" must be a string.`);
-  if (v.startsWith('$')) throw new BadRequestException(`Field "${name}" cannot start with "$".`);
+  if (typeof v !== 'string')
+    throw new BadRequestException(`Field "${name}" must be a string.`);
+  if (v.startsWith('$'))
+    throw new BadRequestException(`Field "${name}" cannot start with "$".`);
   return v;
 }
 
 function toValidDate(name: string, v: unknown): Date {
   const d = v instanceof Date ? v : new Date(String(v));
-  if (Number.isNaN(d.getTime())) throw new BadRequestException(`Field "${name}" must be a valid date.`);
+  if (Number.isNaN(d.getTime()))
+    throw new BadRequestException(`Field "${name}" must be a valid date.`);
   return d;
 }
 
@@ -152,7 +155,10 @@ export class CalendarTokenService {
     const refreshToken = assertString('refreshToken', createDto.refreshToken);
     const tokenType = assertString('tokenType', createDto.tokenType);
     const scope = assertString('scope', createDto.scope);
-    const calendarId = assertString('calendarId', (createDto as any).calendarId);
+    const calendarId = assertString(
+      'calendarId',
+      (createDto as any).calendarId,
+    );
     const expiresAt = toValidDate('expiresAt', createDto.expiresAt);
 
     // Find existing token

@@ -201,13 +201,6 @@ function generateFeatures(tier: PlanTier): {
   return features;
 }
 
-/**
- * Generate a random plan ID
- */
-function generatePlanId(): string {
-  return `plan_${randomString(12)}`;
-}
-
 // ============================================================================
 // Main Factory Functions
 // ============================================================================
