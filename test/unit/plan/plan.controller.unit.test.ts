@@ -7,12 +7,7 @@ import {
   createMockPlanDto,
   createMockUpdatePlanDto,
 } from '../../fixtures/dynamic/plan';
-import {
-  staticBasicPlan,
-  staticInactivePlan,
-  staticPlan,
-  staticProPlan,
-} from '../../fixtures/static/plan';
+import { staticPlan } from '../../fixtures/static/plan';
 
 // ============================================================================
 // Plan Controller Unit Tests - Testing individual methods with mocked dependencies

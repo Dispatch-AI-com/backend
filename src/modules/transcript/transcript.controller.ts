@@ -78,10 +78,7 @@ export class TranscriptController {
     @Body() updateTranscriptDto: UpdateTranscriptDto,
   ): Promise<ITranscript> {
     const transcript = await this.transcriptService.findByCallLogId(calllogId);
-    return this.transcriptService.update(
-      transcript._id.toString(),
-      updateTranscriptDto,
-    );
+    return this.transcriptService.update(transcript._id, updateTranscriptDto);
   }
 
   @Delete()
@@ -95,6 +92,6 @@ export class TranscriptController {
     @Param('calllogId') calllogId: string,
   ): Promise<ITranscript> {
     const transcript = await this.transcriptService.findByCallLogId(calllogId);
-    return this.transcriptService.delete(transcript._id.toString());
+    return this.transcriptService.delete(transcript._id);
   }
 }

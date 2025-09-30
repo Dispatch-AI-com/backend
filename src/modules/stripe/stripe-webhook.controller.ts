@@ -64,7 +64,7 @@ export class StripeWebhookController {
     try {
       await this.processStripeEvent(event);
     } catch (err) {
-      this.logger.error(`❌ Failed to process event: ${String(event.id)}`, err);
+      this.logger.error(`❌ Failed to process event: ${event.id}`, err);
     }
   }
 

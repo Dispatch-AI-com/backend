@@ -219,9 +219,7 @@ export class CalllogService {
       try {
         const transcript = await this.transcriptService.findByCallLogId(id);
         // Delete chunks first
-        await this.transcriptChunkService.deleteByTranscriptId(
-          transcript._id.toString(),
-        );
+        await this.transcriptChunkService.deleteByTranscriptId(transcript._id);
         // Then delete transcript
         await this.transcriptService.deleteByCallLogId(id);
       } catch (error) {
