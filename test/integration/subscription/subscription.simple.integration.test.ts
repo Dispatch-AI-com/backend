@@ -94,14 +94,16 @@ describe('SubscriptionController (Simple Integration)', () => {
   }, 30000);
 
   it('should create a new subscription with valid data', async () => {
-    // Create test user
+    // Create test user using the helper method
     const testUser = {
       _id: testUserId,
       email: 'test@example.com',
-      name: 'Test User',
-      status: 'active',
+      firstName: 'Test',
+      lastName: 'User',
+      fullPhoneNumber: '+61123456789',
+      position: 'Manager',
     };
-    await dbHelper.userModelAccessor.create(testUser);
+    await dbHelper.createUser(testUser);
 
     // Create test plan
     const testPlan = createBasicPlan();
@@ -134,14 +136,16 @@ describe('SubscriptionController (Simple Integration)', () => {
   }, 20000);
 
   it('should fail to create subscription with invalid data', async () => {
-    // Create test user first
+    // Create test user using the helper method
     const testUser = {
       _id: testUserId,
       email: 'test@example.com',
-      name: 'Test User',
-      status: 'active',
+      firstName: 'Test',
+      lastName: 'User',
+      fullPhoneNumber: '+61123456789',
+      position: 'Manager',
     };
-    await dbHelper.userModelAccessor.create(testUser);
+    await dbHelper.createUser(testUser);
 
     const invalidSubscription = { userId: testUserId }; // Missing planId
     const response = await request(app.getHttpServer())

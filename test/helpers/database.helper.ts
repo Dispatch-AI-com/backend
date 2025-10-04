@@ -128,7 +128,17 @@ export class DatabaseTestHelper {
   }
 
   async createUser(user: any): Promise<any> {
-    return await this.userModel.create(user);
+    const userWithDefaults = {
+      address: {
+        unitAptPOBox: '',
+        streetAddress: 'Default Test Street',
+        suburb: 'Default Test Suburb',
+        state: 'NSW',
+        postcode: '2000',
+      },
+      ...user, // Allow override if provided
+    };
+    return await this.userModel.create(userWithDefaults);
   }
 
   async countServiceBookings(filter: any = {}): Promise<number> {
