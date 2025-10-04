@@ -266,9 +266,8 @@ export class CallDataPersistenceService {
     try {
       const serviceBooking =
         await this.serviceBookingService.create(serviceBookingData);
-      const serviceBookingId = String(
-        (serviceBooking as unknown as { _id: string })._id,
-      );
+      const serviceBookingId = (serviceBooking as unknown as { _id: string })
+        ._id;
 
       winstonLogger.log(
         `[CallDataPersistenceService][createServiceBookingRecord] Service booking created successfully for ${callSid}, booking ID: ${serviceBookingId}`,

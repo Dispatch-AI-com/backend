@@ -12,6 +12,7 @@ import { BlogModule } from '@/modules/blog/blog.module';
 import { CalllogModule } from '@/modules/calllog/calllog.module';
 import { CompanyModule } from '@/modules/company/company.module';
 import { DatabaseModule } from '@/modules/database/database.module';
+import { CalendarModule } from '@/modules/google-calendar/calendar.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
@@ -40,6 +41,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     PlanModule,
     LocationModule,
     CalllogModule,
+    CalendarModule,
     BlogModule,
     CompanyModule,
     TranscriptModule,

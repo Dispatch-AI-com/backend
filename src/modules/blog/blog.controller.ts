@@ -59,7 +59,7 @@ export class BlogController {
   })
   async getHighlightBlogs(@Query('limit') limit = 3): Promise<Blog[]> {
     // Ensure limit is numeric
-    const numericLimit = Number(limit) || 3;
+    const numericLimit = typeof limit === 'string' ? Number(limit) || 3 : limit;
     return this.blogService.getHighlightBlogs(numericLimit);
   }
 

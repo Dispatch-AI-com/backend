@@ -13,6 +13,9 @@ export class Company {
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user!: User;
+  @Prop()
+  calendar_access_token?: string;
+  
   _id!: Types.ObjectId;
 }
 

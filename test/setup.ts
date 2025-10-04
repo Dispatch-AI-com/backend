@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+// If running tests with in-memory MongoDB, ensure devDependency 'mongodb-memory-server' is installed
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { resolve } from 'path';
@@ -139,7 +140,7 @@ beforeAll(async () => {
 
   // Connect to test database
   try {
-    const mongoUri = process.env.MONGODB_URI;
+    const mongoUri = process.env.MONGODB_URI ?? '';
     await mongoose.connect(mongoUri, {
       // Add connection options for better reliability in CI
       maxPoolSize: 5,
