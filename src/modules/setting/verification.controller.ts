@@ -34,7 +34,7 @@ export class VerificationController {
   @ApiNotFoundResponse({ description: 'User not found' })
   async getVerification(
     @Param('userId') userId: string,
-    @VerifyUserIdParam('userId') _verified: void,
+    @VerifyUserIdParam('userId') _verified?: unknown,
   ): Promise<Verification | null> {
     return this.verificationService.getVerification(userId);
   }
@@ -48,7 +48,7 @@ export class VerificationController {
   async updateVerification(
     @Param('userId') userId: string,
     @Body() updateData: UpdateVerificationDto,
-    @VerifyUserIdParam('userId') _verified: void,
+    @VerifyUserIdParam('userId') _verified?: unknown,
   ): Promise<Verification> {
     return this.verificationService.updateVerification(userId, updateData);
   }
@@ -62,7 +62,7 @@ export class VerificationController {
   async verifyMobile(
     @Param('userId') userId: string,
     @Body() { mobile }: { mobile: string },
-    @VerifyUserIdParam('userId') _verified: void,
+    @VerifyUserIdParam('userId') _verified?: unknown,
   ): Promise<Verification> {
     return this.verificationService.verifyMobile(userId, mobile);
   }
@@ -76,7 +76,7 @@ export class VerificationController {
   async sendEmailVerification(
     @Param('userId') userId: string,
     @Body() { email }: { email: string },
-    @VerifyUserIdParam('userId') _verified: void,
+    @VerifyUserIdParam('userId') _verified?: unknown,
   ): Promise<{ success: boolean; message?: string }> {
     return this.verificationService.sendEmailVerification(userId, email);
   }
@@ -90,7 +90,7 @@ export class VerificationController {
   async verifyEmail(
     @Param('userId') userId: string,
     @Body() { email, code }: { email: string; code: string },
-    @VerifyUserIdParam('userId') _verified: void,
+    @VerifyUserIdParam('userId') _verified?: unknown,
   ): Promise<Verification> {
     return this.verificationService.verifyEmail(userId, email, code);
   }
@@ -104,7 +104,7 @@ export class VerificationController {
   async sendSmsVerification(
     @Param('userId') userId: string,
     @Body() { mobile }: { mobile: string },
-    @VerifyUserIdParam('userId') _verified: void,
+    @VerifyUserIdParam('userId') _verified?: unknown,
   ): Promise<{ success: boolean; message?: string }> {
     return this.verificationService.sendSmsVerification(userId, mobile);
   }
@@ -118,7 +118,7 @@ export class VerificationController {
   async verifySms(
     @Param('userId') userId: string,
     @Body() { mobile, code }: { mobile: string; code: string },
-    @VerifyUserIdParam('userId') _verified: void,
+    @VerifyUserIdParam('userId') _verified?: unknown,
   ): Promise<Verification> {
     return this.verificationService.verifySms(userId, mobile, code);
   }
