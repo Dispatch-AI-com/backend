@@ -73,8 +73,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         email: user.email,
         role: user.role,
         status: user.status,
-        emailVerified: user.emailVerified,
-        phoneVerified: user.phoneVerified,
       });
 
       const csrfToken = generateCSRFToken();
