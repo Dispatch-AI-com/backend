@@ -49,7 +49,7 @@ describe('TranscriptController (Unit)', () => {
       const expectedResult = {
         ...staticTranscript,
         ...createTranscriptDto,
-        _id: staticTranscript._id.toString(),
+        _id: staticTranscript._id,
       } as any;
 
       service.findCallLogById.mockResolvedValue(mockCallLog as any);
@@ -93,7 +93,7 @@ describe('TranscriptController (Unit)', () => {
       const expectedResult = {
         ...staticTranscript,
         ...updateTranscriptDto,
-        _id: staticTranscript._id.toString(),
+        _id: staticTranscript._id,
       };
 
       service.findByCallLogId.mockResolvedValue(mockTranscript as any);
@@ -106,7 +106,7 @@ describe('TranscriptController (Unit)', () => {
 
       expect(service.findByCallLogId).toHaveBeenCalledWith(calllogId);
       expect(service.update).toHaveBeenCalledWith(
-        mockTranscript._id.toString(),
+        mockTranscript._id,
         updateTranscriptDto,
       );
       expect(result).toEqual(expectedResult);
@@ -123,7 +123,7 @@ describe('TranscriptController (Unit)', () => {
       };
       const expectedResult = {
         ...staticTranscript,
-        _id: staticTranscript._id.toString(),
+        _id: staticTranscript._id,
       };
 
       service.findByCallLogId.mockResolvedValue(mockTranscript as any);
@@ -132,9 +132,7 @@ describe('TranscriptController (Unit)', () => {
       const result = await controller.deleteByCalllogId(calllogId);
 
       expect(service.findByCallLogId).toHaveBeenCalledWith(calllogId);
-      expect(service.delete).toHaveBeenCalledWith(
-        mockTranscript._id.toString(),
-      );
+      expect(service.delete).toHaveBeenCalledWith(mockTranscript._id);
       expect(result).toEqual(expectedResult);
     });
   });

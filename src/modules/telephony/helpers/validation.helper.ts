@@ -64,12 +64,12 @@ export const ValidationHelper = {
    * Validate AI response data
    */
   isValidAIResponse(response: unknown): boolean {
-    return Boolean(
+    return (
       response != null &&
-        typeof response === 'object' &&
-        'message' in response &&
-        typeof response.message === 'string' &&
-        response.message.trim().length > 0,
+      typeof response === 'object' &&
+      'message' in response &&
+      typeof response.message === 'string' &&
+      response.message.trim().length > 0
     );
   },
 
