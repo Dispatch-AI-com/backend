@@ -72,9 +72,9 @@ export class User extends Document {
       state: { type: String, required: true },
       postcode: { type: String, required: true },
     },
-    required: true,
+    required: false,
   })
-  address!: {
+  address?: {
     unitAptPOBox?: string;
     streetAddress: string;
     suburb: string;
