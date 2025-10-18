@@ -128,7 +128,17 @@ export class DatabaseTestHelper {
   }
 
   async createUser(user: any): Promise<any> {
-    return await this.userModel.create(user);
+    const userWithDefaults = {
+      address: {
+        unitAptPOBox: '',
+        streetAddress: 'Default Test Street',
+        suburb: 'Default Test Suburb',
+        state: 'NSW',
+        postcode: '2000',
+      },
+      ...user, // Allow override if provided
+    };
+    return await this.userModel.create(userWithDefaults);
   }
 
   async countServiceBookings(filter: any = {}): Promise<number> {
@@ -147,7 +157,7 @@ export class DatabaseTestHelper {
       Date.now().toString() + Math.floor(Math.random() * 1000).toString()
     ).slice(0, 11);
 
-    const address = (company.address as any) || {};
+    const address = (company as any).address || {};
 
     const companyObj: any = {
       businessName: company.businessName || 'Test Business',
@@ -164,13 +174,6 @@ export class DatabaseTestHelper {
           ? new Types.ObjectId(company.user)
           : company.user || new Types.ObjectId(),
     };
-
-    if (
-      company.twilioPhoneNumber !== undefined &&
-      company.twilioPhoneNumber !== null
-    ) {
-      companyObj.twilioPhoneNumber = company.twilioPhoneNumber;
-    }
 
     return await this.companyModel.create(companyObj);
   }
