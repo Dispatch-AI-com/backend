@@ -17,6 +17,26 @@ import { AwsSesEmailVerificationService } from './aws-ses-email-verification.ser
 import { AwsSnsSmsVerificationService } from './aws-sns-sms-verification.service';
 import { VerificationCodeService } from './verification-code.service';
 
+
+// Only allow primitive values for listed keys, ignore all others
+function sanitizeVerificationUpdate(input: any): Partial<UpdateVerificationDto> {
+  const allowedKeys = ['type', 'mobile', 'email', 'mobileVerified', 'emailVerified', 'marketingPromotions'];
+  const output: any = {};
+  for (const key of allowedKeys) {
+    if (Object.prototype.hasOwnProperty.call(input, key)) {
+      const value = input[key];
+      // Only allow primitive values (string, boolean, number, null/undefined)
+      if (value === null || value === undefined ||
+          typeof value === 'string' ||
+          typeof value === 'boolean' ||
+          typeof value === 'number') {
+        output[key] = value;
+      }
+    }
+  }
+  return output;
+}
+
 @Injectable()
 export class VerificationService {
   constructor(
@@ -64,8 +84,11 @@ export class VerificationService {
       );
     }
 
+    // Sanitize updateData to allow only expected fields, preventing operator injection
+    const safeUpdate = sanitizeVerificationUpdate(updateData);
+
     const verification = await this.verificationModel
-      .findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateData, {
+      .findOneAndUpdate({ userId: new Types.ObjectId(userId) }, safeUpdate, {
         new: true,
         upsert: true,
       })
