@@ -141,6 +141,18 @@ export class DatabaseTestHelper {
     return await this.userModel.create(userWithDefaults);
   }
 
+  async getAllUsers(): Promise<any[]> {
+    return await this.userModel.find({});
+  }
+
+  async updateUserAddress(userId: string, address: any): Promise<any> {
+    return await this.userModel.findByIdAndUpdate(
+      userId,
+      { address },
+      { new: true },
+    );
+  }
+
   async countServiceBookings(filter: any = {}): Promise<number> {
     return await this.serviceBookingModel.countDocuments(filter);
   }

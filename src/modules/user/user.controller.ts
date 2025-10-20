@@ -12,6 +12,9 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
+import { AllowSelfOrAdmin } from '@/common/decorators/ownership.decorator';
+import { OwnershipGuard } from '@/common/guards/ownership.guard';
+
 import { AddressDto } from './dto/address.dto';
 import { GreetingDto } from './dto/greeting.dto';
 import { UpdateUserDto } from './dto/UpdateUser.dto';
@@ -20,7 +23,7 @@ import { UserService } from './user.service';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'), OwnershipGuard)
 export class UserController {
   constructor(private readonly users: UserService) {}
 
@@ -41,9 +44,14 @@ export class UserController {
   }
 
   @Patch(':id')
+  @AllowSelfOrAdmin()
   @ApiOperation({ summary: 'Patch a user by ID' })
   @ApiResponse({ status: 200, description: 'User updated', type: User })
   @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not owner or admin',
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
   async patch(
     @Param('id') id: string,
@@ -105,8 +113,13 @@ export class UserController {
   }
 
   @Delete(':id')
+  @AllowSelfOrAdmin()
   @ApiOperation({ summary: 'Delete a user by ID' })
   @ApiResponse({ status: 204, description: 'Deleted successfully' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Not owner or admin',
+  })
   @HttpCode(204)
   async delete(@Param('id') id: string): Promise<User> {
     return this.users.delete(id);
