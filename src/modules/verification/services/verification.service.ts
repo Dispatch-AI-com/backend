@@ -9,21 +9,13 @@ import { Model, Types } from 'mongoose';
 import {
   Verification,
   VerificationDocument,
-} from '@/modules/setting/schema/verification.schema';
+} from '../schemas/verification.schema';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
 
-import { AwsSesEmailVerificationService } from './services/aws-ses-email-verification.service';
-import { AwsSnsSmsVerificationService } from './services/aws-sns-sms-verification.service';
-import { VerificationCodeService } from './services/verification-code.service';
-
-export interface UpdateVerificationDto {
-  type: 'SMS' | 'Email' | 'Both';
-  mobile?: string;
-  email?: string;
-  marketingPromotions?: boolean;
-  mobileVerified?: boolean;
-  emailVerified?: boolean;
-}
+import { AwsSesEmailVerificationService } from './aws-ses-email-verification.service';
+import { AwsSnsSmsVerificationService } from './aws-sns-sms-verification.service';
+import { VerificationCodeService } from './verification-code.service';
+import { UpdateVerificationDto } from '../dto/verification.dto';
 
 @Injectable()
 export class VerificationService {

@@ -5,7 +5,7 @@ import { Model, Types } from 'mongoose';
 import {
   VerificationCode,
   VerificationCodeDocument,
-} from '../schema/verification-code.schema';
+} from '../schemas/verification-code.schema';
 
 @Injectable()
 export class VerificationCodeService {
@@ -18,25 +18,25 @@ export class VerificationCodeService {
 
   async createVerificationCode(
     userId: string,
-    email: string,
+    contact: string,
     code: string,
     type: 'email' | 'phone' = 'email',
   ): Promise<VerificationCode> {
     this.logger.log(
-      `Creating verification code for user ${userId}, email ${email}, code ${code}`,
+      `Creating verification code for user ${userId}, contact ${contact}, code ${code}`,
     );
 
-    // Remove any existing codes for this user and email/phone
+    // Remove any existing codes for this user and contact
     await this.verificationCodeModel.deleteMany({
       userId: new Types.ObjectId(userId),
-      contact: { $eq: email },
+      contact: { $eq: contact },
       type: { $eq: type },
     });
 
     // Create new verification code
     const verificationCode = new this.verificationCodeModel({
       userId: new Types.ObjectId(userId),
-      contact: email,
+      contact,
       code,
       type,
       expiresAt: new Date(Date.now() + 30 * 60 * 1000), // 30 minutes

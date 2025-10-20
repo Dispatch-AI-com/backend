@@ -9,7 +9,7 @@ import {
 import {
   Verification,
   VerificationDocument,
-} from '@/modules/setting/schema/verification.schema';
+} from '@/modules/verification/schemas/verification.schema';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
 
 import { CreateSettingDto } from './dto/create-setting.dto';

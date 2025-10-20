@@ -27,6 +27,7 @@ import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
 import { UserModule } from '@/modules/user/user.module';
+import { VerificationModule } from '@/modules/verification/verification.module';
 
 import { OnboardingModule } from './onboarding/onboarding.module';
 
@@ -60,6 +61,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     UserModule,
     OnboardingModule,
     SettingModule,
+    VerificationModule,
   ],
   providers: [
     {

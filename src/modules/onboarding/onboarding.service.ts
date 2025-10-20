@@ -12,7 +12,8 @@ import { Model, UpdateQuery } from 'mongoose';
 
 import { CompanyService } from '../company/company.service';
 import { CreateCompanyDto } from '../company/dto/create-company.dto';
-import { VerificationService } from '../setting/verification.service';
+import { VerificationService } from '../verification/services/verification.service';
+import { VerificationType } from '../verification/dto/verification.dto';
 import { UserService } from '../user/user.service';
 import {
   OnboardingAnswers,
@@ -188,7 +189,7 @@ export class OnboardingService {
     // Create verification record for the user
     try {
       await this.verificationService.updateVerification(userId, {
-        type: 'Both',
+        type: VerificationType.BOTH,
         email: user.email,
         mobile: user.fullPhoneNumber || '',
         emailVerified: false,

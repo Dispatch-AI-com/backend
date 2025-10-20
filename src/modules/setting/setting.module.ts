@@ -8,18 +8,9 @@ import {
 import { User, userSchema } from '@/modules/user/schema/user.schema';
 
 import { Setting, settingSchema } from './schema/setting.schema';
-import { Verification, VerificationSchema } from './schema/verification.schema';
-import {
-  VerificationCode,
-  VerificationCodeSchema,
-} from './schema/verification-code.schema';
-import { AwsSesEmailVerificationService } from './services/aws-ses-email-verification.service';
-import { AwsSnsSmsVerificationService } from './services/aws-sns-sms-verification.service';
-import { VerificationCodeService } from './services/verification-code.service';
 import { SettingController } from './setting.controller';
 import { SettingService } from './setting.service';
-import { VerificationController } from './verification.controller';
-import { VerificationService } from './verification.service';
+import { VerificationModule } from '../verification/verification.module';
 
 @Module({
   imports: [
@@ -27,18 +18,11 @@ import { VerificationService } from './verification.service';
       { name: Setting.name, schema: settingSchema },
       { name: User.name, schema: userSchema },
       { name: Company.name, schema: CompanySchema },
-      { name: Verification.name, schema: VerificationSchema },
-      { name: VerificationCode.name, schema: VerificationCodeSchema },
     ]),
+    VerificationModule,
   ],
-  controllers: [SettingController, VerificationController],
-  providers: [
-    SettingService,
-    VerificationService,
-    AwsSesEmailVerificationService,
-    VerificationCodeService,
-    AwsSnsSmsVerificationService,
-  ],
-  exports: [SettingService, VerificationService, MongooseModule],
+  controllers: [SettingController],
+  providers: [SettingService],
+  exports: [SettingService, MongooseModule],
 })
 export class SettingModule {}
