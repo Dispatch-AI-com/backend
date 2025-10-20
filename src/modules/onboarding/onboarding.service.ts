@@ -208,14 +208,17 @@ export class OnboardingService {
 
     // Create verification record for the user
     try {
-      await this.verificationService.updateVerification(userId, {
-        type: VerificationType.BOTH,
-        email: user.email,
-        mobile: user.fullPhoneNumber || '',
-        emailVerified: false,
-        mobileVerified: false,
-        marketingPromotions: false,
-      });
+      const user = await this.userService.findOne(userId);
+      if (user) {
+        await this.verificationService.updateVerification(userId, {
+          type: VerificationType.BOTH,
+          email: user.email,
+          mobile: user.fullPhoneNumber || '',
+          emailVerified: false,
+          mobileVerified: false,
+          marketingPromotions: false,
+        });
+      }
     } catch (error) {
       // Log error but don't fail onboarding completion
       this.logger.error('Failed to create verification record:', error);
