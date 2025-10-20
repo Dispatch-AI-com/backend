@@ -1,14 +1,21 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 
+import { User, userSchema } from '@/modules/user/schema/user.schema';
+
 import { VerificationController } from './controllers/verification.controller';
-import { VerificationService } from './services/verification.service';
-import { VerificationCodeService } from './services/verification-code.service';
+import {
+  Verification,
+  VerificationSchema,
+} from './schemas/verification.schema';
+import {
+  VerificationCode,
+  VerificationCodeSchema,
+} from './schemas/verification-code.schema';
 import { AwsSesEmailVerificationService } from './services/aws-ses-email-verification.service';
 import { AwsSnsSmsVerificationService } from './services/aws-sns-sms-verification.service';
-import { Verification, VerificationSchema } from './schemas/verification.schema';
-import { VerificationCode, VerificationCodeSchema } from './schemas/verification-code.schema';
-import { User, userSchema } from '@/modules/user/schema/user.schema';
+import { VerificationService } from './services/verification.service';
+import { VerificationCodeService } from './services/verification-code.service';
 
 @Module({
   imports: [

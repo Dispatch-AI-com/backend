@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import {
   ApiBadRequestResponse,
@@ -12,14 +20,14 @@ import {
 import { VerifyUserIdParam } from '@/common/decorators/verify-user-access.decorator';
 
 import {
-  UpdateVerificationDto,
   SendEmailVerificationDto,
-  VerifyEmailDto,
   SendSmsVerificationDto,
+  UpdateVerificationDto,
+  VerifyEmailDto,
   VerifySmsDto,
 } from '../dto/verification.dto';
-import { VerificationService } from '../services/verification.service';
 import { Verification } from '../schemas/verification.schema';
+import { VerificationService } from '../services/verification.service';
 
 @ApiTags('verification')
 @Controller('verification')

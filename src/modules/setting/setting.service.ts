@@ -6,11 +6,11 @@ import {
   Company,
   CompanyDocument,
 } from '@/modules/company/schema/company.schema';
+import { User, UserDocument } from '@/modules/user/schema/user.schema';
 import {
   Verification,
   VerificationDocument,
 } from '@/modules/verification/schemas/verification.schema';
-import { User, UserDocument } from '@/modules/user/schema/user.schema';
 
 import { CreateSettingDto } from './dto/create-setting.dto';
 import {

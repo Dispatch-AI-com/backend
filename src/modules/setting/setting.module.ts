@@ -7,10 +7,10 @@ import {
 } from '@/modules/company/schema/company.schema';
 import { User, userSchema } from '@/modules/user/schema/user.schema';
 
+import { VerificationModule } from '../verification/verification.module';
 import { Setting, settingSchema } from './schema/setting.schema';
 import { SettingController } from './setting.controller';
 import { SettingService } from './setting.service';
-import { VerificationModule } from '../verification/verification.module';
 
 @Module({
   imports: [

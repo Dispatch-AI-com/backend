@@ -6,16 +6,16 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
+import { User, UserDocument } from '@/modules/user/schema/user.schema';
+
+import { UpdateVerificationDto } from '../dto/verification.dto';
 import {
   Verification,
   VerificationDocument,
 } from '../schemas/verification.schema';
-import { User, UserDocument } from '@/modules/user/schema/user.schema';
-
 import { AwsSesEmailVerificationService } from './aws-ses-email-verification.service';
 import { AwsSnsSmsVerificationService } from './aws-sns-sms-verification.service';
 import { VerificationCodeService } from './verification-code.service';
-import { UpdateVerificationDto } from '../dto/verification.dto';
 
 @Injectable()
 export class VerificationService {
@@ -65,11 +65,10 @@ export class VerificationService {
     }
 
     const verification = await this.verificationModel
-      .findOneAndUpdate(
-        { userId: new Types.ObjectId(userId) },
-        { ...updateData },
-        { new: true, upsert: true },
-      )
+      .findOneAndUpdate({ userId: new Types.ObjectId(userId) }, updateData, {
+        new: true,
+        upsert: true,
+      })
       .exec();
 
     return verification;

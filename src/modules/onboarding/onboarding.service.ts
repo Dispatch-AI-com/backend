@@ -7,11 +7,9 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, UpdateQuery } from 'mongoose';
 
-import { CompanyService } from '../company/company.service';
-import { CreateCompanyDto } from '../company/dto/create-company.dto';
-import { VerificationService } from '../verification/services/verification.service';
-import { VerificationType } from '../verification/dto/verification.dto';
 import { UserService } from '../user/user.service';
+import { VerificationType } from '../verification/dto/verification.dto';
+import { VerificationService } from '../verification/services/verification.service';
 import {
   OnboardingAnswers,
   OnboardingSession,
@@ -209,7 +207,7 @@ export class OnboardingService {
     // Create verification record for the user
     try {
       const user = await this.userService.findOne(userId);
-      if (user) {
+      if (user !== null && user !== undefined) {
         await this.verificationService.updateVerification(userId, {
           type: VerificationType.BOTH,
           email: user.email,

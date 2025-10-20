@@ -72,7 +72,10 @@ export class HealthController {
       type: 'object',
       properties: {
         status: { type: 'string', example: 'ok' },
-        replyText: { type: 'string', example: 'Hello! I am an AI assistant...' },
+        replyText: {
+          type: 'string',
+          example: 'Hello! I am an AI assistant...',
+        },
         timestamp: { type: 'string', format: 'date-time' },
         duration: { type: 'number', example: 2155 },
         error: { type: 'string', nullable: true },
