@@ -292,3 +292,4 @@ curl http://localhost:4000/api/health
 ## Swagger
 
 Enter http://localhost:4000/api/docs to view the swagger documentation
+
