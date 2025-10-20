@@ -58,7 +58,7 @@ export class VerificationService {
     // If mobile number is being updated, also update User model
     if (updateData.mobile !== undefined) {
       await this.userModel.findByIdAndUpdate(
-        userId,
+        { _id: { $eq: new Types.ObjectId(userId) } },
         { fullPhoneNumber: updateData.mobile },
         { new: true },
       );
