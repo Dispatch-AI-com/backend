@@ -16,52 +16,14 @@ export class Company {
   @Prop({ required: true })
   businessName!: string;
 
-  @Prop({
-    type: {
-      unitAptPOBox: { type: String },
-      streetAddress: { type: String, required: true },
-      suburb: { type: String, required: true },
-      state: { type: String, required: true },
-      postcode: { type: String, required: true },
-    },
-    required: true,
-  })
-  address!: {
-    unitAptPOBox?: string;
-    streetAddress: string;
-    suburb: string;
-    state: string;
-    postcode: string;
-  };
-
   @Prop({ required: true, unique: true })
   abn!: string;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user!: User;
-
-  @Prop({ unique: true })
-  twilioPhoneNumber?: string;
-
   @Prop()
   calendar_access_token?: string;
-
-  @Prop({
-    type: {
-      message: {
-        type: String,
-      },
-      isCustom: { type: Boolean, default: false },
-    },
-    default: () => ({
-      message: DEFAULT_GREETING_MESSAGE,
-      isCustom: false,
-    }),
-  })
-  greeting!: {
-    message: string;
-    isCustom: boolean;
-  };
+  
   _id!: Types.ObjectId;
 }
 

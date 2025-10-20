@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsEmail,
   IsEnum,
@@ -7,18 +8,28 @@ import {
   IsString,
   Matches,
   MinLength,
+  ValidateNested,
 } from 'class-validator';
 
 import { EUserRole } from '@/common/constants/user.constant';
+import { AddressDto } from '@/modules/user/dto/address.dto';
 
 export class CreateUserDto {
   @ApiProperty({
-    description: 'User name',
-    example: 'John Doe',
+    description: 'User first name',
+    example: 'John',
   })
-  @IsNotEmpty({ message: 'Name cannot be empty' })
-  @IsString({ message: 'Name must be a string' })
-  name!: string;
+  @IsNotEmpty({ message: 'First name cannot be empty' })
+  @IsString({ message: 'First name must be a string' })
+  firstName!: string;
+
+  @ApiProperty({
+    description: 'User last name',
+    example: 'Doe',
+  })
+  @IsNotEmpty({ message: 'Last name cannot be empty' })
+  @IsString({ message: 'Last name must be a string' })
+  lastName!: string;
 
   @ApiProperty({
     description: 'User email',
@@ -65,4 +76,12 @@ export class CreateUserDto {
   @IsOptional()
   @IsString({ message: 'Position must be a string' })
   position?: string;
+
+  @ApiProperty({
+    description: 'User billing address',
+    type: AddressDto,
+  })
+  @ValidateNested()
+  @Type(() => AddressDto)
+  address!: AddressDto;
 }

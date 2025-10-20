@@ -35,10 +35,19 @@ export class AuthController {
     examples: {
       signupExample: {
         value: {
-          name: 'Test User',
+          firstName: 'Test',
+          lastName: 'User',
           email: 'test@example.com',
           password: 'Test123!',
           role: 'user',
+          position: 'Software Developer',
+          address: {
+            streetAddress: '123 Test Street',
+            suburb: 'Sydney',
+            state: 'NSW',
+            postcode: '2000',
+            unitAptPOBox: 'Unit 1',
+          },
         },
         summary: 'Registration Example',
       },
