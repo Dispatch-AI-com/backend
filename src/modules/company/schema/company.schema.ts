@@ -9,7 +9,7 @@ Your team is not available to take the call right now.
 
 I can take a message for you, or help you book an appointment with your team. What can I do for you today?
 
-你也可以和我说普通话。`;
+You can also speak to me in Mandarin Chinese.`;
 
 @Schema({ timestamps: true })
 export class Company {

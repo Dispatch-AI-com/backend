@@ -1,91 +1,91 @@
 # Verification Module
 
-这是一个独立的、可复用的邮箱和手机号验证模块，支持通过AWS SES发送邮件验证码和通过AWS SNS发送短信验证码。
+This is an independent, reusable email and phone number verification module that supports sending email verification codes via AWS SES and SMS verification codes via AWS SNS.
 
-## 模块结构
+## Module Structure
 
 ```
 verification/
 ├── controllers/
-│   └── verification.controller.ts    # 验证API控制器
+│   └── verification.controller.ts    # Verification API controller
 ├── services/
-│   ├── verification.service.ts       # 主要验证服务
-│   ├── verification-code.service.ts  # 验证码管理服务
-│   ├── aws-ses-email-verification.service.ts  # AWS SES邮件服务
-│   └── aws-sns-sms-verification.service.ts    # AWS SNS短信服务
+│   ├── verification.service.ts       # Main verification service
+│   ├── verification-code.service.ts  # Verification code management service
+│   ├── aws-ses-email-verification.service.ts  # AWS SES email service
+│   └── aws-sns-sms-verification.service.ts    # AWS SNS SMS service
 ├── schemas/
-│   ├── verification.schema.ts        # 验证状态数据模型
-│   └── verification-code.schema.ts   # 验证码数据模型
+│   ├── verification.schema.ts        # Verification status data model
+│   └── verification-code.schema.ts   # Verification code data model
 ├── dto/
-│   └── verification.dto.ts           # 数据传输对象
-├── verification.module.ts            # 模块定义
-└── README.md                         # 本文档
+│   └── verification.dto.ts           # Data transfer objects
+├── verification.module.ts            # Module definition
+└── README.md                         # This document
 ```
 
-## 功能特性
+## Features
 
-### 邮箱验证
-- 生成6位数字验证码
-- 通过AWS SES发送验证邮件
-- 支持HTML和纯文本邮件格式
-- 验证码30分钟有效期
-- 一次性使用（验证后自动删除）
+### Email Verification
+- Generate 6-digit verification codes
+- Send verification emails via AWS SES
+- Support HTML and plain text email formats
+- 30-minute verification code validity
+- One-time use (automatically deleted after verification)
 
-### 手机号验证
-- 生成6位数字验证码
-- 通过AWS SNS发送短信
-- 支持E.164格式电话号码
-- 验证码30分钟有效期
-- 一次性使用（验证后自动删除）
+### Phone Number Verification
+- Generate 6-digit verification codes
+- Send SMS via AWS SNS
+- Support E.164 format phone numbers
+- 30-minute verification code validity
+- One-time use (automatically deleted after verification)
 
-### 安全特性
-- JWT认证保护
-- 用户权限验证
-- 验证码自动过期清理
-- 防重放攻击
+### Security Features
+- JWT authentication protection
+- User permission verification
+- Automatic verification code expiration cleanup
+- Replay attack prevention
 
-## API端点
+## API Endpoints
 
-### 获取验证状态
+### Get Verification Status
 ```
 GET /api/verification/user/:userId
 ```
 
-### 更新验证设置
+### Update Verification Settings
 ```
 PUT /api/verification/user/:userId
 ```
 
-### 邮箱验证
+### Email Verification
 ```
-POST /api/verification/user/:userId/email/send    # 发送验证码
-POST /api/verification/user/:userId/email/verify  # 验证邮箱
-```
-
-### 手机号验证
-```
-POST /api/verification/user/:userId/mobile/send    # 发送验证码
-POST /api/verification/user/:userId/mobile/verify  # 验证手机号
+POST /api/verification/user/:userId/email/send    # Send verification code
+POST /api/verification/user/:userId/email/verify  # Verify email
 ```
 
-## 环境变量
+### Phone Number Verification
+```
+POST /api/verification/user/:userId/mobile/send    # Send verification code
+POST /api/verification/user/:userId/mobile/verify  # Verify phone number
+```
+
+## Environment Variables
 
 ```env
-# AWS配置
+# AWS Configuration
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_REGION=us-east-1
 
-# 邮件配置
+# Email Configuration
 SES_FROM=noreply@dispatchai.com
 
-# 应用配置
+# Application Configuration
 APP_NAME=DispatchAI
 ```
 
-## 使用示例
+## Usage Examples
 
-### 在其他模块中使用
+### Using in Other Modules
 
 ```typescript
 import { VerificationModule } from '@/modules/verification/verification.module';
@@ -97,7 +97,7 @@ import { VerificationModule } from '@/modules/verification/verification.module';
 export class YourModule {}
 ```
 
-### 注入服务
+### Injecting Services
 
 ```typescript
 import { VerificationService } from '@/modules/verification/services/verification.service';
@@ -114,36 +114,36 @@ export class YourService {
 }
 ```
 
-## Mock模式
+## Mock Mode
 
-当AWS凭证未配置时，模块会自动进入Mock模式：
-- 邮件验证：在控制台输出验证码
-- 短信验证：在控制台输出验证码
-- 不会实际发送邮件或短信
+When AWS credentials are not configured, the module automatically enters Mock mode:
+- Email verification: Output verification code to console
+- SMS verification: Output verification code to console
+- No actual emails or SMS will be sent
 
-## 数据模型
+## Data Models
 
 ### Verification
-- `userId`: 用户ID
-- `type`: 验证类型 (SMS/Email/Both)
-- `mobile`: 手机号
-- `email`: 邮箱
-- `mobileVerified`: 手机号是否已验证
-- `emailVerified`: 邮箱是否已验证
-- `marketingPromotions`: 是否同意营销推广
+- `userId`: User ID
+- `type`: Verification type (SMS/Email/Both)
+- `mobile`: Phone number
+- `email`: Email address
+- `mobileVerified`: Whether phone number is verified
+- `emailVerified`: Whether email is verified
+- `marketingPromotions`: Whether marketing promotions are accepted
 
 ### VerificationCode
-- `userId`: 用户ID
-- `contact`: 联系方式（邮箱或手机号）
-- `code`: 验证码
-- `type`: 验证类型 (email/phone)
-- `expiresAt`: 过期时间
+- `userId`: User ID
+- `contact`: Contact information (email or phone number)
+- `code`: Verification code
+- `type`: Verification type (email/phone)
+- `expiresAt`: Expiration time
 
-## 注意事项
+## Notes
 
-1. 验证码会自动过期（30分钟）
-2. 每个用户每种类型只能有一个有效验证码
-3. 验证成功后验证码会被自动删除
-4. 支持TTL索引自动清理过期验证码
-5. 所有API都需要JWT认证
-6. 用户只能操作自己的验证信息
+1. Verification codes automatically expire (30 minutes)
+2. Each user can only have one valid verification code per type
+3. Verification codes are automatically deleted after successful verification
+4. Supports TTL index for automatic cleanup of expired verification codes
+5. All APIs require JWT authentication
+6. Users can only operate their own verification information

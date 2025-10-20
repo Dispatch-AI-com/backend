@@ -107,7 +107,7 @@ export class TranscriptChunkService {
     }
 
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20; // 改为默认20个
+    const limit = query.limit ?? 20; // Changed to default 20 items
     const skip = (page - 1) * limit;
 
     // Get total count for pagination

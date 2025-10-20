@@ -308,13 +308,13 @@ export class SettingService {
       );
     }
 
-    // 先查找是否存在company记录
+    // First check if company record exists
     const existingCompany = await this.companyModel
       .findOne({ user: userId })
       .exec();
 
     if (!existingCompany) {
-      // 如果公司记录不存在，创建新的公司记录
+      // If company record doesn't exist, create a new company record
       const timestamp = Date.now().toString();
       const newCompany = new this.companyModel({
         user: userId,
@@ -333,7 +333,7 @@ export class SettingService {
       return await newCompany.save();
     }
 
-    // 更新existing company记录
+    // Update existing company record
     const updatedCompany = await this.companyModel.findOneAndUpdate(
       { user: userId },
       {
@@ -380,7 +380,7 @@ export class SettingService {
       return await newCompany.save();
     }
 
-    // 更新existing company记录的地址
+    // Update existing company record's address
     const updatedCompany = await this.companyModel.findOneAndUpdate(
       { user: userId },
       {

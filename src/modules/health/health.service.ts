@@ -100,7 +100,7 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
     try {
       const { data } = await firstValueFrom(
         this.http.post<{ replyText: string }>('/ai/chat', {
-          message: message || '你好，你是谁啊？',
+          message: message || 'Hello, who are you?',
           callSid,
         }),
       );
@@ -195,7 +195,7 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
       );
       const duration = Math.round(performance.now() - start);
       this.logger.verbose(
-        `✅ AI 心跳成功（/health/ping），返回: ${JSON.stringify(data)}, 耗时: ${String(duration)}ms`,
+        `✅ AI heartbeat successful (/health/ping), response: ${JSON.stringify(data)}, duration: ${String(duration)}ms`,
       );
     } catch (err) {
       const msg =
@@ -204,7 +204,7 @@ export class HealthService implements OnModuleInit, OnModuleDestroy {
           : typeof err === 'object' && err !== null
             ? JSON.stringify(err)
             : String(err);
-      this.logger.warn(`⚠️ AI 心跳失败：${msg}`);
+      this.logger.warn(`⚠️ AI heartbeat failed: ${msg}`);
     }
   }
 }
