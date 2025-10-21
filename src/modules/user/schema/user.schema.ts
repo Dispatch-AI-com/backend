@@ -63,13 +63,12 @@ export class User extends Document {
   })
   role!: EUserRole;
 
-<<<<<<< HEAD
   @Prop({ default: false })
   emailVerified!: boolean;
 
   @Prop({ default: false })
   phoneVerified!: boolean;
-=======
+
   // Add billing address
   @Prop({
     type: {
@@ -106,7 +105,6 @@ export class User extends Document {
     message: string;
     isCustom: boolean;
   };
->>>>>>> origin/main
 }
 
 export type UserDocument = User & Document;
