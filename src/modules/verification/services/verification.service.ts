@@ -88,7 +88,7 @@ export class VerificationService {
     }
 
     // Sanitize updateData to allow only expected fields, preventing operator injection
-    const safeUpdate = sanitizeVerificationUpdate(updateData);
+    const safeUpdate = sanitizeVerificationUpdate(updateData as unknown as Record<string, unknown>);
 
     const verification = await this.verificationModel
       .findOneAndUpdate({ userId: new Types.ObjectId(userId) }, safeUpdate, {
