@@ -60,15 +60,15 @@ export class VerificationService {
         return {
           userId: new Types.ObjectId(userId),
           type: 'Both',
-          mobile: user.fullPhoneNumber || '',
-          email: user.email || '',
+          mobile: user.fullPhoneNumber ?? '',
+          email: user.email ?? '',
           mobileVerified: false,
           emailVerified: false,
           marketingPromotions: false,
         } as Verification;
       }
     }
-    return verification;
+    return verification as Verification;
   }
 
   async updateVerification(

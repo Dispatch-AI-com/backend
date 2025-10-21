@@ -64,11 +64,11 @@ export class McpCalendarIntegrationService {
 
       return {
         accessToken,
-        calendarId: userToken?.calendarId || 'primary',
+        calendarId: userToken?.calendarId ?? 'primary',
         provider: 'google',
         eventData: {
           ...eventData,
-          timezone: eventData.timezone || 'Australia/Sydney', // default timezone
+          timezone: eventData.timezone ?? 'Australia/Sydney', // default timezone
         },
       };
     } catch (error) {
@@ -199,7 +199,7 @@ export class McpCalendarIntegrationService {
 
       // 3) Build email content
       const emailData = {
-        to: callData.customerEmail || 'customer@example.com',
+        to: callData.customerEmail ?? 'customer@example.com',
         subject: `Appointment Confirmation - ${callData.serviceType}`,
         body: `
 Dear ${callData.customerName},
@@ -237,7 +237,7 @@ Service: ${callData.serviceType}
       // 5) Build MCP API params
       const mcpParams = {
         accessToken,
-        calendarId: userToken?.calendarId || 'primary',
+        calendarId: userToken?.calendarId ?? 'primary',
         provider: 'google',
         calendarapp: 'google' as const,
       };
@@ -261,12 +261,18 @@ Service: ${callData.serviceType}
   /**
    * Call MCP AI backend to create calendar event and send email.
    */
-  async callMcpAiBackend(
+  callMcpAiBackend(
     userId: string,
-    mcpParams: any,
-    emailData: any,
-    calendarData: any,
-  ): Promise<any> {
+    mcpParams: Record<string, unknown>,
+    emailData: Record<string, unknown>,
+    calendarData: Record<string, unknown>,
+  ): Promise<{
+    success: boolean;
+    eventId: string;
+    emailSent: boolean;
+    message: string;
+    timestamp: string;
+  }> {
     try {
       // Build MCP API request payload
       const mcpRequest = {
@@ -295,7 +301,7 @@ Service: ${callData.serviceType}
       };
 
       this.logger.log(`MCP AI backend call succeeded:`, result);
-      return result;
+      return Promise.resolve(result);
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);

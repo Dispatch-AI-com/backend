@@ -32,7 +32,7 @@ function toValidDate(name: string, v: unknown): Date {
 }
 
 // defensively reject any nested $-operators if you ever accept objects
-function rejectMongoOperators(obj: Record<string, unknown>) {
+function rejectMongoOperators(obj: Record<string, unknown>): void {
   for (const k of Object.keys(obj)) {
     if (k.startsWith('$')) throw new BadRequestException(`Illegal field: ${k}`);
     const val = obj[k];
@@ -157,7 +157,7 @@ export class CalendarTokenService {
     const scope = assertString('scope', createDto.scope);
     const calendarId = assertString(
       'calendarId',
-      (createDto as any).calendarId,
+      (createDto as Record<string, unknown>).calendarId,
     );
     const expiresAt = toValidDate('expiresAt', createDto.expiresAt);
 

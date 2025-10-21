@@ -207,7 +207,7 @@ export class OnboardingService {
     // Create verification record for the user
     try {
       const user = await this.userService.findOne(userId);
-      if (user !== null && user !== undefined) {
+      if (user) {
         await this.verificationService.updateVerification(userId, {
           type: VerificationType.BOTH,
           email: user.email,
