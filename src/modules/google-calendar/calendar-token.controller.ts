@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Post,
   Put,
@@ -74,5 +75,30 @@ export class CalendarTokenController {
     const isExpiring =
       await this.calendarTokenService.isTokenExpiringSoon(userId);
     return { isExpiringSoon: isExpiring };
+  }
+
+  @ApiOperation({ summary: 'Get user profile information from Google' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile information retrieved',
+  })
+  @Get('user/:userId/profile')
+  async getUserProfile(@Param('userId') userId: string): Promise<{
+    googleUserId?: string;
+    userEmail?: string;
+    userName?: string;
+    userPicture?: string;
+  }> {
+    const token = await this.calendarTokenService.getUserToken(userId);
+    if (!token) {
+      throw new NotFoundException(`No calendar token found for user ${userId}`);
+    }
+
+    return {
+      googleUserId: token.googleUserId,
+      userEmail: token.userEmail,
+      userName: token.userName,
+      userPicture: token.userPicture,
+    };
   }
 }

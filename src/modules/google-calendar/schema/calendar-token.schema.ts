@@ -36,6 +36,18 @@ export class CalendarToken {
   @Prop()
   calendarId?: string;
 
+  @Prop()
+  googleUserId?: string;
+
+  @Prop()
+  userEmail?: string;
+
+  @Prop()
+  userName?: string;
+
+  @Prop()
+  userPicture?: string;
+
   @Prop({ default: true })
   isActive!: boolean;
 

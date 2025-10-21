@@ -161,6 +161,20 @@ export class CalendarTokenService {
     );
     const expiresAt = toValidDate('expiresAt', createDto.expiresAt);
 
+    // user info
+    const googleUserId = (createDto as any).googleUserId
+      ? assertString('googleUserId', (createDto as any).googleUserId)
+      : undefined;
+    const userEmail = (createDto as any).userEmail
+      ? assertString('userEmail', (createDto as any).userEmail)
+      : undefined;
+    const userName = (createDto as any).userName
+      ? assertString('userName', (createDto as any).userName)
+      : undefined;
+    const userPicture = (createDto as any).userPicture
+      ? assertString('userPicture', (createDto as any).userPicture)
+      : undefined;
+
     // Find existing token
     const existingToken = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userIdStr),
@@ -179,6 +193,10 @@ export class CalendarTokenService {
             tokenType,
             scope,
             calendarId,
+            googleUserId,
+            userEmail,
+            userName,
+            userPicture,
             updatedAt: new Date(),
           },
         },
@@ -202,6 +220,10 @@ export class CalendarTokenService {
         tokenType,
         scope,
         calendarId,
+        googleUserId,
+        userEmail,
+        userName,
+        userPicture,
       };
       const newToken = new this.calendarTokenModel(newTokenPayload);
       return await newToken.save();
