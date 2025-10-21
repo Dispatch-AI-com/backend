@@ -37,6 +37,7 @@ import { VerificationCodeService } from './services/verification-code.service';
     VerificationCodeService,
     AwsSesEmailVerificationService,
     AwsSnsSmsVerificationService,
+    MongooseModule,
   ],
 })
 export class VerificationModule {}
