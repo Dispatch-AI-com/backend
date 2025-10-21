@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Schema as MongooseSchema } from 'mongoose';
 
 import { EUserRole } from '@/common/constants/user.constant';
 
@@ -63,12 +63,13 @@ export class User extends Document {
   })
   role!: EUserRole;
 
+<<<<<<< HEAD
   @Prop({ default: false })
   emailVerified!: boolean;
 
   @Prop({ default: false })
   phoneVerified!: boolean;
-
+=======
   // Add billing address
   @Prop({
     type: {
@@ -105,6 +106,7 @@ export class User extends Document {
     message: string;
     isCustom: boolean;
   };
+>>>>>>> origin/main
 }
 
 export type UserDocument = User & Document;

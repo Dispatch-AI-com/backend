@@ -177,3 +177,4 @@ If you didn't create an account with ${this.appName}, please ignore this email.
     `.trim();
   }
 }
+

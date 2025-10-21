@@ -36,7 +36,7 @@ function rejectMongoOperators(obj: Record<string, unknown>): void {
   for (const k of Object.keys(obj)) {
     if (k.startsWith('$')) throw new BadRequestException(`Illegal field: ${k}`);
     const val = obj[k];
-    if (val && typeof val === 'object' && !Array.isArray(val)) {
+    if (val !== null && val !== undefined && typeof val === 'object' && !Array.isArray(val)) {
       rejectMongoOperators(val as Record<string, unknown>);
     }
   }
@@ -155,7 +155,7 @@ export class CalendarTokenService {
     const refreshToken = assertString('refreshToken', createDto.refreshToken);
     const tokenType = assertString('tokenType', createDto.tokenType);
     const scope = assertString('scope', createDto.scope);
-    const calendarId = createDto.calendarId
+    const calendarId = createDto.calendarId !== undefined && createDto.calendarId !== null
       ? assertString('calendarId', createDto.calendarId)
       : undefined;
     const expiresAt = toValidDate('expiresAt', createDto.expiresAt);

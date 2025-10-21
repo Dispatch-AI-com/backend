@@ -44,3 +44,4 @@ export class Verification extends Document {
 
 export type VerificationDocument = Verification & Document;
 export const VerificationSchema = SchemaFactory.createForClass(Verification);
+

@@ -19,9 +19,9 @@ import { VerificationCodeService } from './verification-code.service';
 
 
 // Only allow primitive values for listed keys, ignore all others
-function sanitizeVerificationUpdate(input: any): Partial<UpdateVerificationDto> {
+function sanitizeVerificationUpdate(input: Record<string, unknown>): Partial<UpdateVerificationDto> {
   const allowedKeys = ['type', 'mobile', 'email', 'mobileVerified', 'emailVerified', 'marketingPromotions'];
-  const output: any = {};
+  const output: Record<string, unknown> = {};
   for (const key of allowedKeys) {
     if (Object.prototype.hasOwnProperty.call(input, key)) {
       const value = input[key];
@@ -34,7 +34,7 @@ function sanitizeVerificationUpdate(input: any): Partial<UpdateVerificationDto> 
       }
     }
   }
-  return output;
+  return output as Partial<UpdateVerificationDto>;
 }
 
 @Injectable()
@@ -61,7 +61,7 @@ export class VerificationService {
           userId: new Types.ObjectId(userId),
           type: 'Both',
           mobile: user.fullPhoneNumber ?? '',
-          email: user.email ?? '',
+          email: user.email,
           mobileVerified: false,
           emailVerified: false,
           marketingPromotions: false,

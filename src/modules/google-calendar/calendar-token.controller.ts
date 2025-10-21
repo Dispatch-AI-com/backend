@@ -12,6 +12,8 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
+import type { CalendarToken } from './schema/calendar-token.schema';
+
 import { CalendarTokenService } from './calendar-token.service';
 import { CreateCalendarTokenDto } from './dto/create-calendar-token.dto';
 
@@ -49,14 +51,14 @@ export class CalendarTokenController {
     description: 'Token created/updated successfully',
   })
   @Post()
-  async createOrUpdateToken(@Body() createDto: CreateCalendarTokenDto): Promise<import('./schema/calendar-token.schema').CalendarToken> {
+  async createOrUpdateToken(@Body() createDto: CreateCalendarTokenDto): Promise<CalendarToken> {
     return await this.calendarTokenService.createOrUpdateToken(createDto);
   }
 
   @ApiOperation({ summary: 'Get user calendar token' })
   @ApiResponse({ status: 200, description: 'Token fetched successfully' })
   @Get('user/:userId')
-  async getUserToken(@Param('userId') userId: string): Promise<import('./schema/calendar-token.schema').CalendarToken | null> {
+  async getUserToken(@Param('userId') userId: string): Promise<CalendarToken | null> {
     return await this.calendarTokenService.getUserToken(userId);
   }
 

@@ -31,3 +31,4 @@ export const VerificationCodeSchema =
 
 // Add TTL index for automatic cleanup
 VerificationCodeSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+

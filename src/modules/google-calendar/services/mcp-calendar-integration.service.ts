@@ -231,7 +231,7 @@ Phone: ${callData.customerPhone}
 Service: ${callData.serviceType}
         `.trim(),
         location: 'TBD',
-        attendees: callData.customerEmail ? [callData.customerEmail] : [],
+        attendees: callData.customerEmail !== undefined && callData.customerEmail !== null ? [callData.customerEmail] : [],
       };
 
       // 5) Build MCP API params
@@ -283,11 +283,16 @@ Service: ${callData.serviceType}
         alarm_minutes_before: 15, // 15-minute reminder before event
       };
 
+      const accessToken = mcpRequest.accessToken as string | undefined;
+      const calendarId = mcpRequest.calendarId as string | undefined;
+      const summary = mcpRequest.summary as string | undefined;
+      const to = mcpRequest.to as string | undefined;
+
       this.logger.log(`Calling MCP AI backend, user: ${userId}`, {
-        hasAccessToken: !!(mcpRequest.accessToken as string | undefined),
-        calendarId: mcpRequest.calendarId as string | undefined,
-        eventSummary: mcpRequest.summary as string | undefined,
-        emailTo: mcpRequest.to as string | undefined,
+        hasAccessToken: accessToken !== undefined && accessToken !== null,
+        calendarId,
+        eventSummary: summary,
+        emailTo: to,
       });
 
       // TODO: Call AI backend MCP API here.
