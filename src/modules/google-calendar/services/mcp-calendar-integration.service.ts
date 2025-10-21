@@ -275,7 +275,7 @@ Service: ${callData.serviceType}
   }> {
     try {
       // Build MCP API request payload
-      const mcpRequest = {
+      const mcpRequest: Record<string, unknown> = {
         ...mcpParams,
         ...emailData,
         ...calendarData,
@@ -284,10 +284,10 @@ Service: ${callData.serviceType}
       };
 
       this.logger.log(`Calling MCP AI backend, user: ${userId}`, {
-        hasAccessToken: !!mcpRequest.accessToken,
-        calendarId: mcpRequest.calendarId,
-        eventSummary: mcpRequest.summary,
-        emailTo: mcpRequest.to,
+        hasAccessToken: !!(mcpRequest.accessToken as string | undefined),
+        calendarId: mcpRequest.calendarId as string | undefined,
+        eventSummary: mcpRequest.summary as string | undefined,
+        emailTo: mcpRequest.to as string | undefined,
       });
 
       // TODO: Call AI backend MCP API here.

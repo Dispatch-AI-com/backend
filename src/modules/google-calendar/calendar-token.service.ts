@@ -155,10 +155,9 @@ export class CalendarTokenService {
     const refreshToken = assertString('refreshToken', createDto.refreshToken);
     const tokenType = assertString('tokenType', createDto.tokenType);
     const scope = assertString('scope', createDto.scope);
-    const calendarId = assertString(
-      'calendarId',
-      (createDto as Record<string, unknown>).calendarId,
-    );
+    const calendarId = createDto.calendarId
+      ? assertString('calendarId', createDto.calendarId)
+      : undefined;
     const expiresAt = toValidDate('expiresAt', createDto.expiresAt);
 
     // Find existing token
