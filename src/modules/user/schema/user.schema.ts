@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document } from 'mongoose';
 
 import { EUserRole } from '@/common/constants/user.constant';
 
@@ -32,7 +32,7 @@ export class User extends Document {
   twilioPhoneNumber!: string;
 
   @Prop()
-  fullPhoneNumber!: string;
+  fullPhoneNumber?: string;
 
   @Prop()
   readonly createdAt!: Date;

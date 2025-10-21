@@ -231,7 +231,7 @@ Phone: ${callData.customerPhone}
 Service: ${callData.serviceType}
         `.trim(),
         location: 'TBD',
-        attendees: callData.customerEmail !== undefined && callData.customerEmail !== null ? [callData.customerEmail] : [],
+        attendees: callData.customerEmail !== undefined ? [callData.customerEmail] : [],
       };
 
       // 5) Build MCP API params
@@ -289,7 +289,7 @@ Service: ${callData.serviceType}
       const to = mcpRequest.to as string | undefined;
 
       this.logger.log(`Calling MCP AI backend, user: ${userId}`, {
-        hasAccessToken: accessToken !== undefined && accessToken !== null,
+        hasAccessToken: accessToken !== undefined,
         calendarId,
         eventSummary: summary,
         emailTo: to,

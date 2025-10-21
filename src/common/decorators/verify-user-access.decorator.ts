@@ -6,7 +6,7 @@ export const VerifyUserAccess = createParamDecorator(
     const request = ctx.switchToHttp().getRequest();
     const user = request.user as { _id: string } | undefined;
 
-    if (user?._id === undefined || user._id === null || user._id.trim() === '') {
+    if (user?._id === undefined || user._id.trim() === '') {
       throw new ForbiddenException('User not authenticated');
     }
 
@@ -20,7 +20,7 @@ export const VerifyUserIdParam = createParamDecorator(
     const user = request.user as { _id: string } | undefined;
     const userId = request.params[paramName];
 
-    if (user?._id === undefined || user._id === null || user._id.trim() === '') {
+    if (user?._id === undefined || user._id.trim() === '') {
       throw new ForbiddenException('User not authenticated');
     }
 
