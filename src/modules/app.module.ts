@@ -13,6 +13,7 @@ import { CalllogModule } from '@/modules/calllog/calllog.module';
 import { CompanyModule } from '@/modules/company/company.module';
 import { DatabaseModule } from '@/modules/database/database.module';
 import { CalendarModule } from '@/modules/google-calendar/calendar.module';
+import { GooglePlacesModule } from '@/modules/google-places/google-places.module';
 import { HealthModule } from '@/modules/health/health.module';
 import { LocationModule } from '@/modules/location/location.module';
 import { PlanModule } from '@/modules/plan/plan.module';
@@ -42,6 +43,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     LocationModule,
     CalllogModule,
     CalendarModule,
+    GooglePlacesModule,
     BlogModule,
     CompanyModule,
     TranscriptModule,

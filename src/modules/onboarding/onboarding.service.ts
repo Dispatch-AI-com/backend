@@ -1,16 +1,11 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { plainToInstance } from 'class-transformer';
-import { validateOrReject } from 'class-validator';
 import { Model, UpdateQuery } from 'mongoose';
 
-import { CompanyService } from '../company/company.service';
-import { CreateCompanyDto } from '../company/dto/create-company.dto';
 import { UserService } from '../user/user.service';
 import {
   OnboardingAnswers,
@@ -33,35 +28,53 @@ export class OnboardingService {
       ) => void | Promise<void>
     >
   > = {
-    'company.address.full': function (answer, update) {
+    'user.address.full': function (answer, update) {
       const match = this.AU_ADDR_REGEX.exec(answer.trim());
       if (!match?.groups) {
         throw new BadRequestException(
           'Unable to parse address; please check the format.',
         );
       }
-      update.$set['answers.company.address.streetAddress'] =
+      update.$set['answers.user.address.streetAddress'] =
         match.groups.street.trim();
-      update.$set['answers.company.address.suburb'] =
-        match.groups.suburb.trim();
-      update.$set['answers.company.address.state'] = match.groups.state;
-      update.$set['answers.company.address.postcode'] = match.groups.postcode;
-      update.$set['answers.company.address.full'] = answer; // raw string
+      update.$set['answers.user.address.suburb'] = match.groups.suburb.trim();
+      update.$set['answers.user.address.state'] = match.groups.state;
+      update.$set['answers.user.address.postcode'] = match.groups.postcode;
+      update.$set['answers.user.address.full'] = answer; // raw string
     },
 
-    'company.abn': async function (answer, update) {
-      const exists = await this.companyService.existsByAbn(answer.trim());
-      if (exists) {
-        throw new ConflictException('Company with this ABN already exists.');
+    'user.greeting.type': function (answer, update) {
+      const trimmedAnswer = answer.trim();
+      if (
+        !['Use Default Greeting', 'Create Custom Greeting'].includes(
+          trimmedAnswer,
+        )
+      ) {
+        throw new BadRequestException(
+          'Invalid greeting type. Must be "Use Default Greeting" or "Create Custom Greeting".',
+        );
       }
-      update.$set['answers.company.abn'] = answer.trim();
+      update.$set['answers.user.greeting.type'] = trimmedAnswer;
+
+      // Step skipping logic is handled in the main saveAnswer method
+      // No need to set default greeting values - User schema already has defaults
+    },
+
+    'user.greeting.message': function (answer, update) {
+      const trimmedAnswer = answer.trim();
+      if (trimmedAnswer.length < 10 || trimmedAnswer.length > 500) {
+        throw new BadRequestException(
+          'Greeting message must be between 10 and 500 characters.',
+        );
+      }
+      update.$set['answers.user.greeting.message'] = trimmedAnswer;
+      update.$set['answers.user.greeting.isCustom'] = true;
     },
   };
 
   constructor(
     @InjectModel(OnboardingSession.name)
     private readonly sessionModel: Model<OnboardingSessionDocument>,
-    private readonly companyService: CompanyService,
     private readonly userService: UserService,
   ) {}
 
@@ -74,9 +87,20 @@ export class OnboardingService {
     answer: string,
     field: string,
   ): Promise<{ success: boolean; currentStep: number }> {
+    // Calculate next step - default is +1, but some fields may skip steps
+    let nextStep = stepId + 1;
+
+    // Special case: if user chooses default greeting, skip custom message step
+    if (
+      field === 'user.greeting.type' &&
+      answer.trim() === 'Use Default Greeting'
+    ) {
+      nextStep = stepId + 2; // Skip step 5 (custom message input)
+    }
+
     const update: UpdateQuery<OnboardingSessionDocument> = {
       $set: {
-        currentStep: stepId + 1,
+        currentStep: nextStep,
         status: 'in_progress',
         updatedAt: new Date(),
       },
@@ -92,14 +116,40 @@ export class OnboardingService {
 
     await this.sessionModel.updateOne({ userId }, update, { upsert: true });
 
-    if (field.startsWith('user.')) {
+    // Handle direct user field updates (phone, position)
+    if (
+      field.startsWith('user.') &&
+      !field.includes('address') &&
+      !field.includes('greeting')
+    ) {
       const [, key] = field.split('.');
       await this.userService.patch(userId, { [key]: answer.trim() });
     }
 
+    // Handle address update immediately after parsing
+    if (field === 'user.address.full') {
+      const addressData = {
+        unitAptPOBox: update.$set['answers.user.address.unitAptPOBox'] ?? '',
+        streetAddress: update.$set['answers.user.address.streetAddress'],
+        suburb: update.$set['answers.user.address.suburb'],
+        state: update.$set['answers.user.address.state'],
+        postcode: update.$set['answers.user.address.postcode'],
+      };
+      await this.userService.patch(userId, { address: addressData });
+    }
+
+    // Handle custom greeting message immediately
+    if (field === 'user.greeting.message') {
+      const greetingData = {
+        message: answer.trim(),
+        isCustom: true,
+      };
+      await this.userService.patch(userId, { greeting: greetingData });
+    }
+
     return {
       success: true,
-      currentStep: stepId + 1,
+      currentStep: nextStep,
     };
   }
 
@@ -135,45 +185,13 @@ export class OnboardingService {
     const session = await this.sessionModel.findOne({ userId }).lean();
     if (!session) throw new NotFoundException('session not found');
 
-    const companyAns = session.answers.company;
-    if (!companyAns) {
-      throw new BadRequestException('company answers not found in session');
+    const userAns = session.answers.user;
+    if (!userAns) {
+      throw new BadRequestException('user answers not found in session');
     }
 
-    const user = await this.userService.findOne(userId);
-    const email = user.email;
-
-    const companyPayload = {
-      businessName: companyAns.businessName,
-      address: {
-        unitAptPOBox: companyAns.address.unitAptPOBox ?? '',
-        streetAddress: companyAns.address.streetAddress,
-        suburb: companyAns.address.suburb,
-        state: companyAns.address.state,
-        postcode: companyAns.address.postcode,
-      },
-      email: email,
-      abn: companyAns.abn,
-      user: userId,
-    };
-
-    try {
-      const dto = plainToInstance(CreateCompanyDto, companyPayload);
-      await validateOrReject(dto);
-      await this.companyService.create(dto);
-    } catch (err: unknown) {
-      // handle index uniqueness conflict
-      if (
-        err !== null &&
-        err !== undefined &&
-        typeof err === 'object' &&
-        'code' in err &&
-        (err as { code: number }).code === 11000
-      ) {
-        throw new ConflictException('Company email/abn/phone already exists');
-      }
-      throw err;
-    }
+    // Address and greeting are now updated immediately in saveAnswer()
+    // No need to update user data here anymore
 
     await this.sessionModel.updateOne(
       { userId },

@@ -249,15 +249,15 @@ export class SettingService {
   private async getBillingAddress(
     userId: string,
   ): Promise<BillingAddressDto | null> {
-    const company = await this.companyModel.findOne({ user: userId }).exec();
-    if (!company?.address) return null;
+    const user = await this.userModel.findById(userId).exec();
+    if (!user?.address) return null;
 
     return {
-      unit: company.address.unitAptPOBox ?? '',
-      streetAddress: company.address.streetAddress,
-      suburb: company.address.suburb,
-      state: company.address.state,
-      postcode: company.address.postcode,
+      unit: user.address.unitAptPOBox ?? '',
+      streetAddress: user.address.streetAddress,
+      suburb: user.address.suburb,
+      state: user.address.state,
+      postcode: user.address.postcode,
     };
   }
 
@@ -314,7 +314,6 @@ export class SettingService {
       .exec();
 
     if (!existingCompany) {
-      // 如果公司记录不存在，创建新的公司记录
       const timestamp = Date.now().toString();
       const newCompany = new this.companyModel({
         user: userId,
@@ -322,12 +321,6 @@ export class SettingService {
         abn: companyDto.abn,
         email: `company-${userId}-${timestamp}@placeholder.com`,
         number: `+61${userId.slice(-8).padStart(8, '0')}`,
-        address: {
-          streetAddress: 'To be updated',
-          suburb: 'To be updated',
-          state: 'To be updated',
-          postcode: '0000',
-        },
       });
 
       return await newCompany.save();
@@ -355,34 +348,9 @@ export class SettingService {
   private async updateBillingAddress(
     userId: string,
     billingDto: BillingAddressDto,
-  ): Promise<CompanyDocument> {
-    const existingCompany = await this.companyModel
-      .findOne({ user: userId })
-      .exec();
-
-    if (!existingCompany) {
-      const timestamp = Date.now().toString();
-      const newCompany = new this.companyModel({
-        user: userId,
-        businessName: 'To be updated',
-        abn: '00000000000',
-        email: `company-${userId}-${timestamp}@placeholder.com`,
-        number: `+61${userId.slice(-8).padStart(8, '0')}`,
-        address: {
-          unitAptPOBox: billingDto.unit,
-          streetAddress: billingDto.streetAddress,
-          suburb: billingDto.suburb,
-          state: billingDto.state,
-          postcode: billingDto.postcode,
-        },
-      });
-
-      return await newCompany.save();
-    }
-
-    // 更新existing company记录的地址
-    const updatedCompany = await this.companyModel.findOneAndUpdate(
-      { user: userId },
+  ): Promise<UserDocument> {
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
       {
         'address.unitAptPOBox': billingDto.unit,
         'address.streetAddress': billingDto.streetAddress,
@@ -393,13 +361,13 @@ export class SettingService {
       { new: true, runValidators: true },
     );
 
-    if (!updatedCompany) {
+    if (!updatedUser) {
       throw new BadRequestException(
         `Failed to update billing address for user: ${userId}`,
       );
     }
 
-    return updatedCompany;
+    return updatedUser;
   }
 
   private async clearUserProfile(userId: string): Promise<void> {
@@ -422,16 +390,13 @@ export class SettingService {
   }
 
   private async clearBillingAddress(userId: string): Promise<void> {
-    await this.companyModel.findOneAndUpdate(
-      { user: userId },
-      {
-        'address.unitAptPOBox': '',
-        'address.streetAddress': '',
-        'address.suburb': '',
-        'address.state': '',
-        'address.postcode': '',
-      },
-    );
+    await this.userModel.findByIdAndUpdate(userId, {
+      'address.unitAptPOBox': '',
+      'address.streetAddress': '',
+      'address.suburb': '',
+      'address.state': '',
+      'address.postcode': '',
+    });
   }
 
   private validateABN(abn: string): boolean {
