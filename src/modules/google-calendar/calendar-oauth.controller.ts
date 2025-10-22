@@ -54,13 +54,13 @@ export class CalendarOAuthController {
     }
     const userId = parsedUserId ?? userIdFromQuery;
 
-    // 获取用户信息 (使用UserInfo API，无需额外配置)
+    // get user info (using UserInfo API, no extra configuration)
     let userInfo = null;
     try {
       userInfo = await this.oauthService.getUserInfo(token.accessToken);
-      console.log('用户信息:', userInfo);
+      console.log('user info:', userInfo);
     } catch (error) {
-      console.error('获取用户信息失败:', error);
+      console.error('get user info failed:', error);
     }
 
     // Persist token using existing storage logic

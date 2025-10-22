@@ -6,13 +6,8 @@ import {
   NotFoundException,
   Param,
   Post,
-  Put,
-  Query,
-  Request,
-  UseGuards,
 } from '@nestjs/common';
 import {
-  ApiBearerAuth,
   ApiOperation,
   ApiResponse,
   ApiTags,
@@ -20,7 +15,6 @@ import {
 
 import { CalendarTokenService } from './calendar-token.service';
 import { CreateCalendarTokenDto } from './dto/create-calendar-token.dto';
-import { CalendarToken } from './schema/calendar-token.schema';
 
 @ApiTags('calendar-token')
 @Controller('calendar-token')

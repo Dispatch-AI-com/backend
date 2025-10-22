@@ -44,7 +44,6 @@ export class CreateCalendarTokenDto {
   @IsOptional()
   calendarId?: string;
 
-  // 用户信息字段
   @ApiProperty({ description: 'Google User ID', required: false })
   @IsString()
   @IsOptional()
