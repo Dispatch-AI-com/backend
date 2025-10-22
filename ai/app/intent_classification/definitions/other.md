@@ -4,14 +4,14 @@
 Catch-all category for complex issues, message leaving requests, callbacks, unclear intents, or anything requiring human handling and personalized attention.
 
 ## Description
-This intent covers everything that doesn't fit SCAM or FAQ. It includes requests to leave messages, callback requests, complex or unique situations, complaints, special circumstances, and any ambiguous cases. This is the **conservative default** when intent is unclear.
+This intent covers everything that doesn't fit SCAM or OPPORTUNITY. It includes requests to leave messages, callback requests, complex or unique situations, complaints, special circumstances, and any ambiguous cases. This is the **conservative default** when intent is unclear.
 
 ## Characteristics
 
 - Requests to leave a message or voicemail
 - Callback requests ("call me back later")
 - Complex or unique situations requiring individual attention
-- Requests that don't fit FAQ or standard questions
+- Requests that don't fit standard questions or opportunities
 - Unclear or ambiguous intent
 - Personal circumstances requiring case-by-case handling
 - Complaints, disputes, or dissatisfaction
@@ -46,11 +46,11 @@ These messages **SHOULD** be classified as OTHER:
 
 These messages should **NOT** be classified as OTHER:
 
-1. "What are your office hours?" → FAQ
+1. "We'd like to invite you for a job interview" → OPPORTUNITY
 2. "Transfer money immediately" → SCAM
-3. "How much are tuition fees?" → FAQ
-4. "When is the application deadline?" → FAQ
-5. "What's your address?" → FAQ
+3. "Our company has an internship position available" → OPPORTUNITY
+4. "I'm looking for research assistants" → OPPORTUNITY
+5. "You have unpaid taxes, pay immediately" → SCAM
 6. "You must pay immediately or face arrest" → SCAM
 
 ## Keywords
@@ -90,8 +90,8 @@ Is it clearly a fraud attempt?
 ├─ Yes → SCAM
 └─ No → Continue
 
-Is it a simple question with standard answer?
-├─ Yes → FAQ
+Is it a legitimate opportunity (interview, job, research)?
+├─ Yes → OPPORTUNITY
 └─ No → Continue
 
 Is it complex, personalized, or unclear?
@@ -124,7 +124,7 @@ For callbacks:
 
 ## Important Distinctions
 
-### OTHER vs FAQ
+### OTHER vs OPPORTUNITY
 
 **OTHER** is for:
 - ❌ Complex situations
@@ -133,11 +133,12 @@ For callbacks:
 - ❌ Special circumstances
 - ❌ Unclear intents
 
-**FAQ** is for:
-- ✅ Simple factual questions
-- ✅ Standard information
-- ✅ No personalization needed
-- ✅ Clear standard answers
+**OPPORTUNITY** is for:
+- ✅ Job interviews or employment offers
+- ✅ Research or academic positions
+- ✅ Internships or fellowships
+- ✅ Networking events
+- ✅ Legitimate chances for students
 
 ### OTHER vs SCAM
 
@@ -156,10 +157,10 @@ For callbacks:
 
 | Message | Intent | Reasoning |
 |---------|--------|-----------|
-| "I need this information urgently" | FAQ or OTHER | If asking for standard info → FAQ; if unclear what they need → OTHER |
-| "Do I need to pay the enrollment fee upfront?" | FAQ | Standard payment question |
+| "I need this information urgently" | OTHER | Unclear what they need, requires clarification |
+| "We have a position but need to discuss terms" | OPPORTUNITY | Employment opportunity with discussion needed |
 | "Can I get an extension on the deadline?" | OTHER | Requires individual assessment |
-| "I'm having trouble understanding this" | FAQ or OTHER | If asking about standard info → FAQ; if unclear → OTHER |
+| "I'm having trouble understanding this" | OTHER | Unclear, needs clarification |
 | "Can you help me?" | OTHER | Too vague, needs clarification |
 | "I need to discuss something" | OTHER | Unclear, requires human |
 

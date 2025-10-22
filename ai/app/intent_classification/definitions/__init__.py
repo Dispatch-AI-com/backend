@@ -7,12 +7,12 @@ and Python format (for programmatic access).
 
 from .intent_definitions import (
     get_scam_definition,
-    get_faq_definition,
+    get_opportunity_definition,
     get_other_definition
 )
 
 __all__ = [
     "get_scam_definition",
-    "get_faq_definition",
+    "get_opportunity_definition",
     "get_other_definition",
 ]

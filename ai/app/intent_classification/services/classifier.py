@@ -20,7 +20,7 @@ class IntentClassifier:
 
     Classifies user intent in international student service conversations into:
     - SCAM: Scam or malicious calls (fraud attempts)
-    - FAQ: Common student questions answerable by FAQ system
+    - OPPORTUNITY: Legitimate job/research/academic opportunities for students
     - OTHER: Complex issues, messages, or unclear intents requiring human handling
     """
 
@@ -56,7 +56,7 @@ class IntentClassifier:
 
         Returns:
             Dict containing:
-                - intent: Classification result (scam/faq/other)
+                - intent: Classification result (scam/opportunity/other)
                 - confidence: Confidence score (0.0-1.0)
                 - reasoning: Explanation of classification
                 - metadata: Additional info (matched keywords, characteristics)
@@ -158,7 +158,7 @@ class IntentClassifier:
         }
 
         # Validate intent value
-        valid_intents = ["scam", "faq", "other"]
+        valid_intents = ["scam", "opportunity", "other"]
         if validated["intent"] not in valid_intents:
             print(f"⚠️ [INTENT_CLASSIFIER] Invalid intent '{validated['intent']}', defaulting to 'other'")
             validated["intent"] = "other"

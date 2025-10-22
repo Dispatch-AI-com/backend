@@ -6,7 +6,7 @@ System prompts for OpenAI GPT models to classify user intents.
 
 from ..definitions.intent_definitions import (
     get_scam_definition,
-    get_faq_definition,
+    get_opportunity_definition,
     get_other_definition
 )
 
@@ -21,7 +21,7 @@ def get_intent_classification_system_prompt() -> str:
         str: Complete system prompt for intent classification
     """
     scam_def = get_scam_definition()
-    faq_def = get_faq_definition()
+    opportunity_def = get_opportunity_definition()
     other_def = get_other_definition()
 
     return f"""You are an intent classification system for an international student services AI assistant.
@@ -44,19 +44,20 @@ Negative Examples (should NOT be classified as SCAM):
 Key Indicators: {', '.join(scam_def['keywords'][:15])}
 
 
-2. FAQ - {faq_def['description']}
-NOTE: FAQ answers simple, common questions with standard answers (office hours, deadlines, fees, etc.).
+2. OPPORTUNITY - {opportunity_def['description']}
+NOTE: OPPORTUNITY captures legitimate chances for students (interviews, jobs, research positions, internships, networking).
+The system will collect student availability, contact info, and other details to help them seize these opportunities.
 
 Characteristics:
-{chr(10).join(f'- {c}' for c in faq_def['characteristics'])}
+{chr(10).join(f'- {c}' for c in opportunity_def['characteristics'])}
 
-Positive Examples (SHOULD be classified as FAQ):
-{chr(10).join(f'- "{e}"' for e in faq_def['positive_examples'])}
+Positive Examples (SHOULD be classified as OPPORTUNITY):
+{chr(10).join(f'- "{e}"' for e in opportunity_def['positive_examples'])}
 
-Negative Examples (should NOT be classified as FAQ):
-{chr(10).join(f'- "{e}"' for e in faq_def['negative_examples'])}
+Negative Examples (should NOT be classified as OPPORTUNITY):
+{chr(10).join(f'- "{e}"' for e in opportunity_def['negative_examples'])}
 
-Key Indicators: {', '.join(faq_def['keywords'][:15])}
+Key Indicators: {', '.join(opportunity_def['keywords'][:20])}
 
 
 3. OTHER - {other_def['description']}
@@ -81,13 +82,14 @@ CLASSIFICATION RULES:
 4. Provide clear reasoning for the classification decision
 5. Include matched keywords and characteristics in metadata
 6. IMPORTANT: When in doubt or unclear → classify as OTHER (conservative approach)
-7. FAQ is ONLY for simple, common questions with standard factual answers
-8. OTHER includes: leave message, complex cases, special situations, unclear intents
+7. OPPORTUNITY is for legitimate chances (interviews, jobs, research) that benefit students
+8. Distinguish OPPORTUNITY from SCAM: OPPORTUNITY never requests money/payment/fees upfront
+9. OTHER includes: leave message, complex cases, special situations, unclear intents
 
 RESPONSE FORMAT:
 Respond ONLY with JSON in this exact format (no markdown, no code blocks):
 {{
-  "intent": "scam" | "faq" | "other",
+  "intent": "scam" | "opportunity" | "other",
   "confidence": 0.0-1.0,
   "reasoning": "Brief explanation of classification decision (1-2 sentences)",
   "metadata": {{

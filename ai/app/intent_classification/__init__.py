@@ -5,14 +5,14 @@ Standalone module for classifying user intents in student service conversations.
 
 Intents:
 - SCAM: Fraud attempts, malicious callers
-- FAQ: Simple common questions answerable by FAQ system
+- OPPORTUNITY: Legitimate job/research/academic opportunities for students
 - OTHER: Complex issues, messages, unclear intents requiring human handling
 
 Usage:
     from intent_classification import IntentClassifier, IntentType
 
     classifier = IntentClassifier()
-    result = await classifier.classify_intent("What are your office hours?")
+    result = await classifier.classify_intent("We have a job interview for you")
 """
 
 from .models.intent_types import IntentType
@@ -21,11 +21,11 @@ from .models.responses import IntentClassificationResponse
 from .services.classifier import IntentClassifier
 from .definitions.intent_definitions import (
     get_scam_definition,
-    get_faq_definition,
+    get_opportunity_definition,
     get_other_definition
 )
 
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 
 __all__ = [
     "IntentType",
@@ -33,6 +33,6 @@ __all__ = [
     "IntentClassificationResponse",
     "IntentClassifier",
     "get_scam_definition",
-    "get_faq_definition",
+    "get_opportunity_definition",
     "get_other_definition",
 ]

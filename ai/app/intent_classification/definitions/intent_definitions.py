@@ -56,52 +56,62 @@ def get_scam_definition() -> Dict[str, Any]:
     }
 
 
-def get_faq_definition() -> Dict[str, Any]:
-    """Get FAQ intent definition
+def get_opportunity_definition() -> Dict[str, Any]:
+    """Get OPPORTUNITY intent definition
 
     Returns:
         dict: Intent definition with characteristics, examples, and keywords
     """
     return {
-        "name": "faq",
-        "description": "Common student questions that can be answered by FAQ system",
+        "name": "opportunity",
+        "description": "Legitimate opportunities for students including interviews, jobs, research positions, and academic engagements",
         "characteristics": [
-            "Asking about office hours or availability",
-            "Inquiring about enrollment deadlines or application dates",
-            "Questions about tuition fees or payment schedules",
-            "Asking about campus location or contact information",
-            "Questions about general services offered",
-            "Inquiring about operating hours or schedules",
-            "Simple factual questions with standard answers",
-            "Questions about visa requirements or documentation"
+            "Mentions of job interviews or interview invitations",
+            "Employment opportunities or job offers",
+            "Research opportunities or academic collaborations",
+            "Internship positions or traineeships",
+            "Networking events or professional meetups",
+            "Career fairs or recruitment events",
+            "Scholarship or fellowship opportunities",
+            "Requests for availability to schedule important meetings",
+            "Legitimate requests for contact information to follow up on opportunities",
+            "Questions about student's skills, qualifications, or experience",
+            "Offers of mentorship or professional guidance"
         ],
         "positive_examples": [
-            "What are your office hours?",
-            "When is the enrollment deadline for next semester?",
-            "How much are the tuition fees for international students?",
-            "What time do you open/close?",
-            "Where is your office located?",
-            "What's your phone number?",
-            "Do you have weekend hours?",
-            "What documents do I need for enrollment?",
-            "What services do you provide?",
-            "What are the application deadlines?",
-            "Do you accept international students?",
-            "What's your email address?"
+            "We'd like to invite you for a job interview next week. When are you available?",
+            "Our company has an internship position available. Are you interested?",
+            "I'm a professor looking for research assistants. Would you like to discuss this opportunity?",
+            "There's a career fair on campus next Friday. Can we schedule a time to meet?",
+            "We received your application and would like to schedule an interview.",
+            "Our startup is hiring international students. Can we send you more information?",
+            "I'm organizing a networking event for tech professionals. Would you like to attend?",
+            "We have a scholarship opportunity for international students.",
+            "Our lab is looking for graduate research assistants. Can we set up a meeting?",
+            "There's an internship opening in our marketing department.",
+            "We're hosting a workshop on career development. Would you like to join?",
+            "I'd like to discuss a potential research collaboration. What's your email address?"
         ],
         "negative_examples": [
-            "I want to leave a message",
-            "Transfer money immediately or face arrest",
-            "I have a complex immigration issue that needs discussion",
-            "I'm not available right now, can someone call me back?",
-            "This is regarding a special case that needs individual attention"
+            "Transfer money immediately for a job offer",
+            "You won a lottery prize, pay processing fee",
+            "What are your office hours?",
+            "I'd like to leave a message",
+            "Can someone call me back?",
+            "Send your bank details for salary advance"
         ],
         "keywords": [
-            "office hours", "opening hours", "deadline", "when", "what time",
-            "tuition", "fees", "how much", "location", "address",
-            "phone number", "email", "contact", "services", "what",
-            "enrollment", "application", "requirements", "documents",
-            "weekend", "schedule", "available", "international students"
+            "interview", "job interview", "employment", "job opportunity", "job offer",
+            "hiring", "recruitment", "recruiting", "career", "internship", "intern position",
+            "research opportunity", "research assistant", "RA position", "PhD opportunity",
+            "scholarship", "fellowship", "grant", "mentorship", "mentor",
+            "networking event", "career fair", "job fair", "recruitment event",
+            "workshop", "seminar", "conference", "presentation", "collaboration",
+            "research collaboration", "academic opportunity", "professional development",
+            "available", "availability", "when are you free", "schedule meeting",
+            "send information", "contact information", "email address",
+            "skills", "qualifications", "experience", "CV", "resume",
+            "interested", "apply", "position available", "opening", "vacancy"
         ]
     }
 
@@ -117,7 +127,7 @@ def get_other_definition() -> Dict[str, Any]:
         "description": "Unrecognized intents requiring human handling (complex issues, messages, unclear requests)",
         "characteristics": [
             "Complex or unique situations requiring individual attention",
-            "Requests that don't fit FAQ or standard questions",
+            "Requests that don't fit standard questions or opportunities",
             "Wanting to leave a message or callback request",
             "Unclear or ambiguous intent",
             "Personal circumstances requiring case-by-case handling",
@@ -138,11 +148,11 @@ def get_other_definition() -> Dict[str, Any]:
             "My situation is complicated and I need personalized help"
         ],
         "negative_examples": [
-            "What are your office hours?",
+            "We'd like to invite you for a job interview",
             "Transfer money immediately",
-            "How much are tuition fees?",
-            "When is the application deadline?",
-            "What's your address?"
+            "Our company has an internship position available",
+            "I'm looking for research assistants",
+            "You have unpaid taxes, pay immediately"
         ],
         "keywords": [
             "leave message", "callback", "call back", "special case",

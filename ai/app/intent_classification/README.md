@@ -7,7 +7,7 @@ Standalone module for classifying user intents in international student service 
 This module provides a complete intent classification system that categorizes caller intents into three types:
 
 - **SCAM**: Fraud attempts, malicious callers → Terminate call immediately
-- **FAQ**: Simple common questions → Route to FAQ system
+- **OPPORTUNITY**: Legitimate chances for students (interviews, jobs, research) → Collect student info to help them seize opportunities
 - **OTHER**: Complex issues, messages, unclear intents → Human review
 
 ## Quick Start
@@ -16,16 +16,16 @@ This module provides a complete intent classification system that categorizes ca
 from intent_classification import IntentClassifier
 
 classifier = IntentClassifier()
-result = await classifier.classify_intent("What are your office hours?")
+result = await classifier.classify_intent("We'd like to invite you for a job interview. When are you available?")
 
 # Result:
 # {
-#   "intent": "faq",
+#   "intent": "opportunity",
 #   "confidence": 0.92,
-#   "reasoning": "Student asking about office hours, simple FAQ question",
+#   "reasoning": "Legitimate job interview invitation requesting student availability",
 #   "metadata": {
-#     "matched_keywords": ["office hours"],
-#     "matched_characteristics": ["Asking about office hours or availability"]
+#     "matched_keywords": ["job interview", "available", "invite"],
+#     "matched_characteristics": ["Mentions of job interviews or interview invitations"]
 #   }
 # }
 ```
@@ -40,7 +40,7 @@ intent_classification/
 ├── definitions/                    # Intent definitions
 │   ├── __init__.py
 │   ├── scam.md                     # SCAM intent documentation
-│   ├── faq.md                      # FAQ intent documentation
+│   ├── opportunity.md              # OPPORTUNITY intent documentation
 │   ├── other.md                    # OTHER intent documentation
 │   └── intent_definitions.py       # Python definition data structures
 │
@@ -60,7 +60,7 @@ intent_classification/
 │   ├── test_data/                  # Test data organized by intent
 │   │   ├── __init__.py
 │   │   ├── scam_cases.py           # 15 SCAM test cases
-│   │   ├── faq_cases.py            # 15 FAQ test cases
+│   │   ├── opportunity_cases.py    # 15 OPPORTUNITY test cases
 │   │   ├── other_cases.py          # 15 OTHER test cases
 │   │   └── edge_cases.py           # 5 edge cases
 │   │
@@ -93,24 +93,30 @@ intent_classification/
 
 [Full documentation](./definitions/scam.md)
 
-### 2. FAQ
+### 2. OPPORTUNITY
 
-**Purpose**: Handle simple common questions with standard answers
+**Purpose**: Capture legitimate chances for students (interviews, jobs, research, internships)
 
 **Characteristics**:
-- Questions about office hours, deadlines, fees
-- Location and contact information requests
-- Simple factual questions
-- Questions with standard, non-personalized answers
+- Job interviews or interview invitations
+- Employment opportunities or job offers
+- Research opportunities or academic collaborations
+- Internship positions or traineeships
+- Networking events or professional development
+- Scholarship or fellowship opportunities
+- Requests for student availability or contact information
 
 **Examples**:
-- "What are your office hours?"
-- "When is the enrollment deadline?"
-- "How much are tuition fees?"
+- "We'd like to invite you for a job interview. When are you available?"
+- "Our company has an internship position available."
+- "I'm a professor looking for research assistants."
+- "There's a career fair on campus. Can we schedule a meeting?"
 
-**Action**: Route to FAQ system, provide standard answer
+**Action**: Collect student availability, email, contact details to help them seize opportunities
 
-[Full documentation](./definitions/faq.md)
+**Important**: OPPORTUNITY distinguishes from SCAM by never requesting money/payments upfront
+
+[Full documentation](./definitions/opportunity.md)
 
 ### 3. OTHER
 
@@ -141,7 +147,7 @@ Classify user intent from a message.
 **Request**:
 ```json
 {
-  "currentMessage": "What are your office hours?",
+  "currentMessage": "We have an internship position available for you.",
   "callSid": "CA123...",  // Optional
   "messages": [...]       // Optional conversation history
 }
@@ -150,12 +156,12 @@ Classify user intent from a message.
 **Response**:
 ```json
 {
-  "intent": "faq",
-  "confidence": 0.92,
-  "reasoning": "Student asking about office hours, simple FAQ question",
+  "intent": "opportunity",
+  "confidence": 0.88,
+  "reasoning": "Legitimate internship opportunity being offered to student",
   "metadata": {
-    "matched_keywords": ["office hours"],
-    "matched_characteristics": ["Asking about office hours or availability"]
+    "matched_keywords": ["internship", "position", "available"],
+    "matched_characteristics": ["Internship positions or traineeships"]
   }
 }
 ```
@@ -182,11 +188,11 @@ from intent_classification import IntentClassifier, IntentType
 classifier = IntentClassifier()
 
 # Classify a message
-result = await classifier.classify_intent("What time do you open?")
+result = await classifier.classify_intent("We have a job interview for you next week")
 
-if result["intent"] == IntentType.FAQ.value:
-    # Route to FAQ system
-    answer = get_faq_answer(result)
+if result["intent"] == IntentType.OPPORTUNITY.value:
+    # Collect student info (availability, email, etc.)
+    collect_student_info(result)
 elif result["intent"] == IntentType.SCAM.value:
     # Terminate call
     terminate_call()
@@ -213,14 +219,14 @@ result = await classifier.classify_intent(
 ```python
 from intent_classification import (
     get_scam_definition,
-    get_faq_definition,
+    get_opportunity_definition,
     get_other_definition
 )
 
-scam_def = get_scam_definition()
-print(scam_def["characteristics"])
-print(scam_def["positive_examples"])
-print(scam_def["keywords"])
+opportunity_def = get_opportunity_definition()
+print(opportunity_def["characteristics"])
+print(opportunity_def["positive_examples"])
+print(opportunity_def["keywords"])
 ```
 
 ## Classification Approach
@@ -228,7 +234,7 @@ print(scam_def["keywords"])
 The module uses a **conservative classification approach**:
 
 1. **SCAM detection** is high priority - clear fraud indicators lead to immediate termination
-2. **FAQ** is only used for simple, standard questions with clear answers
+2. **OPPORTUNITY** captures legitimate chances for students (interviews, jobs, research)
 3. **OTHER** is the default fallback - when in doubt, route to human review
 
 **Decision Tree**:
@@ -237,8 +243,8 @@ Is it clearly a fraud attempt?
 ├─ Yes → SCAM
 └─ No → Continue
 
-Is it a simple question with standard answer?
-├─ Yes → FAQ
+Is it a legitimate opportunity (interview, job, research)?
+├─ Yes → OPPORTUNITY
 └─ No → Continue
 
 Is it complex, personalized, or unclear?
@@ -250,7 +256,7 @@ Is it complex, personalized, or unclear?
 
 The module includes 50 test cases:
 - **15 SCAM cases**: Various fraud scenarios
-- **15 FAQ cases**: Common student questions
+- **15 OPPORTUNITY cases**: Job interviews, research positions, internships, networking
 - **15 OTHER cases**: Complex situations, messages, callbacks
 - **5 Edge cases**: Ambiguous situations testing boundaries
 
@@ -275,13 +281,13 @@ OPENAI_MODEL=gpt-4  # or gpt-3.5-turbo
 Add test cases to the appropriate file in `tests/test_data/`:
 
 ```python
-# tests/test_data/faq_cases.py
-FAQ_TEST_CASES.append({
-    "id": "faq_016",
-    "message": "What is your website?",
-    "expected_intent": "faq",
+# tests/test_data/opportunity_cases.py
+OPPORTUNITY_TEST_CASES.append({
+    "id": "opportunity_016",
+    "message": "We're offering a research fellowship. Can we discuss?",
+    "expected_intent": "opportunity",
     "min_confidence": 0.85,
-    "description": "Website inquiry"
+    "description": "Research fellowship offer"
 })
 ```
 
@@ -295,10 +301,10 @@ FAQ_TEST_CASES.append({
 
 ```python
 # Test specific intent
-from intent_classification.tests.test_data import FAQ_TEST_CASES
+from intent_classification.tests.test_data import OPPORTUNITY_TEST_CASES
 from intent_classification import intent_classifier
 
-for test_case in FAQ_TEST_CASES:
+for test_case in OPPORTUNITY_TEST_CASES:
     result = await intent_classifier.classify_intent(test_case["message"])
     print(f"{test_case['id']}: {result['intent']} (confidence: {result['confidence']})")
 ```
