@@ -1,0 +1,51 @@
+================================================================================
+INTENT CLASSIFICATION TEST REPORT
+================================================================================
+
+OVERALL PERFORMANCE
+--------------------------------------------------------------------------------
+Total Tests:    50
+Correct:        50 (100.0%)
+Incorrect:      0
+Accuracy:       100.0%
+Macro Precision: 100.0%
+Macro Recall:    100.0%
+Macro F1:        100.0%
+
+PER-INTENT PERFORMANCE
+--------------------------------------------------------------------------------
+
+SCAM:
+  Precision:      100.0%
+  Recall:         100.0%
+  F1 Score:       100.0%
+  Support:        15 cases
+  Avg Confidence: 1.00
+  TP/FP/FN/TN:    15/0/0/35
+
+OPPORTUNITY:
+  Precision:      100.0%
+  Recall:         100.0%
+  F1 Score:       100.0%
+  Support:        15 cases
+  Avg Confidence: 1.00
+  TP/FP/FN/TN:    15/0/0/35
+
+OTHER:
+  Precision:      100.0%
+  Recall:         100.0%
+  F1 Score:       100.0%
+  Support:        20 cases
+  Avg Confidence: 0.92
+  TP/FP/FN/TN:    20/0/0/30
+
+CONFUSION MATRIX
+--------------------------------------------------------------------------------
+Actual/Predicted    scam           opportunity    other          
+--------------------------------------------------------------------------------
+scam                15             0              0              
+opportunity         0              15             0              
+other               0              0              20             
+
+
+================================================================================

@@ -4,6 +4,7 @@ from typing import Optional, List
 
 
 class Settings(BaseSettings):
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
     # Environment
     environment: str = Field(default="development")
     debug: bool = Field(default=True)

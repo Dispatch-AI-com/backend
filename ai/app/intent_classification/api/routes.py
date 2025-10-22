@@ -14,7 +14,7 @@ from ..models.responses import IntentClassificationResponse, IntentDefinition
 from ..services.classifier import intent_classifier
 from ..definitions.intent_definitions import (
     get_scam_definition,
-    get_faq_definition,
+    get_opportunity_definition,
     get_other_definition
 )
 from ..tests.test_data import ALL_TEST_CASES
@@ -48,12 +48,12 @@ async def classify_intent(data: IntentClassificationRequest):
 
         Response:
         {
-          "intent": "faq",
+          "intent": "opportunity",
           "confidence": 0.92,
-          "reasoning": "Student asking about office hours, simple FAQ question",
+          "reasoning": "Legitimate job interview invitation",
           "metadata": {
-            "matched_keywords": ["office hours"],
-            "matched_characteristics": ["Asking about office hours or availability"]
+            "matched_keywords": ["interview", "job"],
+            "matched_characteristics": ["Mentions of job interviews or interview invitations"]
           }
         }
         ```
@@ -99,9 +99,9 @@ async def get_intent_definitions() -> Dict[str, IntentDefinition]:
             "negative_examples": [...],
             "keywords": [...]
           },
-          "faq": {
-            "name": "faq",
-            "description": "Common student questions that can be answered by FAQ system",
+          "opportunity": {
+            "name": "opportunity",
+            "description": "Legitimate opportunities for students (interviews, jobs, research)",
             "characteristics": [...],
             "positive_examples": [...],
             "negative_examples": [...],
@@ -120,7 +120,7 @@ async def get_intent_definitions() -> Dict[str, IntentDefinition]:
     """
     return {
         "scam": IntentDefinition(**get_scam_definition()),
-        "faq": IntentDefinition(**get_faq_definition()),
+        "opportunity": IntentDefinition(**get_opportunity_definition()),
         "other": IntentDefinition(**get_other_definition())
     }
 
@@ -147,7 +147,7 @@ async def test_intent_classifier() -> Dict[str, Any]:
           "accuracy": 0.933,
           "by_intent": {
             "scam": {"tests": 15, "passed": 14, "accuracy": 0.93},
-            "faq": {"tests": 15, "passed": 15, "accuracy": 1.0},
+            "opportunity": {"tests": 15, "passed": 15, "accuracy": 1.0},
             "other": {"tests": 15, "passed": 13, "accuracy": 0.87}
           },
           "failed_cases": [...]

@@ -1,0 +1,62 @@
+{
+  "summary": {
+    "total_tests": 50,
+    "correct": 50,
+    "incorrect": 0,
+    "accuracy": 1.0,
+    "macro_precision": 1.0,
+    "macro_recall": 1.0,
+    "macro_f1": 1.0
+  },
+  "per_intent": {
+    "scam": {
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_negatives": 35,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 15,
+      "avg_confidence": 0.9966666666666666,
+      "low_confidence_count": 0
+    },
+    "opportunity": {
+      "true_positives": 15,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_negatives": 35,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 15,
+      "avg_confidence": 0.9966666666666666,
+      "low_confidence_count": 0
+    },
+    "other": {
+      "true_positives": 20,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "true_negatives": 30,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "support": 20,
+      "avg_confidence": 0.9225,
+      "low_confidence_count": 2
+    }
+  },
+  "confusion_matrix": {
+    "scam": {
+      "scam": 15
+    },
+    "opportunity": {
+      "opportunity": 15
+    },
+    "other": {
+      "other": 20
+    }
+  },
+  "misclassification_patterns": {},
+  "misclassified_cases": []
+}

@@ -9,30 +9,30 @@ EDGE_CASE_TEST_CASES = [
     {
         "id": "edge_001",
         "message": "Do I need to pay the enrollment fee upfront?",
-        "expected_intent": "faq",
+        "expected_intent": "other",
         "min_confidence": 0.70,
-        "description": "Edge: Payment inquiry vs scam (should be FAQ)"
+        "description": "Edge: Payment inquiry (not opportunity, requires clarification)"
     },
     {
         "id": "edge_002",
         "message": "I'm having trouble understanding this. Can someone help me?",
-        "expected_intent": "faq",
+        "expected_intent": "other",
         "min_confidence": 0.65,
-        "description": "Edge: Help request (general FAQ)"
+        "description": "Edge: Unclear help request (should be OTHER)"
     },
     {
         "id": "edge_003",
         "message": "I need this information urgently for tomorrow.",
-        "expected_intent": "faq",
+        "expected_intent": "other",
         "min_confidence": 0.65,
-        "description": "Edge: Urgent but legitimate request"
+        "description": "Edge: Urgent but vague request (should be OTHER)"
     },
     {
         "id": "edge_004",
         "message": "Do you accept cash payments?",
-        "expected_intent": "faq",
+        "expected_intent": "other",
         "min_confidence": 0.75,
-        "description": "Edge: Payment method inquiry"
+        "description": "Edge: Payment method inquiry (not opportunity)"
     },
     {
         "id": "edge_005",
