@@ -1,6 +1,6 @@
 # Intent Classification Module
 
-Standalone module for classifying user intents in international student service conversations.
+Standalone module for classifying user intents in international student service conversations with comprehensive testing and fine-tuning capabilities.
 
 ## Overview
 
@@ -10,7 +10,16 @@ This module provides a complete intent classification system that categorizes ca
 - **OPPORTUNITY**: Legitimate chances for students (interviews, jobs, research) → Collect student info to help them seize opportunities
 - **OTHER**: Complex issues, messages, unclear intents → Human review
 
+### Key Features
+
+✅ **Automated Testing** with comprehensive metrics
+✅ **Fine-Tuning Pipeline** for continuous improvement
+✅ **Complete Documentation** with examples
+✅ **FastAPI Integration** ready to use
+
 ## Quick Start
+
+### Basic Usage
 
 ```python
 from intent_classification import IntentClassifier
@@ -21,7 +30,7 @@ result = await classifier.classify_intent("We'd like to invite you for a job int
 # Result:
 # {
 #   "intent": "opportunity",
-#   "confidence": 0.92,
+#   "confidence": 0.95,
 #   "reasoning": "Legitimate job interview invitation requesting student availability",
 #   "metadata": {
 #     "matched_keywords": ["job interview", "available", "invite"],
@@ -30,12 +39,26 @@ result = await classifier.classify_intent("We'd like to invite you for a job int
 # }
 ```
 
+### Run Tests
+
+```bash
+cd /Users/markwang/Documents/Dispatch\ AI/backend/ai
+./app/intent_classification/tests/run_tests.sh
+```
+
+This will:
+1. Run all test cases
+2. Generate performance metrics (Accuracy, Precision, Recall, F1)
+3. Create confusion matrix
+4. Identify misclassifications
+5. Generate fine-tuning datasets
+
 ## Module Structure
 
 ```
 intent_classification/
 ├── README.md                       # This file
-├── __init__.py                     # Module exports
+├── __init__.py                     # Module exports (v2.0.0)
 │
 ├── definitions/                    # Intent definitions
 │   ├── __init__.py
@@ -46,26 +69,40 @@ intent_classification/
 │
 ├── models/                         # Data models
 │   ├── __init__.py
-│   ├── intent_types.py             # IntentType enum
+│   ├── intent_types.py             # IntentType enum (SCAM, OPPORTUNITY, OTHER)
 │   ├── requests.py                 # Request models
 │   └── responses.py                # Response models
 │
 ├── services/                       # Classification logic
 │   ├── __init__.py
-│   ├── classifier.py               # Main classifier
+│   ├── classifier.py               # Main classifier with OpenAI integration
 │   └── prompts.py                  # LLM system prompts
 │
-├── tests/                          # Test suite
+├── tests/                          # Testing & Fine-Tuning Suite ⭐ NEW
 │   ├── __init__.py
-│   ├── test_data/                  # Test data organized by intent
+│   ├── test_runner.py              # Automated test runner with metrics
+│   ├── fine_tuning.py              # Fine-tuning data generator
+│   ├── demo.py                     # Quick demonstration script
+│   ├── run_tests.sh                # Convenience script
+│   ├── README.md                   # Complete testing documentation
+│   ├── QUICK_START.md              # Quick reference guide
+│   ├── TESTING_SUMMARY.md          # System overview
+│   │
+│   ├── test_data/                  # Test cases organized by intent
 │   │   ├── __init__.py
 │   │   ├── scam_cases.py           # 15 SCAM test cases
 │   │   ├── opportunity_cases.py    # 15 OPPORTUNITY test cases
 │   │   ├── other_cases.py          # 15 OTHER test cases
 │   │   └── edge_cases.py           # 5 edge cases
 │   │
-│   ├── test_classifier.py          # Unit tests
-│   └── test_api.py                 # API tests
+│   ├── results/                    # Test results (auto-generated)
+│   │   ├── metrics_*.json          # Performance metrics
+│   │   ├── report_*.txt            # Human-readable reports
+│   │   └── misclassified_*.json    # Failed cases for analysis
+│   │
+│   └── fine_tuning_data/           # Fine-tuning datasets (auto-generated)
+│       ├── train_*.jsonl           # Training data (OpenAI format)
+│       └── validation_*.jsonl      # Validation data
 │
 └── api/                            # API endpoints
     ├── __init__.py
@@ -138,6 +175,7 @@ intent_classification/
 
 [Full documentation](./definitions/other.md)
 
+
 ## API Endpoints
 
 ### POST /api/ai/intent/classify
@@ -157,7 +195,7 @@ Classify user intent from a message.
 ```json
 {
   "intent": "opportunity",
-  "confidence": 0.88,
+  "confidence": 0.95,
   "reasoning": "Legitimate internship opportunity being offered to student",
   "metadata": {
     "matched_keywords": ["internship", "position", "available"],
@@ -170,9 +208,33 @@ Classify user intent from a message.
 
 Get all intent definitions with characteristics, examples, and keywords.
 
+**Response**:
+```json
+{
+  "scam": { "name": "scam", "description": "...", ... },
+  "opportunity": { "name": "opportunity", "description": "...", ... },
+  "other": { "name": "other", "description": "...", ... }
+}
+```
+
 ### POST /api/ai/intent/test
 
-Run the classifier against all test cases (50 total) and get accuracy metrics.
+Run the classifier against all test cases and get accuracy metrics.
+
+**Response**:
+```json
+{
+  "total_tests": <number>,
+  "passed": <number>,
+  "failed": <number>,
+  "accuracy": <float>,
+  "by_intent": {
+    "scam": {"tests": <number>, "passed": <number>, "accuracy": <float>},
+    "opportunity": {"tests": <number>, "passed": <number>, "accuracy": <float>},
+    "other": {"tests": <number>, "passed": <number>, "accuracy": <float>}
+  }
+}
+```
 
 ### GET /api/ai/intent/health
 
@@ -204,7 +266,7 @@ elif result["intent"] == IntentType.OTHER.value:
 ### With Conversation History
 
 ```python
-# Provide conversation context
+# Provide conversation context for better accuracy
 result = await classifier.classify_intent(
     current_message="Can you help me?",
     message_history=[
@@ -224,9 +286,26 @@ from intent_classification import (
 )
 
 opportunity_def = get_opportunity_definition()
-print(opportunity_def["characteristics"])
-print(opportunity_def["positive_examples"])
-print(opportunity_def["keywords"])
+print(opportunity_def["name"])                # "opportunity"
+print(opportunity_def["characteristics"])     # List of characteristics
+print(opportunity_def["positive_examples"])   # Example messages
+print(opportunity_def["keywords"])            # List of keywords
+```
+
+### Programmatic Testing
+
+```python
+from intent_classification.tests.test_runner import IntentTestRunner
+
+runner = IntentTestRunner()
+metrics = await runner.run_all_tests()
+
+print(f"Accuracy: {metrics['summary']['accuracy']:.1%}")
+print(f"F1 Score: {metrics['summary']['macro_f1']:.1%}")
+
+# Access per-intent metrics
+scam_metrics = metrics['per_intent']['scam']
+print(f"SCAM Recall: {scam_metrics['recall']:.1%}")
 ```
 
 ## Classification Approach
@@ -252,27 +331,27 @@ Is it complex, personalized, or unclear?
 └─ Unsure → OTHER (default)
 ```
 
-## Test Data
-
-The module includes 50 test cases:
-- **15 SCAM cases**: Various fraud scenarios
-- **15 OPPORTUNITY cases**: Job interviews, research positions, internships, networking
-- **15 OTHER cases**: Complex situations, messages, callbacks
-- **5 Edge cases**: Ambiguous situations testing boundaries
-
-Run tests via API:
-```bash
-curl -X POST http://localhost:8000/api/ai/intent/test
-```
-
 ## Configuration
 
-The classifier uses OpenAI GPT models. Configure via environment variables:
+### Environment Variables
 
 ```bash
+# Required
 OPENAI_API_KEY=your_api_key
-OPENAI_MODEL=gpt-4  # or gpt-3.5-turbo
+
+# Optional (defaults shown)
+OPENAI_MODEL=gpt-4o-mini
+OPENAI_MAX_TOKENS=2500
+OPENAI_TEMPERATURE=0.0
 ```
+
+### Model Configuration
+
+The classifier uses OpenAI GPT models with:
+- **Temperature**: 0.3 (for consistent classification)
+- **Max Tokens**: 500
+- **Response Format**: JSON mode
+- **Model**: gpt-4o-mini (default) or fine-tuned variant
 
 ## Development
 
@@ -291,13 +370,30 @@ OPPORTUNITY_TEST_CASES.append({
 })
 ```
 
+After adding cases, run tests to validate:
+
+```bash
+./app/intent_classification/tests/run_tests.sh
+```
+
 ### Modifying Intent Definitions
 
-1. Update the markdown file in `definitions/` (for documentation)
-2. Update the corresponding function in `definitions/intent_definitions.py` (for code)
-3. Update system prompts in `services/prompts.py` if needed
+To update intent definitions:
 
-### Running Tests
+1. Update markdown file in `definitions/` (for documentation)
+2. Update corresponding function in `definitions/intent_definitions.py`
+3. Update system prompts in `services/prompts.py` if needed
+4. Run tests to validate changes
+
+```bash
+# After changes
+./app/intent_classification/tests/run_tests.sh
+
+# Check accuracy hasn't degraded
+cat app/intent_classification/tests/results/report_*.txt
+```
+
+### Running Tests Programmatically
 
 ```python
 # Test specific intent
@@ -306,7 +402,8 @@ from intent_classification import intent_classifier
 
 for test_case in OPPORTUNITY_TEST_CASES:
     result = await intent_classifier.classify_intent(test_case["message"])
-    print(f"{test_case['id']}: {result['intent']} (confidence: {result['confidence']})")
+    is_correct = result["intent"] == test_case["expected_intent"]
+    print(f"{test_case['id']}: {'✅' if is_correct else '❌'} {result['intent']}")
 ```
 
 ## Best Practices
@@ -316,19 +413,21 @@ for test_case in OPPORTUNITY_TEST_CASES:
 3. **Review OTHER cases**: Regularly review messages classified as OTHER to identify patterns
 4. **Update definitions**: Refine intent definitions based on real-world usage
 5. **Test regularly**: Run the test suite after any changes to definitions or prompts
+6. **Track metrics**: Monitor accuracy, precision, and recall in production
+7. **Fine-tune when needed**: If accuracy drops below 95%, consider fine-tuning
 
 ## Integration
 
-### With existing AI module
+### With FastAPI Application
 
 ```python
-# In your main FastAPI app
+# In main.py
 from intent_classification.api import router as intent_router
 
 app.include_router(intent_router, prefix="/api/ai")
 ```
 
-### Standalone usage
+### Standalone Usage
 
 ```python
 from intent_classification import (
@@ -338,28 +437,115 @@ from intent_classification import (
     IntentClassificationResponse
 )
 
-# Use as needed
+# Initialize classifier
 classifier = IntentClassifier()
+
+# Classify message
 result = await classifier.classify_intent("Your message here")
+
+# Access result
+intent = result["intent"]
+confidence = result["confidence"]
 ```
+
+## Performance Monitoring
+
+### Key Metrics to Track
+
+| Metric | Excellent | Good | Needs Attention |
+|--------|-----------|------|-----------------|
+| **Overall Accuracy** | > 95% | 90-95% | < 90% |
+| **SCAM Recall** | 100% | 95-99% | < 95% ⚠️ |
+| **OPPORTUNITY Precision** | > 90% | 85-90% | < 85% |
+| **F1 Score (all intents)** | > 0.90 | 0.85-0.90 | < 0.85 |
+
+**Critical**: SCAM recall < 95% is dangerous - means missing fraud attempts!
+
+### When to Fine-Tune
+
+Consider fine-tuning if:
+- Overall accuracy drops below 90%
+- SCAM recall falls below 95%
+- OPPORTUNITY precision falls below 85%
+- High number of misclassifications in production
+- New types of messages appear frequently
 
 ## Troubleshooting
 
-### Low accuracy
-- Check if intent definitions match your use case
-- Review failed test cases to identify patterns
-- Adjust confidence thresholds in test data
-- Refine system prompts
+### Low Accuracy
 
-### Import errors
-- Ensure module is in Python path
-- Check all `__init__.py` files are present
-- Verify dependencies are installed
+**Symptoms**: Test accuracy < 90%
 
-### API errors
-- Check OpenAI API key is set
-- Verify OpenAI model is available
-- Check request format matches examples
+**Solutions**:
+1. Review failed test cases in `tests/results/misclassified_*.json`
+2. Check intent definitions for clarity
+3. Update system prompts with better examples
+4. Generate fine-tuning data and train model
+5. Add more test cases for weak areas
+
+### High False Positive Rate (SCAM)
+
+**Symptoms**: Non-scam messages classified as SCAM
+
+**Solutions**:
+1. Review SCAM definition for over-broad keywords
+2. Add negative examples to SCAM definition
+3. Increase confidence threshold for SCAM classification
+4. Fine-tune with correction examples
+
+### Missing Opportunities
+
+**Symptoms**: OPPORTUNITY messages classified as OTHER
+
+**Solutions**:
+1. Expand OPPORTUNITY keywords list
+2. Add more positive examples
+3. Review OTHER vs OPPORTUNITY boundary cases
+4. Fine-tune with OPPORTUNITY emphasis
+
+### Import Errors
+
+**Symptoms**: `ModuleNotFoundError` or import failures
+
+**Solutions**:
+```bash
+# Ensure in correct directory
+cd /Users/markwang/Documents/Dispatch\ AI/backend/ai
+
+# Check Python path
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/app"
+
+# Verify dependencies
+uv sync
+```
+
+### API Errors
+
+**Symptoms**: OpenAI API failures
+
+**Solutions**:
+1. Check API key: `echo $OPENAI_API_KEY`
+2. Verify model availability
+3. Check rate limits
+4. Review error logs in test results
+
+## Documentation
+
+### Main Documentation
+- **This file**: Module overview and API reference
+- `tests/README.md`: Complete testing guide
+- `tests/QUICK_START.md`: Quick reference
+- `tests/TESTING_SUMMARY.md`: System overview
+
+### Intent Definitions
+- `definitions/scam.md`: SCAM intent documentation
+- `definitions/opportunity.md`: OPPORTUNITY intent documentation
+- `definitions/other.md`: OTHER intent documentation
+
+### Test Results
+- `tests/results/report_*.txt`: Human-readable test reports
+- `tests/results/metrics_*.json`: Detailed metrics in JSON
+- `tests/results/misclassified_*.json`: Failed cases for analysis
 
 ## License
 
@@ -367,4 +553,20 @@ Internal use only. Part of Dispatch AI backend system.
 
 ## Support
 
-For questions or issues with this module, please contact the development team.
+### For Testing Issues
+See `tests/README.md` for detailed testing documentation.
+
+### For Integration Issues
+Contact the development team.
+
+### For Performance Issues
+1. Run tests: `./app/intent_classification/tests/run_tests.sh`
+2. Review metrics in `tests/results/`
+3. Check logs for errors
+4. Contact development team with test results
+
+---
+
+**Status**: 🔧 In Development
+**Version**: 2.0.0
+**Last Updated**: 2025-10-22
