@@ -1,7 +1,8 @@
 import sys
 from pathlib import Path
 from config import get_settings
-from api import health, chat, call, summary, email, dispatch, intent
+from api import health, chat, call, summary, email, dispatch
+from intent_classification.api import router as intent_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_mcp.server import FastApiMCP
@@ -35,7 +36,7 @@ app.include_router(call.router, prefix=settings.api_prefix)
 app.include_router(summary.router, prefix=settings.api_prefix)
 app.include_router(email.router, prefix=settings.api_prefix)
 app.include_router(dispatch.router, prefix=settings.api_prefix)
-app.include_router(intent.router, prefix=settings.api_prefix)
+app.include_router(intent_router, prefix=settings.api_prefix)
 
 
 @app.get("/")

@@ -1,24 +1,24 @@
 """
-Intent Classification API
+Intent Classification API Routes
 
-Provides endpoints for classifying user intents in student service conversations.
-This is a standalone API that does not affect existing workflows.
+FastAPI endpoints for intent classification.
+Provides classification, testing, and definition retrieval endpoints.
 """
 
 from fastapi import APIRouter, HTTPException
-from models.intent import (
-    IntentClassificationRequest,
-    IntentClassificationResponse,
-    IntentDefinition
-)
-from services.intent_classifier import intent_classifier
-from utils.prompts.intent_prompts import (
-    get_scam_call_definition,
-    get_inquiry_definition,
-    get_leave_message_definition
-)
-from tests.intent_test_data import ALL_TEST_CASES
 from typing import Dict, Any
+
+# Import from intent_classification module
+from ..models.requests import IntentClassificationRequest
+from ..models.responses import IntentClassificationResponse, IntentDefinition
+from ..services.classifier import intent_classifier
+from ..definitions.intent_definitions import (
+    get_scam_definition,
+    get_faq_definition,
+    get_other_definition
+)
+from ..tests.test_data import ALL_TEST_CASES
+
 
 router = APIRouter(
     prefix="/intent",
@@ -43,17 +43,17 @@ async def classify_intent(data: IntentClassificationRequest):
         ```
         POST /api/ai/intent/classify
         {
-          "currentMessage": "What are the prerequisites for CS101?"
+          "currentMessage": "What are your office hours?"
         }
 
         Response:
         {
-          "intent": "inquiry",
+          "intent": "faq",
           "confidence": 0.92,
-          "reasoning": "Student asking about course prerequisites, typical inquiry",
+          "reasoning": "Student asking about office hours, simple FAQ question",
           "metadata": {
-            "matched_keywords": ["prerequisites", "course"],
-            "matched_characteristics": ["Asking about course requirements"]
+            "matched_keywords": ["office hours"],
+            "matched_characteristics": ["Asking about office hours or availability"]
           }
         }
         ```
@@ -91,22 +91,37 @@ async def get_intent_definitions() -> Dict[str, IntentDefinition]:
 
         Response:
         {
-          "scam_call": {
-            "name": "scam_call",
-            "description": "Scam calls or malicious callers...",
+          "scam": {
+            "name": "scam",
+            "description": "Scam calls or malicious callers attempting fraud",
             "characteristics": [...],
             "positive_examples": [...],
             "negative_examples": [...],
             "keywords": [...]
           },
-          ...
+          "faq": {
+            "name": "faq",
+            "description": "Common student questions that can be answered by FAQ system",
+            "characteristics": [...],
+            "positive_examples": [...],
+            "negative_examples": [...],
+            "keywords": [...]
+          },
+          "other": {
+            "name": "other",
+            "description": "Unrecognized intents requiring human handling",
+            "characteristics": [...],
+            "positive_examples": [...],
+            "negative_examples": [...],
+            "keywords": [...]
+          }
         }
         ```
     """
     return {
-        "scam_call": IntentDefinition(**get_scam_call_definition()),
-        "inquiry": IntentDefinition(**get_inquiry_definition()),
-        "leave_message": IntentDefinition(**get_leave_message_definition())
+        "scam": IntentDefinition(**get_scam_definition()),
+        "faq": IntentDefinition(**get_faq_definition()),
+        "other": IntentDefinition(**get_other_definition())
     }
 
 
@@ -131,9 +146,9 @@ async def test_intent_classifier() -> Dict[str, Any]:
           "failed": 3,
           "accuracy": 0.933,
           "by_intent": {
-            "scam_call": {"tests": 15, "passed": 14, "accuracy": 0.93},
-            "inquiry": {"tests": 15, "passed": 15, "accuracy": 1.0},
-            "leave_message": {"tests": 15, "passed": 13, "accuracy": 0.87}
+            "scam": {"tests": 15, "passed": 14, "accuracy": 0.93},
+            "faq": {"tests": 15, "passed": 15, "accuracy": 1.0},
+            "other": {"tests": 15, "passed": 13, "accuracy": 0.87}
           },
           "failed_cases": [...]
         }

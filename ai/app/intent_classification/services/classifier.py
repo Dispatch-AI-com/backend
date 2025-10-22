@@ -9,8 +9,8 @@ from openai import AsyncOpenAI
 from typing import Optional, List, Dict, Any
 import json
 from config import get_settings
-from utils.prompts.intent_prompts import get_intent_classification_system_prompt
 from services.redis_service import get_message_history
+from .prompts import get_intent_classification_system_prompt
 
 settings = get_settings()
 
@@ -18,10 +18,10 @@ settings = get_settings()
 class IntentClassifier:
     """Intent classification service
 
-    Classifies user intent in student service conversations into:
-    - SCAM_CALL: Scam or malicious calls
-    - INQUIRY: Student questions (will route to FAQ)
-    - LEAVE_MESSAGE: Message leaving requests (callback)
+    Classifies user intent in international student service conversations into:
+    - SCAM: Scam or malicious calls (fraud attempts)
+    - FAQ: Common student questions answerable by FAQ system
+    - OTHER: Complex issues, messages, or unclear intents requiring human handling
     """
 
     def __init__(self, api_key: Optional[str] = None):
@@ -56,7 +56,7 @@ class IntentClassifier:
 
         Returns:
             Dict containing:
-                - intent: Classification result (scam_call/inquiry/leave_message)
+                - intent: Classification result (scam/faq/other)
                 - confidence: Confidence score (0.0-1.0)
                 - reasoning: Explanation of classification
                 - metadata: Additional info (matched keywords, characteristics)
@@ -98,7 +98,7 @@ class IntentClassifier:
             print(f"❌ [INTENT_CLASSIFIER] Error during classification: {str(e)}")
             # Return safe fallback
             return {
-                "intent": "inquiry",  # Default to inquiry for safety
+                "intent": "other",  # Default to other for safety (human review)
                 "confidence": 0.0,
                 "reasoning": f"Classification failed due to error: {str(e)}",
                 "metadata": {
@@ -151,17 +151,17 @@ class IntentClassifier:
         """
         # Ensure all required fields exist
         validated = {
-            "intent": result.get("intent", "inquiry"),
+            "intent": result.get("intent", "other"),
             "confidence": float(result.get("confidence", 0.0)),
             "reasoning": result.get("reasoning", "No reasoning provided"),
             "metadata": result.get("metadata", {})
         }
 
         # Validate intent value
-        valid_intents = ["scam_call", "inquiry", "leave_message"]
+        valid_intents = ["scam", "faq", "other"]
         if validated["intent"] not in valid_intents:
-            print(f"⚠️ [INTENT_CLASSIFIER] Invalid intent '{validated['intent']}', defaulting to 'inquiry'")
-            validated["intent"] = "inquiry"
+            print(f"⚠️ [INTENT_CLASSIFIER] Invalid intent '{validated['intent']}', defaulting to 'other'")
+            validated["intent"] = "other"
             validated["confidence"] = 0.0
 
         # Validate confidence range
