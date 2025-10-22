@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { CSRFGuard } from '@/common/guards/csrf.guard';
 import { AiHttpModule } from '@/lib/ai/ai-http.module';
@@ -62,6 +63,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     UserModule,
     OnboardingModule,
     SettingModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [
     {

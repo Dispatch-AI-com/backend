@@ -29,6 +29,12 @@ export class Subscription {
   @Prop({ required: true, enum: ['active', 'failed', 'cancelled'] })
   status!: 'active' | 'failed' | 'cancelled';
 
+  @Prop({ required: true, default: 0 })
+  secondsLeft!: number;
+
+  @Prop({ required: true, default: 60 })
+  billGranularitySec!: number;
+
   @Prop({ required: false })
   createdAt!: Date;
 
@@ -37,3 +43,5 @@ export class Subscription {
 }
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);
+
+SubscriptionSchema.index({ status: 1, endAt: 1 });

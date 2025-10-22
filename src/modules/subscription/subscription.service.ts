@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { Model, Types } from 'mongoose';
 import { RRule } from 'rrule';
 import Stripe from 'stripe';
@@ -31,6 +32,76 @@ export class SubscriptionService {
     private readonly UserModel: Model<UserDocument>,
     private readonly stripeService: StripeService,
   ) {}
+
+  @Cron(CronExpression.EVERY_DAY_AT_1AM) // 每天 01:00 跑一次
+  async resetIfMonthlyDue(): Promise<void> {
+    const now = new Date();
+    this.logger.log('resetIfMonthlyDue() start');
+
+    const dueSubs = await this.subscriptionModel
+      .find({
+        status: 'active',
+        endAt: { $lte: now },
+      })
+      .lean();
+
+    for (const sub of dueSubs) {
+      try {
+        const plan = await this.planModel.findById(sub.planId).lean();
+        const r = plan?.pricing[0]?.rrule;
+        if (!plan || r == null || r.trim() === '') {
+          this.logger.warn(`no plan or rrule`);
+          continue;
+        }
+
+        let rule: RRule;
+        try {
+          rule = RRule.fromString(r);
+        } catch {
+          this.logger.error(`bad rrule plan=${plan._id.toString()}`);
+          continue;
+        }
+
+        let newStart = sub.endAt;
+        let newEnd = rule.after(newStart);
+        if (!newEnd) {
+          this.logger.error(`no next endAt`);
+          continue;
+        }
+        while (newEnd <= now) {
+          newStart = newEnd;
+          const n = rule.after(newStart);
+          if (!n) break;
+          newEnd = n;
+        }
+
+        const minutes = parseInt(plan.features.callMinutes || '0', 10) || 0;
+        const gran = sub.billGranularitySec;
+
+        await this.subscriptionModel.updateOne(
+          { _id: sub._id },
+          {
+            $set: {
+              startAt: newStart,
+              endAt: newEnd,
+              secondsLeft: minutes * 60,
+              billGranularitySec: gran,
+              updatedAt: new Date(),
+            },
+          },
+        );
+
+        this.logger.log(`reset success`);
+      } catch (e) {
+        this.logger.error(
+          `reset error: ${e instanceof Error ? e.message : String(e)}`,
+          e instanceof Error ? e : new Error(String(e)),
+        );
+      }
+    }
+
+    this.logger.log(`reset success`);
+  }
 
   async createSubscription(dto: CreateSubscriptionDto): Promise<{
     message: string;
@@ -101,6 +172,9 @@ export class SubscriptionService {
       throw new BadRequestException('Could not compute end date from rrule');
     }
 
+    const includedMinutes = Number(plan.features.callMinutes) || 0;
+    const billGranularitySec = 60;
+
     await this.subscriptionModel.create({
       userId: new Types.ObjectId(userId),
       planId: new Types.ObjectId(planId),
@@ -111,6 +185,8 @@ export class SubscriptionService {
       status: 'active',
       startAt: now,
       endAt,
+      secondsLeft: includedMinutes * 60,
+      billGranularitySec,
     });
     return {
       message: 'Subscription activated',
@@ -371,5 +447,32 @@ export class SubscriptionService {
     }
 
     return refunds;
+  }
+
+  async finalizeUsageByUserId(
+    userId: string,
+    rawDurationSec: number,
+  ): Promise<void> {
+    const sub = await this.subscriptionModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        status: 'active',
+      })
+      .lean();
+
+    if (!sub) throw new NotFoundException('Active subscription not found');
+    const gran = sub.billGranularitySec || 60;
+    const billedSec = Math.ceil(rawDurationSec / gran) * gran;
+
+    await this.subscriptionModel.updateOne({ _id: sub._id }, [
+      {
+        $set: {
+          secondsLeft: {
+            $max: [{ $subtract: ['$secondsLeft', billedSec] }, 0],
+          },
+          updatedAt: new Date(),
+        },
+      },
+    ]);
   }
 }

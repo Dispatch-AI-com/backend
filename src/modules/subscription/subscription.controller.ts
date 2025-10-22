@@ -44,6 +44,26 @@ export class SubscriptionController {
     return this.subscriptionService.createSubscription(dto);
   }
 
+  @Get('admin/cron/reset-now')
+  @ApiOperation({ summary: '[Admin] Manually run reset job once' })
+  @ApiResponse({ status: 200, description: 'Reset successful' })
+  @HttpCode(HttpStatus.OK)
+  async resetNow(): Promise<{ ok: true }> {
+    await this.subscriptionService.resetIfMonthlyDue();
+    return { ok: true };
+  }
+
+  @Get(':userId/remaining')
+  @ApiOperation({ summary: 'Get remaining call time for current cycle' })
+  @HttpCode(HttpStatus.OK)
+  async getRemaining(
+    @Param('userId') userId: string,
+  ): Promise<{ seconds: number; minutes: number }> {
+    const sub = await this.subscriptionService.getActiveByuser(userId);
+    const seconds = Math.max(sub.secondsLeft || 0, 0);
+    return { seconds, minutes: Math.floor(seconds / 60) };
+  }
+
   @Post(':userId/retry-payment')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
