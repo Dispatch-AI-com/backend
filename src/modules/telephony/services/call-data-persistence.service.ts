@@ -12,6 +12,7 @@ import {
   ServiceBookingStatus,
 } from '@/modules/service-booking/dto/create-service-booking.dto';
 import { ServiceBookingService } from '@/modules/service-booking/service-booking.service';
+import { SubscriptionService } from '@/modules/subscription/subscription.service';
 import { TranscriptService } from '@/modules/transcript/transcript.service';
 import { CreateTranscriptChunkDto } from '@/modules/transcript-chunk/dto/create-transcript-chunk.dto';
 import { TranscriptChunkService } from '@/modules/transcript-chunk/transcript-chunk.service';
@@ -37,6 +38,7 @@ export class CallDataPersistenceService {
     private readonly serviceBookingService: ServiceBookingService,
     private readonly aiSummaryService: AiSummaryService,
     private readonly http: HttpService,
+    private readonly subscriptionService: SubscriptionService,
   ) {}
 
   async processCallCompletion(
@@ -77,6 +79,22 @@ export class CallDataPersistenceService {
         session.user.userInfo.name ?? 'Unknown Caller',
         new Date(twilioParams.Timestamp),
       );
+
+      try {
+        const durationSec = Number(twilioParams.CallDuration || 0) || 0;
+        await this.subscriptionService.finalizeUsageByUserId(
+          session.company.userId,
+          durationSec,
+        );
+        winstonLogger.log(
+          `[CallDataPersistenceService][processCallCompletion] Deducted ${String(durationSec)}s from subscription for user=${session.company.userId} callSid=${callSid}`,
+        );
+      } catch (e) {
+        winstonLogger.error(
+          `[CallDataPersistenceService][processCallCompletion] Failed to deduct usage for user=${session.company.userId} callSid=${callSid}`,
+          { error: (e as Error).message },
+        );
+      }
 
       // Step 4: Create transcript and chunks
       await this.createTranscriptAndChunks(

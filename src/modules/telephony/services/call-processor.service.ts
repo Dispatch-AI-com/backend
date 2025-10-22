@@ -29,9 +29,9 @@ export class CallProcessorService {
   > = {
     // Final statuses that require data persistence
     completed: this.handleCompletedStatus.bind(this),
-    busy: this.handleFinalStatus.bind(this),
-    failed: this.handleFinalStatus.bind(this),
-    'no-answer': this.handleFinalStatus.bind(this),
+    busy: this.handleNonFinalStatus.bind(this),
+    failed: this.handleNonFinalStatus.bind(this),
+    'no-answer': this.handleNonFinalStatus.bind(this),
     // Non-final statuses that only require logging
     queued: this.handleNonFinalStatus.bind(this),
     ringing: this.handleNonFinalStatus.bind(this),
