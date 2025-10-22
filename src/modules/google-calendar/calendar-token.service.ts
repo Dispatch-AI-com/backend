@@ -84,6 +84,36 @@ export class CalendarTokenService {
   }
 
   /**
+   * Update stored Google user info fields without touching token values.
+   */
+  async updateUserInfo(userId: string, info: {
+    googleUserId?: string;
+    userEmail?: string;
+    userName?: string;
+    userPicture?: string;
+  }): Promise<void> {
+    const token = await this.calendarTokenModel.findOne({
+      userId: new Types.ObjectId(userId),
+      isActive: true,
+    });
+    if (!token) return;
+
+    await this.calendarTokenModel.findByIdAndUpdate(
+      token._id,
+      {
+        $set: {
+          googleUserId: info.googleUserId,
+          userEmail: info.userEmail,
+          userName: info.userName,
+          userPicture: info.userPicture,
+          updatedAt: new Date(),
+        },
+      },
+      { runValidators: true, overwrite: false },
+    );
+  }
+
+  /**
    * Refresh access token.
    */
   async refreshToken(userId: string): Promise<{
