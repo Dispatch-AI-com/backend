@@ -350,3 +350,4 @@ describe('CompanyController (Integration - Auth)', () => {
   });
 });
 
+

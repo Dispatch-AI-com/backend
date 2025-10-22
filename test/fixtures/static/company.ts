@@ -48,3 +48,4 @@ export const staticAdminCompany: Partial<Company> = {
   },
 };
 
+
