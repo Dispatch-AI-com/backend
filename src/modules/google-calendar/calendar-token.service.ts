@@ -84,6 +84,36 @@ export class CalendarTokenService {
   }
 
   /**
+   * Update stored Google user info fields without touching token values.
+   */
+  async updateUserInfo(userId: string, info: {
+    googleUserId?: string;
+    userEmail?: string;
+    userName?: string;
+    userPicture?: string;
+  }): Promise<void> {
+    const token = await this.calendarTokenModel.findOne({
+      userId: new Types.ObjectId(userId),
+      isActive: true,
+    });
+    if (!token) return;
+
+    await this.calendarTokenModel.findByIdAndUpdate(
+      token._id,
+      {
+        $set: {
+          googleUserId: info.googleUserId,
+          userEmail: info.userEmail,
+          userName: info.userName,
+          userPicture: info.userPicture,
+          updatedAt: new Date(),
+        },
+      },
+      { runValidators: true, overwrite: false },
+    );
+  }
+
+  /**
    * Refresh access token.
    */
   async refreshToken(userId: string): Promise<{
@@ -161,6 +191,20 @@ export class CalendarTokenService {
     );
     const expiresAt = toValidDate('expiresAt', createDto.expiresAt);
 
+    // user info
+    const googleUserId = (createDto as any).googleUserId
+      ? assertString('googleUserId', (createDto as any).googleUserId)
+      : undefined;
+    const userEmail = (createDto as any).userEmail
+      ? assertString('userEmail', (createDto as any).userEmail)
+      : undefined;
+    const userName = (createDto as any).userName
+      ? assertString('userName', (createDto as any).userName)
+      : undefined;
+    const userPicture = (createDto as any).userPicture
+      ? assertString('userPicture', (createDto as any).userPicture)
+      : undefined;
+
     // Find existing token
     const existingToken = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userIdStr),
@@ -179,6 +223,10 @@ export class CalendarTokenService {
             tokenType,
             scope,
             calendarId,
+            googleUserId,
+            userEmail,
+            userName,
+            userPicture,
             updatedAt: new Date(),
           },
         },
@@ -202,6 +250,10 @@ export class CalendarTokenService {
         tokenType,
         scope,
         calendarId,
+        googleUserId,
+        userEmail,
+        userName,
+        userPicture,
       };
       const newToken = new this.calendarTokenModel(newTokenPayload);
       return await newToken.save();

@@ -54,6 +54,15 @@ export class CalendarOAuthController {
     }
     const userId = parsedUserId ?? userIdFromQuery;
 
+    // get user info (using UserInfo API, no extra configuration)
+    let userInfo = null;
+    try {
+      userInfo = await this.oauthService.getUserInfo(token.accessToken);
+      console.log('user info:', userInfo);
+    } catch (error) {
+      console.error('get user info failed:', error);
+    }
+
     // Persist token using existing storage logic
     const expiresAt = new Date(
       Date.now() + token.expiresIn * 1000,
@@ -66,6 +75,11 @@ export class CalendarOAuthController {
       tokenType: token.tokenType ?? 'Bearer',
       scope: token.scope ?? 'https://www.googleapis.com/auth/calendar',
       calendarId: 'primary',
+      // store user info
+      googleUserId: userInfo?.id,
+      userEmail: userInfo?.email,
+      userName: userInfo?.name,
+      userPicture: userInfo?.picture,
     });
 
     const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';

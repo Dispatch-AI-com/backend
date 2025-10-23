@@ -11,7 +11,6 @@ export class CalendarToken {
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
     required: true,
-    unique: true,
   })
   userId!: Types.ObjectId;
 
@@ -35,6 +34,18 @@ export class CalendarToken {
 
   @Prop()
   calendarId?: string;
+
+  @Prop()
+  googleUserId?: string;
+
+  @Prop()
+  userEmail?: string;
+
+  @Prop()
+  userName?: string;
+
+  @Prop()
+  userPicture?: string;
 
   @Prop({ default: true })
   isActive!: boolean;
