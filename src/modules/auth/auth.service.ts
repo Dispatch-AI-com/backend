@@ -76,11 +76,9 @@ export class AuthService {
       email: userData.email,
       password: hashedPassword,
       role: userData.role ?? EUserRole.user,
-      position: userData.position,
-      address: userData.address,
-      // Default phone numbers - these can be updated later
-      twilioPhoneNumber: '',
-      fullPhoneNumber: '',
+      ...(userData.position != null &&
+        userData.position.trim() !== '' && { position: userData.position }),
+      ...(userData.address != null && { address: userData.address }),
     };
 
     const newUser = new this.userModel(secureUserData);
