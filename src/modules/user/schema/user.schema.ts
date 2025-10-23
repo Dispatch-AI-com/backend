@@ -28,11 +28,11 @@ export class User extends Document {
   @Prop({ required: false, select: false })
   password?: string;
 
-  @Prop()
-  twilioPhoneNumber!: string;
+  @Prop({ required: false })
+  twilioPhoneNumber?: string;
 
-  @Prop()
-  fullPhoneNumber!: string;
+  @Prop({ required: false })
+  fullPhoneNumber?: string;
 
   @Prop()
   readonly createdAt!: Date;

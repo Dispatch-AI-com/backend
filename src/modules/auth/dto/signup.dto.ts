@@ -77,11 +77,13 @@ export class CreateUserDto {
   @IsString({ message: 'Position must be a string' })
   position?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'User billing address',
     type: AddressDto,
+    required: false,
   })
+  @IsOptional()
   @ValidateNested()
   @Type(() => AddressDto)
-  address!: AddressDto;
+  address?: AddressDto;
 }

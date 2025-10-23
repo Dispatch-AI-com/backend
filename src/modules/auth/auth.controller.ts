@@ -39,17 +39,10 @@ export class AuthController {
           lastName: 'User',
           email: 'test@example.com',
           password: 'Test123!',
-          role: 'user',
-          position: 'Software Developer',
-          address: {
-            streetAddress: '123 Test Street',
-            suburb: 'Sydney',
-            state: 'NSW',
-            postcode: '2000',
-            unitAptPOBox: 'Unit 1',
-          },
         },
-        summary: 'Registration Example',
+        summary: 'Basic Registration Example',
+        description:
+          'Signup with required fields only. Address and other details are collected during onboarding.',
       },
     },
   })
