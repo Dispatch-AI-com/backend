@@ -18,6 +18,9 @@ export class VerificationCode extends Document {
   @Prop({ required: true })
   expiresAt!: Date;
 
+  @Prop({ required: true, default: Date.now })
+  sentAt!: Date; // Track when the code was sent for cooldown
+
   @Prop()
   readonly createdAt!: Date;
 
