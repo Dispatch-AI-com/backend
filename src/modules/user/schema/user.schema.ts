@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document } from 'mongoose';
 
 import { EUserRole } from '@/common/constants/user.constant';
 
@@ -28,10 +28,10 @@ export class User extends Document {
   @Prop({ required: false, select: false })
   password?: string;
 
-  @Prop({ required: false })
-  twilioPhoneNumber?: string;
+  @Prop()
+  twilioPhoneNumber!: string;
 
-  @Prop({ required: false })
+  @Prop()
   fullPhoneNumber?: string;
 
   @Prop()
@@ -62,6 +62,12 @@ export class User extends Document {
     default: EUserRole.user,
   })
   role!: EUserRole;
+
+  @Prop({ default: false })
+  emailVerified!: boolean;
+
+  @Prop({ default: false })
+  phoneVerified!: boolean;
 
   // Add billing address
   @Prop({
