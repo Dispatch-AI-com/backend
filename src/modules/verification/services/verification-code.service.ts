@@ -58,53 +58,6 @@ export class VerificationCodeService {
     return savedCode;
   }
 
-  private async checkCooldownPeriod(
-    userId: string,
-    contact: string,
-    type: 'email' | 'phone',
-  ): Promise<void> {
-    const recentCode = await this.verificationCodeModel
-      .findOne({
-        userId: new Types.ObjectId(userId),
-        contact: { $eq: contact },
-        type: { $eq: type },
-        sentAt: { $gte: new Date(Date.now() - this.COOLDOWN_PERIOD) },
-      })
-      .exec();
-
-    if (recentCode) {
-      const remainingTime = Math.ceil(
-        (recentCode.sentAt.getTime() + this.COOLDOWN_PERIOD - Date.now()) / 1000,
-      );
-      throw new BadRequestException(
-        `Please wait ${remainingTime} seconds before requesting another verification code`,
-      );
-    }
-  }
-
-  private async checkRateLimit(
-    userId: string,
-    contact: string,
-    type: 'email' | 'phone',
-  ): Promise<void> {
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    
-    const recentAttempts = await this.verificationCodeModel
-      .countDocuments({
-        userId: new Types.ObjectId(userId),
-        contact: { $eq: contact },
-        type: { $eq: type },
-        sentAt: { $gte: oneHourAgo },
-      })
-      .exec();
-
-    if (recentAttempts >= this.MAX_ATTEMPTS_PER_HOUR) {
-      throw new BadRequestException(
-        `Too many verification attempts. Please try again later. Maximum ${this.MAX_ATTEMPTS_PER_HOUR} attempts per hour allowed.`,
-      );
-    }
-  }
-
   async verifyCode(
     userId: string,
     contact: string,
@@ -146,6 +99,53 @@ export class VerificationCodeService {
     if (result.deletedCount > 0) {
       this.logger.log(
         `Cleaned up ${String(result.deletedCount)} expired verification codes`,
+      );
+    }
+  }
+
+  private async checkCooldownPeriod(
+    userId: string,
+    contact: string,
+    type: 'email' | 'phone',
+  ): Promise<void> {
+    const recentCode = await this.verificationCodeModel
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        contact: { $eq: contact },
+        type: { $eq: type },
+        sentAt: { $gte: new Date(Date.now() - this.COOLDOWN_PERIOD) },
+      })
+      .exec();
+
+    if (recentCode) {
+      const remainingTime = Math.ceil(
+        (recentCode.sentAt.getTime() + this.COOLDOWN_PERIOD - Date.now()) / 1000,
+      );
+      throw new BadRequestException(
+        `Please wait ${remainingTime.toString()} seconds before requesting another verification code`,
+      );
+    }
+  }
+
+  private async checkRateLimit(
+    userId: string,
+    contact: string,
+    type: 'email' | 'phone',
+  ): Promise<void> {
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    
+    const recentAttempts = await this.verificationCodeModel
+      .countDocuments({
+        userId: new Types.ObjectId(userId),
+        contact: { $eq: contact },
+        type: { $eq: type },
+        sentAt: { $gte: oneHourAgo },
+      })
+      .exec();
+
+    if (recentAttempts >= this.MAX_ATTEMPTS_PER_HOUR) {
+      throw new BadRequestException(
+        `Too many verification attempts. Please try again later. Maximum ${this.MAX_ATTEMPTS_PER_HOUR.toString()} attempts per hour allowed.`,
       );
     }
   }

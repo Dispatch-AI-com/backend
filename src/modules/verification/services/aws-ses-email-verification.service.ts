@@ -89,7 +89,7 @@ export class AwsSesEmailVerificationService {
       const result = await this.sesClient.send(command);
 
       this.logger.log(
-        `Verification email sent to ${email}: ${String(result.MessageId ?? 'unknown')}`,
+        `Verification email sent to ${email}: ${result.MessageId ?? 'unknown'}`,
       );
       return { success: true };
     } catch (error) {
