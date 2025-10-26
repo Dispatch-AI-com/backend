@@ -81,7 +81,7 @@ export class VerificationService {
         throw new BadRequestException('Mobile number must be a string');
       }
       await this.userModel.findByIdAndUpdate(
-        { _id: { $eq: new Types.ObjectId(userId) } },
+        userId,
         { fullPhoneNumber: updateData.mobile },
         { new: true },
       );
