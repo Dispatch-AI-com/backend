@@ -96,10 +96,10 @@ export class SubscriptionController {
   }
 
   @Patch(':userId/free')
-  @ApiOperation({ summary: 'Downgrade to free plan and refund unused balance' })
-  @ApiResponse({ status: 200, description: 'Downgrade and refund successful' })
+  @ApiOperation({ summary: 'Schedule subscription cancellation at period end' })
+  @ApiResponse({ status: 200, description: 'Subscription set to cancel at period end' })
   @ApiResponse({ status: 404, description: 'Active subscription not found' })
-  @ApiResponse({ status: 500, description: 'Internal error during downgrade' })
+  @ApiResponse({ status: 400, description: 'Invalid subscription data' })
   async downgradeToFree(@Param('userId') userId: string): Promise<void> {
     await this.subscriptionService.downgradeToFree(userId);
   }
