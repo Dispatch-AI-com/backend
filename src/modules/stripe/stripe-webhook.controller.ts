@@ -176,6 +176,26 @@ export class StripeWebhookController {
     this.logger.warn(`❌ Payment failed for subscription: ${subscriptionId}`);
 
     try {
+      // Check if subscription exists and get current status
+      const subscription =
+        await this.subscriptionService.findBySuscriptionId(subscriptionId);
+
+      if (!subscription) {
+        this.logger.warn(
+          `[Webhook] ⚠️ Subscription ${subscriptionId} not found. Skipping payment failed handling.`,
+        );
+        return;
+      }
+
+      // Skip if subscription is already cancelled or pending cancellation
+      if (subscription.status === 'cancelled' || subscription.status === 'pending_cancellation') {
+        this.logger.log(
+          `⏭️ Subscription ${subscriptionId} is ${subscription.status}. Skipping payment failed handling.`,
+        );
+        return;
+      }
+
+      // Update subscription status to 'failed'
       await this.subscriptionService.updateStatusByWebhook(
         subscriptionId,
         'failed',
@@ -183,9 +203,15 @@ export class StripeWebhookController {
       this.logger.log(
         `✅ Subscription ${subscriptionId} status updated to failed`,
       );
+
+      // Suspend subscription by setting secondsLeft to 0
+      await this.subscriptionService.suspendSubscription(subscriptionId);
+      this.logger.log(
+        `⏸️ Subscription ${subscriptionId} suspended (secondsLeft = 0)`,
+      );
     } catch (err) {
       this.logger.error(
-        `❌ Failed to update subscription status for ${subscriptionId}`,
+        `❌ Failed to process payment failed event for ${subscriptionId}`,
         err,
       );
     }
@@ -213,6 +239,7 @@ export class StripeWebhookController {
     this.logger.log(`✅ Payment succeeded for subscription: ${subscriptionId}`);
 
     try {
+      // Update subscription status to active
       await this.subscriptionService.updateStatusByWebhook(
         subscriptionId,
         'active',
@@ -220,9 +247,45 @@ export class StripeWebhookController {
       this.logger.log(
         `✅ Subscription ${subscriptionId} status updated to active`,
       );
+
+      // Check if this is a recurring payment (not first payment)
+      // billing_reason: 'subscription_cycle' means recurring payment
+      const billingReason = invoice.billing_reason;
+
+      if (billingReason === 'subscription_cycle') {
+        // Extract period information from invoice lines
+        const periodStart = invoice.lines?.data[0]?.period?.start;
+        const periodEnd = invoice.lines?.data[0]?.period?.end;
+
+        if (!periodStart || !periodEnd) {
+          this.logger.error(
+            `❌ Missing period information in invoice for ${subscriptionId}`,
+          );
+          return;
+        }
+
+        // This is a recurring payment - reset the subscription cycle using Stripe's period
+        this.logger.log(
+          `🔄 Recurring payment detected, resetting cycle for ${subscriptionId}`,
+        );
+        this.logger.log(
+          `📅 Period: ${new Date(periodStart * 1000).toISOString()} - ${new Date(periodEnd * 1000).toISOString()}`,
+        );
+        
+        await this.subscriptionService.resetSubscriptionCycleWithPeriod(
+          subscriptionId,
+          periodStart,
+          periodEnd,
+        );
+      } else {
+        // This is the first payment - cycle is already set in activateSubscription
+        this.logger.log(
+          `🆕 First payment (${billingReason}), skipping cycle reset`,
+        );
+      }
     } catch (err) {
       this.logger.error(
-        `❌ Failed to update subscription status for ${subscriptionId}`,
+        `❌ Failed to process payment succeeded for ${subscriptionId}`,
         err,
       );
     }
@@ -232,19 +295,34 @@ export class StripeWebhookController {
     const subscription = event.data.object as Stripe.Subscription;
     const subscriptionId = subscription.id;
 
-    this.logger.log(`Subscription deleted: ${subscriptionId}`);
+    this.logger.log(`🗑️ Subscription deleted: ${subscriptionId}`);
 
     try {
+      // Check if subscription exists in database
+      const dbSubscription = await this.subscriptionService.findBySuscriptionId(subscriptionId);
+      
+      if (!dbSubscription) {
+        this.logger.warn(
+          `[Webhook] ⚠️ Subscription ${subscriptionId} not found in database. Skipping.`,
+        );
+        return;
+      }
+
+      // Update status to cancelled (from pending_cancellation or active)
       await this.subscriptionService.updateStatusByWebhook(
         subscriptionId,
         'cancelled',
       );
+      
+      // Set secondsLeft to 0 when subscription is cancelled
+      await this.subscriptionService.suspendSubscription(subscriptionId);
+      
       this.logger.log(
-        `✅ Subscription ${subscriptionId} status updated to cancelled`,
+        `✅ Subscription ${subscriptionId} status updated to cancelled and suspended`,
       );
     } catch (err) {
       this.logger.error(
-        `❌ Failed to update subscription status for ${subscriptionId}`,
+        `❌ Failed to process subscription deletion for ${subscriptionId}`,
         err,
       );
     }
