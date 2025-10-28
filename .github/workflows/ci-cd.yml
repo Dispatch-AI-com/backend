@@ -28,10 +28,10 @@ permissions:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  # 你的后端 ECR 仓库（例如：123456789012.dkr.ecr.ap-southeast-2.amazonaws.com/dispatchai-api）
+  # 例如：123456789012.dkr.ecr.ap-southeast-2.amazonaws.com/dispatchai-api
   ECR_API_REPO: ${{ secrets.BACKEND_API_ECR_URI }}
   IMAGE_UAT: uat-latest
-  IMAGE_TAG: uat-${{ github.run_number }} # 或者用 sha-${{ github.sha }}
+  IMAGE_TAG: uat-${{ github.run_number }} # 或者 sha-${{ github.sha }}
 
 jobs:
   ci_api:
@@ -39,22 +39,10 @@ jobs:
     # PR、push main、手动（ci/cicd）都跑 CI
     if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' || inputs.mode == 'ci' || inputs.mode == 'cicd' }}
 
-    services:
-      mongodb:
-        image: mongo:latest
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 先装 pnpm，保证可执行
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -65,7 +53,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            **/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -76,27 +66,20 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      - name: Run Unit & Integration Tests
+      # （可选）缓存 mongodb-memory-server 的二进制，加速 CI
+      - name: Cache MongoMemoryServer binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mms-${{ runner.os }}-v1
+
+      - name: Test (mongodb-memory-server)
         env:
           CI: true
-        run: pnpm test:ci -- --passWithNoTests
-
-      # 可选：如果 Dockerfile 需要 COPY dist（而不是在镜像内 build），才需要这两步
-      # - name: Build (only if Dockerfile copies dist)
-      #   if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'cicd') }}
-      #   run: pnpm build
-      #
-      # - name: Upload backend artifact (dist)
-      #   if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'cicd') }}
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: api-dist
-      #     path: |
-      #       dist/**
-      #       package.json
-      #       pnpm-lock.yaml
-      #     include-hidden-files: true
-      #     retention-days: 1
+          NODE_ENV: test
+          USE_IN_MEMORY_DB: true
+          MONGOMS_DOWNLOAD_DIR: ~/.cache/mongodb-binaries
+        run: pnpm test:ci
 
   build_api_image:
     # 仅 main push 或手动 cicd 时构建并推镜像（PR 不推）
@@ -110,13 +93,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 若你的 Dockerfile 需要 COPY dist，请在这里下载上一步的 artifact
-      # - name: Download API artifact (dist)
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: api-dist
-      #     path: .  # 解压到仓库根，Dockerfile 可 COPY dist
-
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -129,7 +105,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: "Build & push API image (uat-latest + run tag)"
+      - name: Build & push API image (uat-latest + run tag)
         uses: docker/build-push-action@v6
         with:
           push: true
@@ -157,10 +133,14 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy via SSM SendCommand
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          EC2_ID: ${{ secrets.EC2_INSTANCE_ID }}
         run: |
           aws ssm send-command \
             --document-name "AWS-RunShellScript" \
-            --comment "GitHub Actions deploy Backend Image: ${{ env.IMAGE_TAG }}" \
-            --parameters '{
-              "workingDirectory": ["/home/ubuntu/devops/deploy"],
-              "commands": ["sudo bash ./deploy]()
+            --comment "GitHub Actions deploy Backend Image: ${IMAGE_TAG}" \
+            --parameters '{"workingDirectory":["/home/ubuntu/devops/deploy"],"commands":["sudo bash ./deploy-backend-uat.sh '"${IMAGE_TAG}"'"]}' \
+            --instance-ids "${EC2_ID}" \
+            --region "${{ env.AWS_REGION }}" \
+            --output json
