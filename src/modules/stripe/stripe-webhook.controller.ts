@@ -219,17 +219,17 @@ export class StripeWebhookController {
 
   private async handlePaymentSucceeded(event: Stripe.Event): Promise<void> {
     const invoice = event.data.object as Stripe.Invoice;
-    const subscriptionId = invoice.parent?.subscription_details
-      ?.subscription as string;
+    const subscriptionId = invoice.parent?.subscription_details?.subscription as string;
 
-    if (typeof subscriptionId !== 'string') {
+    // Early validation - extract subscriptionId and validate
+    if (!subscriptionId) {
       this.logger.error('No subscriptionId found in payment_succeeded webhook');
       return;
     }
 
-    const check =
-      await this.subscriptionService.findBySuscriptionId(subscriptionId);
-    if (!check) {
+    // Single database query to get subscription
+    const subscription = await this.subscriptionService.findBySuscriptionId(subscriptionId);
+    if (!subscription) {
       this.logger.warn(
         `[Webhook] ⚠️ Subscription ${subscriptionId} not found. Probably not created yet. Skipping.`,
       );
@@ -239,56 +239,66 @@ export class StripeWebhookController {
     this.logger.log(`✅ Payment succeeded for subscription: ${subscriptionId}`);
 
     try {
-      // Update subscription status to active
-      await this.subscriptionService.updateStatusByWebhook(
-        subscriptionId,
-        'active',
-      );
-      this.logger.log(
-        `✅ Subscription ${subscriptionId} status updated to active`,
-      );
-
-      // Check if this is a recurring payment (not first payment)
-      // billing_reason: 'subscription_cycle' means recurring payment
-      const billingReason = invoice.billing_reason;
-
-      if (billingReason === 'subscription_cycle') {
-        // Extract period information from invoice lines
-        const periodStart = invoice.lines?.data[0]?.period?.start;
-        const periodEnd = invoice.lines?.data[0]?.period?.end;
-
-        if (!periodStart || !periodEnd) {
-          this.logger.error(
-            `❌ Missing period information in invoice for ${subscriptionId}`,
-          );
-          return;
-        }
-
-        // This is a recurring payment - reset the subscription cycle using Stripe's period
+      // Early return for cancelled subscriptions - no need to process further
+      if (subscription.status === 'cancelled' || subscription.status === 'pending_cancellation') {
         this.logger.log(
-          `🔄 Recurring payment detected, resetting cycle for ${subscriptionId}`,
+          `⏸️ Subscription ${subscriptionId} is ${subscription.status}, skipping payment processing`,
         );
-        this.logger.log(
-          `📅 Period: ${new Date(periodStart * 1000).toISOString()} - ${new Date(periodEnd * 1000).toISOString()}`,
-        );
-        
-        await this.subscriptionService.resetSubscriptionCycleWithPeriod(
-          subscriptionId,
-          periodStart,
-          periodEnd,
-        );
-      } else {
-        // This is the first payment - cycle is already set in activateSubscription
-        this.logger.log(
-          `🆕 First payment (${billingReason}), skipping cycle reset`,
-        );
+        return;
       }
+
+      // Update subscription status to active for non-cancelled subscriptions
+      // But don't change pending_downgrade status - it should remain until cycle reset
+      if (subscription.status !== 'pending_downgrade') {
+        await this.subscriptionService.updateStatusByWebhook(subscriptionId, 'active');
+        this.logger.log(`✅ Subscription ${subscriptionId} status updated to active`);
+      } else {
+        this.logger.log(`⏸️ Subscription ${subscriptionId} is pending_downgrade, keeping status unchanged`);
+      }
+
+      // Process recurring payment cycle reset
+      await this.processRecurringPayment(subscriptionId, invoice);
     } catch (err) {
       this.logger.error(
         `❌ Failed to process payment succeeded for ${subscriptionId}`,
         err,
       );
     }
+  }
+
+  /**
+   * Process recurring payment cycle reset
+   * Extracted for better code organization and reusability
+   */
+  private async processRecurringPayment(subscriptionId: string, invoice: Stripe.Invoice): Promise<void> {
+    const billingReason = invoice.billing_reason;
+
+    // Early return for non-recurring payments
+    if (billingReason !== 'subscription_cycle') {
+      this.logger.log(`🆕 First payment (${billingReason}), skipping cycle reset`);
+      return;
+    }
+
+    // Extract period information from invoice lines
+    const periodStart = invoice.lines?.data[0]?.period?.start;
+    const periodEnd = invoice.lines?.data[0]?.period?.end;
+
+    if (!periodStart || !periodEnd) {
+      this.logger.error(`❌ Missing period information in invoice for ${subscriptionId}`);
+      return;
+    }
+
+    // This is a recurring payment - reset the subscription cycle using Stripe's period
+    this.logger.log(`🔄 Recurring payment detected, resetting cycle for ${subscriptionId}`);
+    this.logger.log(
+      `📅 Period: ${new Date(periodStart * 1000).toISOString()} - ${new Date(periodEnd * 1000).toISOString()}`,
+    );
+    
+    await this.subscriptionService.resetSubscriptionCycleWithPeriod(
+      subscriptionId,
+      periodStart,
+      periodEnd,
+    );
   }
 
   private async handleSubscriptionDeleted(event: Stripe.Event): Promise<void> {

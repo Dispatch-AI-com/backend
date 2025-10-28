@@ -550,7 +550,7 @@ export class SubscriptionService {
     const subscription = await this.subscriptionModel
       .findOne({ 
         userId: new Types.ObjectId(userId), 
-        status: { $in: ['active', 'pending_cancellation', 'pending_downgrade'] }
+        status: { $in: ['active', 'pending_cancellation', 'pending_downgrade', 'failed'] }
       })
       .populate('planId')
       .populate('pendingPlanId') 
@@ -624,9 +624,16 @@ export class SubscriptionService {
     }
 
     // For pending_downgrade, use pendingPlanId; otherwise use current planId
-    const targetPlanId = subscription.status === 'pending_downgrade' && subscription.pendingPlanId
+    const targetPlanId = subscription.status === 'pending_downgrade' && subscription.pendingPlanId != null
       ? subscription.pendingPlanId
       : subscription.planId;
+
+    // Debug logging for downgrade
+    if (subscription.status === 'pending_downgrade') {
+      this.logger.log(
+        `🔍 Downgrade debug for ${subscriptionId}: status=${subscription.status}, currentPlanId=${subscription.planId}, pendingPlanId=${subscription.pendingPlanId}, targetPlanId=${targetPlanId}`,
+      );
+    }
 
     const plan = await this.planModel.findById(targetPlanId).lean();
     if (!plan) {
@@ -699,18 +706,45 @@ export class SubscriptionService {
    * Status changes: 
    * - active → pending_cancellation → cancelled (via webhook)
    * - pending_downgrade → pending_cancellation → cancelled (via webhook)
+   * - failed → cancelled (immediate cancellation)
    */
   async downgradeToFree(userId: string): Promise<void> {
     const subscription = await this.subscriptionModel.findOne({
       userId: new Types.ObjectId(userId),
-      status: { $in: ['active', 'pending_downgrade'] },
+      status: { $in: ['active', 'pending_downgrade', 'failed'] },
     });
 
     if (!subscription)
-      throw new NotFoundException('Active or pending_downgrade subscription not found');
+      throw new NotFoundException('Active, pending_downgrade, or failed subscription not found');
 
     if (subscription.subscriptionId == null) {
       throw new BadRequestException('Missing subscription ID');
+    }
+
+    // Handle failed subscription - cancel immediately
+    if (subscription.status === 'failed') {
+      this.logger.log(
+        `🚫 Canceling failed subscription immediately: ${subscription.subscriptionId}`,
+      );
+      
+      // Cancel the subscription immediately on Stripe
+      await this.stripeService.client.subscriptions.cancel(
+        subscription.subscriptionId,
+      );
+
+      // Update subscription status to cancelled in database
+      await this.subscriptionModel.updateOne(
+        { subscriptionId: subscription.subscriptionId },
+        { 
+          status: 'cancelled',
+          secondsLeft: 0, // Suspend service immediately
+        },
+      );
+
+      this.logger.log(
+        `✅ Failed subscription cancelled immediately for user ${userId}, subscriptionId: ${subscription.subscriptionId}`,
+      );
+      return;
     }
 
     // If subscription is pending_downgrade, we need to cancel the scheduled downgrade first

@@ -52,7 +52,7 @@ export class StripeService {
   async createBillingPortalSession(stripeCustomerId: string): Promise<string> {
     const session = await this.client.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: process.env.APP_URL ?? 'http://localhost:3000',
+      return_url: `${process.env.APP_URL ?? 'http://localhost:3000'}/admin/billing`,
     });
 
     return session.url;
