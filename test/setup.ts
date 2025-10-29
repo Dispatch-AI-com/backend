@@ -7,6 +7,14 @@ import { resolve } from 'path';
 // Load test environment variables from .env.example
 config({ path: resolve(__dirname, '../.env.example') });
 
+// IMPORTANT: Set environment variables BEFORE any modules are imported
+process.env.NODE_ENV = 'test';
+process.env.DISABLE_AUTH = 'true';
+
+// Check if we should use in-memory MongoDB
+// Default to true unless explicitly disabled
+const useInMemory = process.env.USE_LOCAL_MONGODB !== 'true';
+
 // Mock Twilio module globally to bypass Twilio initialization in tests
 jest.mock('../src/lib/twilio/twilio.module', () => {
   const mockTwilioClient = {
@@ -91,6 +99,36 @@ jest.mock('../src/common/guards/csrf.guard', () => {
   };
 });
 
+// Mock HealthService to prevent heartbeat timers in tests
+jest.mock('../src/modules/health/health.service', () => {
+  return {
+    HealthService: class MockHealthService {
+      onModuleInit(): void {
+        // Do nothing - prevent timers from starting
+      }
+      onModuleDestroy(): void {
+        // Do nothing
+      }
+      check() {
+        return {
+          status: 'ok',
+          timestamp: new Date(),
+          service: 'dispatchAI API',
+          environment: 'test',
+        };
+      }
+      checkDatabase() {
+        return {
+          status: 'ok',
+          mongo: true,
+          redis: true,
+          timestamp: new Date(),
+        };
+      }
+    },
+  };
+});
+
 // Export test user data for use in tests
 export const TEST_USER = {
   _id: '507f1f77bcf86cd799439011',
@@ -122,13 +160,7 @@ let mongoServer: MongoMemoryServer | null = null;
 
 // Global test setup
 beforeAll(async () => {
-  // Override only test-specific environment variables
-  process.env.NODE_ENV = 'test';
-  process.env.DISABLE_AUTH = 'true';
-
   // Use in-memory MongoDB in CI or when explicitly requested
-  const useInMemory =
-    process.env.CI === 'true' || process.env.USE_IN_MEMORY_DB === 'true';
   if (useInMemory) {
     mongoServer = await MongoMemoryServer.create();
     process.env.MONGODB_URI = mongoServer.getUri();
@@ -150,7 +182,6 @@ beforeAll(async () => {
       // In CI, we want to ensure we get a fresh database
       dbName: process.env.CI ? 'test-ci' : 'test',
     });
-    console.log('Connected to test database');
   } catch (error) {
     console.error(
       'Failed to connect to test database:',
@@ -179,7 +210,6 @@ afterAll(async () => {
       await mongoServer.stop();
       mongoServer = null;
     }
-    console.log('Disconnected from test database');
   } catch (error) {
     console.error(
       'Error closing test database connection:',
