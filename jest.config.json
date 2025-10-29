@@ -6,7 +6,6 @@
       "^.+\\.(t|j)s$": "ts-jest"
     },
     "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
-    "setupFiles": ["dotenv/config"],
     "testEnvironment": "node",
     "testTimeout": 60000,
     "forceExit": true,
