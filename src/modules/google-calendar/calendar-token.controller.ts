@@ -5,18 +5,20 @@ import {
   ForbiddenException,
   Get,
   Headers,
-  Res,
   NotFoundException,
   Param,
   Post,
+  Res,
 } from '@nestjs/common';
+import { Header } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
-import { CalendarTokenService } from './calendar-token.service';
-import { CalendarOAuthService } from './services/calendar-oauth.service';
-import { CreateCalendarTokenDto } from './dto/create-calendar-token.dto';
 import { generateCSRFToken, validateCSRFToken } from '@/utils/csrf.util';
+
+import { CalendarTokenService } from './calendar-token.service';
+import { CreateCalendarTokenDto } from './dto/create-calendar-token.dto';
+import { CalendarOAuthService } from './services/calendar-oauth.service';
 
 @ApiTags('calendar-token')
 @Controller('calendar-token')
@@ -30,6 +32,7 @@ export class CalendarTokenController {
   @ApiResponse({ status: 200, description: 'Token fetched successfully' })
   @ApiResponse({ status: 404, description: 'Token not found' })
   @Get('user/:userId/valid')
+  @Header('Cache-Control', 'no-store')
   async getValidToken(@Param('userId') userId: string) {
     return await this.calendarTokenService.getValidToken(userId);
   }
@@ -61,7 +64,11 @@ export class CalendarTokenController {
 
   @ApiOperation({ summary: 'Delete user calendar token' })
   @ApiResponse({ status: 200, description: 'Token deleted successfully' })
-  @ApiHeader({ name: 'X-CSRF-Token', required: true, description: 'CSRF token' })
+  @ApiHeader({
+    name: 'X-CSRF-Token',
+    required: true,
+    description: 'CSRF token',
+  })
   @Delete('user/:userId')
   async deleteUserToken(
     @Param('userId') userId: string,
@@ -126,7 +133,9 @@ export class CalendarTokenController {
       // attempt refresh then retry once
       try {
         const refreshed = await this.calendarTokenService.refreshToken(userId);
-        const info2 = await this.oauthService.getUserInfo(refreshed.accessToken);
+        const info2 = await this.oauthService.getUserInfo(
+          refreshed.accessToken,
+        );
         await this.calendarTokenService.updateUserInfo(userId, {
           googleUserId: info2.id,
           userEmail: info2.email,
@@ -142,7 +151,10 @@ export class CalendarTokenController {
   }
 
   @ApiOperation({ summary: 'Get CSRF token for write operations' })
-  @ApiResponse({ status: 200, description: 'CSRF token generated and cookie set' })
+  @ApiResponse({
+    status: 200,
+    description: 'CSRF token generated and cookie set',
+  })
   @Get('csrf-token')
   getCsrfToken(@Res() res: Response): void {
     const csrfToken = generateCSRFToken();
@@ -177,9 +189,9 @@ export class CalendarTokenController {
       const userInfo = await this.oauthService.getUserInfo(token.accessToken);
       results.userInfoTest = { success: true, data: userInfo };
     } catch (error) {
-      results.userInfoTest = { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error) 
+      results.userInfoTest = {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
       };
     }
 

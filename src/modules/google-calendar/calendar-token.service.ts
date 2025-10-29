@@ -54,13 +54,17 @@ export class CalendarTokenService {
    * Get a valid access token by user ID.
    * If the token expires in less than 15 minutes, mark it as needing refresh.
    */
-  async getValidToken(userId: string): Promise<{
+  async getValidToken(
+    userId: string,
+    provider = 'google',
+  ): Promise<{
     accessToken: string;
     needsRefresh: boolean;
     expiresAt: Date;
   }> {
     const token = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
+      provider: { $eq: provider },
       isActive: true,
     });
 
@@ -86,12 +90,15 @@ export class CalendarTokenService {
   /**
    * Update stored Google user info fields without touching token values.
    */
-  async updateUserInfo(userId: string, info: {
-    googleUserId?: string;
-    userEmail?: string;
-    userName?: string;
-    userPicture?: string;
-  }): Promise<void> {
+  async updateUserInfo(
+    userId: string,
+    info: {
+      googleUserId?: string;
+      userEmail?: string;
+      userName?: string;
+      userPicture?: string;
+    },
+  ): Promise<void> {
     const token = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
       isActive: true,
@@ -116,12 +123,16 @@ export class CalendarTokenService {
   /**
    * Refresh access token.
    */
-  async refreshToken(userId: string): Promise<{
+  async refreshToken(
+    userId: string,
+    provider = 'google',
+  ): Promise<{
     accessToken: string;
     expiresAt: Date;
   }> {
     const token = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
+      provider: { $eq: provider },
       isActive: true,
     });
 
@@ -278,15 +289,16 @@ export class CalendarTokenService {
    * Soft-delete user's calendar token.
    */
   async deleteUserToken(userId: string, provider = 'google'): Promise<void> {
-    await this.calendarTokenModel.findOneAndUpdate(
+    await this.calendarTokenModel.updateMany(
       {
         userId: new Types.ObjectId(userId),
         provider: { $eq: provider },
+        isActive: true,
       },
       {
         $set: { isActive: false, updatedAt: new Date() },
       },
-      { runValidators: true, overwrite: false },
+      { runValidators: true },
     );
   }
 

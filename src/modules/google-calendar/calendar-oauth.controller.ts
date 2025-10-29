@@ -37,17 +37,35 @@ export class CalendarOAuthController {
   async googleCallback(
     @Query('code') code: string,
     @Query('state') state: string,
+    @Query('error') error: string,
     @Query('userId') userIdFromQuery: string,
     @Res() res: Response,
   ): Promise<void> {
-    const token = await this.oauthService.exchangeGoogleCodeForToken(code);
+    const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const defaultFrom = '/admin/settings?connected=google';
+
+    if (error) {
+      res.redirect(`${frontendUrl}${defaultFrom}&error=cancelled`);
+      return;
+    }
+
+    let token;
+    try {
+      token = await this.oauthService.exchangeGoogleCodeForToken(code);
+    } catch (e) {
+      console.error('Failed to exchange token', e);
+      res.redirect(`${frontendUrl}${defaultFrom}&error=oauth_failed`);
+      return;
+    }
 
     // Parse userId from state first (if present), otherwise fallback to query
     let parsedUserId: string | undefined;
+    let fromPath: string | undefined;
     try {
       if (state) {
         const obj = JSON.parse(state);
         parsedUserId = obj.u as string;
+        fromPath = obj.from as string | undefined;
       }
     } catch {
       // ignore parse errors
@@ -55,12 +73,16 @@ export class CalendarOAuthController {
     const userId = parsedUserId ?? userIdFromQuery;
 
     // get user info (using UserInfo API, no extra configuration)
-    let userInfo = null;
+    let userInfo: {
+      id?: string;
+      email?: string;
+      name?: string;
+      picture?: string;
+    } | null = null;
     try {
       userInfo = await this.oauthService.getUserInfo(token.accessToken);
-      console.log('user info:', userInfo);
-    } catch (error) {
-      console.error('get user info failed:', error);
+    } catch (err) {
+      console.warn('Failed to fetch user info', err);
     }
 
     // Persist token using existing storage logic
@@ -82,7 +104,16 @@ export class CalendarOAuthController {
       userPicture: userInfo?.picture,
     });
 
-    const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
-    res.redirect(`${frontendUrl}/settings/calendar?connected=google`);
+    const safeFrom = fromPath?.startsWith('/') ? fromPath : defaultFrom;
+
+    const redirectUrl = new URL(safeFrom, frontendUrl);
+    if (userInfo?.email && !redirectUrl.searchParams.has('gEmail')) {
+      redirectUrl.searchParams.set('gEmail', userInfo.email);
+    }
+    if (!redirectUrl.searchParams.has('connected')) {
+      redirectUrl.searchParams.set('connected', 'google');
+    }
+    redirectUrl.searchParams.set('success', '1');
+    res.redirect(redirectUrl.toString());
   }
 }
