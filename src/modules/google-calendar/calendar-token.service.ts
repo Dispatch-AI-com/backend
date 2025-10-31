@@ -54,13 +54,17 @@ export class CalendarTokenService {
    * Get a valid access token by user ID.
    * If the token expires in less than 15 minutes, mark it as needing refresh.
    */
-  async getValidToken(userId: string): Promise<{
+  async getValidToken(
+    userId: string,
+    provider = 'google',
+  ): Promise<{
     accessToken: string;
     needsRefresh: boolean;
     expiresAt: Date;
   }> {
     const token = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
+      provider: { $eq: provider },
       isActive: true,
     });
 
@@ -84,14 +88,51 @@ export class CalendarTokenService {
   }
 
   /**
+   * Update stored Google user info fields without touching token values.
+   */
+  async updateUserInfo(
+    userId: string,
+    info: {
+      googleUserId?: string;
+      userEmail?: string;
+      userName?: string;
+      userPicture?: string;
+    },
+  ): Promise<void> {
+    const token = await this.calendarTokenModel.findOne({
+      userId: new Types.ObjectId(userId),
+      isActive: true,
+    });
+    if (!token) return;
+
+    await this.calendarTokenModel.findByIdAndUpdate(
+      token._id,
+      {
+        $set: {
+          googleUserId: info.googleUserId,
+          userEmail: info.userEmail,
+          userName: info.userName,
+          userPicture: info.userPicture,
+          updatedAt: new Date(),
+        },
+      },
+      { runValidators: true, overwrite: false },
+    );
+  }
+
+  /**
    * Refresh access token.
    */
-  async refreshToken(userId: string): Promise<{
+  async refreshToken(
+    userId: string,
+    provider = 'google',
+  ): Promise<{
     accessToken: string;
     expiresAt: Date;
   }> {
     const token = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userId),
+      provider: { $eq: provider },
       isActive: true,
     });
 
@@ -161,6 +202,20 @@ export class CalendarTokenService {
     );
     const expiresAt = toValidDate('expiresAt', createDto.expiresAt);
 
+    // user info
+    const googleUserId = (createDto as any).googleUserId
+      ? assertString('googleUserId', (createDto as any).googleUserId)
+      : undefined;
+    const userEmail = (createDto as any).userEmail
+      ? assertString('userEmail', (createDto as any).userEmail)
+      : undefined;
+    const userName = (createDto as any).userName
+      ? assertString('userName', (createDto as any).userName)
+      : undefined;
+    const userPicture = (createDto as any).userPicture
+      ? assertString('userPicture', (createDto as any).userPicture)
+      : undefined;
+
     // Find existing token
     const existingToken = await this.calendarTokenModel.findOne({
       userId: new Types.ObjectId(userIdStr),
@@ -179,6 +234,10 @@ export class CalendarTokenService {
             tokenType,
             scope,
             calendarId,
+            googleUserId,
+            userEmail,
+            userName,
+            userPicture,
             updatedAt: new Date(),
           },
         },
@@ -202,6 +261,10 @@ export class CalendarTokenService {
         tokenType,
         scope,
         calendarId,
+        googleUserId,
+        userEmail,
+        userName,
+        userPicture,
       };
       const newToken = new this.calendarTokenModel(newTokenPayload);
       return await newToken.save();
@@ -226,15 +289,16 @@ export class CalendarTokenService {
    * Soft-delete user's calendar token.
    */
   async deleteUserToken(userId: string, provider = 'google'): Promise<void> {
-    await this.calendarTokenModel.findOneAndUpdate(
+    await this.calendarTokenModel.updateMany(
       {
         userId: new Types.ObjectId(userId),
         provider: { $eq: provider },
+        isActive: true,
       },
       {
         $set: { isActive: false, updatedAt: new Date() },
       },
-      { runValidators: true, overwrite: false },
+      { runValidators: true },
     );
   }
 

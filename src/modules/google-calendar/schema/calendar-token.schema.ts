@@ -11,7 +11,6 @@ export class CalendarToken {
     type: MongooseSchema.Types.ObjectId,
     ref: 'User',
     required: true,
-    unique: true,
   })
   userId!: Types.ObjectId;
 
@@ -36,6 +35,18 @@ export class CalendarToken {
   @Prop()
   calendarId?: string;
 
+  @Prop()
+  googleUserId?: string;
+
+  @Prop()
+  userEmail?: string;
+
+  @Prop()
+  userName?: string;
+
+  @Prop()
+  userPicture?: string;
+
   @Prop({ default: true })
   isActive!: boolean;
 
@@ -52,5 +63,9 @@ export const CalendarTokenSchema = SchemaFactory.createForClass(CalendarToken);
 CalendarTokenSchema.index({ userId: 1 });
 CalendarTokenSchema.index({ expiresAt: 1 });
 CalendarTokenSchema.index({ provider: 1 });
-// Ensure each user has only one active token (provider-agnostic, currently Google only)
-CalendarTokenSchema.index({ userId: 1, isActive: 1 }, { unique: true });
+// Ensure每个用户在 active 状态下仅有一条记录（仅约束 isActive: true）
+// 使用部分索引避免将多个归档记录(isActive=false)置为重复
+CalendarTokenSchema.index(
+  { userId: 1 },
+  { unique: true, partialFilterExpression: { isActive: true } },
+);

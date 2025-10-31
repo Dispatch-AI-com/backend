@@ -52,5 +52,5 @@ export function buildSayResponse({
     }
   }
 
-  return vr.toString();
+  return vr.toString() as string;
 }

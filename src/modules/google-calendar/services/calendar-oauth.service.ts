@@ -16,7 +16,7 @@ export class CalendarOAuthService {
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
-      scope: 'https://www.googleapis.com/auth/calendar',
+      scope: 'https://www.googleapis.com/auth/calendar email profile',
       access_type: 'offline',
       prompt: 'consent',
       include_granted_scopes: 'true',
@@ -47,7 +47,13 @@ export class CalendarOAuthService {
       redirect_uri: redirectUri,
     });
 
-    const resp = await axios.post(url, body.toString(), {
+    const resp = await axios.post<{
+      access_token: string;
+      refresh_token?: string;
+      expires_in: number;
+      scope?: string;
+      token_type?: string;
+    }>(url, body.toString(), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
@@ -78,7 +84,12 @@ export class CalendarOAuthService {
       refresh_token: refreshToken,
     });
 
-    const resp = await axios.post(url, body.toString(), {
+    const resp = await axios.post<{
+      access_token: string;
+      expires_in: number;
+      scope?: string;
+      token_type?: string;
+    }>(url, body.toString(), {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
@@ -87,6 +98,38 @@ export class CalendarOAuthService {
       expiresIn: resp.data.expires_in,
       scope: resp.data.scope,
       tokenType: resp.data.token_type,
+    };
+  }
+
+  /**
+   * get user info by access token
+   */
+  async getUserInfo(accessToken: string): Promise<{
+    id: string;
+    email: string;
+    name: string;
+    picture?: string;
+    verified_email: boolean;
+  }> {
+    const url = 'https://www.googleapis.com/oauth2/v2/userinfo';
+    const resp = await axios.get<{
+      id: string;
+      email: string;
+      name: string;
+      picture?: string;
+      verified_email: boolean;
+    }>(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    return {
+      id: resp.data.id,
+      email: resp.data.email,
+      name: resp.data.name,
+      picture: resp.data.picture,
+      verified_email: resp.data.verified_email,
     };
   }
 }
