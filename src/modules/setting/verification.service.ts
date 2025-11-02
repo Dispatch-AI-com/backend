@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -15,6 +19,25 @@ export interface UpdateVerificationDto {
   marketingPromotions?: boolean;
   mobileVerified?: boolean;
   emailVerified?: boolean;
+}
+
+// Only allow primitive values for listed keys, ignore all others
+function sanitizeVerificationUpdate(input: Record<string, unknown>): Partial<UpdateVerificationDto> {
+  const allowedKeys = ['type', 'mobile', 'email', 'mobileVerified', 'emailVerified', 'marketingPromotions'];
+  const output: Record<string, unknown> = {};
+  for (const key of allowedKeys) {
+    if (Object.prototype.hasOwnProperty.call(input, key)) {
+      const value = input[key];
+      // Only allow primitive values (string, boolean, number, null/undefined)
+      if (value === null || value === undefined ||
+          typeof value === 'string' ||
+          typeof value === 'boolean' ||
+          typeof value === 'number') {
+        output[key] = value;
+      }
+    }
+  }
+  return output as Partial<UpdateVerificationDto>;
 }
 
 @Injectable()
@@ -54,17 +77,23 @@ export class VerificationService {
   ): Promise<Verification> {
     // If mobile number is being updated, also update User model
     if (updateData.mobile !== undefined) {
+      if (typeof updateData.mobile !== 'string') {
+        throw new BadRequestException('Mobile number must be a string');
+      }
       await this.userModel.findByIdAndUpdate(
-        userId,
+        { _id: { $eq: new Types.ObjectId(userId) } },
         { fullPhoneNumber: updateData.mobile },
         { new: true },
       );
     }
 
+    // Sanitize updateData to allow only expected fields, preventing operator injection
+    const safeUpdate = sanitizeVerificationUpdate(updateData as unknown as Record<string, unknown>);
+
     const verification = await this.verificationModel
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
-        { ...updateData },
+        safeUpdate,
         { new: true, upsert: true },
       )
       .exec();
