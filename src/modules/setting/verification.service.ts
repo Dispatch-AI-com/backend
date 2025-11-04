@@ -101,34 +101,62 @@ export class VerificationService {
     return verification;
   }
 
-  async verifyMobile(userId: string, _mobile: string): Promise<Verification> {
+  async sendEmailVerification(
+    userId: string,
+    email: string,
+  ): Promise<{ success: boolean; message?: string }> {
+    // TODO: Implement email verification code sending
+    // For now, return success to allow frontend to work
+    return {
+      success: true,
+      message: 'Verification email sent (implementation pending)',
+    };
+  }
+
+  async verifyEmail(
+    userId: string,
+    email: string,
+    code: string,
+  ): Promise<Verification> {
+    // TODO: Implement email verification code validation
+    // For now, verify email without code check
     const verification = await this.verificationModel
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
-        { mobileVerified: true },
-        { new: true },
+        { emailVerified: true, email },
+        { new: true, upsert: true },
       )
       .exec();
-
-    if (!verification) {
-      throw new NotFoundException('Verification record not found');
-    }
 
     return verification;
   }
 
-  async verifyEmail(userId: string, _email: string): Promise<Verification> {
+  async sendSmsVerification(
+    userId: string,
+    mobile: string,
+  ): Promise<{ success: boolean; message?: string }> {
+    // TODO: Implement SMS verification code sending
+    // For now, return success to allow frontend to work
+    return {
+      success: true,
+      message: 'SMS verification sent (implementation pending)',
+    };
+  }
+
+  async verifySms(
+    userId: string,
+    mobile: string,
+    code: string,
+  ): Promise<Verification> {
+    // TODO: Implement SMS verification code validation
+    // For now, verify mobile without code check
     const verification = await this.verificationModel
       .findOneAndUpdate(
         { userId: new Types.ObjectId(userId) },
-        { emailVerified: true },
-        { new: true },
+        { mobileVerified: true, mobile },
+        { new: true, upsert: true },
       )
       .exec();
-
-    if (!verification) {
-      throw new NotFoundException('Verification record not found');
-    }
 
     return verification;
   }
