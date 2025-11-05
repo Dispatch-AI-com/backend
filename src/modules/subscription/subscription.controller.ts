@@ -49,6 +49,7 @@ export class SubscriptionController {
   @ApiResponse({ status: 200, description: 'Reset successful' })
   @HttpCode(HttpStatus.OK)
   async resetNow(): Promise<{ ok: true }> {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await this.subscriptionService.resetIfMonthlyDue();
     return { ok: true };
   }
