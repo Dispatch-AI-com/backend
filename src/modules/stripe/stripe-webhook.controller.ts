@@ -275,13 +275,13 @@ export class StripeWebhookController {
 
     // Early return for non-recurring payments
     if (billingReason !== 'subscription_cycle') {
-      this.logger.log(`🆕 First payment (${billingReason}), skipping cycle reset`);
+      this.logger.log(`🆕 First payment (${billingReason ?? 'unknown'}), skipping cycle reset`);
       return;
     }
 
     // Extract period information from invoice lines
-    const periodStart = invoice.lines?.data[0]?.period?.start;
-    const periodEnd = invoice.lines?.data[0]?.period?.end;
+    const periodStart = invoice.lines.data[0]?.period?.start;
+    const periodEnd = invoice.lines.data[0]?.period?.end;
 
     if (!periodStart || !periodEnd) {
       this.logger.error(`❌ Missing period information in invoice for ${subscriptionId}`);

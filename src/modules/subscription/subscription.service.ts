@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 // import { Cron, CronExpression } from '@nestjs/schedule'; // Disabled: using webhook-based reset
-import { Model, Types } from 'mongoose';
+import { Model, Types, UpdateQuery } from 'mongoose';
 import { RRule } from 'rrule';
 import Stripe from 'stripe';
 
@@ -50,7 +50,8 @@ export class SubscriptionService {
     }
 
     // If it's a string, extract the numeric part
-    const match = callMinutes.toString().match(/(\d+)/);
+    // At this point callMinutes must be a string (checked above)
+    const match = callMinutes.match(/(\d+)/);
     if (match) {
       return parseInt(match[1], 10);
     }
@@ -254,13 +255,13 @@ export class SubscriptionService {
     // Special case: If trying to switch to current plan while pending_downgrade, cancel the downgrade
     if (subscription.planId.equals(newPlan._id)) {
       if (subscription.status === 'pending_downgrade') {
-        this.logger.log(
-          `🔄 Canceling scheduled downgrade for subscription: ${subscription.subscriptionId}`,
-        );
-        
         if (!subscription.subscriptionId) {
           throw new BadRequestException('Missing subscription ID');
         }
+        
+        this.logger.log(
+          `🔄 Canceling scheduled downgrade for subscription: ${subscription.subscriptionId}`,
+        );
         
         // Get current Stripe subscription to cancel the scheduled price change
         const stripeSub = await this.stripeService.client.subscriptions.retrieve(
@@ -353,7 +354,7 @@ export class SubscriptionService {
     if (isUpgrade) {
       // Upgrade: Immediate effect with proration
       this.logger.log(
-        `⬆️ Upgrading subscription ${subscription.subscriptionId}: ${currentMinutes} → ${newMinutes} minutes`,
+        `⬆️ Upgrading subscription ${subscription.subscriptionId}: ${String(currentMinutes)} → ${String(newMinutes)} minutes`,
       );
 
       await this.stripeService.client.subscriptions.update(
@@ -381,12 +382,12 @@ export class SubscriptionService {
       );
 
       this.logger.log(
-        `✅ Upgrade completed: secondsLeft updated to ${newMinutes} minutes immediately`,
+        `✅ Upgrade completed: secondsLeft updated to ${String(newMinutes)} minutes immediately`,
       );
     } else {
       // Downgrade: Takes effect at next billing cycle
       this.logger.log(
-        `⬇️ Downgrading subscription ${subscription.subscriptionId}: ${currentMinutes} → ${newMinutes} minutes (next cycle)`,
+        `⬇️ Downgrading subscription ${subscription.subscriptionId}: ${String(currentMinutes)} → ${String(newMinutes)} minutes (next cycle)`,
       );
 
       await this.stripeService.client.subscriptions.update(
@@ -415,7 +416,7 @@ export class SubscriptionService {
       );
 
       this.logger.log(
-        `✅ Downgrade scheduled: pendingPlanId set to ${newPlan.tier}, status set to pending_downgrade, will take effect at next billing cycle, current ${currentMinutes} minutes maintained`,
+        `✅ Downgrade scheduled: pendingPlanId set to ${newPlan.tier}, status set to pending_downgrade, will take effect at next billing cycle, current ${String(currentMinutes)} minutes maintained`,
       );
     }
 
@@ -475,7 +476,7 @@ export class SubscriptionService {
     );
 
     this.logger.log(
-      `✅ Plan updated via webhook for ${stripeSubscriptionId}: ${newMinutes} minutes`,
+      `✅ Plan updated via webhook for ${stripeSubscriptionId}: ${String(newMinutes)} minutes`,
     );
   }
 
@@ -631,14 +632,14 @@ export class SubscriptionService {
     // Debug logging for downgrade
     if (subscription.status === 'pending_downgrade') {
       this.logger.log(
-        `🔍 Downgrade debug for ${subscriptionId}: status=${subscription.status}, currentPlanId=${subscription.planId}, pendingPlanId=${subscription.pendingPlanId}, targetPlanId=${targetPlanId}`,
+        `🔍 Downgrade debug for ${subscriptionId}: status=${subscription.status}, currentPlanId=${subscription.planId.toString()}, pendingPlanId=${subscription.pendingPlanId?.toString() ?? 'null'}, targetPlanId=${targetPlanId.toString()}`,
       );
     }
 
     const plan = await this.planModel.findById(targetPlanId).lean();
     if (!plan) {
       this.logger.error(
-        `Plan not found for subscription: ${subscriptionId}, planId: ${targetPlanId}`,
+        `Plan not found for subscription: ${subscriptionId}, planId: ${targetPlanId.toString()}`,
       );
       return;
     }
@@ -652,7 +653,14 @@ export class SubscriptionService {
     const secondsLeft = minutes * 60;
 
     // Prepare update data
-    const updateData: any = {
+    const updateData: {
+      startAt: Date;
+      endAt: Date;
+      secondsLeft: number;
+      updatedAt: Date;
+      status?: string;
+      planId?: Types.ObjectId;
+    } = {
       startAt,
       endAt,
       secondsLeft,
@@ -665,7 +673,7 @@ export class SubscriptionService {
       updateData.status = 'active';
       updateData.planId = targetPlanId;  // Update planId to the pending plan
       this.logger.log(
-        `🔄 Downgrade now effective for ${subscriptionId}: planId updated from ${subscription.planId} to ${targetPlanId}, status changed to active`,
+        `🔄 Downgrade now effective for ${subscriptionId}: planId updated from ${subscription.planId.toString()} to ${targetPlanId.toString()}, status changed to active`,
       );
     } else if (subscription.status === 'pending_cancellation') {
       // Keep pending_cancellation status - user will be cancelled at period end
@@ -682,10 +690,10 @@ export class SubscriptionService {
     }
     // For 'active' status, no additional changes needed
 
-    const updateOperations: any = { $set: updateData };
+    const updateOperations: UpdateQuery<SubscriptionDocument> = { $set: updateData };
     
     // Clear pendingPlanId if it was a downgrade
-    if (subscription.status === 'pending_downgrade' && subscription.pendingPlanId) {
+    if (subscription.status === 'pending_downgrade' && subscription.pendingPlanId != null) {
       updateOperations.$unset = { pendingPlanId: '' };
     }
 
@@ -695,7 +703,7 @@ export class SubscriptionService {
     );
 
     this.logger.log(
-      `✅ Subscription cycle reset for ${subscriptionId}: ${startAt.toISOString()} - ${endAt.toISOString()}, ${minutes} minutes restored`,
+      `✅ Subscription cycle reset for ${subscriptionId}: ${startAt.toISOString()} - ${endAt.toISOString()}, ${String(minutes)} minutes restored`,
     );
   }
 
