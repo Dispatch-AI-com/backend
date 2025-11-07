@@ -14,12 +14,12 @@ export const WelcomeMessageHelper = {
     services?: readonly { name: string }[],
     greeting?: { message: string; isCustom: boolean },
   ): string {
-    // If user has chosen a custom welcome message, use it and add professional follow-up
-    if (greeting?.isCustom === true && greeting.message) {
-      return `${greeting.message} May I have your name to begin with the process?`;
+    // Always use the user's greeting message if it exists
+    if (greeting?.message) {
+      return greeting.message;
     }
 
-    // Default behavior: use system-generated welcome message
+    // Fallback: use system-generated welcome message
     if (companyName !== undefined && services && services.length > 0) {
       const serviceList = services.map(s => s.name).join(', ');
       return `Welcome! We are ${companyName}. We provide ${serviceList}. May I get your name please?`;
