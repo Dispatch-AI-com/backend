@@ -7,34 +7,34 @@
 ### 1. Calllog Seed (`seed:calllog`)
 - **文件**: `seed-inbox-data.ts`
 - **用途**: 创建calllog相关的测试数据
-- **运行命令**: `npm run seed:calllog`
+- **运行命令**: `pnpm seed:calllog`
 
 ### 2. Telephony Seed (`seed:telephony`)
 - **文件**: `seed-telephony-test-data.ts`
 - **用途**: 创建电话系统测试数据，包括用户、公司和服务
-- **运行命令**: `npm run seed:telephony`
+- **运行命令**: `pnpm seed:telephony`
 
 ### 3. 全部Seed (`seed:all`)
 - **用途**: 运行所有seed脚本
-- **运行命令**: `npm run seed:all` 或 `npm run seed`
+- **运行命令**: `pnpm seed:all` 或 `pnpm seed`
 
 ## 使用方法
 
 ### 运行单个Seed
 ```bash
 # 只运行calllog数据
-npm run seed:calllog
+pnpm seed:calllog
 
 # 只运行telephony数据
-npm run seed:telephony
+pnpm seed:telephony
 ```
 
 ### 运行所有Seed
 ```bash
 # 运行所有seed脚本
-npm run seed:all
+pnpm seed:all
 # 或者
-npm run seed
+pnpm seed
 ```
 
 ## 测试数据说明
