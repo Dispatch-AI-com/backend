@@ -18,10 +18,6 @@ interface User {
   statusReason?: string;
   position?: string;
   role: string;
-  googleId?: string;
-  avatar?: string;
-  provider: string;
-  tokenRefreshTime?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -65,11 +61,7 @@ const userSchema = new Schema({
   status: { type: String, default: 'active' },
   statusReason: String,
   position: String,
-  role: { type: String, default: 'user' },
-  googleId: String,
-  avatar: String,
-  provider: { type: String, default: 'local' },
-  tokenRefreshTime: { type: Date, default: Date.now }
+  role: { type: String, default: 'user' }
 }, { timestamps: true });
 
 const serviceSchema = new Schema({
@@ -119,17 +111,13 @@ async function seedTelephonyTestData() {
           firstName: 'John',
           lastName: 'Doe',
           password: hashedPassword,
-          twilioPhoneNumber: '+19787235265',
-          fullPhoneNumber: '+19787235265',
+          twilioPhoneNumber: '+19378723761',
+          fullPhoneNumber: '+19378723761',
           receivedAdverts: true,
           status: 'active',
           statusReason: '',
           position: 'Business Owner',
-          role: 'user',
-          googleId: null,
-          avatar: null,
-          provider: 'local',
-          tokenRefreshTime: new Date()
+          role: 'user'
         }
       );
       
@@ -150,17 +138,13 @@ async function seedTelephonyTestData() {
         lastName: 'Doe',
         email: 'john.doe@example.com',
         password: hashedPassword,
-        twilioPhoneNumber: '+19787235265',
-        fullPhoneNumber: '+19787235265',
+        twilioPhoneNumber: '+19378723761',
+        fullPhoneNumber: '+19378723761',
         receivedAdverts: true,
         status: 'active',
         statusReason: '',
         position: 'Business Owner',
-        role: 'user',
-        googleId: null,
-        avatar: null,
-        provider: 'local',
-        tokenRefreshTime: new Date()
+        role: 'user'
       });
       
       console.log('👤 Created test user:', testUser.email);
@@ -267,7 +251,7 @@ async function seedTelephonyTestData() {
     console.log('\n🎯 Test Credentials:');
     console.log('Email: john.doe@example.com');
     console.log('Password: Admin123!');
-    console.log('Phone: +19787235265');
+    console.log('Phone: +19378723761');
     
     console.log('\n📋 Available Services for Testing:');
     createdServices.forEach((service, index) => {
