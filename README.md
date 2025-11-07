@@ -313,36 +313,35 @@ test/
 cd apps/backend
 
 # Run all tests
-npm run test
+pnpm test
 
 # Run unit tests only
-npm run test:unit
+pnpm test:unit
 
 # Run integration tests only
-npm run test:integration
+pnpm test:integration
 
 # Watch mode
-npm run test:watch
+pnpm test:watch
 
 # With coverage
-npm run test -- --coverage
+pnpm test -- --coverage
 
 # Specific test file
-npm run test -- src/modules/auth/auth.service.spec.ts
+pnpm test -- src/modules/auth/auth.service.spec.ts
 ```
 
 ### Database Seeding
 
 ```bash
 # Run all seeds
-npm run seed
+pnpm seed
 
 # Seed telephony test data
-cd scripts/seeds
-npm run seed:telephony
+pnpm seed:telephony
 
 # Seed call logs
-npm run seed:calllog
+pnpm seed:calllog
 ```
 
 ## 🔧 Configuration
@@ -403,7 +402,12 @@ AI_SERVICE_URL=http://localhost:8000/api
 1. **Install dependencies**:
    ```bash
    cd apps/backend
-   npm install
+   pnpm install
+   ```
+   
+   **Note**: This project uses **pnpm** as the package manager. If you don't have pnpm installed:
+   ```bash
+   npm install -g pnpm
    ```
 
 2. **Set up environment**:
@@ -420,7 +424,7 @@ AI_SERVICE_URL=http://localhost:8000/api
 
 4. **Run in watch mode**:
    ```bash
-   npm run dev
+   pnpm dev
    ```
 
 5. **Access services**:
@@ -432,16 +436,16 @@ AI_SERVICE_URL=http://localhost:8000/api
 
 ```bash
 # Lint code
-npm run lint
+pnpm lint
 
 # Lint source only
-npm run lint:src
+pnpm lint:src
 
 # Lint tests only
-npm run lint:test
+pnpm lint:test
 
 # Type checking
-npm run type-check
+pnpm type-check
 ```
 
 ### Docker Development
