@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -32,6 +34,7 @@ export class SubscriptionService {
     @InjectModel(User.name)
     private readonly UserModel: Model<UserDocument>,
     private readonly stripeService: StripeService,
+    @Inject(forwardRef(() => TwilioPhoneNumberAssignmentService))
     private readonly twilioPhoneNumberAssignmentService: TwilioPhoneNumberAssignmentService,
   ) {}
 

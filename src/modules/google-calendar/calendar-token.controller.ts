@@ -38,7 +38,8 @@ export class CalendarTokenController {
   async createOrUpdateToken(
     @Body() createDto: CreateCalendarTokenDto,
   ): Promise<{ message: string }> {
-    return await this.calendarTokenService.createOrUpdateToken(createDto);
+    await this.calendarTokenService.createOrUpdateToken(createDto);
+    return { message: 'Token created/updated successfully' };
   }
 
   @ApiOperation({ summary: 'Get user calendar token' })

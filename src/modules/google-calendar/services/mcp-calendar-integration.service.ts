@@ -265,7 +265,7 @@ Service: ${callData.serviceType}
    * Call MCP AI backend to create calendar event and send email.
    * TODO: Implement actual API call when MCP backend is ready
    */
-  callMcpAiBackend(
+  async callMcpAiBackend(
     userId: string,
     mcpParams: {
       accessToken: string;

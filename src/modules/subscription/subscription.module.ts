@@ -17,7 +17,7 @@ import { SubscriptionService } from './subscription.service';
       { name: User.name, schema: userSchema },
     ]),
     forwardRef(() => StripeModule),
-    TwilioPhoneNumberAssignmentModule,
+    forwardRef(() => TwilioPhoneNumberAssignmentModule),
   ],
   controllers: [SubscriptionController],
   providers: [SubscriptionService],
