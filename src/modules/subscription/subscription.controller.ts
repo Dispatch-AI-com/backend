@@ -98,7 +98,10 @@ export class SubscriptionController {
 
   @Patch(':userId/free')
   @ApiOperation({ summary: 'Schedule subscription cancellation at period end' })
-  @ApiResponse({ status: 200, description: 'Subscription set to cancel at period end' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription set to cancel at period end',
+  })
   @ApiResponse({ status: 404, description: 'Active subscription not found' })
   @ApiResponse({ status: 400, description: 'Invalid subscription data' })
   async downgradeToFree(@Param('userId') userId: string): Promise<void> {

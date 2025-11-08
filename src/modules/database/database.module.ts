@@ -7,13 +7,17 @@ import { MongooseModule } from '@nestjs/mongoose';
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         // Read MONGODB_URI at runtime, not at module load time
         // This allows tests to set the URI before the connection is established
-        const uri =
-          process.env.MONGODB_URI ||
-          configService.get<string>('MONGODB_URI') ||
-          'mongodb://localhost:27017/dispatchai';
+        const envUri = process.env.MONGODB_URI;
+        const configUri = configService.get<string>('MONGODB_URI');
+        let uri = 'mongodb://localhost:27017/dispatchai';
+        if (envUri !== undefined && envUri !== '') {
+          uri = envUri;
+        } else if (configUri !== undefined && configUri !== '') {
+          uri = configUri;
+        }
 
         // In test environment, disable retries to avoid connection error logs
         const isTest = process.env.NODE_ENV === 'test';

@@ -12,6 +12,7 @@ import Stripe from 'stripe';
 
 import { Plan, PlanDocument } from '../plan/schema/plan.schema';
 import { StripeService } from '../stripe/stripe.service';
+import { TwilioPhoneNumberAssignmentService } from '../twilio-phone-number-assignment/twilio-phone-number-assignment.service';
 import { User, UserDocument } from '../user/schema/user.schema';
 import { CreateSubscriptionDto } from './dto/create-subscription.dto';
 import {
@@ -31,39 +32,13 @@ export class SubscriptionService {
     @InjectModel(User.name)
     private readonly UserModel: Model<UserDocument>,
     private readonly stripeService: StripeService,
+    private readonly twilioPhoneNumberAssignmentService: TwilioPhoneNumberAssignmentService,
   ) {}
-
-  /**
-   * Extract numeric value from callMinutes string
-   * Handles formats like: "100 Min/Month", "100", 100, "Unlimited", null, undefined
-   * @param callMinutes - The call minutes value from plan features
-   * @returns The numeric value in minutes, or 0 if invalid
-   */
-  private extractMinutesFromCallMinutes(callMinutes: string | number | null | undefined): number {
-    if (callMinutes == null) {
-      return 0;
-    }
-
-    // If it's already a number, return it
-    if (typeof callMinutes === 'number') {
-      return callMinutes;
-    }
-
-    // If it's a string, extract the numeric part
-    // At this point callMinutes must be a string (checked above)
-    const match = callMinutes.match(/(\d+)/);
-    if (match) {
-      return parseInt(match[1], 10);
-    }
-
-    // If no number found (e.g., "Unlimited"), return 0
-    return 0;
-  }
 
   /**
    * Fallback mechanism for resetting subscription cycles
    * Primary method is webhook-based (invoice.payment_succeeded)
-   * 
+   *
    * @deprecated Cron is disabled - kept for reference/emergency use only
    * To enable: uncomment @Cron decorator below
    */
@@ -109,7 +84,9 @@ export class SubscriptionService {
           newEnd = n;
         }
 
-        const minutes = this.extractMinutesFromCallMinutes(plan.features.callMinutes);
+        const minutes = this.extractMinutesFromCallMinutes(
+          plan.features.callMinutes,
+        );
         const gran = sub.billGranularitySec;
 
         await this.subscriptionModel.updateOne(
@@ -206,7 +183,9 @@ export class SubscriptionService {
       throw new BadRequestException('Could not compute end date from rrule');
     }
 
-    const includedMinutes = this.extractMinutesFromCallMinutes(plan.features.callMinutes);
+    const includedMinutes = this.extractMinutesFromCallMinutes(
+      plan.features.callMinutes,
+    );
     const billGranularitySec = 60;
 
     await this.subscriptionModel.create({
@@ -222,6 +201,22 @@ export class SubscriptionService {
       secondsLeft: includedMinutes * 60,
       billGranularitySec,
     });
+
+    // Assign phone number to user
+    try {
+      await this.twilioPhoneNumberAssignmentService.assignPhoneNumber(
+        userId,
+        endAt,
+      );
+      this.logger.log(
+        `Phone number assigned to user ${userId} for subscription ending at ${endAt.toISOString()}`,
+      );
+    } catch (error) {
+      // Log error but don't fail subscription activation
+      this.logger.error(
+        `Failed to assign phone number to user ${userId}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
 
     return {
       message: 'Subscription activated',
@@ -255,29 +250,33 @@ export class SubscriptionService {
     // Special case: If trying to switch to current plan while pending_downgrade, cancel the downgrade
     if (subscription.planId.equals(newPlan._id)) {
       if (subscription.status === 'pending_downgrade') {
-        if (!subscription.subscriptionId) {
+        if (
+          subscription.subscriptionId === undefined ||
+          subscription.subscriptionId === ''
+        ) {
           throw new BadRequestException('Missing subscription ID');
         }
-        
+
         this.logger.log(
           `🔄 Canceling scheduled downgrade for subscription: ${subscription.subscriptionId}`,
         );
-        
+
         // Get current Stripe subscription to cancel the scheduled price change
-        const stripeSub = await this.stripeService.client.subscriptions.retrieve(
-          subscription.subscriptionId,
-        );
-        
+        const stripeSub =
+          await this.stripeService.client.subscriptions.retrieve(
+            subscription.subscriptionId,
+          );
+
         // Get the current plan's price ID from our database (not from Stripe)
         const currentPlan = await this.planModel.findById(subscription.planId);
         if (!currentPlan) {
           throw new BadRequestException('Current plan not found');
         }
-        
+
         // Cancel the scheduled price change by reverting to current plan's price
         const subscriptionItemId = stripeSub.items.data[0].id;
         const currentPriceId = currentPlan.pricing[0].stripePriceId;
-        
+
         await this.stripeService.client.subscriptions.update(
           subscription.subscriptionId,
           {
@@ -286,20 +285,20 @@ export class SubscriptionService {
             billing_cycle_anchor: 'unchanged',
           },
         );
-        
+
         // Clear pending downgrade: set status back to active and clear pendingPlanId
         await this.subscriptionModel.updateOne(
           { subscriptionId: subscription.subscriptionId },
           {
             $set: { status: 'active' },
-            $unset: { pendingPlanId: '' },  // Clear the pending plan
+            $unset: { pendingPlanId: '' }, // Clear the pending plan
           },
         );
-        
+
         this.logger.log(
           `✅ Subscription ${subscription.subscriptionId} scheduled downgrade canceled, Stripe price reverted to current plan`,
         );
-        
+
         return { message: 'Downgrade canceled successfully' };
       }
       return { message: 'Already on the target plan' };
@@ -316,8 +315,12 @@ export class SubscriptionService {
     }
 
     // Extract call minutes for comparison
-    const currentMinutes = this.extractMinutesFromCallMinutes(currentPlan.features.callMinutes);
-    const newMinutes = this.extractMinutesFromCallMinutes(newPlan.features.callMinutes);
+    const currentMinutes = this.extractMinutesFromCallMinutes(
+      currentPlan.features.callMinutes,
+    );
+    const newMinutes = this.extractMinutesFromCallMinutes(
+      newPlan.features.callMinutes,
+    );
     const isUpgrade = newMinutes > currentMinutes;
 
     const stripeSub = await this.stripeService.client.subscriptions.retrieve(
@@ -331,7 +334,7 @@ export class SubscriptionService {
       this.logger.log(
         `🔄 Canceling scheduled cancellation for subscription: ${subscription.subscriptionId}`,
       );
-      
+
       await this.stripeService.client.subscriptions.update(
         subscription.subscriptionId,
         {
@@ -344,7 +347,7 @@ export class SubscriptionService {
         { subscriptionId: subscription.subscriptionId },
         { status: 'active' },
       );
-      
+
       this.logger.log(
         `✅ Subscription ${subscription.subscriptionId} cancellation canceled and status restored to active`,
       );
@@ -408,7 +411,7 @@ export class SubscriptionService {
         { subscriptionId: subscription.subscriptionId },
         {
           $set: {
-            pendingPlanId: newPlan._id,  // Track the pending downgrade plan
+            pendingPlanId: newPlan._id, // Track the pending downgrade plan
             status: 'pending_downgrade',
             updatedAt: new Date(),
           },
@@ -420,13 +423,15 @@ export class SubscriptionService {
       );
     }
 
-    return { message: `Plan ${isUpgrade ? 'upgraded' : 'downgraded'} successfully` };
+    return {
+      message: `Plan ${isUpgrade ? 'upgraded' : 'downgraded'} successfully`,
+    };
   }
 
   /**
    * Update plan by webhook (triggered by Stripe subscription.updated event)
    * This is called when a plan change takes effect (e.g., downgrade at next cycle)
-   * 
+   *
    * IMPORTANT: Do NOT update planId/secondsLeft if subscription is pending_downgrade
    * because that means the downgrade hasn't taken effect yet (scheduled for next cycle)
    */
@@ -459,7 +464,9 @@ export class SubscriptionService {
     }
 
     // Extract call minutes from the new plan
-    const newMinutes = this.extractMinutesFromCallMinutes(plan.features.callMinutes);
+    const newMinutes = this.extractMinutesFromCallMinutes(
+      plan.features.callMinutes,
+    );
     const newSecondsLeft = newMinutes * 60;
 
     // Update both planId and secondsLeft
@@ -549,12 +556,19 @@ export class SubscriptionService {
 
   async getActiveByuser(userId: string): Promise<SubscriptionDocument> {
     const subscription = await this.subscriptionModel
-      .findOne({ 
-        userId: new Types.ObjectId(userId), 
-        status: { $in: ['active', 'pending_cancellation', 'pending_downgrade', 'failed'] }
+      .findOne({
+        userId: new Types.ObjectId(userId),
+        status: {
+          $in: [
+            'active',
+            'pending_cancellation',
+            'pending_downgrade',
+            'failed',
+          ],
+        },
       })
       .populate('planId')
-      .populate('pendingPlanId') 
+      .populate('pendingPlanId')
       .populate('userId');
 
     if (!subscription)
@@ -602,7 +616,7 @@ export class SubscriptionService {
    * Reset subscription cycle using Stripe's period information
    * This is triggered by Stripe's invoice.payment_succeeded webhook
    * for recurring payments (not initial subscription)
-   * 
+   *
    * @param subscriptionId - Stripe subscription ID
    * @param periodStart - Unix timestamp (seconds) from Stripe
    * @param periodEnd - Unix timestamp (seconds) from Stripe
@@ -614,7 +628,14 @@ export class SubscriptionService {
   ): Promise<void> {
     const subscription = await this.subscriptionModel.findOne({
       subscriptionId,
-      status: { $in: ['active', 'pending_downgrade', 'pending_cancellation', 'cancelled'] },
+      status: {
+        $in: [
+          'active',
+          'pending_downgrade',
+          'pending_cancellation',
+          'cancelled',
+        ],
+      },
     });
 
     if (!subscription) {
@@ -625,9 +646,11 @@ export class SubscriptionService {
     }
 
     // For pending_downgrade, use pendingPlanId; otherwise use current planId
-    const targetPlanId = subscription.status === 'pending_downgrade' && subscription.pendingPlanId != null
-      ? subscription.pendingPlanId
-      : subscription.planId;
+    const targetPlanId =
+      subscription.status === 'pending_downgrade' &&
+      subscription.pendingPlanId != null
+        ? subscription.pendingPlanId
+        : subscription.planId;
 
     // Debug logging for downgrade
     if (subscription.status === 'pending_downgrade') {
@@ -649,7 +672,9 @@ export class SubscriptionService {
     const endAt = new Date(periodEnd * 1000);
 
     // Reset call minutes based on plan
-    const minutes = this.extractMinutesFromCallMinutes(plan.features.callMinutes);
+    const minutes = this.extractMinutesFromCallMinutes(
+      plan.features.callMinutes,
+    );
     const secondsLeft = minutes * 60;
 
     // Prepare update data
@@ -671,7 +696,7 @@ export class SubscriptionService {
     if (subscription.status === 'pending_downgrade') {
       // Downgrade has now taken effect
       updateData.status = 'active';
-      updateData.planId = targetPlanId;  // Update planId to the pending plan
+      updateData.planId = targetPlanId; // Update planId to the pending plan
       this.logger.log(
         `🔄 Downgrade now effective for ${subscriptionId}: planId updated from ${subscription.planId.toString()} to ${targetPlanId.toString()}, status changed to active`,
       );
@@ -690,11 +715,33 @@ export class SubscriptionService {
     }
     // For 'active' status, no additional changes needed
 
-    const updateOperations: UpdateQuery<SubscriptionDocument> = { $set: updateData };
-    
+    const updateOperations: UpdateQuery<SubscriptionDocument> = {
+      $set: updateData,
+    };
+
     // Clear pendingPlanId if it was a downgrade
-    if (subscription.status === 'pending_downgrade' && subscription.pendingPlanId != null) {
+    if (
+      subscription.status === 'pending_downgrade' &&
+      subscription.pendingPlanId != null
+    ) {
       updateOperations.$unset = { pendingPlanId: '' };
+    }
+
+    // Update phone number assignment expiration
+    try {
+      const userId = subscription.userId.toString();
+      await this.twilioPhoneNumberAssignmentService.assignPhoneNumber(
+        userId,
+        endAt,
+      );
+      this.logger.log(
+        `Phone number assignment extended for user ${userId} until ${endAt.toISOString()}`,
+      );
+    } catch (error) {
+      // Log error but don't fail subscription cycle reset
+      this.logger.error(
+        `Failed to extend phone number assignment for user ${subscription.userId.toString()}: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
 
     await this.subscriptionModel.updateOne(
@@ -707,11 +754,10 @@ export class SubscriptionService {
     );
   }
 
- 
   /**
    * Schedule subscription cancellation at period end
    * User can continue using service until current period ends
-   * Status changes: 
+   * Status changes:
    * - active → pending_cancellation → cancelled (via webhook)
    * - pending_downgrade → pending_cancellation → cancelled (via webhook)
    * - failed → cancelled (immediate cancellation)
@@ -723,7 +769,9 @@ export class SubscriptionService {
     });
 
     if (!subscription)
-      throw new NotFoundException('Active, pending_downgrade, or failed subscription not found');
+      throw new NotFoundException(
+        'Active, pending_downgrade, or failed subscription not found',
+      );
 
     if (subscription.subscriptionId == null) {
       throw new BadRequestException('Missing subscription ID');
@@ -734,7 +782,7 @@ export class SubscriptionService {
       this.logger.log(
         `🚫 Canceling failed subscription immediately: ${subscription.subscriptionId}`,
       );
-      
+
       // Cancel the subscription immediately on Stripe
       await this.stripeService.client.subscriptions.cancel(
         subscription.subscriptionId,
@@ -743,11 +791,14 @@ export class SubscriptionService {
       // Update subscription status to cancelled in database
       await this.subscriptionModel.updateOne(
         { subscriptionId: subscription.subscriptionId },
-        { 
+        {
           status: 'cancelled',
           secondsLeft: 0, // Suspend service immediately
         },
       );
+
+      // Phone number will be automatically handled by cron job
+      // Cron job will check subscription.endAt + 7 days and unbind when expired
 
       this.logger.log(
         `✅ Failed subscription cancelled immediately for user ${userId}, subscriptionId: ${subscription.subscriptionId}`,
@@ -761,7 +812,7 @@ export class SubscriptionService {
       this.logger.log(
         `🔄 Canceling scheduled downgrade for subscription: ${subscription.subscriptionId}`,
       );
-      
+
       // Stripe will handle the scheduled change when we set cancel_at_period_end
       // The scheduled price change will be discarded
       this.logger.log(
@@ -783,6 +834,9 @@ export class SubscriptionService {
       { subscriptionId: subscription.subscriptionId },
       { status: 'pending_cancellation' },
     );
+
+    // Phone number will be automatically handled by cron job
+    // Cron job will check subscription.endAt + 7 days and unbind when expired
 
     this.logger.log(
       `⏳ Subscription scheduled for cancellation at period end for user ${userId}, subscriptionId: ${subscription.subscriptionId}`,
@@ -863,5 +917,34 @@ export class SubscriptionService {
         },
       },
     ]);
+  }
+
+  /**
+   * Extract numeric value from callMinutes string
+   * Handles formats like: "100 Min/Month", "100", 100, "Unlimited", null, undefined
+   * @param callMinutes - The call minutes value from plan features
+   * @returns The numeric value in minutes, or 0 if invalid
+   */
+  private extractMinutesFromCallMinutes(
+    callMinutes: string | number | null | undefined,
+  ): number {
+    if (callMinutes == null) {
+      return 0;
+    }
+
+    // If it's already a number, return it
+    if (typeof callMinutes === 'number') {
+      return callMinutes;
+    }
+
+    // If it's a string, extract the numeric part
+    // At this point callMinutes must be a string (checked above)
+    const match = /(\d+)/.exec(callMinutes);
+    if (match) {
+      return parseInt(match[1], 10);
+    }
+
+    // If no number found (e.g., "Unlimited"), return 0
+    return 0;
   }
 }

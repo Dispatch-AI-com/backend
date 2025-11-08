@@ -64,11 +64,11 @@ export class McpCalendarIntegrationService {
 
       return {
         accessToken,
-        calendarId: userToken?.calendarId || 'primary',
+        calendarId: userToken?.calendarId ?? 'primary',
         provider: 'google',
         eventData: {
           ...eventData,
-          timezone: eventData.timezone || 'Australia/Sydney', // default timezone
+          timezone: eventData.timezone ?? 'Australia/Sydney', // default timezone
         },
       };
     } catch (error) {
@@ -199,7 +199,7 @@ export class McpCalendarIntegrationService {
 
       // 3) Build email content
       const emailData = {
-        to: callData.customerEmail || 'customer@example.com',
+        to: callData.customerEmail ?? 'customer@example.com',
         subject: `Appointment Confirmation - ${callData.serviceType}`,
         body: `
 Dear ${callData.customerName},
@@ -231,13 +231,16 @@ Phone: ${callData.customerPhone}
 Service: ${callData.serviceType}
         `.trim(),
         location: 'TBD',
-        attendees: callData.customerEmail ? [callData.customerEmail] : [],
+        attendees:
+          callData.customerEmail !== undefined && callData.customerEmail !== ''
+            ? [callData.customerEmail]
+            : [],
       };
 
       // 5) Build MCP API params
       const mcpParams = {
         accessToken,
-        calendarId: userToken?.calendarId || 'primary',
+        calendarId: userToken?.calendarId ?? 'primary',
         provider: 'google',
         calendarapp: 'google' as const,
       };
@@ -260,13 +263,36 @@ Service: ${callData.serviceType}
 
   /**
    * Call MCP AI backend to create calendar event and send email.
+   * TODO: Implement actual API call when MCP backend is ready
    */
-  async callMcpAiBackend(
+  callMcpAiBackend(
     userId: string,
-    mcpParams: any,
-    emailData: any,
-    calendarData: any,
-  ): Promise<any> {
+    mcpParams: {
+      accessToken: string;
+      calendarId?: string;
+      provider: string;
+      calendarapp: 'google';
+    },
+    emailData: {
+      to: string;
+      subject: string;
+      body: string;
+    },
+    calendarData: {
+      summary: string;
+      start: string;
+      end: string;
+      description: string;
+      location?: string;
+      attendees?: string[];
+    },
+  ): Promise<{
+    success: boolean;
+    eventId: string;
+    emailSent: boolean;
+    message: string;
+    timestamp: string;
+  }> {
     try {
       // Build MCP API request payload
       const mcpRequest = {
@@ -278,7 +304,7 @@ Service: ${callData.serviceType}
       };
 
       this.logger.log(`Calling MCP AI backend, user: ${userId}`, {
-        hasAccessToken: !!mcpRequest.accessToken,
+        hasAccessToken: mcpRequest.accessToken !== '',
         calendarId: mcpRequest.calendarId,
         eventSummary: mcpRequest.summary,
         emailTo: mcpRequest.to,

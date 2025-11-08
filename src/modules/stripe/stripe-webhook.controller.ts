@@ -188,7 +188,10 @@ export class StripeWebhookController {
       }
 
       // Skip if subscription is already cancelled or pending cancellation
-      if (subscription.status === 'cancelled' || subscription.status === 'pending_cancellation') {
+      if (
+        subscription.status === 'cancelled' ||
+        subscription.status === 'pending_cancellation'
+      ) {
         this.logger.log(
           `⏭️ Subscription ${subscriptionId} is ${subscription.status}. Skipping payment failed handling.`,
         );
@@ -219,7 +222,8 @@ export class StripeWebhookController {
 
   private async handlePaymentSucceeded(event: Stripe.Event): Promise<void> {
     const invoice = event.data.object as Stripe.Invoice;
-    const subscriptionId = invoice.parent?.subscription_details?.subscription as string;
+    const subscriptionId = invoice.parent?.subscription_details
+      ?.subscription as string;
 
     // Early validation - extract subscriptionId and validate
     if (!subscriptionId) {
@@ -228,7 +232,8 @@ export class StripeWebhookController {
     }
 
     // Single database query to get subscription
-    const subscription = await this.subscriptionService.findBySuscriptionId(subscriptionId);
+    const subscription =
+      await this.subscriptionService.findBySuscriptionId(subscriptionId);
     if (!subscription) {
       this.logger.warn(
         `[Webhook] ⚠️ Subscription ${subscriptionId} not found. Probably not created yet. Skipping.`,
@@ -240,7 +245,10 @@ export class StripeWebhookController {
 
     try {
       // Early return for cancelled subscriptions - no need to process further
-      if (subscription.status === 'cancelled' || subscription.status === 'pending_cancellation') {
+      if (
+        subscription.status === 'cancelled' ||
+        subscription.status === 'pending_cancellation'
+      ) {
         this.logger.log(
           `⏸️ Subscription ${subscriptionId} is ${subscription.status}, skipping payment processing`,
         );
@@ -250,10 +258,17 @@ export class StripeWebhookController {
       // Update subscription status to active for non-cancelled subscriptions
       // But don't change pending_downgrade status - it should remain until cycle reset
       if (subscription.status !== 'pending_downgrade') {
-        await this.subscriptionService.updateStatusByWebhook(subscriptionId, 'active');
-        this.logger.log(`✅ Subscription ${subscriptionId} status updated to active`);
+        await this.subscriptionService.updateStatusByWebhook(
+          subscriptionId,
+          'active',
+        );
+        this.logger.log(
+          `✅ Subscription ${subscriptionId} status updated to active`,
+        );
       } else {
-        this.logger.log(`⏸️ Subscription ${subscriptionId} is pending_downgrade, keeping status unchanged`);
+        this.logger.log(
+          `⏸️ Subscription ${subscriptionId} is pending_downgrade, keeping status unchanged`,
+        );
       }
 
       // Process recurring payment cycle reset
@@ -270,12 +285,17 @@ export class StripeWebhookController {
    * Process recurring payment cycle reset
    * Extracted for better code organization and reusability
    */
-  private async processRecurringPayment(subscriptionId: string, invoice: Stripe.Invoice): Promise<void> {
+  private async processRecurringPayment(
+    subscriptionId: string,
+    invoice: Stripe.Invoice,
+  ): Promise<void> {
     const billingReason = invoice.billing_reason;
 
     // Early return for non-recurring payments
     if (billingReason !== 'subscription_cycle') {
-      this.logger.log(`🆕 First payment (${billingReason ?? 'unknown'}), skipping cycle reset`);
+      this.logger.log(
+        `🆕 First payment (${billingReason ?? 'unknown'}), skipping cycle reset`,
+      );
       return;
     }
 
@@ -284,16 +304,20 @@ export class StripeWebhookController {
     const periodEnd = invoice.lines.data[0]?.period?.end;
 
     if (!periodStart || !periodEnd) {
-      this.logger.error(`❌ Missing period information in invoice for ${subscriptionId}`);
+      this.logger.error(
+        `❌ Missing period information in invoice for ${subscriptionId}`,
+      );
       return;
     }
 
     // This is a recurring payment - reset the subscription cycle using Stripe's period
-    this.logger.log(`🔄 Recurring payment detected, resetting cycle for ${subscriptionId}`);
+    this.logger.log(
+      `🔄 Recurring payment detected, resetting cycle for ${subscriptionId}`,
+    );
     this.logger.log(
       `📅 Period: ${new Date(periodStart * 1000).toISOString()} - ${new Date(periodEnd * 1000).toISOString()}`,
     );
-    
+
     await this.subscriptionService.resetSubscriptionCycleWithPeriod(
       subscriptionId,
       periodStart,
@@ -309,8 +333,9 @@ export class StripeWebhookController {
 
     try {
       // Check if subscription exists in database
-      const dbSubscription = await this.subscriptionService.findBySuscriptionId(subscriptionId);
-      
+      const dbSubscription =
+        await this.subscriptionService.findBySuscriptionId(subscriptionId);
+
       if (!dbSubscription) {
         this.logger.warn(
           `[Webhook] ⚠️ Subscription ${subscriptionId} not found in database. Skipping.`,
@@ -323,10 +348,10 @@ export class StripeWebhookController {
         subscriptionId,
         'cancelled',
       );
-      
+
       // Set secondsLeft to 0 when subscription is cancelled
       await this.subscriptionService.suspendSubscription(subscriptionId);
-      
+
       this.logger.log(
         `✅ Subscription ${subscriptionId} status updated to cancelled and suspended`,
       );

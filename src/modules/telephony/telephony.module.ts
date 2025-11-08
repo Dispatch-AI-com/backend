@@ -7,6 +7,7 @@ import { ServiceBookingModule } from '@/modules/service-booking/service-booking.
 import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
+import { TwilioPhoneNumberAssignmentModule } from '@/modules/twilio-phone-number-assignment/twilio-phone-number-assignment.module';
 import { UserModule } from '@/modules/user/user.module';
 
 import { SessionHelper } from './helpers/session.helper';
@@ -28,6 +29,7 @@ import { TelephonyService } from './telephony.service';
     ServiceBookingModule,
     CompanyModule,
     SubscriptionModule,
+    TwilioPhoneNumberAssignmentModule,
   ],
   controllers: [TelephonyController],
   providers: [
