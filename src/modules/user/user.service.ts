@@ -10,6 +10,7 @@ import { Model, Types } from 'mongoose';
 import { isValidObjectId } from 'mongoose';
 
 import { SALT_ROUNDS } from '@/modules/auth/auth.config';
+import { TwilioPhoneNumberAssignmentService } from '@/modules/twilio-phone-number-assignment/twilio-phone-number-assignment.service';
 
 import { AddressDto } from './dto/address.dto';
 import { GreetingDto } from './dto/greeting.dto';
@@ -20,6 +21,7 @@ export class UserService {
   constructor(
     @InjectModel(User.name)
     private readonly userModel: Model<UserDocument>,
+    private readonly twilioPhoneNumberAssignmentService: TwilioPhoneNumberAssignmentService,
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -33,6 +35,27 @@ export class UserService {
     }
     const user = await this.userModel.findById(id).exec();
     if (!user) throw new NotFoundException(`User with id ${id} not found`);
+
+    // Get phone number from assignment table if not already set
+    const phoneNumber = user.twilioPhoneNumber;
+    if (phoneNumber === undefined || phoneNumber.trim() === '') {
+      try {
+        const assignment =
+          await this.twilioPhoneNumberAssignmentService.getActiveAssignmentByUserId(
+            id,
+          );
+        if (assignment) {
+          // Set phone number on user object for backward compatibility
+          (
+            user as UserDocument & { twilioPhoneNumber: string }
+          ).twilioPhoneNumber = assignment.phoneNumber;
+        }
+      } catch {
+        // If assignment service fails, continue without phone number
+        // This ensures backward compatibility
+      }
+    }
+
     return user;
   }
 
@@ -96,6 +119,26 @@ export class UserService {
     if (typeof twilioPhoneNumber !== 'string') {
       return null;
     }
+
+    // First, try to find user through the new assignment table
+    try {
+      const userId =
+        await this.twilioPhoneNumberAssignmentService.getUserByPhoneNumber(
+          twilioPhoneNumber,
+        );
+      if (userId !== null) {
+        const user = await this.userModel.findById(userId).exec();
+        if (user) {
+          return user;
+        }
+      }
+    } catch {
+      // If assignment service fails, fall back to old method
+      // This ensures backward compatibility
+    }
+
+    // Fallback to old method for backward compatibility
+    // (in case phone number is still stored directly in user document)
     const user = await this.userModel
       .findOne({ twilioPhoneNumber: { $eq: twilioPhoneNumber } })
       .exec();

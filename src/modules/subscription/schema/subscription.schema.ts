@@ -11,6 +11,9 @@ export class Subscription {
   @Prop({ type: Types.ObjectId, ref: 'Plan', required: true })
   planId!: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Plan', required: false })
+  pendingPlanId?: Types.ObjectId;
+
   @Prop({ required: false })
   subscriptionId?: string;
 
@@ -26,8 +29,28 @@ export class Subscription {
   @Prop({ required: false })
   endAt!: Date;
 
-  @Prop({ required: true, enum: ['active', 'failed', 'cancelled'] })
-  status!: 'active' | 'failed' | 'cancelled';
+  @Prop({
+    required: true,
+    enum: [
+      'active',
+      'failed',
+      'cancelled',
+      'pending_cancellation',
+      'pending_downgrade',
+    ],
+  })
+  status!:
+    | 'active'
+    | 'failed'
+    | 'cancelled'
+    | 'pending_cancellation'
+    | 'pending_downgrade';
+
+  @Prop({ required: true, default: 0 })
+  secondsLeft!: number;
+
+  @Prop({ required: true, default: 60 })
+  billGranularitySec!: number;
 
   @Prop({ required: false })
   createdAt!: Date;
@@ -37,3 +60,5 @@ export class Subscription {
 }
 
 export const SubscriptionSchema = SchemaFactory.createForClass(Subscription);
+
+SubscriptionSchema.index({ status: 1, endAt: 1 });

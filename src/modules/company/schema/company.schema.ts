@@ -15,7 +15,7 @@ export class Company {
   user!: User;
   @Prop()
   calendar_access_token?: string;
-  
+
   _id!: Types.ObjectId;
 }
 

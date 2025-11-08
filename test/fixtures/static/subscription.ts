@@ -18,6 +18,8 @@ export const staticSubscription: Subscription = {
   endAt: new Date('2024-01-01T00:00:00.000Z'),
   createdAt: new Date('2023-01-01T00:00:00.000Z'),
   updatedAt: new Date('2023-01-01T00:00:00.000Z'),
+  secondsLeft: 1000,
+  billGranularitySec: 60,
 } as Subscription;
 
 export const staticActiveSubscription: Subscription = {
@@ -32,6 +34,8 @@ export const staticActiveSubscription: Subscription = {
   endAt: new Date('2024-06-01T00:00:00.000Z'),
   createdAt: new Date('2023-06-01T00:00:00.000Z'),
   updatedAt: new Date('2023-06-01T00:00:00.000Z'),
+  secondsLeft: 1000,
+  billGranularitySec: 60,
 } as Subscription;
 
 export const staticFailedSubscription: Subscription = {
@@ -46,6 +50,8 @@ export const staticFailedSubscription: Subscription = {
   endAt: new Date('2023-04-01T00:00:00.000Z'),
   createdAt: new Date('2023-03-01T00:00:00.000Z'),
   updatedAt: new Date('2023-03-01T00:00:00.000Z'),
+  secondsLeft: 1000,
+  billGranularitySec: 60,
 } as Subscription;
 
 export const staticCancelledSubscription: Subscription = {
@@ -60,4 +66,6 @@ export const staticCancelledSubscription: Subscription = {
   endAt: new Date('2023-03-01T00:00:00.000Z'),
   createdAt: new Date('2023-02-01T00:00:00.000Z'),
   updatedAt: new Date('2023-02-01T00:00:00.000Z'),
+  secondsLeft: 1000,
+  billGranularitySec: 60,
 } as Subscription;

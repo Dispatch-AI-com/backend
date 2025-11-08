@@ -4,8 +4,10 @@ import { CalllogModule } from '@/modules/calllog/calllog.module';
 import { CompanyModule } from '@/modules/company/company.module';
 import { ServiceModule } from '@/modules/service/service.module';
 import { ServiceBookingModule } from '@/modules/service-booking/service-booking.module';
+import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
+import { TwilioPhoneNumberAssignmentModule } from '@/modules/twilio-phone-number-assignment/twilio-phone-number-assignment.module';
 import { UserModule } from '@/modules/user/user.module';
 
 import { SessionHelper } from './helpers/session.helper';
@@ -26,6 +28,8 @@ import { TelephonyService } from './telephony.service';
     ServiceModule,
     ServiceBookingModule,
     CompanyModule,
+    SubscriptionModule,
+    TwilioPhoneNumberAssignmentModule,
   ],
   controllers: [TelephonyController],
   providers: [

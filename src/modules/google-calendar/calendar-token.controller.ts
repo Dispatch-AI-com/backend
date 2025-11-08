@@ -1,25 +1,8 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CalendarTokenService } from './calendar-token.service';
 import { CreateCalendarTokenDto } from './dto/create-calendar-token.dto';
-import { CalendarToken } from './schema/calendar-token.schema';
 
 @ApiTags('calendar-token')
 @Controller('calendar-token')
@@ -30,7 +13,9 @@ export class CalendarTokenController {
   @ApiResponse({ status: 200, description: 'Token fetched successfully' })
   @ApiResponse({ status: 404, description: 'Token not found' })
   @Get('user/:userId/valid')
-  async getValidToken(@Param('userId') userId: string) {
+  async getValidToken(
+    @Param('userId') userId: string,
+  ): Promise<{ accessToken: string }> {
     return await this.calendarTokenService.getValidToken(userId);
   }
 
@@ -38,7 +23,9 @@ export class CalendarTokenController {
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 404, description: 'Token not found' })
   @Post('user/:userId/refresh')
-  async refreshToken(@Param('userId') userId: string) {
+  async refreshToken(
+    @Param('userId') userId: string,
+  ): Promise<{ accessToken: string }> {
     return await this.calendarTokenService.refreshToken(userId);
   }
 
@@ -48,21 +35,28 @@ export class CalendarTokenController {
     description: 'Token created/updated successfully',
   })
   @Post()
-  async createOrUpdateToken(@Body() createDto: CreateCalendarTokenDto) {
-    return await this.calendarTokenService.createOrUpdateToken(createDto);
+  async createOrUpdateToken(
+    @Body() createDto: CreateCalendarTokenDto,
+  ): Promise<{ message: string }> {
+    await this.calendarTokenService.createOrUpdateToken(createDto);
+    return { message: 'Token created/updated successfully' };
   }
 
   @ApiOperation({ summary: 'Get user calendar token' })
   @ApiResponse({ status: 200, description: 'Token fetched successfully' })
   @Get('user/:userId')
-  async getUserToken(@Param('userId') userId: string) {
+  async getUserToken(
+    @Param('userId') userId: string,
+  ): Promise<{ accessToken: string; refreshToken: string } | null> {
     return await this.calendarTokenService.getUserToken(userId);
   }
 
   @ApiOperation({ summary: 'Delete user calendar token' })
   @ApiResponse({ status: 200, description: 'Token deleted successfully' })
   @Delete('user/:userId')
-  async deleteUserToken(@Param('userId') userId: string) {
+  async deleteUserToken(
+    @Param('userId') userId: string,
+  ): Promise<{ message: string }> {
     await this.calendarTokenService.deleteUserToken(userId);
     return { message: 'Token deleted' };
   }
@@ -70,7 +64,9 @@ export class CalendarTokenController {
   @ApiOperation({ summary: 'Check if token is expiring soon' })
   @ApiResponse({ status: 200, description: 'Check result' })
   @Get('user/:userId/expiring')
-  async isTokenExpiringSoon(@Param('userId') userId: string) {
+  async isTokenExpiringSoon(
+    @Param('userId') userId: string,
+  ): Promise<{ isExpiringSoon: boolean }> {
     const isExpiring =
       await this.calendarTokenService.isTokenExpiringSoon(userId);
     return { isExpiringSoon: isExpiring };

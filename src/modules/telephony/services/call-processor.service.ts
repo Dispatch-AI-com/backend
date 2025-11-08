@@ -12,6 +12,8 @@ import {
   buildSayResponse,
   NextAction,
 } from '@/modules/telephony/utils/twilio-response.util';
+import { TwilioPhoneNumberAssignmentService } from '@/modules/twilio-phone-number-assignment/twilio-phone-number-assignment.service';
+import { User } from '@/modules/user/schema/user.schema';
 import { UserService } from '@/modules/user/user.service';
 
 import { SessionHelper } from '../helpers/session.helper';
@@ -29,9 +31,9 @@ export class CallProcessorService {
   > = {
     // Final statuses that require data persistence
     completed: this.handleCompletedStatus.bind(this),
-    busy: this.handleFinalStatus.bind(this),
-    failed: this.handleFinalStatus.bind(this),
-    'no-answer': this.handleFinalStatus.bind(this),
+    busy: this.handleNonFinalStatus.bind(this),
+    failed: this.handleNonFinalStatus.bind(this),
+    'no-answer': this.handleNonFinalStatus.bind(this),
     // Non-final statuses that only require logging
     queued: this.handleNonFinalStatus.bind(this),
     ringing: this.handleNonFinalStatus.bind(this),
@@ -50,6 +52,7 @@ export class CallProcessorService {
     private readonly companyService: CompanyService,
     private readonly aiIntegration: AiIntegrationService,
     private readonly dataPersistence: CallDataPersistenceService,
+    private readonly twilioPhoneNumberAssignmentService: TwilioPhoneNumberAssignmentService,
   ) {}
 
   async handleVoice(voiceData: VoiceGatherBody): Promise<string> {
@@ -61,7 +64,25 @@ export class CallProcessorService {
       `[CallProcessorService][handleVoice] CallSid=${CallSid}, Looking for user with twilioPhoneNumber=${To}`,
     );
     await this.sessionHelper.ensureSession(CallSid);
-    const user = await this.userService.findByTwilioPhoneNumber(To);
+
+    // Find user by phone number through assignment service
+    let user: User | null = null;
+    try {
+      const userId =
+        await this.twilioPhoneNumberAssignmentService.getUserByPhoneNumber(To);
+      if (userId !== null) {
+        user = await this.userService.findOne(userId);
+      }
+    } catch (error) {
+      // If assignment service fails, fall back to old method for backward compatibility
+      winstonLogger.warn(
+        `[CallProcessorService][handleVoice] Assignment service lookup failed, falling back to old method: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    // Fallback to old method if assignment service didn't find user
+    user ??= await this.userService.findByTwilioPhoneNumber(To);
+
     if (user == null) {
       winstonLogger.warn(
         `[CallProcessorService][handleVoice] No user found with twilioPhoneNumber=${To}`,

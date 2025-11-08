@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { CSRFGuard } from '@/common/guards/csrf.guard';
 import { AiHttpModule } from '@/lib/ai/ai-http.module';
@@ -27,6 +28,8 @@ import { SubscriptionModule } from '@/modules/subscription/subscription.module';
 import { TelephonyModule } from '@/modules/telephony/telephony.module';
 import { TranscriptModule } from '@/modules/transcript/transcript.module';
 import { TranscriptChunkModule } from '@/modules/transcript-chunk/transcript-chunk.module';
+import { TwilioPhoneNumberModule } from '@/modules/twilio-phone-number/twilio-phone-number.module';
+import { TwilioPhoneNumberAssignmentModule } from '@/modules/twilio-phone-number-assignment/twilio-phone-number-assignment.module';
 import { UserModule } from '@/modules/user/user.module';
 
 import { OnboardingModule } from './onboarding/onboarding.module';
@@ -55,6 +58,8 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     ServiceLocationMappingModule,
     TelephonyModule,
     TwilioModule,
+    TwilioPhoneNumberModule,
+    TwilioPhoneNumberAssignmentModule,
     RedisModule,
     AiHttpModule,
     SubscriptionModule,
@@ -62,6 +67,7 @@ import { OnboardingModule } from './onboarding/onboarding.module';
     UserModule,
     OnboardingModule,
     SettingModule,
+    ScheduleModule.forRoot(),
   ],
   providers: [
     {

@@ -44,6 +44,27 @@ export class SubscriptionController {
     return this.subscriptionService.createSubscription(dto);
   }
 
+  @Get('admin/cron/reset-now')
+  @ApiOperation({ summary: '[Admin] Manually run reset job once' })
+  @ApiResponse({ status: 200, description: 'Reset successful' })
+  @HttpCode(HttpStatus.OK)
+  async resetNow(): Promise<{ ok: true }> {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
+    await this.subscriptionService.resetIfMonthlyDue();
+    return { ok: true };
+  }
+
+  @Get(':userId/remaining')
+  @ApiOperation({ summary: 'Get remaining call time for current cycle' })
+  @HttpCode(HttpStatus.OK)
+  async getRemaining(
+    @Param('userId') userId: string,
+  ): Promise<{ seconds: number; minutes: number }> {
+    const sub = await this.subscriptionService.getActiveByuser(userId);
+    const seconds = Math.max(sub.secondsLeft || 0, 0);
+    return { seconds, minutes: Math.floor(seconds / 60) };
+  }
+
   @Post(':userId/retry-payment')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -76,10 +97,13 @@ export class SubscriptionController {
   }
 
   @Patch(':userId/free')
-  @ApiOperation({ summary: 'Downgrade to free plan and refund unused balance' })
-  @ApiResponse({ status: 200, description: 'Downgrade and refund successful' })
+  @ApiOperation({ summary: 'Schedule subscription cancellation at period end' })
+  @ApiResponse({
+    status: 200,
+    description: 'Subscription set to cancel at period end',
+  })
   @ApiResponse({ status: 404, description: 'Active subscription not found' })
-  @ApiResponse({ status: 500, description: 'Internal error during downgrade' })
+  @ApiResponse({ status: 400, description: 'Invalid subscription data' })
   async downgradeToFree(@Param('userId') userId: string): Promise<void> {
     await this.subscriptionService.downgradeToFree(userId);
   }

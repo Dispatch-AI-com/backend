@@ -37,7 +37,7 @@ export class VerificationService {
         return {
           userId: new Types.ObjectId(userId),
           type: 'Both',
-          mobile: user.fullPhoneNumber || '',
+          mobile: user.fullPhoneNumber ?? '',
           email: user.email || '',
           mobileVerified: false,
           emailVerified: false,
