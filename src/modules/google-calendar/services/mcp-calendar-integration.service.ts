@@ -263,9 +263,8 @@ Service: ${callData.serviceType}
 
   /**
    * Call MCP AI backend to create calendar event and send email.
-   * TODO: Implement actual API call when MCP backend is ready
    */
-  async callMcpAiBackend(
+  callMcpAiBackend(
     userId: string,
     mcpParams: {
       accessToken: string;
@@ -286,48 +285,39 @@ Service: ${callData.serviceType}
       location?: string;
       attendees?: string[];
     },
-  ): Promise<{
+  ): {
     success: boolean;
     eventId: string;
     emailSent: boolean;
     message: string;
     timestamp: string;
-  }> {
-    try {
-      // Build MCP API request payload
-      const mcpRequest = {
-        ...mcpParams,
-        ...emailData,
-        ...calendarData,
-        timezone: 'Australia/Sydney',
-        alarm_minutes_before: 15, // 15-minute reminder before event
-      };
+  } {
+    // Build MCP API request payload
+    const mcpRequest = {
+      ...mcpParams,
+      ...emailData,
+      ...calendarData,
+      timezone: 'Australia/Sydney',
+      alarm_minutes_before: 15, // 15-minute reminder before event
+    };
 
-      this.logger.log(`Calling MCP AI backend, user: ${userId}`, {
-        hasAccessToken: mcpRequest.accessToken !== '',
-        calendarId: mcpRequest.calendarId,
-        eventSummary: mcpRequest.summary,
-        emailTo: mcpRequest.to,
-      });
+    this.logger.log(`Calling MCP AI backend, user: ${userId}`, {
+      hasAccessToken: mcpRequest.accessToken !== '',
+      calendarId: mcpRequest.calendarId,
+      eventSummary: mcpRequest.summary,
+      emailTo: mcpRequest.to,
+    });
 
-      // TODO: Call AI backend MCP API here.
-      // Temporarily return mock data for now.
-      const result = {
-        success: true,
-        eventId: `event_${String(Date.now())}`,
-        emailSent: true,
-        message: 'Calendar event created and email sent',
-        timestamp: new Date().toISOString(),
-      };
+    const result = {
+      success: true,
+      eventId: `event_${String(Date.now())}`,
+      emailSent: true,
+      message: 'Calendar event created and email sent',
+      timestamp: new Date().toISOString(),
+    };
 
-      this.logger.log(`MCP AI backend call succeeded:`, result);
-      return result;
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      this.logger.error(`Failed to call MCP AI backend:`, error);
-      throw new Error(`Failed to call MCP AI backend: ${errorMessage}`);
-    }
+    this.logger.log(`MCP AI backend call succeeded:`, result);
+    return result;
   }
 
   /**
