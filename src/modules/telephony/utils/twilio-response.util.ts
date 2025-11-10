@@ -20,6 +20,16 @@ export interface SayOptions {
   language?: IvrLanguage;
 }
 
+function estimateGatherTimeout(text: string): number {
+  const words = text.trim().split(/\s+/).filter(Boolean).length;
+
+  // Assume ~0.6 seconds per word, add buffer, clamp between 15 and 60 seconds
+  const estimatedSpeechSeconds = Math.ceil(words * 0.6);
+  const timeoutWithBuffer = estimatedSpeechSeconds + 7;
+
+  return Math.min(60, Math.max(15, timeoutWithBuffer));
+}
+
 export function buildSayResponse({
   text,
   next,
@@ -28,21 +38,25 @@ export function buildSayResponse({
   language = IvrLanguage.EN_AU,
 }: SayOptions): string {
   const vr = new twiml.VoiceResponse();
-  vr.say({ language }, text);
 
   switch (next) {
     case NextAction.GATHER: {
-      vr.gather({
+      const gatherTimeout = estimateGatherTimeout(text);
+
+      const gather = vr.gather({
         input: ['speech'],
         language,
-        speechTimeout: 'auto',
+        speechTimeout: '3', // Wait 3 seconds after speech ends
+        timeout: gatherTimeout, // Allow full greeting playback before waiting for speech
         action: `${publicUrl}/telephony/gather?CallSid=${sid}`,
         method: 'POST',
       });
+      gather.say({ language }, text);
       break;
     }
 
     case NextAction.HANGUP: {
+      vr.say({ language }, text);
       vr.hangup();
       break;
     }

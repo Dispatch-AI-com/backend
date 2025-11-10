@@ -22,6 +22,9 @@ export class CallLog {
 
   @Prop({ required: true, type: Date })
   startAt!: Date;
+
+  @Prop()
+  intent?: string;
 }
 
 export const CallLogSchema = SchemaFactory.createForClass(CallLog);

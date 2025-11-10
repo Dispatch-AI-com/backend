@@ -17,43 +17,6 @@ export const ValidationHelper = {
   },
 
   /**
-   * Validate if session has required data for service booking
-   */
-  canCreateServiceBooking(session: CallSkeleton): {
-    isValid: boolean;
-    missingFields: string[];
-  } {
-    const missingFields: string[] = [];
-
-    if (session.user.service == null) {
-      missingFields.push('service');
-    }
-
-    if (session.user.serviceBookedTime == null) {
-      missingFields.push('serviceBookedTime');
-    }
-
-    if (
-      session.user.userInfo.name == null ||
-      session.user.userInfo.name.trim() === ''
-    ) {
-      missingFields.push('customer name');
-    }
-
-    if (
-      session.user.userInfo.phone == null ||
-      session.user.userInfo.phone.trim() === ''
-    ) {
-      missingFields.push('customer phone');
-    }
-
-    return {
-      isValid: missingFields.length === 0,
-      missingFields,
-    };
-  },
-
-  /**
    * Check if session should be processed for completion
    */
   shouldProcessSession(session: CallSkeleton | null): boolean {
@@ -71,13 +34,6 @@ export const ValidationHelper = {
       typeof response.message === 'string' &&
       response.message.trim().length > 0
     );
-  },
-
-  /**
-   * Check if service is available for booking
-   */
-  isServiceAvailable(session: CallSkeleton): boolean {
-    return Boolean(session.servicebooked && session.user.service);
   },
 
   /**

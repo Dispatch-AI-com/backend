@@ -32,4 +32,9 @@ export class CreateCallLogDto {
   @IsDate()
   @Type(() => Date)
   startAt!: Date;
+
+  @ApiPropertyOptional()
+  @IsString()
+  @IsOptional()
+  intent?: string;
 }

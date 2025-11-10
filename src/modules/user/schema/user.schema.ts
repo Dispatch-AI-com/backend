@@ -6,11 +6,7 @@ import { EUserRole } from '@/common/constants/user.constant';
 import { UserStatus } from '../enum/userStatus.enum';
 
 // Add the greeting message
-const DEFAULT_GREETING_MESSAGE = `Hello! I'm an Dispatch AI assistant working for you.
-
-Your team is not available to take the call right now.
-
-I can take a message for you, or help you book an appointment with your team. What can I do for you today?`;
+const DEFAULT_GREETING_MESSAGE = `Hi! This is Dispatch AI. The person you are calling has enabled AI service to handle incoming calls. May I have your name, please?`;
 
 @Schema({ timestamps: true })
 export class User extends Document {

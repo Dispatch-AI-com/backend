@@ -19,12 +19,8 @@ export const WelcomeMessageHelper = {
       return greeting.message;
     }
 
-    // Fallback: use system-generated welcome message
-    if (companyName !== undefined && services && services.length > 0) {
-      const serviceList = services.map(s => s.name).join(', ');
-      return `Welcome! We are ${companyName}. We provide ${serviceList}. May I get your name please?`;
-    }
-    return 'Welcome! May I get your name please?';
+    // Introduce Dispatch AI service and ask for name
+    return 'Hi! This is Dispatch AI. The person you are calling has enabled AI service to handle incoming calls. May I have your name, please?';
   },
 
   /**

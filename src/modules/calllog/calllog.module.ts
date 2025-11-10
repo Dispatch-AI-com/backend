@@ -9,6 +9,7 @@ import { TranscriptModule } from '../transcript/transcript.module';
 import { TranscriptChunkModule } from '../transcript-chunk/transcript-chunk.module';
 import { CalllogController } from './calllog.controller';
 import { CalllogService } from './calllog.service';
+import { InternalCalllogController } from './internal-calllog.controller';
 import { CallLog, CallLogSchema } from './schema/calllog.schema';
 
 @Module({
@@ -20,7 +21,7 @@ import { CallLog, CallLogSchema } from './schema/calllog.schema';
     TranscriptModule,
     TranscriptChunkModule,
   ],
-  controllers: [CalllogController],
+  controllers: [CalllogController, InternalCalllogController],
   providers: [CalllogService],
   exports: [CalllogService],
 })

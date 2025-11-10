@@ -4,13 +4,6 @@ export interface Message {
   startedAt: string;
 }
 
-export interface Service {
-  id: string;
-  name: string;
-  price: number | null;
-  description?: string;
-}
-
 export interface UserInfo {
   name?: string;
   phone?: string;
@@ -22,20 +15,18 @@ export interface Company {
   name: string;
   email: string;
   userId: string;
-  calendar_access_token?: string;
 }
 
 export interface CallSkeleton {
   callSid: string;
-  services: readonly Service[];
   company: Company;
   user: {
-    service?: Service;
-    serviceBookedTime?: string;
     userInfo: Partial<UserInfo>;
   };
   history: Message[];
-  servicebooked: boolean;
-  confirmEmailsent: boolean;
+  intent?: string; // Call intent classification result
+  intentClassified: boolean; // Whether intent has been classified
   createdAt?: string;
+  callerNumber?: string;
+  callStartAt?: string;
 }

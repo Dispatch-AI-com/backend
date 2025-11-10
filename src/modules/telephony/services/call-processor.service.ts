@@ -7,7 +7,6 @@ import {
 } from '@/common/interfaces/twilio-voice-webhook';
 import { winstonLogger } from '@/logger/winston.logger';
 import { CompanyService } from '@/modules/company/company.service';
-import { ServiceService } from '@/modules/service/service.service';
 import {
   buildSayResponse,
   NextAction,
@@ -46,14 +45,13 @@ export class CallProcessorService {
   constructor(
     private readonly sessionHelper: SessionHelper,
     private readonly userService: UserService,
-    private readonly serviceService: ServiceService,
     private readonly companyService: CompanyService,
     private readonly aiIntegration: AiIntegrationService,
     private readonly dataPersistence: CallDataPersistenceService,
   ) {}
 
   async handleVoice(voiceData: VoiceGatherBody): Promise<string> {
-    const { CallSid, To } = voiceData;
+    const { CallSid, To, From } = voiceData;
     winstonLogger.log(
       `[CallProcessorService][handleVoice] Full request data: ${JSON.stringify(voiceData)}`,
     );
@@ -61,6 +59,14 @@ export class CallProcessorService {
       `[CallProcessorService][handleVoice] CallSid=${CallSid}, Looking for user with twilioPhoneNumber=${To}`,
     );
     await this.sessionHelper.ensureSession(CallSid);
+
+    // Store caller information
+    await this.sessionHelper.setCallerInfo(
+      CallSid,
+      From,
+      new Date().toISOString(),
+    );
+
     const user = await this.userService.findByTwilioPhoneNumber(To);
     if (user == null) {
       winstonLogger.warn(
@@ -68,41 +74,57 @@ export class CallProcessorService {
       );
       return this.speakAndLog(CallSid, 'User not found', NextAction.HANGUP);
     }
-    const services = await this.serviceService.findAllActiveByUserId(
-      user._id as string,
-    );
-    await this.sessionHelper.fillCompanyServices(CallSid, services);
     const company = await this.companyService.findByUserId(user._id as string);
     const userGreeting = await this.userService.getGreeting(user._id as string);
     await this.sessionHelper.fillCompany(CallSid, company, user);
 
     const welcome = WelcomeMessageHelper.buildWelcomeMessage(
       company.businessName,
-      services,
-      userGreeting, // Use user greeting instead of company greeting
+      undefined,
+      userGreeting,
     );
 
-    return this.speakAndLog(CallSid, welcome, NextAction.GATHER);
+    const twimlResponse = await this.speakAndLog(
+      CallSid,
+      welcome,
+      NextAction.GATHER,
+    );
+    winstonLogger.log(
+      `[CallProcessorService][handleVoice] Generated TwiML: ${twimlResponse.substring(0, 200)}...`,
+    );
+    return twimlResponse;
   }
 
   async handleGather({
     CallSid,
     SpeechResult = '',
   }: VoiceGatherBody): Promise<string> {
+    winstonLogger.log(
+      `[CallProcessorService][callSid=${CallSid}][handleGather] Received gather request with SpeechResult: "${SpeechResult}"`,
+    );
     await this.sessionHelper.ensureSession(CallSid);
     let reply: string = SYSTEM_RESPONSES.fallback;
 
     if (SpeechResult) {
       try {
         await this.sessionHelper.appendUserMessage(CallSid, SpeechResult);
+        winstonLogger.log(
+          `[CallProcessorService][callSid=${CallSid}][handleGather] Calling AI service...`,
+        );
         const aiReplyData = await this.aiIntegration.getAIReply(
           CallSid,
           SpeechResult,
         );
+        const shouldHangup = aiReplyData.shouldHangup === true;
+        winstonLogger.log(
+          `[CallProcessorService][callSid=${CallSid}][handleGather] AI response received: shouldHangup=${String(
+            shouldHangup,
+          )}`,
+        );
         reply = aiReplyData.message.trim() || SYSTEM_RESPONSES.fallback;
 
         // Check if AI indicates conversation should end
-        if (aiReplyData.shouldHangup === true) {
+        if (shouldHangup) {
           winstonLogger.log(
             `[CallProcessorService][callSid=${CallSid}][handleGather] AI indicates conversation complete, hanging up`,
           );
@@ -111,10 +133,14 @@ export class CallProcessorService {
       } catch (err) {
         winstonLogger.error(
           `[CallProcessorService][callSid=${CallSid}][handleGather] AI call failed`,
-          { stack: (err as Error).stack },
+          { stack: (err as Error).stack, message: (err as Error).message },
         );
         reply = SYSTEM_RESPONSES.error;
       }
+    } else {
+      winstonLogger.warn(
+        `[CallProcessorService][callSid=${CallSid}][handleGather] No SpeechResult received`,
+      );
     }
     return this.speakAndLog(CallSid, reply, NextAction.GATHER);
   }
