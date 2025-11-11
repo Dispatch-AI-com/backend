@@ -18,6 +18,7 @@ import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
+import { ResetPasswordDto } from '@/modules/auth/dto/reset-password.dto';
 import { UserStatus } from '@/modules/user/enum/userStatus.enum';
 import { generateCSRFToken } from '@/utils/csrf.util';
 
@@ -214,6 +215,18 @@ export class AuthController {
   }
 
   @ApiOperation({
+    summary: 'Forgot Password',
+    description: 'Send a password reset link to the user\'s email',
+  })
+  @ApiResponse({ status: 200, description: 'If that email is registered, a reset link has been sent.' })
+  @Post('forgot-password')
+  @SkipCSRF()
+  async forgotPassword(@Body('email') email: string): Promise<{ message: string }> {
+    await this.authService.forgotPassword(email);
+    return { message: 'If that email is registered, a reset link has been sent.' };
+  }
+
+  @ApiOperation({
     summary: 'User Logout',
     description: 'Logout and clear authentication cookies',
   })
@@ -311,5 +324,18 @@ export class AuthController {
       status: fullUser?.status ?? UserStatus.active,
     };
     return { user: safeUser };
+  }
+
+  @ApiOperation({
+    summary: 'Reset Password',
+    description: 'Reset password using a valid reset token',
+  })
+  @ApiResponse({ status: 200, description: 'Password reset successful' })
+  @ApiResponse({ status: 400, description: 'Invalid token or password' })
+  @Post('reset-password')
+  @SkipCSRF()
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+    await this.authService.resetPassword(dto);
+    return { message: 'Password reset successful' };
   }
 }
