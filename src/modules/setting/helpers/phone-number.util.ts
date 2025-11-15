@@ -9,17 +9,17 @@
  * - 491050908 (Australian mobile without leading 0)
  * - +61491050908 (E.164 format)
  * - 61491050908 (E.164 without +)
- * 
+ *
  * @param phoneNumber - Phone number in any common format
  * @param defaultCountryCode - Default country code to use if not provided (default: +61 for Australia)
  * @returns Phone number in E.164 format
  */
 export function formatPhoneNumberToE164(
   phoneNumber: string,
-  defaultCountryCode: string = '+61',
+  defaultCountryCode = '+61',
 ): string {
   // Remove all whitespace and common formatting characters except +
-  const cleaned = phoneNumber.trim().replace(/[\s\-\(\)]/g, '');
+  const cleaned = phoneNumber.trim().replace(/[\s\-()]/g, '');
 
   // If already in E.164 format (starts with +), return as is
   if (cleaned.startsWith('+')) {
@@ -32,12 +32,12 @@ export function formatPhoneNumberToE164(
   }
 
   // If starts with country code digits (e.g., 61 for Australia), add +
-  if (cleaned.match(/^61/)) {
+  if (/^61/.exec(cleaned)) {
     return `+${cleaned}`;
   }
 
   // If starts with mobile prefix (e.g., 4 for Australian mobile), add country code
-  if (cleaned.match(/^4/)) {
+  if (/^4/.exec(cleaned)) {
     return `${defaultCountryCode}${cleaned}`;
   }
 
@@ -51,8 +51,8 @@ export function formatPhoneNumberToE164(
  * @returns true if phone number appears valid
  */
 export function isValidPhoneNumber(phoneNumber: string): boolean {
-  const cleaned = phoneNumber.trim().replace(/[\s\-\(\)]/g, '');
-  
+  const cleaned = phoneNumber.trim().replace(/[\s\-()]/g, '');
+
   // Basic validation: should contain at least 8 digits
   const digitCount = cleaned.replace(/\D/g, '').length;
   return digitCount >= 8 && digitCount <= 15;
@@ -66,4 +66,3 @@ export function isValidPhoneNumber(phoneNumber: string): boolean {
 export function normalizePhoneNumber(phoneNumber: string): string {
   return formatPhoneNumberToE164(phoneNumber);
 }
-

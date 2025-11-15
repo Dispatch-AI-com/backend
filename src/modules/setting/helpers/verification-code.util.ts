@@ -1,5 +1,6 @@
-import bcrypt from 'bcryptjs';
 import { randomInt } from 'node:crypto';
+
+import bcrypt from 'bcryptjs';
 
 export interface VerificationCodeConfig {
   length?: number;
@@ -8,7 +9,9 @@ export interface VerificationCodeConfig {
 const DEFAULT_CODE_LENGTH = 6;
 const SALT_ROUNDS = 10;
 
-export function generateNumericCode(config: VerificationCodeConfig = {}): string {
+export function generateNumericCode(
+  config: VerificationCodeConfig = {},
+): string {
   const length = config.length ?? DEFAULT_CODE_LENGTH;
   if (length <= 0) {
     throw new Error('Verification code length must be greater than zero');

@@ -2,14 +2,16 @@ import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { IEmailVerificationService } from './interfaces/email-verification.interface.js';
 import {
   generateVerificationEmailHtml,
   generateVerificationEmailText,
 } from './helpers/email-template.util.js';
+import { IEmailVerificationService } from './interfaces/email-verification.interface.js';
 
 @Injectable()
-export class AwsSesEmailVerificationService implements IEmailVerificationService {
+export class AwsSesEmailVerificationService
+  implements IEmailVerificationService
+{
   private readonly logger = new Logger(AwsSesEmailVerificationService.name);
   private readonly sesClient: SESv2Client;
   private readonly region: string;
@@ -17,7 +19,8 @@ export class AwsSesEmailVerificationService implements IEmailVerificationService
   private readonly appName: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.region = this.configService.get<string>('AWS_REGION') ?? 'ap-southeast-2';
+    this.region =
+      this.configService.get<string>('AWS_REGION') ?? 'ap-southeast-2';
     this.emailFrom =
       this.configService.get<string>('SES_FROM') ?? 'noreply@dispatchai.com';
     this.appName = this.configService.get<string>('APP_NAME') ?? 'DispatchAI';
@@ -99,7 +102,7 @@ export class AwsSesEmailVerificationService implements IEmailVerificationService
       const result = await this.sesClient.send(command);
 
       this.logger.log(
-        `Verification email sent to ${email}: ${String(result.MessageId ?? 'unknown')}`,
+        `Verification email sent to ${email}: ${result.MessageId ?? 'unknown'}`,
       );
     } catch (error) {
       this.logger.error(
@@ -109,9 +112,4 @@ export class AwsSesEmailVerificationService implements IEmailVerificationService
       throw error;
     }
   }
-
 }
-
-
-
-

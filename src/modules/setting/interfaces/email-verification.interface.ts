@@ -17,4 +17,3 @@ export interface IEmailVerificationService {
     firstName?: string,
   ): Promise<void>;
 }
-

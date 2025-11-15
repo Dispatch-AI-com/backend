@@ -18,6 +18,7 @@ import {
 } from '@/modules/setting/schema/verification.schema';
 import { User, UserDocument } from '@/modules/user/schema/user.schema';
 
+import { normalizePhoneNumber } from './helpers/phone-number.util.js';
 import {
   generateNumericCode,
   hashVerificationCode,
@@ -25,7 +26,6 @@ import {
 } from './helpers/verification-code.util.js';
 import type { IEmailVerificationService } from './interfaces/email-verification.interface.js';
 import type { ISmsVerificationService } from './interfaces/sms-verification.interface.js';
-import { normalizePhoneNumber } from './helpers/phone-number.util.js';
 
 const DEFAULT_EMAIL_CODE_TTL_SECONDS = 10 * 60; // 10 minutes
 const DEFAULT_EMAIL_RESEND_SECONDS = 60; // 1 minute
@@ -196,7 +196,7 @@ export class VerificationService {
       if (nextAllowed > now) {
         const seconds = this.secondsRemaining(nextAllowed, now);
         throw new BadRequestException(
-          `Verification code already sent. Please wait ${seconds} second(s) before requesting a new code.`,
+          `Verification code already sent. Please wait ${String(seconds)} second(s) before requesting a new code.`,
         );
       }
     }
@@ -224,9 +224,7 @@ export class VerificationService {
 
     const codeHash = await hashVerificationCode(code);
     const expiresAt = new Date(now.getTime() + this.emailCodeTtlMs);
-    const nextSendAllowedAt = new Date(
-      now.getTime() + this.emailResendDelayMs,
-    );
+    const nextSendAllowedAt = new Date(now.getTime() + this.emailResendDelayMs);
 
     const update: UpdateQuery<VerificationDocument> = {
       $set: {
@@ -319,7 +317,7 @@ export class VerificationService {
       const remaining = Math.max(this.emailMaxAttempts - nextAttemptCount, 0);
       const message =
         remaining > 0
-          ? `Invalid verification code. ${remaining} attempt(s) remaining.`
+          ? `Invalid verification code. ${String(remaining)} attempt(s) remaining.`
           : 'Invalid verification code. Maximum attempts exceeded.';
       throw new BadRequestException(message);
     }
@@ -374,7 +372,7 @@ export class VerificationService {
       if (nextAllowed > now) {
         const seconds = this.secondsRemaining(nextAllowed, now);
         throw new BadRequestException(
-          `Verification code already sent. Please wait ${seconds} second(s) before requesting a new code.`,
+          `Verification code already sent. Please wait ${String(seconds)} second(s) before requesting a new code.`,
         );
       }
     }
@@ -398,9 +396,7 @@ export class VerificationService {
 
     const codeHash = await hashVerificationCode(code);
     const expiresAt = new Date(now.getTime() + this.smsCodeTtlMs);
-    const nextSendAllowedAt = new Date(
-      now.getTime() + this.smsResendDelayMs,
-    );
+    const nextSendAllowedAt = new Date(now.getTime() + this.smsResendDelayMs);
 
     const update: UpdateQuery<VerificationDocument> = {
       $set: {
@@ -455,10 +451,7 @@ export class VerificationService {
       );
     }
 
-    if (
-      verification.mobile &&
-      verification.mobile !== normalizedMobile
-    ) {
+    if (verification.mobile && verification.mobile !== normalizedMobile) {
       throw new BadRequestException(
         'Mobile number does not match the pending verification request.',
       );
@@ -493,7 +486,7 @@ export class VerificationService {
       const remaining = Math.max(this.smsMaxAttempts - nextAttemptCount, 0);
       const message =
         remaining > 0
-          ? `Invalid verification code. ${remaining} attempt(s) remaining.`
+          ? `Invalid verification code. ${String(remaining)} attempt(s) remaining.`
           : 'Invalid verification code. Maximum attempts exceeded.';
       throw new BadRequestException(message);
     }
@@ -514,7 +507,11 @@ export class VerificationService {
       .exec();
 
     await this.userModel
-      .findByIdAndUpdate(objectId, { fullPhoneNumber: normalizedMobile }, { new: true })
+      .findByIdAndUpdate(
+        objectId,
+        { fullPhoneNumber: normalizedMobile },
+        { new: true },
+      )
       .exec();
 
     const updatedVerification = await this.verificationModel
@@ -532,14 +529,14 @@ export class VerificationService {
 
   private resolveDurationMs(key: string, fallbackSeconds: number): number {
     const raw = this.configService.get<string | number | undefined>(key);
-    if (raw === undefined || raw === null || raw === '') {
+    if (raw === undefined || (typeof raw === 'string' && raw === '')) {
       return fallbackSeconds * 1000;
     }
 
     const numeric = Number(raw);
     if (Number.isNaN(numeric) || numeric <= 0) {
       this.logger.warn(
-        `Invalid value for ${key}: ${String(raw)}. Falling back to ${fallbackSeconds} seconds.`,
+        `Invalid value for ${key}: ${String(raw)}. Falling back to ${String(fallbackSeconds)} seconds.`,
       );
       return fallbackSeconds * 1000;
     }
@@ -549,14 +546,14 @@ export class VerificationService {
 
   private resolvePositiveInt(key: string, fallback: number): number {
     const raw = this.configService.get<string | number | undefined>(key);
-    if (raw === undefined || raw === null || raw === '') {
+    if (raw === undefined || (typeof raw === 'string' && raw === '')) {
       return fallback;
     }
 
     const numeric = Number(raw);
     if (!Number.isInteger(numeric) || numeric <= 0) {
       this.logger.warn(
-        `Invalid value for ${key}: ${String(raw)}. Falling back to ${fallback}.`,
+        `Invalid value for ${key}: ${String(raw)}. Falling back to ${String(fallback)}.`,
       );
       return fallback;
     }
@@ -567,7 +564,7 @@ export class VerificationService {
   private parseUserId(userId: string): Types.ObjectId {
     try {
       return new Types.ObjectId(userId);
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Invalid user id.');
     }
   }
@@ -585,7 +582,6 @@ export class VerificationService {
     return normalized;
   }
 
-
   private normalizeCode(code: string): string {
     if (typeof code !== 'string') {
       throw new BadRequestException('Verification code is required.');
@@ -602,9 +598,6 @@ export class VerificationService {
   }
 
   private secondsRemaining(target: Date, now: Date): number {
-    return Math.max(
-      Math.ceil((target.getTime() - now.getTime()) / 1000),
-      0,
-    );
+    return Math.max(Math.ceil((target.getTime() - now.getTime()) / 1000), 0);
   }
 }

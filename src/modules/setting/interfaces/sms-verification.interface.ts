@@ -15,4 +15,3 @@ export interface ISmsVerificationService {
     verificationCode: string,
   ): Promise<void>;
 }
-

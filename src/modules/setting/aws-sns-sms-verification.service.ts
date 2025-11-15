@@ -2,8 +2,8 @@ import { PublishCommand, SNSClient } from '@aws-sdk/client-sns';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { ISmsVerificationService } from './interfaces/sms-verification.interface.js';
 import { formatPhoneNumberToE164 } from './helpers/phone-number.util.js';
+import { ISmsVerificationService } from './interfaces/sms-verification.interface.js';
 
 @Injectable()
 export class AwsSnsSmsVerificationService implements ISmsVerificationService {
@@ -12,7 +12,8 @@ export class AwsSnsSmsVerificationService implements ISmsVerificationService {
   private readonly region: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.region = this.configService.get<string>('AWS_REGION') ?? 'ap-southeast-2';
+    this.region =
+      this.configService.get<string>('AWS_REGION') ?? 'ap-southeast-2';
 
     const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID');
     const secretAccessKey = this.configService.get<string>(
@@ -74,7 +75,7 @@ export class AwsSnsSmsVerificationService implements ISmsVerificationService {
       const result = await this.snsClient.send(command);
 
       this.logger.log(
-        `SMS verification sent to ${formattedPhone}: ${String(result.MessageId ?? 'unknown')}`,
+        `SMS verification sent to ${formattedPhone}: ${result.MessageId ?? 'unknown'}`,
       );
     } catch (error) {
       this.logger.error(
@@ -85,4 +86,3 @@ export class AwsSnsSmsVerificationService implements ISmsVerificationService {
     }
   }
 }
-

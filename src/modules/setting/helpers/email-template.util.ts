@@ -18,7 +18,12 @@ export interface EmailTemplateOptions {
 export function generateVerificationEmailHtml(
   options: EmailTemplateOptions,
 ): string {
-  const { appName, verificationCode, firstName, expirationMinutes = 10 } = options;
+  const {
+    appName,
+    verificationCode,
+    firstName,
+    expirationMinutes = 10,
+  } = options;
   const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
 
   return `
@@ -45,7 +50,7 @@ export function generateVerificationEmailHtml(
           </div>
           
           <p>Please enter this code in the verification form on our website to complete your email verification.</p>
-          <p>This code will expire in ${expirationMinutes} minutes.</p>
+          <p>This code will expire in ${String(expirationMinutes)} minutes.</p>
           
           <p style="margin-top: 30px; font-size: 14px; color: #666;">
             If you didn't create an account with ${appName}, please ignore this email.
@@ -53,7 +58,7 @@ export function generateVerificationEmailHtml(
           
           <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
           <p style="text-align: center; font-size: 12px; color: #999;">
-            © ${new Date().getFullYear()} ${appName}. All rights reserved.
+            © ${String(new Date().getFullYear())} ${appName}. All rights reserved.
           </p>
         </div>
       </body>
@@ -69,7 +74,12 @@ export function generateVerificationEmailHtml(
 export function generateVerificationEmailText(
   options: EmailTemplateOptions,
 ): string {
-  const { appName, verificationCode, firstName, expirationMinutes = 10 } = options;
+  const {
+    appName,
+    verificationCode,
+    firstName,
+    expirationMinutes = 10,
+  } = options;
   const greeting = firstName ? `Hi ${firstName},` : 'Hi there,';
 
   return `
@@ -82,11 +92,10 @@ Thank you for signing up with ${appName}! To complete your registration and acce
 Your Verification Code: ${verificationCode}
 
 Please enter this code in the verification form on our website to complete your email verification.
-This code will expire in ${expirationMinutes} minutes.
+This code will expire in ${String(expirationMinutes)} minutes.
 
 If you didn't create an account with ${appName}, please ignore this email.
 
-© ${new Date().getFullYear()} ${appName}. All rights reserved.
+© ${String(new Date().getFullYear())} ${appName}. All rights reserved.
   `.trim();
 }
-

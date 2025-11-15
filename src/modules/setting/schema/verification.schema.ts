@@ -25,8 +25,9 @@ export class VerificationChannelState {
   nextSendAllowedAt?: Date;
 }
 
-export const VerificationChannelStateSchema =
-  SchemaFactory.createForClass(VerificationChannelState);
+export const VerificationChannelStateSchema = SchemaFactory.createForClass(
+  VerificationChannelState,
+);
 
 @Schema({ timestamps: true })
 export class Verification extends Document {
