@@ -10,9 +10,9 @@ import { AuthService } from '@/modules/auth/auth.service';
 import { GoogleStrategy } from '@/modules/auth/strategies/google.strategy';
 import { JwtStrategy } from '@/modules/auth/strategies/jwt.strategy';
 import { DatabaseModule } from '@/modules/database/database.module';
+import { SesModule } from '@/modules/ses/ses.module';
 import { User, userSchema } from '@/modules/user/schema/user.schema';
 import { UserModule } from '@/modules/user/user.module';
-
 @Module({
   imports: [
     PassportModule,
@@ -27,6 +27,7 @@ import { UserModule } from '@/modules/user/user.module';
     MongooseModule.forFeature([{ name: User.name, schema: userSchema }]),
     DatabaseModule,
     UserModule,
+    SesModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, GoogleStrategy],
