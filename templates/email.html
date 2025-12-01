@@ -16,14 +16,14 @@
                             <h2 style="font-size:24px;margin:24px 0 40px 0;color:#222;font-weight:700;">Reset your
                                 password</h2>
                             <hr style="border:none;border-top:1px solid #eaeaea;margin:0 0 24px 0;">
-                            <p style="font-size:16px;color:#222;margin:40px 0 16px 0;">Hi ${userName},</p>
+                            <p style="font-size:16px;color:#222;margin:40px 0 16px 0;">Hi ${escapeHtml(userName)},</p>
                             <p style="font-size:16px;color:#222;margin:0 0 16px 0;line-height: 40px;">
                                 We've received a request to reset your password.<br>
                                 If you didn't make the request, just ignore this message. Otherwise, you can reset your
                                 password below.
                             </p>
                             <div style="margin:16px 0 39px 0;text-align:left;">
-                                <a href="${resetLink}"
+                                <a href="${escapeHtml(resetLink)}"
                                     style="display:inline-block;padding:14px 32px;background:#111;color:#fff;font-size:14px;font-weight:600;text-decoration:none;border-radius:6px;">
                                     Reset your password
                                 </a>
