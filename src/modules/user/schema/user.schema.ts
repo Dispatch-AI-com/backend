@@ -12,7 +12,7 @@ Your team is not available to take the call right now.
 
 I can take a message for you, or help you book an appointment with your team. What can I do for you today?
 
-你也可以和我说普通话。`;
+Thank you!`;
 
 @Schema({ timestamps: true })
 export class User extends Document {
@@ -52,6 +52,12 @@ export class User extends Document {
 
   @Prop()
   statusReason!: string;
+
+  @Prop({ required: false })
+  resetPasswordToken?: string;
+
+  @Prop({ required: false })
+  resetPasswordExpires?: Date;
 
   @Prop()
   position!: string;
