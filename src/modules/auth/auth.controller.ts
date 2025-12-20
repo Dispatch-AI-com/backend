@@ -172,20 +172,34 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
   googleAuthRedirect(@Req() req: Request, @Res() res: Response): void {
+    // Check if user is authenticated
+    if (!req.user) {
+      const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/login?error=oauth_failed`);
+      return;
+    }
+
     const { user, token, csrfToken } = req.user as {
       user: Record<string, unknown>;
       token: string;
       csrfToken: string;
     };
 
+    // Validate required fields
+    if (!user || !token || !csrfToken) {
+      const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
+      res.redirect(`${frontendUrl}/login?error=oauth_incomplete`);
+      return;
+    }
+
     // Manually construct safe user object to preserve ObjectId
     const safeUser = {
-      _id: user._id?.toString() ?? user._id,
-      email: user.email ?? '',
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role as EUserRole,
-      status: user.status as UserStatus,
+      _id: user._id?.toString() ?? user._id ?? '',
+      email: (user.email as string) ?? '',
+      firstName: (user.firstName as string) ?? '',
+      lastName: (user.lastName as string) ?? '',
+      role: (user.role as EUserRole) ?? EUserRole.user,
+      status: (user.status as UserStatus) ?? UserStatus.active,
     };
 
     // Set JWT token as httpOnly cookie

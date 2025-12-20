@@ -21,10 +21,24 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     private readonly jwtService: JwtService,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
   ) {
+    let clientID = configService.get<string>('GOOGLE_CLIENT_ID') ?? '';
+    let clientSecret = configService.get<string>('GOOGLE_CLIENT_SECRET') ?? '';
+    let callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL') ?? '';
+    
+    // In development, allow service to start without Google OAuth credentials
+    if ((clientID === '' || clientSecret === '' || callbackURL === '') && 
+        (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined)) {
+      console.warn('⚠️  Google OAuth credentials not found. Google OAuth features will be disabled.');
+      // Provide dummy values for development
+      clientID = 'dummy_client_id';
+      clientSecret = 'dummy_client_secret';
+      callbackURL = 'http://localhost:4000/api/auth/google/callback';
+    }
+    
     super({
-      clientID: configService.get<string>('GOOGLE_CLIENT_ID') ?? '',
-      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET') ?? '',
-      callbackURL: configService.get<string>('GOOGLE_CALLBACK_URL') ?? '',
+      clientID,
+      clientSecret,
+      callbackURL,
       scope: ['email', 'profile'],
     } as StrategyOptions);
   }
@@ -41,12 +55,18 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: VerifyCallback,
   ): Promise<void> {
     try {
+      // Validate profile data
+      if (!profile || !profile.emails || !profile.emails[0] || !profile.name) {
+        done(new UnauthorizedException('Invalid Google profile data'), false);
+        return;
+      }
+
       const { name, emails } = profile;
 
       const googleUser = {
         email: emails[0].value,
-        firstName: name.givenName,
-        lastName: name.familyName,
+        firstName: name.givenName || '',
+        lastName: name.familyName || '',
       };
 
       let user = await this.userModel.findOne({

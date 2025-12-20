@@ -3,7 +3,25 @@ import Stripe from 'stripe';
 
 @Injectable()
 export class StripeService {
-  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
+  private stripe: Stripe;
+
+  constructor() {
+    const stripeKey = process.env.STRIPE_SECRET_KEY ?? '';
+    if (stripeKey === '') {
+      // In development, allow service to start without Stripe credentials
+      if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined) {
+        console.warn('⚠️  Stripe credentials not found. Stripe features will be disabled.');
+        // Use a dummy key for development (Stripe SDK requires a non-empty string)
+        this.stripe = new Stripe('sk_test_development_dummy_key_1234567890', {
+          apiVersion: '2025-08-27.basil',
+        });
+      } else {
+        throw new Error('Stripe credentials not found in environment variables');
+      }
+    } else {
+      this.stripe = new Stripe(stripeKey);
+    }
+  }
 
   get client(): Stripe {
     return this.stripe;
