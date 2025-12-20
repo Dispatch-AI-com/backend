@@ -61,19 +61,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     done: VerifyCallback,
   ): Promise<void> {
     try {
-      // Validate profile data
-      if (!profile || !profile.emails || !profile.emails[0] || !profile.name) {
+      // Validate profile data - profile.emails and profile.name are optional
+      if (!profile.emails || profile.emails.length === 0 || !profile.name) {
         done(new UnauthorizedException('Invalid Google profile data'), false);
         return;
       }
 
-      // At this point, we know profile.name and profile.emails exist
-      // TypeScript doesn't know this, so we use non-null assertion
-      const name = profile.name!;
-      const emails = profile.emails!;
+      // At this point, we know profile.name and profile.emails exist and have items
+      const { name, emails } = profile;
 
       const googleUser = {
-        email: emails[0].value, // Non-null assertion since we validated emails[0] exists
+        email: emails[0].value,
         firstName: name.givenName ?? '',
         lastName: name.familyName ?? '',
       };
