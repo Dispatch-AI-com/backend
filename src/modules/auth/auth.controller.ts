@@ -195,11 +195,11 @@ export class AuthController {
     // Manually construct safe user object to preserve ObjectId
     const safeUser = {
       _id: user._id?.toString() ?? (user._id as string | undefined) ?? '',
-      email: (user.email as string | undefined) || '',
-      firstName: (user.firstName as string | undefined) || '',
-      lastName: (user.lastName as string | undefined) || '',
-      role: (user.role as EUserRole | undefined) || EUserRole.user,
-      status: (user.status as UserStatus | undefined) || UserStatus.active,
+      email: (user.email as string | undefined) ?? '',
+      firstName: (user.firstName as string | undefined) ?? '',
+      lastName: (user.lastName as string | undefined) ?? '',
+      role: (user.role as EUserRole | undefined) ?? EUserRole.user,
+      status: (user.status as UserStatus | undefined) ?? UserStatus.active,
     };
 
     // Set JWT token as httpOnly cookie

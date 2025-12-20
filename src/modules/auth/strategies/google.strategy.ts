@@ -26,8 +26,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     let callbackURL = configService.get<string>('GOOGLE_CALLBACK_URL') ?? '';
     
     // In development, allow service to start without Google OAuth credentials
-    if ((clientID === '' || clientSecret === '' || callbackURL === '') && 
-        (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined)) {
+      if ((clientID === '' || clientSecret === '' || callbackURL === '') && 
+          (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined)) {
+      // eslint-disable-next-line no-console
       console.warn('⚠️  Google OAuth credentials not found. Google OAuth features will be disabled.');
       // Provide dummy values for development
       clientID = 'dummy_client_id';
@@ -62,13 +63,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       }
 
       // At this point, we know profile.name and profile.emails exist
-      const name = profile.name;
-      const emails = profile.emails;
+      // TypeScript doesn't know this, so we use non-null assertion
+      const name = profile.name!;
+      const emails = profile.emails!;
 
       const googleUser = {
         email: emails[0].value,
-        firstName: name.givenName || '',
-        lastName: name.familyName || '',
+        firstName: name.givenName ?? '',
+        lastName: name.familyName ?? '',
       };
 
       let user = await this.userModel.findOne({

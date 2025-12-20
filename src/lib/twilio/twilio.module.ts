@@ -22,12 +22,12 @@ export const TWILIO_CLIENT = 'TWILIO_CLIENT';
             // Using type assertion since we only need calls.create and messages.create
             const mockClient = {
               calls: {
-                create: () => Promise.reject(new Error('Twilio not configured')),
-                list: () => Promise.resolve([]),
+                create: (): Promise<never> => Promise.reject(new Error('Twilio not configured')),
+                list: (): Promise<never[]> => Promise.resolve([]),
               },
               messages: {
-                create: () => Promise.reject(new Error('Twilio not configured')),
-                list: () => Promise.resolve([]),
+                create: (): Promise<never> => Promise.reject(new Error('Twilio not configured')),
+                list: (): Promise<never[]> => Promise.resolve([]),
               },
             };
             // eslint-disable-next-line @typescript-eslint/no-unsafe-return
