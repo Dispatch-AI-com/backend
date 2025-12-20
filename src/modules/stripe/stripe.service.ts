@@ -10,6 +10,7 @@ export class StripeService {
     if (stripeKey === '') {
       // In development, allow service to start without Stripe credentials
       if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined) {
+        // eslint-disable-next-line no-console
         console.warn('⚠️  Stripe credentials not found. Stripe features will be disabled.');
         // Use a dummy key for development (Stripe SDK requires a non-empty string)
         this.stripe = new Stripe('sk_test_development_dummy_key_1234567890', {

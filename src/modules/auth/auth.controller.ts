@@ -186,7 +186,7 @@ export class AuthController {
     };
 
     // Validate required fields
-    if (!user || !token || !csrfToken) {
+    if (!token || !csrfToken) {
       const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
       res.redirect(`${frontendUrl}/login?error=oauth_incomplete`);
       return;
@@ -194,12 +194,12 @@ export class AuthController {
 
     // Manually construct safe user object to preserve ObjectId
     const safeUser = {
-      _id: user._id?.toString() ?? user._id ?? '',
-      email: (user.email as string) ?? '',
-      firstName: (user.firstName as string) ?? '',
-      lastName: (user.lastName as string) ?? '',
-      role: (user.role as EUserRole) ?? EUserRole.user,
-      status: (user.status as UserStatus) ?? UserStatus.active,
+      _id: user._id?.toString() ?? (user._id as string | undefined) ?? '',
+      email: (user.email as string | undefined) || '',
+      firstName: (user.firstName as string | undefined) || '',
+      lastName: (user.lastName as string | undefined) || '',
+      role: (user.role as EUserRole | undefined) || EUserRole.user,
+      status: (user.status as UserStatus | undefined) || UserStatus.active,
     };
 
     // Set JWT token as httpOnly cookie

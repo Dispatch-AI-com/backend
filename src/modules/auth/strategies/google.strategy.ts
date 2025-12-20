@@ -48,9 +48,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     refreshToken: string,
     profile: {
       id: string;
-      name: { givenName: string; familyName: string };
-      emails: { value: string }[];
-      photos: { value: string }[];
+      name?: { givenName?: string; familyName?: string };
+      emails?: { value: string }[];
+      photos?: { value: string }[];
     },
     done: VerifyCallback,
   ): Promise<void> {
@@ -61,7 +61,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
         return;
       }
 
-      const { name, emails } = profile;
+      // At this point, we know profile.name and profile.emails exist
+      const name = profile.name;
+      const emails = profile.emails;
 
       const googleUser = {
         email: emails[0].value,

@@ -16,9 +16,10 @@ export const TWILIO_CLIENT = 'TWILIO_CLIENT';
         if (accountSid === '' || authToken === '') {
           // In development, allow service to start without Twilio credentials
           if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined) {
+            // eslint-disable-next-line no-console
             console.warn('⚠️  Twilio credentials not found. Twilio features will be disabled.');
             // Return a mock Twilio client for development
-            return {
+            const mockClient: Partial<Twilio.Twilio> = {
               calls: {
                 create: () => Promise.reject(new Error('Twilio not configured')),
                 list: () => Promise.resolve([]),
@@ -27,7 +28,8 @@ export const TWILIO_CLIENT = 'TWILIO_CLIENT';
                 create: () => Promise.reject(new Error('Twilio not configured')),
                 list: () => Promise.resolve([]),
               },
-            } as any;
+            };
+            return mockClient as Twilio.Twilio;
           }
           throw new Error(
             'Twilio credentials not found in environment variables',
