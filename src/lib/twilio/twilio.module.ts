@@ -19,7 +19,8 @@ export const TWILIO_CLIENT = 'TWILIO_CLIENT';
             // eslint-disable-next-line no-console
             console.warn('⚠️  Twilio credentials not found. Twilio features will be disabled.');
             // Return a mock Twilio client for development
-            const mockClient: Partial<Twilio.Twilio> = {
+            // Using type assertion since we only need calls.create and messages.create
+            const mockClient = {
               calls: {
                 create: () => Promise.reject(new Error('Twilio not configured')),
                 list: () => Promise.resolve([]),
@@ -29,7 +30,8 @@ export const TWILIO_CLIENT = 'TWILIO_CLIENT';
                 list: () => Promise.resolve([]),
               },
             };
-            return mockClient as Twilio.Twilio;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+            return mockClient as unknown as Twilio.Twilio;
           }
           throw new Error(
             'Twilio credentials not found in environment variables',
