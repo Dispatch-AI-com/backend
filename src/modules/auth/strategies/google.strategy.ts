@@ -68,7 +68,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       const emails = profile.emails!;
 
       const googleUser = {
-        email: emails[0].value,
+        email: emails[0]!.value, // Non-null assertion since we validated emails[0] exists
         firstName: name.givenName ?? '',
         lastName: name.familyName ?? '',
       };
