@@ -157,7 +157,7 @@ export class VerificationService {
         throw new BadRequestException('Mobile number must be a string');
       }
       await this.userModel.findByIdAndUpdate(
-        { _id: objectId },
+        objectId,
         { fullPhoneNumber: updateData.mobile },
         { new: true },
       );
