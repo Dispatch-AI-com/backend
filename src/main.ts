@@ -12,6 +12,7 @@ import { GlobalExceptionFilter } from '@/common/filters/global-exception.filter'
 import { setupSwagger } from '@/config/swagger.config';
 import { winstonLogger } from '@/logger/winston.logger';
 import { AppModule } from '@/modules/app.module';
+import { getCorsOrigin } from '@/utils/app-config';
 async function bootstrap(): Promise<void> {
   const app: INestApplication = await NestFactory.create(AppModule);
   app.useLogger(winstonLogger);
@@ -26,7 +27,7 @@ async function bootstrap(): Promise<void> {
     }),
   );
   app.enableCors({
-    origin: process.env.CORS_ORIGIN,
+    origin: getCorsOrigin(),
     credentials: true, // Enable cookies in CORS
   });
 

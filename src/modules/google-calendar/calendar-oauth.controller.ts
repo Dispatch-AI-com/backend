@@ -68,7 +68,7 @@ export class CalendarOAuthController {
       calendarId: 'primary',
     });
 
-    const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const frontendUrl: string = getAppUrl();
     res.redirect(`${frontendUrl}/settings/calendar?connected=google`);
   }
 }

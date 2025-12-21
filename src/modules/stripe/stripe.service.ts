@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 
+import { getAppUrl } from '@/utils/app-config';
+
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
@@ -43,7 +45,7 @@ export class StripeService {
     planId: string;
     stripeCustomerId?: string;
   }): Promise<Stripe.Checkout.Session> {
-    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+    const appUrl = getAppUrl();
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -80,7 +82,7 @@ export class StripeService {
   async createBillingPortalSession(stripeCustomerId: string): Promise<string> {
     const session = await this.client.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: process.env.APP_URL ?? 'http://localhost:3000',
+      return_url: getAppUrl(),
     });
 
     return session.url;
