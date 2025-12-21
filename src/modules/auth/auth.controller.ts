@@ -16,9 +16,9 @@ import { EUserRole } from '@/common/constants/user.constant';
 import { SkipCSRF } from '@/common/decorators/skip-csrf.decorator';
 import { AuthService } from '@/modules/auth/auth.service';
 import { LoginDto } from '@/modules/auth/dto/login.dto';
+import { ResetPasswordDto } from '@/modules/auth/dto/reset-password.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
-import { ResetPasswordDto } from '@/modules/auth/dto/reset-password.dto';
 import { UserStatus } from '@/modules/user/enum/userStatus.enum';
 import { generateCSRFToken } from '@/utils/csrf.util';
 
@@ -216,14 +216,21 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Forgot Password',
-    description: 'Send a password reset link to the user\'s email',
+    description: "Send a password reset link to the user's email",
   })
-  @ApiResponse({ status: 200, description: 'If that email is registered, a reset link has been sent.' })
+  @ApiResponse({
+    status: 200,
+    description: 'If that email is registered, a reset link has been sent.',
+  })
   @Post('forgot-password')
   @SkipCSRF()
-  async forgotPassword(@Body('email') email: string): Promise<{ message: string }> {
+  async forgotPassword(
+    @Body('email') email: string,
+  ): Promise<{ message: string }> {
     await this.authService.forgotPassword(email);
-    return { message: 'If that email is registered, a reset link has been sent.' };
+    return {
+      message: 'If that email is registered, a reset link has been sent.',
+    };
   }
 
   @ApiOperation({
@@ -334,7 +341,9 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Invalid token or password' })
   @Post('reset-password')
   @SkipCSRF()
-  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
     await this.authService.resetPassword(dto);
     return { message: 'Password reset successful' };
   }

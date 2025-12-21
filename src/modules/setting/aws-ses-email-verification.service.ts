@@ -9,9 +9,7 @@ import {
 import { IEmailVerificationService } from './interfaces/email-verification.interface.js';
 
 @Injectable()
-export class AwsSesEmailVerificationService
-  implements IEmailVerificationService
-{
+export class AwsSesEmailVerificationService implements IEmailVerificationService {
   private readonly logger = new Logger(AwsSesEmailVerificationService.name);
   private readonly sesClient: SESv2Client;
   private readonly region: string;

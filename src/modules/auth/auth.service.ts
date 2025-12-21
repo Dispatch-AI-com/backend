@@ -1,4 +1,3 @@
-import process from 'process';
 import {
   BadRequestException,
   ConflictException,
@@ -13,6 +12,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import { Model } from 'mongoose';
 import * as path from 'path';
+import process from 'process';
 
 import { EUserRole } from '@/common/constants/user.constant';
 import { SALT_ROUNDS } from '@/modules/auth/auth.config';

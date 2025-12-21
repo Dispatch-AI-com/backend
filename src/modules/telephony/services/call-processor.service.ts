@@ -68,11 +68,12 @@ export class CallProcessorService {
       );
       return this.speakAndLog(CallSid, 'User not found', NextAction.HANGUP);
     }
-    const userId = user._id.toString();
-    const services = await this.serviceService.findAllActiveByUserId(userId);
+    const services = await this.serviceService.findAllActiveByUserId(
+      user._id as string,
+    );
     await this.sessionHelper.fillCompanyServices(CallSid, services);
-    const company = await this.companyService.findByUserId(userId);
-    const userGreeting = await this.userService.getGreeting(userId);
+    const company = await this.companyService.findByUserId(user._id as string);
+    const userGreeting = await this.userService.getGreeting(user._id as string);
     await this.sessionHelper.fillCompany(CallSid, company, user);
 
     const welcome = WelcomeMessageHelper.buildWelcomeMessage(

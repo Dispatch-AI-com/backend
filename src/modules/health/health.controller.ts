@@ -18,9 +18,13 @@ export class HealthController {
 
   @ApiOperation({
     summary: 'API Health Status',
-    description: 'Endpoint for monitoring service availability and operational status. Returns service metadata, current environment, and timestamp information.',
+    description:
+      'Endpoint for monitoring service availability and operational status. Returns service metadata, current environment, and timestamp information.',
   })
-  @ApiResponse({ status: 200, description: 'Service is operational and healthy' })
+  @ApiResponse({
+    status: 200,
+    description: 'Service is operational and healthy',
+  })
   @Get()
   check(): {
     status: string;
@@ -33,10 +37,17 @@ export class HealthController {
 
   @ApiOperation({
     summary: 'Database Connectivity Status',
-    description: 'Validates database connectivity and health. Returns connection status for MongoDB and Redis instances.',
+    description:
+      'Validates database connectivity and health. Returns connection status for MongoDB and Redis instances.',
   })
-  @ApiResponse({ status: 200, description: 'All database connections are healthy' })
-  @ApiResponse({ status: 503, description: 'One or more database connections have failed' })
+  @ApiResponse({
+    status: 200,
+    description: 'All database connections are healthy',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'One or more database connections have failed',
+  })
   @Get('db')
   checkDatabase(): {
     status: string;
@@ -49,7 +60,8 @@ export class HealthController {
 
   @ApiOperation({
     summary: 'AI Service Chat Integration Test',
-    description: 'Validates AI service connectivity by sending a test message and measuring response time. Used for integration testing and monitoring.',
+    description:
+      'Validates AI service connectivity by sending a test message and measuring response time. Used for integration testing and monitoring.',
   })
   @ApiBody({
     schema: {
@@ -96,9 +108,13 @@ export class HealthController {
 
   @ApiOperation({
     summary: 'MCP Service Health Probe',
-    description: 'Performs a health check against the MCP (Model Context Protocol) server. Returns connectivity status and response latency.',
+    description:
+      'Performs a health check against the MCP (Model Context Protocol) server. Returns connectivity status and response latency.',
   })
-  @ApiResponse({ status: 200, description: 'MCP service is responding normally' })
+  @ApiResponse({
+    status: 200,
+    description: 'MCP service is responding normally',
+  })
   @Get('mcp_ping')
   mcpPing(): Promise<{
     status: string;
@@ -112,9 +128,13 @@ export class HealthController {
 
   @ApiOperation({
     summary: 'AI Service Health Probe',
-    description: 'Performs a health check against the AI service backend. Returns connectivity status and response latency metrics.',
+    description:
+      'Performs a health check against the AI service backend. Returns connectivity status and response latency metrics.',
   })
-  @ApiResponse({ status: 200, description: 'AI service is responding normally' })
+  @ApiResponse({
+    status: 200,
+    description: 'AI service is responding normally',
+  })
   @Get('pingAI')
   ping(): Promise<{
     status: string;
@@ -128,9 +148,13 @@ export class HealthController {
 
   @ApiOperation({
     summary: 'Authentication Error Simulation',
-    description: 'Test endpoint that simulates an unauthorized access scenario. Used for testing error handling and authentication flows.',
+    description:
+      'Test endpoint that simulates an unauthorized access scenario. Used for testing error handling and authentication flows.',
   })
-  @ApiResponse({ status: 401, description: 'Returns authentication failure response' })
+  @ApiResponse({
+    status: 401,
+    description: 'Returns authentication failure response',
+  })
   @Get('unauthorized')
   unauthorized(): never {
     throw new UnauthorizedException('JWT token is invalid or expired');
