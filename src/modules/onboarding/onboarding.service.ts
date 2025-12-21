@@ -18,11 +18,11 @@ export class OnboardingService {
   // More flexible regex patterns for Australian addresses
   AU_ADDR_REGEX_STRICT =
     /^(?<street>[^,]+),\s*(?<suburb>[^,]+),\s*(?<state>[A-Z]{2,3})\s+(?<postcode>\d{4})$/;
-  
+
   // Pattern for addresses with state and postcode together: "Street, Suburb, State Postcode"
   AU_ADDR_REGEX_FLEXIBLE =
     /^(?<street>[^,]+),\s*(?<suburb>[^,]+),\s*(?<state>[A-Z]{2,3})\s*(?<postcode>\d{4})$/;
-  
+
   // Pattern for addresses with state and postcode separated: "Street, Suburb, State, Postcode"
   AU_ADDR_REGEX_SEPARATED =
     /^(?<street>[^,]+),\s*(?<suburb>[^,]+),\s*(?<state>[A-Z]{2,3}),\s*(?<postcode>\d{4})$/;
@@ -39,7 +39,7 @@ export class OnboardingService {
   > = {
     'user.address.full': function (answer, update) {
       const trimmedAnswer = answer.trim();
-      
+
       // Try multiple regex patterns
       let match = this.AU_ADDR_REGEX_STRICT.exec(trimmedAnswer);
       if (!match?.groups) {
@@ -48,23 +48,29 @@ export class OnboardingService {
       if (!match?.groups) {
         match = this.AU_ADDR_REGEX_SEPARATED.exec(trimmedAnswer);
       }
-      
+
       // If regex doesn't match, try to parse manually from comma-separated values
       if (!match?.groups) {
-        const parts = trimmedAnswer.split(',').map(p => p.trim()).filter(p => p);
-        
+        const parts = trimmedAnswer
+          .split(',')
+          .map(p => p.trim())
+          .filter(p => p);
+
         if (parts.length >= 3) {
           // Try to extract state and postcode from the last part
           const lastPart = parts[parts.length - 1];
-          const statePostcodeMatch = lastPart.match(/^([A-Z]{2,3})\s*(\d{4})$/);
-          
+          const statePostcodeMatch = /^([A-Z]{2,3})\s*(\d{4})$/.exec(lastPart);
+
           if (statePostcodeMatch) {
-            // Format: "Street, Suburb, State Postcode"
-            const streetAddress = parts.slice(0, -2).join(', ');
+            // Format: "Street, Suburb, State Postcode" (3 parts) or more
+            // For 3 parts: parts[0] is street, parts[1] is suburb
+            // For more parts: join all but last 2 as street
+            const streetAddress =
+              parts.length === 3 ? parts[0] : parts.slice(0, -2).join(', ');
             const suburb = parts[parts.length - 2];
             const state = statePostcodeMatch[1];
             const postcode = statePostcodeMatch[2];
-            
+
             update.$set['answers.user.address.streetAddress'] = streetAddress;
             update.$set['answers.user.address.suburb'] = suburb;
             update.$set['answers.user.address.state'] = state;
@@ -72,19 +78,22 @@ export class OnboardingService {
             update.$set['answers.user.address.full'] = answer;
             return;
           }
-          
+
           // Try to extract state and postcode separately
           if (parts.length >= 4) {
-            const stateMatch = parts[parts.length - 2].match(/^([A-Z]{2,3})$/);
-            const postcodeMatch = parts[parts.length - 1].match(/^(\d{4})$/);
-            
+            const stateMatch = /^([A-Z]{2,3})$/.exec(parts[parts.length - 2]);
+            const postcodeMatch = /^(\d{4})$/.exec(parts[parts.length - 1]);
+
             if (stateMatch && postcodeMatch) {
-              // Format: "Street, Suburb, State, Postcode"
-              const streetAddress = parts.slice(0, -3).join(', ');
+              // Format: "Street, Suburb, State, Postcode" (4 parts) or more
+              // For 4 parts: parts[0] is street, parts[1] is suburb
+              // For more parts: join all but last 3 as street
+              const streetAddress =
+                parts.length === 4 ? parts[0] : parts.slice(0, -3).join(', ');
               const suburb = parts[parts.length - 3];
               const state = stateMatch[1];
               const postcode = postcodeMatch[1];
-              
+
               update.$set['answers.user.address.streetAddress'] = streetAddress;
               update.$set['answers.user.address.suburb'] = suburb;
               update.$set['answers.user.address.state'] = state;
@@ -94,13 +103,13 @@ export class OnboardingService {
             }
           }
         }
-        
+
         // If all parsing attempts fail, throw error
         throw new BadRequestException(
           'Unable to parse address; please check the format. Expected format: "Street Address, Suburb, State Postcode" (e.g., "123 Main St, Sydney, NSW 2000")',
         );
       }
-      
+
       // Use regex match results
       update.$set['answers.user.address.streetAddress'] =
         match.groups.street.trim();
@@ -164,10 +173,12 @@ export class OnboardingService {
     ) {
       nextStep = stepId + 2; // Skip step 5 (custom message input)
     }
-    
-    // Special case: if this is the demo step (field is empty), and user clicks Skip or Demo,
+
+    // Special case: if this is the demo step (step 6, field is empty), and user clicks Skip or Demo,
     // mark onboarding as completed (nextStep will be beyond the last step)
-    if (!field || field.trim() === '') {
+    // Only treat empty field as skip action for the specific demo step (step 6)
+    const DEMO_STEP_ID = 6;
+    if (stepId === DEMO_STEP_ID && (!field || field.trim() === '')) {
       // This is the demo step (step 6), which is the last step
       // After this, onboarding should be completed
       nextStep = stepId + 1; // This will be 7, which is beyond the last step (6)
@@ -216,13 +227,20 @@ export class OnboardingService {
       const suburb = update.$set['answers.user.address.suburb'];
       const state = update.$set['answers.user.address.state'];
       const postcode = update.$set['answers.user.address.postcode'];
-      
-      if (!streetAddress || !suburb || !state || !postcode) {
+
+      // Collect missing fields for detailed error message
+      const missingFields: string[] = [];
+      if (!streetAddress) missingFields.push('streetAddress');
+      if (!suburb) missingFields.push('suburb');
+      if (!state) missingFields.push('state');
+      if (!postcode) missingFields.push('postcode');
+
+      if (missingFields.length > 0) {
         throw new BadRequestException(
-          'Address parsing failed: missing required fields',
+          `Address parsing failed: missing required fields - ${missingFields.join(', ')}`,
         );
       }
-      
+
       const addressData = {
         unitAptPOBox: update.$set['answers.user.address.unitAptPOBox'] ?? '',
         streetAddress,
