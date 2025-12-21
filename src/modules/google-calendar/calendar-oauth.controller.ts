@@ -2,6 +2,8 @@ import { Controller, Get, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
+import { getAppUrl } from '@/utils/app-config';
+
 import { CalendarTokenService } from './calendar-token.service';
 import { CalendarOAuthService } from './services/calendar-oauth.service';
 
