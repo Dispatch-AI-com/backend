@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@aws-sdk/client-ses": "^3.929.0",
     "@aws-sdk/client-sesv2": "^3.930.0",
     "@aws-sdk/client-sns": "^3.932.0",
     "@nestjs/axios": "^4.0.0",
