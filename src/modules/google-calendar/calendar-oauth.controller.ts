@@ -2,8 +2,6 @@ import { Controller, Get, Query, Res } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 
-import { getAppUrl } from '@/utils/app-config';
-
 import { CalendarTokenService } from './calendar-token.service';
 import { CalendarOAuthService } from './services/calendar-oauth.service';
 
@@ -70,7 +68,7 @@ export class CalendarOAuthController {
       calendarId: 'primary',
     });
 
-    const frontendUrl: string = getAppUrl();
+    const frontendUrl: string = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(`${frontendUrl}/settings/calendar?connected=google`);
   }
 }

@@ -1,39 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 
-import { getAppUrl } from '@/utils/app-config';
-
 @Injectable()
 export class StripeService {
-  private stripe: Stripe;
-
-  constructor() {
-    const stripeKey = process.env.STRIPE_SECRET_KEY ?? '';
-    if (stripeKey === '') {
-      // In development, allow service to start without Stripe credentials
-      if (
-        process.env.NODE_ENV === 'development' ||
-        process.env.NODE_ENV === undefined
-      ) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          '⚠️  Stripe credentials not found. Stripe features will be disabled.',
-        );
-        // Use a dummy key for development (Stripe SDK requires a non-empty string)
-        this.stripe = new Stripe('sk_test_development_dummy_key_1234567890', {
-          apiVersion: '2025-08-27.basil',
-        });
-      } else {
-        throw new Error(
-          'Stripe credentials not found in environment variables',
-        );
-      }
-    } else {
-      this.stripe = new Stripe(stripeKey, {
-        apiVersion: '2025-08-27.basil',
-      });
-    }
-  }
+  private stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '');
 
   get client(): Stripe {
     return this.stripe;
@@ -45,7 +15,7 @@ export class StripeService {
     planId: string;
     stripeCustomerId?: string;
   }): Promise<Stripe.Checkout.Session> {
-    const appUrl = getAppUrl();
+    const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
     const session = await this.stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -82,7 +52,7 @@ export class StripeService {
   async createBillingPortalSession(stripeCustomerId: string): Promise<string> {
     const session = await this.client.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: getAppUrl(),
+      return_url: process.env.APP_URL ?? 'http://localhost:3000',
     });
 
     return session.url;

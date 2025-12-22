@@ -20,7 +20,6 @@ import { ResetPasswordDto } from '@/modules/auth/dto/reset-password.dto';
 import { CreateUserDto } from '@/modules/auth/dto/signup.dto';
 import { UserResponseDto } from '@/modules/auth/dto/user-response.dto';
 import { UserStatus } from '@/modules/user/enum/userStatus.enum';
-import { getAppUrl } from '@/utils/app-config';
 import { generateCSRFToken } from '@/utils/csrf.util';
 
 @ApiTags('auth')
@@ -176,7 +175,7 @@ export class AuthController {
   googleAuthRedirect(@Req() req: Request, @Res() res: Response): void {
     // Check if user is authenticated
     if (!req.user) {
-      const frontendUrl = getAppUrl();
+      const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
       res.redirect(`${frontendUrl}/login?error=oauth_failed`);
       return;
     }
@@ -189,7 +188,7 @@ export class AuthController {
 
     // Validate required fields
     if (!token || !csrfToken) {
-      const frontendUrl = getAppUrl();
+      const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
       res.redirect(`${frontendUrl}/login?error=oauth_incomplete`);
       return;
     }
@@ -223,7 +222,7 @@ export class AuthController {
     });
 
     // Redirect to frontend with user data (CSRF token is in regular cookie)
-    const frontendUrl = getAppUrl();
+    const frontendUrl = process.env.APP_URL ?? 'http://localhost:3000';
     res.redirect(
       `${frontendUrl}/auth/callback?user=${encodeURIComponent(JSON.stringify(safeUser))}&csrfToken=${encodeURIComponent(csrfToken)}`,
     );
