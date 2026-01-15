@@ -1,19 +1,25 @@
 {
-    "moduleFileExtensions": ["js", "json", "ts"],
-    "rootDir": ".",
-    "testRegex": ".*\\.(test|spec)\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
-    "testEnvironment": "node",
-    "testTimeout": 60000,
-    "forceExit": true,
-    "maxWorkers": 1,
-    "moduleNameMapper": {
-      "^@/(.*)$": "<rootDir>/src/$1",
-      "^@modules/(.*)$": "<rootDir>/src/modules/$1"
-    },
-    "moduleFileExtensions": ["js", "json", "ts", "d.ts"]
+  "moduleFileExtensions": ["js", "json", "ts", "d.ts"],
+  "rootDir": ".",
+  "testRegex": ".*\\.(test|spec)\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "setupFilesAfterEnv": ["<rootDir>/test/setup.ts"],
+  "testEnvironment": "node",
+  "testTimeout": 60000,
+  "forceExit": true,
+  "maxWorkers": 1,
+  "moduleNameMapper": {
+    "^@/(.*)$": "<rootDir>/src/$1",
+    "^@modules/(.*)$": "<rootDir>/src/modules/$1",
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  },
+  "extensionsToTreatAsEsm": [".ts"],
+  "globals": {
+    "ts-jest": {
+      "useESM": true
+    }
   }
+}
   
