@@ -463,6 +463,31 @@ docker run -p 4000:4000 dispatchai-backend:dev
 docker compose up api
 ```
 
+To run the docker using capet's config
+run
+'''
+docker compose up
+'''
+
+To build the image stored in ECR
+run
+
+'''
+aws ecr get-login-password \
+--region ap-southeast-2 \
+| docker login \
+--username AWS \
+--password-stdin 409171460637.dkr.ecr.ap-southeast-2.amazonaws.com
+'''
+
+then
+'''
+docker pull 409171460637.dkr.ecr.ap-southeast-2.amazonaws.com/base-image:latest
+'''
+
+
+remember to set up the correct env.local
+
 ## 🔗 Key Integrations
 
 ### Twilio Voice API
