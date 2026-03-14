@@ -463,6 +463,13 @@ docker run -p 4000:4000 dispatchai-backend:dev
 docker compose up api
 ```
 
+To run the docker using capet's config
+run
+'''
+docker compose up
+'''
+remember to set up the correct env.local
+
 ## 🔗 Key Integrations
 
 ### Twilio Voice API

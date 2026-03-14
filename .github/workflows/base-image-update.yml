@@ -1,0 +1,78 @@
+name: Service Pipeline
+
+on:
+  workflow_call:
+    inputs:
+      image_tag:
+        required: false
+        type: string
+
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional image tag for manual testing"
+        required: false
+        type: string
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write
+  security-events: write
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
+  DOCKER_BUILDKIT: 1
+  BUILDKIT_PROGRESS: plain
+  BASE_IMAGE_TAG: ${{ inputs.image_tag}}
+  
+
+jobs:
+
+  build_and_deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (no push yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: |
+            ${{ secrets.ECR_REGISTRY }}/dispatchai2026-backend:${{ github.sha }}
+            ${{ secrets.ECR_REGISTRY }}/dispatchai2026-backend:${{ github.ref_name }}-${{ github.run_number }}
+          platforms: linux/amd64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BASE_IMAGE_TAG=${{ env.BASE_IMAGE_TAG }}
+
+      - name: Push image to ECR
+        run: |
+          docker push ${{ secrets.ECR_REGISTRY }}/dispatchai2026-backend:${{ github.sha }}
+          docker push ${{ secrets.ECR_REGISTRY }}/dispatchai2026-backend:${{ github.ref_name }}-${{ github.run_number }}
+
+
+      - name: Deploy
+        run: |
+          echo "Trigger deployment (ArgoCD / ECS / Helm)"
